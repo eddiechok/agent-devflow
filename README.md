@@ -37,7 +37,13 @@ Or install it everywhere at once by adding this to `~/.claude/settings.json`:
 
 ## Set up a project
 
-Add a `## Checks` block to the project's `CLAUDE.md`. This is the **only** thing each project must provide, and it is what makes devflow work with any language:
+Run this once in each project:
+
+```
+/devflow:setup
+```
+
+It finds the project's test, typecheck and lint commands, **runs them to confirm they work**, then writes a `## Checks` block into the project's `CLAUDE.md`:
 
 ```markdown
 ## Checks
@@ -46,7 +52,11 @@ Add a `## Checks` block to the project's `CLAUDE.md`. This is the **only** thing
 - Lint: pnpm lint
 ```
 
-No commands are hardcoded in this plugin. The project is the source of truth.
+This block is the **only** thing each project must provide, and it is what makes devflow work with any language. No commands are hardcoded in the plugin — the project is the source of truth.
+
+Run `/devflow:setup` again if the commands change. It will not overwrite a block you wrote yourself without asking.
+
+Why it runs the commands rather than just writing them down: everything downstream trusts this block. A wrong command here fails silently — `ship` runs something harmless, sees exit 0, and reports the work as proven.
 
 ## Use it
 
@@ -79,6 +89,7 @@ Overrides are recorded to `.devflow/overrides.md`. Each one is a real example of
 
 | Skill | What it does |
 |---|---|
+| `setup` | Once per project: finds and verifies the check commands. Invoked by you only, so it costs nothing at runtime |
 | `flow` | Sizes the request, routes it, asks any questions in one batch |
 | `build` | Test first, watch it fail for the right reason, then make it pass |
 | `ship` | Runs the checks fresh, runs the app, commits, opens the PR. **Never merges.** |
