@@ -83,7 +83,11 @@ It announces the size in one line before doing anything, so you can disagree imm
 /devflow:flow --quick <request>
 ```
 
-Overrides are recorded to `.devflow/overrides.md`. Each one is a real example of a misclassification, which is far better test data than invented ones. Do not delete the file.
+Overrides are recorded to `~/.claude/devflow/overrides.md` — **globally, not per project**, because they are notes about this plugin rather than about any one repo, and they are only useful reviewed together.
+
+Each line is a real example of the classifier getting it wrong, with your correction. After a month you have a set of labelled cases from actual use, which beats any examples invented up front. Do not delete the file.
+
+This is the only self-improvement machinery in Phase 1, and it is deliberately just collection — there is no review step yet. Read the file when it has twenty or so lines in it and see whether a pattern is there. If one is, that is a change to `flow`, made through the normal flow, since this repo is just another project.
 
 ## The skills
 

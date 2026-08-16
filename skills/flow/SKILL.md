@@ -124,15 +124,21 @@ Build one piece at a time. After each piece is done and committed, you may `/cle
 
 ## Recording overrides
 
-If the human used `--quick` or `--deep`, they are correcting a mistake this skill would have made. That is free training data and it should not be lost.
+If the human used `--quick` or `--deep`, they are correcting a mistake this skill would have made. That is free labelled test data and it should not be lost.
 
-Append one line to `.devflow/overrides.md` (create it if missing):
+**Write it outside the project**, to `~/.claude/devflow/overrides.md`, creating the directory and file if missing.
+
+Global on purpose. These are notes about **this plugin**, not about the project you happen to be in. Kept per-project they would scatter across every repo you work in, get committed into unrelated projects, and be impossible to review together — which is the only way they are useful.
+
+Work out your own size first, so the record shows what would have happened:
 
 ```
-- 2026-08-16 | "fix the login redirect" | guessed: Quick | correct: Deep
+- 2026-08-16 | myapp | "fix the login redirect" | guessed: Quick | correct: Deep
 ```
 
-Do not discuss it. Just record it and carry on.
+Include the project name. Patterns show up across repos.
+
+Do not discuss it, do not ask about it. Record it and carry on with the size the human asked for.
 
 ## Rules
 
