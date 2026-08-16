@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "eddiechok-devflow",
+  "owner": {
+    "name": "eddiechok"
+  },
+  "description": "eddiechok's development workflow plugin.",
+  "plugins": [
+    {
+      "name": "devflow",
+      "source": "./",
+      "description": "One dev loop for features, changes, bug fixes and chores. Sizes the work, tests first, proves it runs, opens a PR.",
+      "category": "development"
+    }
+  ]
+}

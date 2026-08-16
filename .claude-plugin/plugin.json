@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin.json",
+  "name": "devflow",
+  "description": "One dev loop for features, changes, bug fixes and chores. Sizes the work, tests first, proves it runs, opens a PR. Asks you as little as possible.",
+  "author": {
+    "name": "eddiechok"
+  },
+  "repository": "https://github.com/eddiechok/agent-devflow",
+  "license": "MIT",
+  "keywords": ["devflow", "workflow", "tdd", "code-review", "automation"]
+}

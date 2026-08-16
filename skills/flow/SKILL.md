@@ -1,0 +1,142 @@
+---
+name: flow
+description: Use when starting any coding task - a new feature, a change to existing code, a bug fix, a chore or a dependency bump. Sizes the work as Quick, Standard or Deep, then routes it. Accepts free text, a GitHub issue number like #123, or an issue URL. This is the entry point, start here.
+argument-hint: "[--quick|--deep] what you want, or #123"
+allowed-tools: Bash(git status:*), Bash(git branch:*), Bash(git rev-parse:*), Bash(gh issue view:*)
+---
+
+# flow
+
+Size the work, then route it. One line before anything else.
+
+## Context
+
+- Branch: !`git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "no git"`
+- Default branch: !`git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's|origin/||' || echo main`
+- Status: !`git status --short 2>/dev/null | head -20 || true`
+
+## Step 1 — get the request
+
+`$ARGUMENTS` is the request.
+
+If it starts with `#` or is a GitHub issue URL, read the issue first with `gh issue view NUMBER`. The issue body is the request. Remember the number so `ship` can close it.
+
+If `--quick` or `--deep` is present, that is the size. Skip step 2, and **record the override** — see "Recording overrides" at the end. Do not argue with an explicit override.
+
+## Step 2 — size it
+
+Pick one. Default **down**. Only go heavier when there is a concrete reason.
+
+| Size | Use when | What it means |
+|---|---|---|
+| **Quick** | Typo, rename, config value, doc fix, dependency bump with no breaking changes, a bug in code you can already point at | No planning, no questions |
+| **Standard** | Changing behaviour of code that already exists, one clear seam, you know roughly where it goes | Questions only if genuinely unclear |
+| **Deep** | New feature, new subsystem, a change across many files, or you cannot name the files it touches yet | One round of questions, then a written plan |
+
+**Upgrade from Quick to Standard the moment** the change reaches a second file you did not expect, or you cannot state the fix in one sentence.
+
+### The danger list — always at least Standard
+
+If the work touches any of these, use **at least Standard**, ask the human, and say plainly that a security review is worth running:
+
+- login, permissions, sessions, or anything auth
+- passwords, API keys, tokens, secrets
+- payments or billing
+- database schema or data migrations
+- a public API or wire format other people depend on
+- CI/CD configuration
+- deleting or weakening existing tests
+- anything the change cannot be reverted out of
+
+Say which item matched.
+
+## Step 3 — announce it
+
+Exactly one line, before any other output:
+
+```
+Quick — single-file copy change.
+```
+
+```
+Deep — new subsystem, touches auth (danger list).
+```
+
+Eight words of reason or fewer. Then continue without waiting.
+
+## Step 4 — route it
+
+**Quick** → go straight to `devflow:build`. No questions.
+
+**Standard** → if anything is genuinely ambiguous, ask **one** round of questions (see below), then `devflow:build`. If nothing is ambiguous, go straight to `devflow:build`.
+
+**Deep** → ask one round of questions, get agreement, then work through the pieces with `devflow:build`, one at a time.
+
+All sizes finish with `devflow:ship`.
+
+### Asking questions — one round only
+
+When you need input, ask **everything you can answer now, in one numbered list**. Never drip-feed one question per turn.
+
+Only ask what you genuinely cannot determine yourself. Read the code first. A question you could have answered by opening a file is a wasted interruption.
+
+Give every question a recommended answer:
+
+```
+1. Should this replace the existing export, or sit alongside it?
+   -> Recommend: replace. Nothing else imports it.
+
+2. Store the flag per-user or globally?
+   -> Recommend: per-user, matching how notifications already work.
+
+Reply "yes to all" to take every recommendation.
+```
+
+Anything the human does not answer takes the recommendation, and **goes into the PR body under "Assumptions"** so it can be checked at merge time instead of blocking now.
+
+### Deep only — write the plan down
+
+Split the work into pieces. Each piece must be:
+
+- **One reviewable change.** Size it by what makes a sensible diff, not by what fits in memory.
+- **Marked as depending on another piece, or not.**
+
+"Independent" is stricter than "different files". Two pieces are only independent if **neither depends on a design decision the other makes**. Two unrelated endpoints, independent. One defines a type the other consumes, **not** independent — both will finish, both will pass their own tests, and it will break when they are joined.
+
+Write it to `.devflow/plans/<short-name>.md`:
+
+```markdown
+# <what this is>
+
+Issue: #123 (if there is one)
+
+## Assumptions
+- Took the recommendation on X because no answer was given
+
+## Pieces
+1. [independent: no] Add the storage column and migration
+   Verify: pnpm test src/db
+2. [independent: no] Read it in the settings API
+   Verify: pnpm test src/api/settings
+```
+
+Build one piece at a time. After each piece is done and committed, you may `/clear` and continue from the plan file — it holds the state, so nothing is lost.
+
+## Recording overrides
+
+If the human used `--quick` or `--deep`, they are correcting a mistake this skill would have made. That is free training data and it should not be lost.
+
+Append one line to `.devflow/overrides.md` (create it if missing):
+
+```
+- 2026-08-16 | "fix the login redirect" | guessed: Quick | correct: Deep
+```
+
+Do not discuss it. Just record it and carry on.
+
+## Rules
+
+- Never start with a question. Announce the size first.
+- Never go up a size without naming the reason.
+- Never do work that the size you announced does not call for.
+- If the human overrules you, they are right. Record it and move on.
