@@ -161,4 +161,5 @@ Do not discuss it, do not ask about it. Record it and carry on with the size the
 - Never go up a size without naming the reason.
 - Never do work that the size you announced does not call for.
 - Never finish without calling `ship`, or saying in one line why you did not.
+- Never call `devflow:land`. The open PR is where this loop ends; merging is the human's, and only they start it.
 - If the human overrules you, they are right. Record it and move on.

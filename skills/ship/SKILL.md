@@ -152,3 +152,4 @@ Never suggest throwing work away. If discarding a branch or force-pushing genuin
 - Never commit on the default branch.
 - Never open a PR when the live check failed.
 - Never invent check commands the project did not give you.
+- Never merge, and never call `devflow:land`. The open PR is where this skill ends.
