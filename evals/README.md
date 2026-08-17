@@ -1,6 +1,6 @@
 # evals
 
-Six cases. Run them before you push a change to a skill.
+Seven cases. Run them before you push a change to a skill.
 
 ```bash
 claude plugin eval . --scaffold --allow-tools Bash Write Edit
@@ -19,6 +19,7 @@ deliberate — the runner will not do either on your behalf.
 | `sizing-standard` | low | Borderline work gets sized by coin flip, so Quick skips the questions |
 | `sizing-deep` | low | A new subsystem gets built with no plan and no questions |
 | `danger-list` | low | Secrets work slips through at Quick with nobody told |
+| `auto-trigger` | low | Work never reaches `flow` at all, so nothing ever ships |
 | `setup-writes-checks` | medium | Every downstream check runs a command nobody verified |
 | `full-loop` | high | The skills stop handing off to each other |
 
@@ -42,6 +43,18 @@ It also carries the only grader that checks *when* the size was announced.
 regex in this directory would pass on a transcript where it arrived three turns
 late — one real run opened with "I'll size this first. Let me look at the CLI
 code." A `contains` pattern cannot see position, so that one is an `llm` grader.
+
+`auto-trigger` is the only case that does not type the slash command, and it
+exists because every other case does. Explicit invocation cannot tell you
+whether `flow` would have fired on its own — and in real use it did not. A
+request to add a favicon ran to completion, about a hundred tool calls without
+a single Skill call among them, and stopped at "Ready to commit if you'd like"
+with the work uncommitted on the default branch. The human had to ask for the
+PR, which was then made by hand and merged, which `ship` forbids.
+
+`flow`'s instruction to call `ship` was never wrong. It never loaded. Every
+other case in this directory starts one step after the step that broke, which
+is why five green runs said nothing about it.
 
 `full-loop` is the expensive one and earns it. All three bugs found in the
 first real end-to-end run lived in the **seams** between skills, not inside

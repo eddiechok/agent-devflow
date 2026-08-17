@@ -1,0 +1,62 @@
+schema_version: "1.1"
+name: auto-trigger
+description: A plain-English copy change reaches flow without the human typing the slash command.
+tags: [flow, regression]
+
+context:
+  scaffold_script: ./scaffold.sh
+
+execution:
+  # No `/devflow:flow` in this prompt. That is the whole case.
+  #
+  # Every other case in this suite invokes the skill explicitly, so not one of
+  # them can see the failure that actually happened. In a real session the
+  # request "create a logo for favicon" produced about a hundred tool calls
+  # with zero Skill calls among them, finished the work, and stopped at "Ready
+  # to commit if you'd like" with everything uncommitted on the default branch.
+  # The next human message had to be "create pr, merge, deploy and cleanup",
+  # which was then done by hand and merged -- something `ship` is forbidden to
+  # do.
+  #
+  # `flow` step 5 already said to call `ship` in the same turn, and that rule
+  # was never wrong. It just never loaded. The entire loop hangs off this one
+  # moment, and it was the only moment nothing tested.
+  #
+  # Copy rather than code, deliberately: `flow`'s description used to open with
+  # "any coding task", and a wording change is exactly the shape that slipped
+  # past it.
+  prompt: "the README description for this CLI is too dry - reword it to something friendlier"
+  # Enough to read the repo and route. Whether the new wording is any good is
+  # not what this measures, and letting the work run would cost more for no
+  # extra signal -- the same bargain the sizing cases make.
+  max_turns: 6
+  timeout_seconds: 300
+  allowed_tools: [Bash, Read, Edit, Glob, Grep, Skill]
+
+runs: 3
+
+graders:
+  # The regression. `tool_used` counts attempts rather than successes, which is
+  # a trap elsewhere in this suite (see evals/README.md) -- here it is exactly
+  # right, because reaching for the skill IS the behaviour under test. There is
+  # no such thing as a failed attempt to route.
+  - type: tool_used
+    name: reaches-flow-unprompted
+    tool: Skill
+    input_match: "devflow:flow"
+    min: 1
+    weight: 3
+
+  # Proves `flow` actually ran rather than merely being named: the size line is
+  # the first thing it produces. Dash-tolerant for the same reason as the
+  # sizing cases -- the size is the claim under test, not the punctuation.
+  - type: regex
+    name: announces-a-size
+    target: trace
+    pattern: "(Quick|Standard|Deep)\\s*[—–-]"
+    match: contains
+    weight: 2
+
+expected_outcome: >
+  Routes a plain-English copy change through devflow:flow and announces a size,
+  with no slash command in the prompt and nothing extra from the human.
