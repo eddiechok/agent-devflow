@@ -48,7 +48,7 @@ graders:
     match: contains
 
   # The project has no typecheck. Recording one would be a command nothing
-  # verified, which is the exact failure the skill exists to prevent -- ship
+  # verified, which is the exact failure the skill exists to prevent -- submit
   # would later run it, see whatever it does, and call the work proven.
   - type: regex
     name: invents-no-typecheck

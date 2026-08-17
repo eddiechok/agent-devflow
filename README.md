@@ -1,6 +1,6 @@
 # devflow
 
-One dev loop for features, changes, bug fixes and chores. Sizes the work, tests first, proves it runs, opens a PR — then lands it when you say so. Asks you as little as possible.
+One dev loop for features, changes, bug fixes and chores. Sizes the work, tests first, proves it runs, opens a PR — then ships it when you say so. Asks you as little as possible.
 
 This is **Phase 1** — deliberately small. See [What is not here yet](#what-is-not-here-yet).
 
@@ -56,7 +56,7 @@ This block is the **only** thing each project must provide, and it is what makes
 
 Run `/devflow:setup` again if the commands change. It will not overwrite a block you wrote yourself without asking.
 
-Why it runs the commands rather than just writing them down: everything downstream trusts this block. A wrong command here fails silently — `ship` runs something harmless, sees exit 0, and reports the work as proven.
+Why it runs the commands rather than just writing them down: everything downstream trusts this block. A wrong command here fails silently — `submit` runs something harmless, sees exit 0, and reports the work as proven.
 
 ## Use it
 
@@ -69,11 +69,11 @@ Why it runs the commands rather than just writing them down: everything downstre
 Then, once you have looked at the PR and want it finished:
 
 ```
-/devflow:land
-/devflow:land 123
+/devflow:ship
+/devflow:ship 123
 ```
 
-`flow` sizes the work and routes it. You should not normally need to call the others directly — except `land`, which is the one skill nothing else can call.
+`flow` sizes the work and routes it. You should not normally need to call the others directly — except `ship`, which is the one skill nothing else can call.
 
 ### The loop
 
@@ -91,9 +91,9 @@ flowchart TD
     ASK["One batch of questions,<br/>each with a recommendation"] --> YOU1{{"You answer, or skip and<br/>take the recommendations"}}
     YOU1 -->|"Deep: plan saved to .devflow/plans/"| BUILD
 
-    BUILD["build<br/>write the test<br/>watch it fail<br/>then make it pass"] --> SHIP["ship<br/>feature branch<br/>checks re-run fresh<br/>run the app, code review<br/>conventional commit, push"]
-    SHIP --> YOU2{{"You review the PR"}}
-    YOU2 -->|"/devflow:land"| LAND["land<br/>merge<br/>watch the deploy<br/>check it is really live<br/>delete the branch, tidy up"]
+    BUILD["build<br/>write the test<br/>watch it fail<br/>then make it pass"] --> SUBMIT["submit<br/>feature branch<br/>checks re-run fresh<br/>run the app, code review<br/>conventional commit, push"]
+    SUBMIT --> YOU2{{"You review the PR"}}
+    YOU2 -->|"/devflow:ship"| SHIP["ship<br/>merge<br/>watch the deploy<br/>check it is really live<br/>delete the branch, tidy up"]
 
     classDef human fill:#fde68a,stroke:#b45309,color:#111
     class YOU1,YOU2 human
@@ -101,10 +101,10 @@ flowchart TD
 
 The two amber boxes are the only places you are normally needed. What the chart leaves out, all of it stopping the flow rather than bending it:
 
-- Anything on the **danger list** is forced to at least Standard, and `ship` also runs `/security-review`.
+- Anything on the **danger list** is forced to at least Standard, and `submit` also runs `/security-review`.
 - The **hook asks** before any commit that would land on the default branch.
 - **Three failed attempts** at the same problem and `build` stops, saying what each attempt ruled out, rather than trying a fourth.
-- If the **live check fails** twice, `ship` stops and does not open a PR. An honest failure beats a green-looking PR over a broken feature.
+- If the **live check fails** twice, `submit` stops and does not open a PR. An honest failure beats a green-looking PR over a broken feature.
 
 | Size | For | What happens |
 |---|---|---|
@@ -142,14 +142,23 @@ This is the only self-improvement machinery in Phase 1, and it is deliberately j
 | `setup` | Once per project: finds and verifies the check commands. Invoked by you only, so it costs nothing at runtime |
 | `flow` | Sizes the request, routes it, asks any questions in one batch |
 | `build` | Test first, watch it fail for the right reason, then make it pass |
-| `ship` | Runs the checks fresh, runs the app, commits, opens the PR. **Never merges.** |
-| `land` | Merges it, watches the deploy, checks it is really live, cleans up. **Only you can start it** |
+| `submit` | Runs the checks fresh, runs the app, commits, opens the PR. **Never merges.** |
+| `ship` | Merges it, watches the deploy, checks it is really live, cleans up. **Only you can start it** |
+
+### `ship` changed meaning — read this once
+
+`ship` used to mean *open a pull request and stop*. That job is now **`submit`**. `ship` is now the skill that merges and deploys.
+
+The word moved onto a more dangerous action, so the old habit is worth breaking deliberately:
+
+- Type `/devflow:ship` on a branch with **no PR** and it stops, pointing you at `submit`. The habit is caught.
+- Type it where a **PR already exists** and it merges. Nothing catches that one.
 
 ## When it will ask you
 
 **Direction** — Deep jobs always, Standard only when genuinely unclear, Quick never. All questions come at once, each with a recommended answer. `yes to all` is a valid reply. Anything you skip takes the recommendation and appears in the PR under **Assumptions**.
 
-**Merge** — always yours. `ship` opens the PR and stops. `/devflow:land` does everything after it, and it is the one skill you have to start yourself: `disable-model-invocation: true` keeps it out of the automatic path, and `flow` and `ship` are both told never to call it.
+**Merge** — always yours. `submit` opens the PR and stops. `/devflow:ship` does everything after it, and it is the one skill you have to start yourself: `disable-model-invocation: true` keeps it out of the automatic path, and `flow` and `submit` are both told never to call it.
 
 **Committing to the default branch** — the hook asks first.
 
@@ -179,7 +188,7 @@ login and permissions · secrets and keys · payments · database migrations · 
 
 Only a single, simple call to a known check runner ever gets that far. The command must match the built-in list (`npm test`, `pytest`, `cargo test`, `go test`, `tsc`, and friends) and contain no `&&`, `||`, `;`, `|`, newline, `$(` or backtick. Anything else passes through untouched and faces your normal rules.
 
-This is why `build` and `ship` both insist on running check commands **bare**, one per call. A command Claude has already shaped — `npm test 2>&1 | tail -20` — makes the hook stand down, so you lose the trimming and the `exit=N` line, and Claude ends up hand-rolling an exit code instead. Which it gets wrong: `${PIPESTATUS[0]}` after a `;` printed nothing at all in a real run.
+This is why `build` and `submit` both insist on running check commands **bare**, one per call. A command Claude has already shaped — `npm test 2>&1 | tail -20` — makes the hook stand down, so you lose the trimming and the `exit=N` line, and Claude ends up hand-rolling an exit code instead. Which it gets wrong: `${PIPESTATUS[0]}` after a `;` printed nothing at all in a real run.
 
 **Asks before committing to the default branch.** It asks rather than blocks. A wrong ask costs one keypress; a wrong block stops your work.
 
@@ -224,8 +233,8 @@ Phase 1 is deliberately the smallest useful thing. Deliberately absent:
 - A standalone `plan` skill. Deep work already writes `.devflow/plans/<name>.md` and resumes from it, but there is no way to invoke planning on its own, revise a plan once written, or tidy up old ones.
 - `debug` — the disciplined bug-fixing loop. For now bugs go through `build`.
 - `tend` — handling CI failures and review comments after the PR opens.
-- `reviewer` and `hardcase` agents — for now `ship` uses the built-in `/code-review`.
-- Cleanup of worktrees and folder copies. `land` handles branches, dev servers and temp files; copies of the repo are still yours.
+- `reviewer` and `hardcase` agents — for now `submit` uses the built-in `/code-review`.
+- Cleanup of worktrees and folder copies. `ship` handles branches, dev servers and temp files; copies of the repo are still yours.
 - Capturing lessons.
 
 These are only worth building if two weeks of real use shows you need them. Each one that gets added should be added because you hit the problem, not because it sounded good.

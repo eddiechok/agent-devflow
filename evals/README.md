@@ -50,9 +50,9 @@ whether `flow` would have fired on its own — and in real use it did not. A
 request to add a favicon ran to completion, about a hundred tool calls without
 a single Skill call among them, and stopped at "Ready to commit if you'd like"
 with the work uncommitted on the default branch. The human had to ask for the
-PR, which was then made by hand and merged, which `ship` forbids.
+PR, which was then made by hand and merged, which `submit` forbids.
 
-`flow`'s instruction to call `ship` was never wrong. It never loaded. Every
+`flow`'s instruction to call `submit` was never wrong. It never loaded. Every
 other case in this directory starts one step after the step that broke, which
 is why five green runs said nothing about it.
 
@@ -60,8 +60,8 @@ is why five green runs said nothing about it.
 first real end-to-end run lived in the **seams** between skills, not inside
 any one of them:
 
-- `flow` never reached `ship`
-- `ship` could not tell what the default branch was, so it committed to it
+- `flow` never reached `submit`
+- `submit` could not tell what the default branch was, so it committed to it
 - the bash hook rewrote `npm test` into something no permission rule could
   match, so `build` silently ran a different command instead
 

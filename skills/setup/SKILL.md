@@ -12,9 +12,9 @@ Run once per project. Run again if the commands change or the checks start behav
 
 ## Why this matters
 
-Everything downstream trusts the `## Checks` block. `build` runs it after every change, `ship` runs it fresh before opening a PR, and the output hook keys off it.
+Everything downstream trusts the `## Checks` block. `build` runs it after every change, `submit` runs it fresh before opening a PR, and the output hook keys off it.
 
-A wrong or stale command here fails **silently**: `ship` runs something harmless, sees exit 0, and reports the work as proven. That is the worst kind of failure in this plugin, so nothing gets written to `CLAUDE.md` until it has actually been run.
+A wrong or stale command here fails **silently**: `submit` runs something harmless, sees exit 0, and reports the work as proven. That is the worst kind of failure in this plugin, so nothing gets written to `CLAUDE.md` until it has actually been run.
 
 ## 1. Already set up?
 

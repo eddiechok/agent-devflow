@@ -15,10 +15,10 @@ execution:
   # with zero Skill calls among them, finished the work, and stopped at "Ready
   # to commit if you'd like" with everything uncommitted on the default branch.
   # The next human message had to be "create pr, merge, deploy and cleanup",
-  # which was then done by hand and merged -- something `ship` is forbidden to
-  # do.
+  # which was then done by hand and merged -- something `submit` is forbidden
+  # to do.
   #
-  # `flow` step 5 already said to call `ship` in the same turn, and that rule
+  # `flow` step 5 already said to call `submit` in the same turn, and that rule
   # was never wrong. It just never loaded. The entire loop hangs off this one
   # moment, and it was the only moment nothing tested.
   #
