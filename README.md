@@ -68,6 +68,36 @@ Why it runs the commands rather than just writing them down: everything downstre
 
 `flow` sizes the work and routes it. You should not normally need to call the others directly.
 
+### The loop
+
+```mermaid
+flowchart TD
+    SETUP(["/devflow:setup, once per project"]) -.->|"writes the Checks block"| REQ
+    REQ(["/devflow:flow what you want"]) --> SIZE{"Size it, announce it<br/>in one line"}
+
+    SIZE -->|Quick| BUILD
+    SIZE -->|Standard| CLEAR{"Genuinely<br/>unclear?"}
+    SIZE -->|Deep| ASK
+    CLEAR -->|no| BUILD
+    CLEAR -->|yes| ASK
+
+    ASK["One batch of questions,<br/>each with a recommendation"] --> YOU1{{"You answer, or skip and<br/>take the recommendations"}}
+    YOU1 -->|"Deep: plan saved to .devflow/plans/"| BUILD
+
+    BUILD["build<br/>write the test<br/>watch it fail<br/>then make it pass"] --> SHIP["ship<br/>feature branch<br/>checks re-run fresh<br/>run the app, code review<br/>conventional commit, push"]
+    SHIP --> YOU2{{"You review and merge the PR"}}
+
+    classDef human fill:#fde68a,stroke:#b45309,color:#111
+    class YOU1,YOU2 human
+```
+
+The two amber boxes are the only places you are normally needed. What the chart leaves out, all of it stopping the flow rather than bending it:
+
+- Anything on the **danger list** is forced to at least Standard, and `ship` also runs `/security-review`.
+- The **hook asks** before any commit that would land on the default branch.
+- **Three failed attempts** at the same problem and `build` stops, saying what each attempt ruled out, rather than trying a fourth.
+- If the **live check fails** twice, `ship` stops and does not open a PR. An honest failure beats a green-looking PR over a broken feature.
+
 | Size | For | What happens |
 |---|---|---|
 | **Quick** | Typos, chores, most bug fixes | Straight to building. No questions. |
