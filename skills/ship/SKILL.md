@@ -84,21 +84,43 @@ gh pr merge <n> --rebase --delete-branch
 
 ### When the merge command errors
 
-**Find out whether it worked before you react.** GitHub can fail *after* the merge has already landed. A real run returned `remote: Internal Server Error` and `error: 500` — from the step after a merge that had succeeded. From the outside that is indistinguishable from a failed merge, and a blind retry makes it worse.
+**Find out whether it worked before you react.** GitHub can fail *after* the merge has already landed, and the error looks exactly like one from before it. A blind retry is the wrong move about half the time.
 
-Look at the truth, not the exit code:
+Two real runs, one skill, opposite meanings:
+
+| | Error | Default branch | Branch on remote | Right move |
+|---|---|---|---|---|
+| Failed **after** the merge | `500` | **moved** | deleted | reconcile locally |
+| Failed **before** the merge | `503` | unchanged | still there | retry |
+
+### Ask git, not the API
 
 ```
-gh pr view <n> --json state,mergedAt,mergeCommit
 git ls-remote --heads origin
 ```
 
-If the PR says `MERGED`, the merge happened. What failed was the local half: `gh` switches to the default branch and pulls after merging, and that pull is what died, leaving the working tree looking like the work had vanished. Reconcile and carry on — **do not merge again**:
+**This is the oracle, and it keeps working when `gh` does not.** `ls-remote` speaks the git protocol; `gh pr merge` and `gh pr view` go through the GraphQL API. In a real run the API returned 503 to every call for several minutes while `ls-remote` answered correctly throughout. When the thing that failed is the API, do not ask the API whether it failed.
+
+**The signal is the default branch's SHA.** If it moved, the merge landed.
+
+**It is not whether the branch was deleted.** Merging and deleting are separate calls and either can fail alone — one run merged successfully and then 503'd on the delete, so a retry loop watching the branch concluded "not merged yet" three times about a merge that had already happened. `--delete-branch` is a convenience, not evidence.
+
+### Then
+
+**Merge landed** — do not merge again. Reconcile the local half, which is what usually died: `gh` switches to the default branch and pulls after merging, and a failure there leaves the working tree looking like the work vanished.
 
 ```
 git fetch origin --prune
 git merge --ff-only origin/<default>
 ```
+
+If the remote branch outlived the merge, delete it on its own:
+
+```
+git push origin --delete <branch>
+```
+
+**Merge did not land** — retry, with a wait. Cap it. An API that is still down after a few attempts is a finding to report, not something to sit through, and the work is safe either way: the PR is open and the branch is pushed.
 
 ## 4. Deploy
 
@@ -163,7 +185,7 @@ Session: want it archived?
 
 - Never run without a human starting it. `disable-model-invocation: true` stays, and so does the rule in `flow` and `submit` not to call this.
 - Never merge a red PR, or one whose checks have not finished.
-- Never merge again on an error before checking whether the merge already landed.
+- Never merge again on an error before checking whether the merge already landed — the default branch's SHA, read with `git ls-remote`. Not the API, which may be the thing that is broken, and not the branch's absence, which is a separate call that fails separately.
 - Never invent a deploy command the project did not give you.
 - Never call a green pipeline a live check. Fetch the URL.
 - Never delete a branch, server or file this session did not create.
