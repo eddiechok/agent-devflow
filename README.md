@@ -191,6 +191,19 @@ nothing:
 python3 hooks/test-bash-guard.py
 ```
 
+Changed a skill's frontmatter? Same deal, same second:
+
+```bash
+python3 skills/test-frontmatter.py
+```
+
+It checks that every `description` reaches the model whole. In a plain YAML
+scalar a `#` preceded by a space opens a comment, so `... like #123 ...` quietly
+cut 60 characters off `flow`'s description — including "This is the entry point,
+start here.", the sentence most likely to make the skill fire. The file read
+correctly the whole time. Quoting the value fixes it; this test stops it coming
+back, and refuses to pass by finding no skills.
+
 Expect **exactly one warning**, about the missing `version` field. That is deliberate: with no version, `/plugin update` picks up every push. If you set one, updates silently stop arriving until you remember to bump it.
 
 Do **not** use `--strict` — it turns that intentional warning into an error. If you ever see a second warning, something is genuinely wrong.
