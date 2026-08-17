@@ -1,6 +1,6 @@
 ---
 name: flow
-description: Use when starting any coding task - a new feature, a change to existing code, a bug fix, a chore or a dependency bump. Sizes the work as Quick, Standard or Deep, then routes it. Accepts free text, a GitHub issue number like #123, or an issue URL. This is the entry point, start here.
+description: "Use when a request will change anything tracked in the repo - a feature, a bug fix, a refactor, a chore or a dependency bump, and equally copy, content, docs, config, styles, images or other assets. Editing a tracked file is the test, not whether the work sounds like coding. Enter here mid-task too, the moment an investigation turns into an edit. Sizes the work as Quick, Standard or Deep, then routes it through build and ship, so the work ends as a pull request rather than uncommitted changes. Accepts free text, a GitHub issue number like #123, or an issue URL. This is the entry point, start here."
 argument-hint: "[--quick|--deep] what you want, or #123"
 allowed-tools: Bash(git status:*), Bash(git branch:*), Bash(git rev-parse:*), Bash(gh issue view:*)
 ---
@@ -63,6 +63,8 @@ Deep — new subsystem, touches auth (danger list).
 ```
 
 Eight words of reason or fewer. Then continue without waiting.
+
+If you arrived here mid-turn, because a question or an investigation turned into a change, announce it **before the first edit** instead. Same rule, measured from the work rather than from the conversation: nothing gets edited before a size is on screen.
 
 ## Step 4 — route it
 
