@@ -54,6 +54,8 @@ It finds the project's test, typecheck and lint commands, **runs them to confirm
 
 This block is the **only** thing each project must provide, and it is what makes devflow work with any language. No commands are hardcoded in the plugin — the project is the source of truth.
 
+Any line may repeat. A project with two test commands and no wrapper that runs both gets two `Test:` lines, run in order — two honest lines beat one invented wrapper script. This repo's own [CLAUDE.md](CLAUDE.md) is an example.
+
 There is a second, optional block — `## Deploy` — and you never write it by hand. `ship` offers to add it the first time it deploys and verifies successfully, because that is the only moment anything has proof the command works. `setup` deliberately leaves it alone: its rule is that it runs a command before recording it, and the only way to check a deploy command is to deploy.
 
 Run `/devflow:setup` again if the commands change. It will not overwrite a block you wrote yourself without asking.

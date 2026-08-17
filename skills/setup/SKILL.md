@@ -80,6 +80,16 @@ Append to the project's `CLAUDE.md`, creating the file if needed:
 
 Only include lines you actually ran. Three is typical, one is fine.
 
+**A line may repeat.** Some projects have two test commands and no wrapper that runs both. Write both, and everything downstream runs them in order:
+
+```markdown
+## Checks
+- Test: python3 hooks/test-bash-guard.py
+- Test: python3 skills/test-frontmatter.py
+```
+
+Two honest lines beat one invented wrapper script. Do not add a `Makefile` or an npm script to make the block tidier — that is changing the project to suit the tool.
+
 ## 5. Report
 
 Keep it short:
@@ -90,7 +100,8 @@ Checks written to CLAUDE.md.
   Typecheck: pnpm typecheck   pass
   Lint:      pnpm lint        pass
 
-No deploy config needed yet — devflow does not deploy in this version.
+No ## Deploy block written — that is ship's to add, the first time it
+deploys and can prove the command works.
 ```
 
 Then mention, once, only if relevant:
