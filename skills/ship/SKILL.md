@@ -23,6 +23,8 @@ If you are on the default branch, **stop**. Create a branch first:
 git checkout -b <type>/<short-name>
 ```
 
+`build` should have done this before its first edit, so normally you are already on one. This is the safety net for when `build` did not run — you were called directly, or the work arrived some other way.
+
 Never commit directly to the default branch.
 
 ## 2. Run the checks fresh
@@ -56,15 +58,21 @@ Must return nothing.
 
 Tests only check what someone thought to test. A passing suite and a clean diff can both sit on top of a feature that is visibly broken: wrong label, broken layout, right data in the wrong place.
 
-**Use the built-in `run` skill** to launch the project and confirm the change actually works. Do not write your own launcher.
+Pick whichever of these the project actually is:
 
-Rules:
+- **Something that has to be launched** — a web app, a server, a desktop app. **Use the built-in `run` skill.** Do not write your own launcher.
+- **Something you just execute** — a CLI, a script, a one-shot command. **Run it directly**, with the arguments the change affects, and show the output. `node src/cli.js --loud` *is* the live check for a CLI; reaching for a launcher here adds nothing.
+
+Either way the rule is the same: exercise the change the way a user would, and put the output on screen.
+
+Rules, when you launched something:
 - **Put a time limit on it.** If the app never becomes ready, that is a finding to report, not something to sit through.
 - **Stop the server when you are done.** Stop only the process you started. Never kill "whatever is on port 3000" — that may be something the human is running.
 - **Screenshots and artifacts go to a temp directory**, never into the repo.
-- If it does not work: fix it and try again, **at most twice**. If it still does not work, say so plainly and **do not open a PR that looks fine**. An honest failure is useful. A green-looking PR over a broken feature is harmful.
 
-If the project cannot be run — a library, a CLI with no interface, a pure refactor — say so in one line and skip. Do not invent a fake check.
+**If it does not work**, either way: fix it and try again, **at most twice**. If it still does not work, say so plainly and **do not open a PR that looks fine**. An honest failure is useful. A green-looking PR over a broken feature is harmful.
+
+Only skip when there is genuinely nothing to exercise — a library with no entry point, a pure refactor with no observable change. Say so in one line. Do not invent a fake check, and do not call a passing test suite a live check; step 2 already ran that.
 
 ## 5. Review the diff
 

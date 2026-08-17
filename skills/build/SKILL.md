@@ -36,6 +36,25 @@ the shell was not the one that syntax assumes.
 
 Arguments are still bare — `pnpm test src/db` is fine. Shell plumbing is not.
 
+## Get off the default branch first
+
+Before the first edit, check where you are:
+
+```
+git rev-parse --abbrev-ref HEAD
+git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's|origin/||' || echo main
+```
+
+If those match, create the branch now, before touching a file:
+
+```
+git checkout -b <type>/<short-name>
+```
+
+`ship` checks this too, but by then it is late. Editing happens here, and `ship` is several gates away — if it never runs because you got stuck, the checks stayed red, or the human stopped you, the edits are left sitting uncommitted on the default branch. Branching first costs one command and the abort case stays clean.
+
+Branching is not committing. You still do not commit; that is `ship`'s job.
+
 ## The five gates
 
 Every change goes through these in order. No skipping.
