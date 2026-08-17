@@ -12,7 +12,7 @@ Prove it works. Then open the PR. Never merge.
 ## Context
 
 - Branch: !`git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "no git"`
-- Default branch: !`git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's|origin/||' || echo main`
+- Default branch: !`git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's|origin/||' | grep . || echo main`
 - Changed files: !`git status --short 2>/dev/null || true`
 
 ## 1. Check the branch
