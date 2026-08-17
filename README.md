@@ -76,6 +76,14 @@ Why it runs the commands rather than just writing them down: everything downstre
 
 It announces the size in one line before doing anything, so you can disagree immediately.
 
+### Where a Deep plan goes
+
+Deep work writes its plan into the project, at `.devflow/plans/<short-name>.md`. It holds the assumptions taken and the pieces to build, each marked as depending on another piece or not.
+
+That file is the state, which is what makes Deep work survivable: after each piece is committed you can `/clear` and pick up from the plan, and nothing is lost with the context.
+
+Commit it or ignore it, as you prefer — devflow neither adds it to `.gitignore` nor expects it there.
+
 ### If it sizes something wrong
 
 ```
@@ -161,7 +169,7 @@ Do **not** use `--strict` — it turns that intentional warning into an error. I
 
 Phase 1 is deliberately the smallest useful thing. Deliberately absent:
 
-- `plan` — writing plans to a file. For now `flow` asks its questions inline.
+- A standalone `plan` skill. Deep work already writes `.devflow/plans/<name>.md` and resumes from it, but there is no way to invoke planning on its own, revise a plan once written, or tidy up old ones.
 - `debug` — the disciplined bug-fixing loop. For now bugs go through `build`.
 - `tend` — handling CI failures and review comments after the PR opens.
 - `release` — checking the deploy actually worked.
