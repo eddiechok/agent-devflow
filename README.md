@@ -54,6 +54,8 @@ It finds the project's test, typecheck and lint commands, **runs them to confirm
 
 This block is the **only** thing each project must provide, and it is what makes devflow work with any language. No commands are hardcoded in the plugin — the project is the source of truth.
 
+There is a second, optional block — `## Deploy` — and you never write it by hand. `ship` offers to add it the first time it deploys and verifies successfully, because that is the only moment anything has proof the command works. `setup` deliberately leaves it alone: its rule is that it runs a command before recording it, and the only way to check a deploy command is to deploy.
+
 Run `/devflow:setup` again if the commands change. It will not overwrite a block you wrote yourself without asking.
 
 Why it runs the commands rather than just writing them down: everything downstream trusts this block. A wrong command here fails silently — `submit` runs something harmless, sees exit 0, and reports the work as proven.
