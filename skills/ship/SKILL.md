@@ -133,7 +133,19 @@ Two shapes. Look for a `## Deploy` block in the project's `CLAUDE.md` first — 
 - Wait: 120s
 ```
 
-`Deploy` is optional inside the block. Plenty of projects deploy from CI the moment the default branch moves and have nothing to run — then the block carries only `Verify`, which is still worth having, because it names the URL that proves it.
+Three rules about the shape, all learned from the first real project that did not fit it:
+
+- **`Deploy` is optional.** Plenty of projects deploy from CI the moment the default branch moves and have nothing to run — then the block carries only `Verify`, which still earns its place by naming what proves it.
+- **Any line may repeat.** A deploy is not always one command. Run repeated `Deploy` lines **in order**, stopping at the first failure; treat repeated `Verify` lines as all having to pass.
+- **`Verify` may be a URL or a command.** A URL gets fetched and its content checked. A command gets run bare and must exit 0. Not everything that ships is a website, and forcing a filesystem check into a URL field is how a block starts lying.
+
+```markdown
+## Deploy
+- Deploy: claude plugin marketplace update eddiechok-devflow
+- Deploy: claude plugin update devflow@eddiechok-devflow --scope project
+- Verify: python3 skills/test-frontmatter.py
+- Wait: 60s
+```
 
 **With no block**, watch what the forge reports: the deployment status, or the workflow run the merge triggered.
 
@@ -176,6 +188,7 @@ Ask rather than assume. From here on that block is what every later run trusts, 
 What may go in it:
 
 - **Only lines you exercised this run.** If the deploy happened on merge and you ran no command, write `Verify` and `Wait` and leave `Deploy` out entirely. An absent line is correct there, not a gap to fill in.
+- **One line per command you actually ran.** If it took two, write two. Compressing a two-command deploy onto one line puts a half-truth in the file every later run trusts — which is the failure this block exists to prevent, reintroduced by the thing meant to prevent it.
 - **`Wait` from what you observed, rounded up.** Not a guess, and not the exact figure either — that will be too tight on the first slow day.
 - **Never a command you did not run.** Same rule `setup` follows, and the reason this offer lives here instead of there.
 
