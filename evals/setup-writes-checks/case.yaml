@@ -1,0 +1,80 @@
+schema_version: "1.1"
+name: setup-writes-checks
+description: setup runs the candidate commands before recording them, and does not invent the one the project lacks.
+tags: [setup]
+
+context:
+  scaffold_script: ./scaffold.sh
+
+execution:
+  prompt: "/devflow:setup"
+  max_turns: 12
+  timeout_seconds: 300
+  allowed_tools: [Bash, Read, Write, Edit, Glob, Grep, Skill]
+
+runs: 3
+
+graders:
+  - type: file_exists
+    name: writes-claude-md
+    path: CLAUDE.md
+    exists: true
+    weight: 2
+
+  - type: regex
+    name: has-checks-block
+    target:
+      source: file
+      path: CLAUDE.md
+    pattern: "##\\s*Checks"
+    match: contains
+    weight: 2
+
+  - type: regex
+    name: records-test-command
+    target:
+      source: file
+      path: CLAUDE.md
+    pattern: "Test:\\s*npm test"
+    match: contains
+    weight: 2
+
+  - type: regex
+    name: records-lint-command
+    target:
+      source: file
+      path: CLAUDE.md
+    pattern: "Lint:\\s*npm run lint"
+    match: contains
+
+  # The project has no typecheck. Recording one would be a command nothing
+  # verified, which is the exact failure the skill exists to prevent -- ship
+  # would later run it, see whatever it does, and call the work proven.
+  - type: regex
+    name: invents-no-typecheck
+    target:
+      source: file
+      path: CLAUDE.md
+    pattern: "Typecheck"
+    match: not_contains
+    weight: 3
+
+  # The whole point of setup is that it proves the commands before trusting
+  # them. Writing the right block without having run anything is a fail.
+  - type: tool_used
+    name: actually-ran-the-test-command
+    tool: Bash
+    input_match: "npm test"
+    min: 1
+    weight: 3
+
+  - type: tool_used
+    name: actually-ran-the-lint-command
+    tool: Bash
+    input_match: "npm run lint"
+    min: 1
+    weight: 2
+
+expected_outcome: >
+  Runs npm test and npm run lint, sees both pass, then writes a ## Checks
+  block naming exactly those two and no typecheck line.

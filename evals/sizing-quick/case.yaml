@@ -1,0 +1,47 @@
+schema_version: "1.1"
+name: sizing-quick
+description: A one-word typo fix is sized Quick, announced in one line, and asks nothing.
+tags: [sizing, flow]
+
+context:
+  scaffold_script: ./scaffold.sh
+
+execution:
+  prompt: "/devflow:flow fix the typo in README.md - it says 'sasy hello' when it should say 'says hello'"
+  # Enough turns to read the repo and announce. The build itself is not what
+  # this case measures, and letting it run would triple the cost for nothing.
+  max_turns: 6
+  timeout_seconds: 300
+  allowed_tools: [Bash, Read, Edit, Glob, Grep, Skill]
+
+runs: 3
+
+graders:
+  - type: regex
+    name: announces-quick
+    target: trace
+    # Dash-tolerant on purpose: the size is the claim under test, not whether
+    # the model reached for an em dash.
+    pattern: "Quick\\s*[—–-]"
+    match: contains
+    weight: 3
+
+  - type: regex
+    name: not-sized-heavier
+    target: trace
+    pattern: "(Standard|Deep)\\s*[—–-]"
+    match: not_contains
+    weight: 2
+
+  - type: llm
+    name: asks-nothing
+    focus: trace
+    criteria: >
+      Quick work must not interrupt the human. PASS if the assistant went
+      straight to work after announcing the size. FAIL if it asked the human
+      any question, offered options to choose between, or stopped to wait for
+      confirmation before starting.
+
+expected_outcome: >
+  Announces "Quick — ..." on its own line before anything else, then goes
+  straight to devflow:build without asking a single question.
