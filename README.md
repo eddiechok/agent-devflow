@@ -144,6 +144,13 @@ Only a single, simple call to a known check runner ever gets that far. The comma
 claude plugin validate .
 ```
 
+Changed the hook? Run its contract tests — they take under a second and cost
+nothing:
+
+```bash
+python3 hooks/test-bash-guard.py
+```
+
 Expect **exactly one warning**, about the missing `version` field. That is deliberate: with no version, `/plugin update` picks up every push. If you set one, updates silently stop arriving until you remember to bump it.
 
 Do **not** use `--strict` — it turns that intentional warning into an error. If you ever see a second warning, something is genuinely wrong.

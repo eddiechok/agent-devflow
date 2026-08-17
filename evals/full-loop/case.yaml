@@ -64,19 +64,26 @@ graders:
     input_match: "npm test"
     min: 1
 
-  # This is the bug-1 regression. The truncation hook rewrote `npm test` into
-  # a compound statement that no permission rule could match, so it was
-  # refused and the model quietly ran the underlying runner instead, going
-  # around the command the Checks block named.
+  # Proof the declared command actually RAN, which the grader above cannot
+  # give you: `# pass N` comes from the fixture's `node --test` runner, so a
+  # refused or substituted command cannot fake it. Fixture-specific on
+  # purpose -- it is tied to greeter.sh's runner, not to npm in general.
   #
-  # `exit=N` is printed only by the hook's own wrapper, so it appears only
-  # when the rewrite happened AND was allowed to run. It is the one assertion
-  # here that a denied command cannot fake -- verified by replay: the only
-  # grader that failed on the run where the hook was still broken.
+  # This replaces an `exit=\d` grader that looked stronger and was not.
+  # `exit=N` is printed only by the hook's own wrapper, and the wrapper only
+  # fires on a BARE check command. Claude reliably writes
+  # `npm test 2>&1 | tail -25` instead, which trips the hook's ALREADY_SHAPED
+  # guard and makes it stand down -- correctly. So the grader failed three runs
+  # out of three while the hook was in perfect health: across 15 runs not one
+  # check command was bare. It was measuring Claude's phrasing habits, not the
+  # regression it named.
+  #
+  # The hook's real contract, including the `allow` that bug 1 was about, is
+  # now checked directly and for free in hooks/test-bash-guard.py.
   - type: regex
-    name: hook-wrapper-ran
+    name: declared-check-command-really-ran
     target: trace
-    pattern: "exit=\\d"
+    pattern: "# pass \\d"
     match: contains
     weight: 3
 

@@ -93,6 +93,20 @@ on a transcript where every `npm test` was denied. When what you care about is
 that a command *ran*, assert on something only a real run produces — output it
 prints, a file it writes — rather than on the call being made.
 
+A second trap, from the same case: **do not assert on output only a hook
+produces, unless the hook is certain to fire.** `full-loop` used to look for
+`exit=\d`, printed by bash-guard's wrapper, as proof the wrapper had run. But
+the wrapper only fires on a *bare* check command, and Claude reliably writes
+`npm test 2>&1 | tail -25` first — which trips `ALREADY_SHAPED` and makes the
+hook stand down, exactly as designed. Across 15 runs not one check command was
+bare, so the grader failed every time while the hook was in perfect health. It
+was measuring Claude's phrasing habits.
+
+The lesson generalises: a hook's own contract belongs in a direct test of the
+hook, not in an eval transcript. `hooks/test-bash-guard.py` checks all of it —
+including the `allow` that regression was about — deterministically, in under a
+second, for no tokens. Reach for an eval grader only for what needs a real run.
+
 Check a new grader both ways before trusting it. Point it at a transcript
 where the skill did the right thing **and** one where it did not; a grader
 that cannot fail is worse than no grader, because it reads as coverage.
