@@ -1,6 +1,6 @@
 # devflow
 
-One dev loop for features, changes, bug fixes and chores. Sizes the work, tests first, proves it runs, opens a PR. Asks you as little as possible.
+One dev loop for features, changes, bug fixes and chores. Sizes the work, tests first, proves it runs, opens a PR — then lands it when you say so. Asks you as little as possible.
 
 This is **Phase 1** — deliberately small. See [What is not here yet](#what-is-not-here-yet).
 
@@ -66,7 +66,14 @@ Why it runs the commands rather than just writing them down: everything downstre
 /devflow:flow --deep change how sessions are stored
 ```
 
-`flow` sizes the work and routes it. You should not normally need to call the others directly.
+Then, once you have looked at the PR and want it finished:
+
+```
+/devflow:land
+/devflow:land 123
+```
+
+`flow` sizes the work and routes it. You should not normally need to call the others directly — except `land`, which is the one skill nothing else can call.
 
 ### The loop
 
@@ -85,7 +92,8 @@ flowchart TD
     YOU1 -->|"Deep: plan saved to .devflow/plans/"| BUILD
 
     BUILD["build<br/>write the test<br/>watch it fail<br/>then make it pass"] --> SHIP["ship<br/>feature branch<br/>checks re-run fresh<br/>run the app, code review<br/>conventional commit, push"]
-    SHIP --> YOU2{{"You review and merge the PR"}}
+    SHIP --> YOU2{{"You review the PR"}}
+    YOU2 -->|"/devflow:land"| LAND["land<br/>merge<br/>watch the deploy<br/>check it is really live<br/>delete the branch, tidy up"]
 
     classDef human fill:#fde68a,stroke:#b45309,color:#111
     class YOU1,YOU2 human
@@ -135,12 +143,13 @@ This is the only self-improvement machinery in Phase 1, and it is deliberately j
 | `flow` | Sizes the request, routes it, asks any questions in one batch |
 | `build` | Test first, watch it fail for the right reason, then make it pass |
 | `ship` | Runs the checks fresh, runs the app, commits, opens the PR. **Never merges.** |
+| `land` | Merges it, watches the deploy, checks it is really live, cleans up. **Only you can start it** |
 
 ## When it will ask you
 
 **Direction** — Deep jobs always, Standard only when genuinely unclear, Quick never. All questions come at once, each with a recommended answer. `yes to all` is a valid reply. Anything you skip takes the recommendation and appears in the PR under **Assumptions**.
 
-**Merge** — always yours. `ship` opens the PR and stops.
+**Merge** — always yours. `ship` opens the PR and stops. `/devflow:land` does everything after it, and it is the one skill you have to start yourself: `disable-model-invocation: true` keeps it out of the automatic path, and `flow` and `ship` are both told never to call it.
 
 **Committing to the default branch** — the hook asks first.
 
@@ -215,9 +224,8 @@ Phase 1 is deliberately the smallest useful thing. Deliberately absent:
 - A standalone `plan` skill. Deep work already writes `.devflow/plans/<name>.md` and resumes from it, but there is no way to invoke planning on its own, revise a plan once written, or tidy up old ones.
 - `debug` — the disciplined bug-fixing loop. For now bugs go through `build`.
 - `tend` — handling CI failures and review comments after the PR opens.
-- `release` — checking the deploy actually worked.
 - `reviewer` and `hardcase` agents — for now `ship` uses the built-in `/code-review`.
-- Cleanup of branches, folder copies and dev servers.
+- Cleanup of worktrees and folder copies. `land` handles branches, dev servers and temp files; copies of the repo are still yours.
 - Capturing lessons.
 
 These are only worth building if two weeks of real use shows you need them. Each one that gets added should be added because you hit the problem, not because it sounded good.
