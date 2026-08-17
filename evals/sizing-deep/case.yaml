@@ -1,0 +1,47 @@
+schema_version: "1.1"
+name: sizing-deep
+description: A new subsystem is sized Deep and gets one batch of questions, each with a recommendation.
+tags: [sizing, flow]
+
+context:
+  scaffold_script: ./scaffold.sh
+
+execution:
+  # Deliberately a request whose files cannot be named up front -- that is the
+  # Deep trigger in flow's own table, not the word "feature".
+  prompt: "/devflow:flow add a plugin system so other packages can register their own greeting styles"
+  max_turns: 8
+  timeout_seconds: 300
+  allowed_tools: [Bash, Read, Edit, Glob, Grep, Skill]
+
+runs: 3
+
+graders:
+  - type: regex
+    name: announces-deep
+    target: trace
+    pattern: "Deep\\s*[—–-]"
+    match: contains
+    weight: 3
+
+  - type: regex
+    name: not-sized-lighter
+    target: trace
+    pattern: "Quick\\s*[—–-]"
+    match: not_contains
+    weight: 2
+
+  - type: llm
+    name: one-batch-with-recommendations
+    focus: trace
+    criteria: >
+      Deep work asks once, not repeatedly. PASS only if BOTH hold: (a) every
+      question the assistant asked arrived together in a single numbered list,
+      rather than one question at a time across several turns; and (b) each
+      question carries a recommended answer. FAIL if it asked nothing at all,
+      if questions were drip-fed across turns, or if any question was posed
+      without a recommendation attached.
+
+expected_outcome: >
+  Announces "Deep — ..." naming why, then asks one numbered batch of questions
+  with a recommendation on each and stops for the answers.

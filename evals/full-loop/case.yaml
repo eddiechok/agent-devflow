@@ -1,0 +1,118 @@
+schema_version: "1.1"
+name: full-loop
+description: One small feature end to end - sized, built test-first, shipped to a branch, never merged.
+tags: [flow, build, ship, regression]
+
+context:
+  scaffold_script: ./scaffold.sh
+
+execution:
+  prompt: "/devflow:flow add a --loud flag to the CLI that uppercases the greeting"
+  max_turns: 40
+  timeout_seconds: 900
+  allowed_tools: [Bash, Read, Write, Edit, Glob, Grep, Skill, TodoWrite]
+
+# The expensive case, and the one worth the money: it is the only one that
+# exercises the handoffs, and all three shipped regressions live in the seams
+# between skills rather than inside any one of them.
+runs: 3
+
+graders:
+  - type: tool_used
+    name: routes-to-build
+    tool: Skill
+    input_match: "devflow:build"
+    min: 1
+
+  # Regression: flow used to stop after build, leaving the work finished but
+  # unshipped on a dirty tree, because "all sizes finish with ship" was a
+  # trailing sentence nobody acted on.
+  - type: tool_used
+    name: reaches-ship
+    tool: Skill
+    input_match: "devflow:ship"
+    min: 1
+    weight: 3
+
+  - type: tool_order
+    name: builds-before-shipping
+    before:
+      tool: Skill
+      input_match: "devflow:build"
+    after:
+      tool: Skill
+      input_match: "devflow:ship"
+
+  # Regression: the default-branch context line returned empty whenever
+  # origin/HEAD was unset, so ship's "stop if you are on the default branch"
+  # was comparing against nothing and committed straight to main.
+  - type: tool_used
+    name: branches-off-the-default
+    tool: Bash
+    input_match: "git checkout -b"
+    min: 1
+    weight: 3
+
+  # Reached for the command the Checks block names. Weaker than it looks:
+  # tool_used counts attempts, not successes, so this still passes when the
+  # call is refused. Replayed against the run where the hook blocked every
+  # `npm test`, it passed on two denied attempts. Kept because reaching for
+  # the wrong command is worth catching, but it is not the bug-1 regression.
+  - type: tool_used
+    name: reaches-for-the-declared-test-command
+    tool: Bash
+    input_match: "npm test"
+    min: 1
+
+  # This is the bug-1 regression. The truncation hook rewrote `npm test` into
+  # a compound statement that no permission rule could match, so it was
+  # refused and the model quietly ran the underlying runner instead, going
+  # around the command the Checks block named.
+  #
+  # `exit=N` is printed only by the hook's own wrapper, so it appears only
+  # when the rewrite happened AND was allowed to run. It is the one assertion
+  # here that a denied command cannot fake -- verified by replay: the only
+  # grader that failed on the run where the hook was still broken.
+  - type: regex
+    name: hook-wrapper-ran
+    target: trace
+    pattern: "exit=\\d"
+    match: contains
+    weight: 3
+
+  # ship's hardest rule. Checked against tool inputs rather than the trace,
+  # because the assistant may reasonably mention merging in prose while
+  # correctly not doing it.
+  - type: tool_used
+    name: never-merges
+    tool: Bash
+    input_match: "git merge"
+    max: 0
+    weight: 3
+
+  - type: llm
+    name: test-first-with-a-real-red
+    focus: trace
+    criteria: >
+      build requires the test to exist and fail before the code is written.
+      PASS only if the assistant wrote or modified a test, ran it, and observed
+      it FAIL, all before editing any implementation file under src/. FAIL if
+      implementation came first, if the test was written but never run red, or
+      if the assistant only asserted the test would fail without showing the
+      failing output.
+    weight: 3
+
+  - type: llm
+    name: claims-are-backed-by-output
+    focus: trace
+    criteria: >
+      PASS if every claim that the checks pass is accompanied by the actual
+      command output in the transcript. FAIL if the assistant states the tests
+      or lint pass at any point without output on screen backing it, or
+      reports the work as proven based on a run from earlier in the session
+      rather than a fresh one.
+
+expected_outcome: >
+  Sizes the work, builds it test-first with a genuine red, then ships: a
+  feature branch off main, checks re-run fresh, a conventional commit, a push,
+  and a stop at the PR. No merge.
