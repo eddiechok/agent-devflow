@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
-here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-"$here/../fixtures/greeter.sh" "$PWD" --with-checks-block
+# See sizing-quick/scaffold.sh for why $0 and the optional argument.
+here="$(cd "$(dirname "$0")" && pwd)"
+workspace="${1:-$PWD}"
+
+"$here/../fixtures/greeter.sh" "$workspace" --with-checks-block
