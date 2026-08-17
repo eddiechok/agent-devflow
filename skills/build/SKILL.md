@@ -23,6 +23,19 @@ If there is no such block, work the commands out from `package.json`, `Makefile`
 
 Never hardcode a command in this skill. The project is the source of truth.
 
+### Run them bare
+
+Run each command exactly as the `## Checks` block writes it, **one command per
+call**. No pipes, no redirects, no `&&`, no `; echo $?`.
+
+The bash hook trims long check output and prints `exit=N` itself — but only for
+a plain command. Shape it yourself and the hook steps aside by design, and you
+lose the trimming *and* the exit line. Doing it by hand is fragile anyway:
+`${PIPESTATUS[0]}` after a `;` silently printed nothing in a real run, because
+the shell was not the one that syntax assumes.
+
+Arguments are still bare — `pnpm test src/db` is fine. Shell plumbing is not.
+
 ## The five gates
 
 Every change goes through these in order. No skipping.
@@ -97,6 +110,7 @@ If `flow` called you, it takes over from here and ships. If you were called dire
 ## Rules
 
 - Never claim a test passes without showing the output.
+- Never add pipes or redirects to a check command. Bare, one per call.
 - Never write code before its test.
 - Never skip verify-RED because the test "obviously" fails.
 - Never widen scope mid-piece. Finish the piece, then raise the next one separately.

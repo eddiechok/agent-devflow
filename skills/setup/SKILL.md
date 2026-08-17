@@ -50,6 +50,15 @@ Notes that matter:
 
 This is the point of the skill. **Run every command you found and show the output.**
 
+Run each one **bare**, exactly as you would write it into the block, one command
+per call. No pipes, no redirects, no `&&`, no `; echo $?`. The bash hook trims
+the output and prints `exit=N` itself, which is the pass/fail signal you need
+here — but only for a plain command. Shape it yourself and the hook steps aside,
+and you are back to reading a wall of output and guessing the exit code.
+
+This matters more here than anywhere: a command you cannot read the exit code of
+is a command you have not really proven, and proving them is the whole job.
+
 For each: report `pass`, `fail`, or `not found`.
 
 - **Fails because the code is broken** → still a valid command. Record it, and say the project is currently red.
@@ -93,6 +102,7 @@ Then mention, once, only if relevant:
 ## Rules
 
 - Never write a command you have not run.
+- Never add pipes or redirects to a check command. Bare, one per call.
 - Never overwrite an existing `## Checks` block without asking.
 - Never invent a command to fill a row. Missing is better than wrong.
 - Never add anything to `CLAUDE.md` except the `## Checks` block.

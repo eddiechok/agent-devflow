@@ -132,6 +132,8 @@ login and permissions · secrets and keys · payments · database migrations · 
 
 Only a single, simple call to a known check runner ever gets that far. The command must match the built-in list (`npm test`, `pytest`, `cargo test`, `go test`, `tsc`, and friends) and contain no `&&`, `||`, `;`, `|`, newline, `$(` or backtick. Anything else passes through untouched and faces your normal rules.
 
+This is why `build` and `ship` both insist on running check commands **bare**, one per call. A command Claude has already shaped — `npm test 2>&1 | tail -20` — makes the hook stand down, so you lose the trimming and the `exit=N` line, and Claude ends up hand-rolling an exit code instead. Which it gets wrong: `${PIPESTATUS[0]}` after a `;` printed nothing at all in a real run.
+
 **Asks before committing to the default branch.** It asks rather than blocks. A wrong ask costs one keypress; a wrong block stops your work.
 
 > **This is an ergonomic speed bump, not a security control.** It matches text in command strings and is trivially bypassed by variable indirection, aliases, or a different binary. It stops accidents, not attackers. It also fails open: any error and your command runs unchanged.

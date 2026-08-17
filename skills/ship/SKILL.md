@@ -31,7 +31,16 @@ Run the project's test, typecheck and lint commands from the `## Checks` block i
 
 **Run them now, in this turn. Not "they passed earlier".**
 
-Print the real output **and the exit code**. Both. The exit code is what proves the run happened, and an outer loop watching this session can only see what you actually printed.
+**Run each one bare** — exactly as the Checks block writes it, one command per
+call. No pipes, no redirects, no `&&`, no `; echo $?`.
+
+The real output **and the exit code** both have to reach the screen: the exit
+code is what proves the run happened, and an outer loop watching this session
+can only see what you actually printed. Running bare is how you get both — the
+hook trims the output and prints `exit=N` for you. Shape the command yourself
+and the hook steps aside by design, taking the trimming and the exit line with
+it. `${PIPESTATUS[0]}` after a `;` silently printed nothing in a real run,
+because the shell was not the one that syntax assumes.
 
 If anything fails, fix it and run again. Do not continue with a red check.
 
@@ -131,6 +140,7 @@ Never suggest throwing work away. If discarding a branch or force-pushing genuin
 ## Rules
 
 - Never say "done", "fixed" or "passing" without output on screen proving it.
+- Never add pipes or redirects to a check command. Bare, one per call.
 - Never commit on the default branch.
 - Never open a PR when the live check failed.
 - Never invent check commands the project did not give you.
