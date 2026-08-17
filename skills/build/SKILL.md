@@ -88,6 +88,12 @@ console.log("[DBG-a3f] payload:", payload);
 
 Before finishing, run `grep -rn "\[DBG-" .` and remove every one. No marker may survive into a commit.
 
+## Handing back
+
+Say what you built and the output that proves it. Then stop — do not commit, and do not open a PR.
+
+If `flow` called you, it takes over from here and ships. If you were called directly, say in one line that the work is ready for `devflow:ship`, and leave that call to the human.
+
 ## Rules
 
 - Never claim a test passes without showing the output.

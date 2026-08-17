@@ -12,7 +12,7 @@ Size the work, then route it. One line before anything else.
 ## Context
 
 - Branch: !`git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "no git"`
-- Default branch: !`git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's|origin/||' || echo main`
+- Default branch: !`git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's|origin/||' | grep . || echo main`
 - Status: !`git status --short 2>/dev/null | head -20 || true`
 
 ## Step 1 — get the request
@@ -72,7 +72,7 @@ Eight words of reason or fewer. Then continue without waiting.
 
 **Deep** → ask one round of questions, get agreement, then work through the pieces with `devflow:build`, one at a time.
 
-All sizes finish with `devflow:ship`.
+Every size then goes on to step 5. `build` finishing is not the job finishing.
 
 ### Asking questions — one round only
 
@@ -122,6 +122,19 @@ Issue: #123 (if there is one)
 
 Build one piece at a time. After each piece is done and committed, you may `/clear` and continue from the plan file — it holds the state, so nothing is lost.
 
+## Step 5 — ship it
+
+When `build` comes back — after the last piece, if there were several — call `devflow:ship` yourself, in the same turn.
+
+Do not stop at "ready to ship" and hand it back. `build` deliberately does not know about shipping, so if you do not make this call nobody does, and the work sits finished-but-unshipped on a dirty working tree.
+
+The only reasons not to call `ship`:
+
+- The build did not reach green. Say what is red and stop.
+- The human said not to.
+
+Both are things you say out loud. Neither is silence.
+
 ## Recording overrides
 
 If the human used `--quick` or `--deep`, they are correcting a mistake this skill would have made. That is free labelled test data and it should not be lost.
@@ -145,4 +158,5 @@ Do not discuss it, do not ask about it. Record it and carry on with the size the
 - Never start with a question. Announce the size first.
 - Never go up a size without naming the reason.
 - Never do work that the size you announced does not call for.
+- Never finish without calling `ship`, or saying in one line why you did not.
 - If the human overrules you, they are right. Record it and move on.
