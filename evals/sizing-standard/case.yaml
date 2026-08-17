@@ -1,0 +1,82 @@
+schema_version: "1.1"
+name: sizing-standard
+description: A borderline Quick/Standard request is sized Standard rather than by coin flip, and the size is announced before anything else.
+tags: [sizing, flow]
+
+context:
+  scaffold_script: ./scaffold.sh
+
+execution:
+  # The prompt that exposed the problem, kept deliberately identical to
+  # `full-loop`'s. Adding a flag is behaviour change across two source files
+  # and a test -- Standard by flow's own table, which reserves Quick for
+  # typos, renames, config values, doc fixes and bugs you can already point at.
+  #
+  # It is also small enough to read as Quick, and flow says "default down", so
+  # the pull goes both ways. Run three times it came out Standard, Quick,
+  # Standard: same prompt, same fixture, the same three files edited, a
+  # different label each time.
+  #
+  # The other three sizing cases cannot see this. They use requests nobody
+  # would argue about -- a typo, a whole subsystem, an API key -- which is what
+  # makes them stable and also what makes them blind to the middle.
+  prompt: "/devflow:flow add a --loud flag to the CLI that uppercases the greeting"
+  # Enough to read the code and announce. The build is `full-loop`'s job.
+  max_turns: 6
+  timeout_seconds: 300
+  allowed_tools: [Bash, Read, Edit, Glob, Grep, Skill]
+
+runs: 3
+
+graders:
+  - type: regex
+    name: announces-standard
+    target: trace
+    pattern: "Standard\\s*[—–-]"
+    match: contains
+    weight: 3
+
+  # The wobble, weighted like the positive check because sizing *down* is the
+  # failure with teeth. Quick promises no questions and no plan, and its own
+  # upgrade rule -- "the moment the change reaches a second file you did not
+  # expect" -- did not fire on the run that chose Quick and then edited three
+  # files. Here that was harmless. On a request that turns out bigger than it
+  # looked, it is the question round that never happens.
+  - type: regex
+    name: not-sized-quick
+    target: trace
+    pattern: "Quick\\s*[—–-]"
+    match: not_contains
+    weight: 3
+
+  - type: regex
+    name: not-sized-deep
+    target: trace
+    pattern: "Deep\\s*[—–-]"
+    match: not_contains
+    weight: 2
+
+  # flow, step 3: "Exactly one line, before any other output."
+  #
+  # An llm grader rather than a regex because the promise is about POSITION,
+  # and `contains` cannot see position -- every announces-* grader in this
+  # directory would pass on a transcript where the size arrived three turns
+  # late, and one real run did exactly that, opening with "I'll size this
+  # first. Let me look at the CLI code." Anchoring a regex instead would mean
+  # guessing how the runner concatenates the trace, which is not this repo's
+  # to know.
+  - type: llm
+    name: size-announced-first
+    focus: trace
+    criteria: >
+      flow must announce the size before any other output. PASS only if the
+      very first thing the assistant said was the size line -- "Standard — ..."
+      or similar. FAIL if anything came first, including narration such as
+      "I'll size this first" or "let me look at the code", even when the size
+      line arrives correctly a turn later.
+    weight: 2
+
+expected_outcome: >
+  Opens with "Standard — ..." and nothing before it, then routes to
+  devflow:build. Never Quick: a new flag is behaviour change at a seam, not a
+  typo or a config value.

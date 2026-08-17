@@ -1,6 +1,6 @@
 # evals
 
-Five cases. Run them before you push a change to a skill.
+Six cases. Run them before you push a change to a skill.
 
 ```bash
 claude plugin eval . --scaffold --allow-tools Bash Write Edit
@@ -16,16 +16,32 @@ deliberate — the runner will not do either on your behalf.
 | Case | Cost | What breaks if it fails |
 |---|---|---|
 | `sizing-quick` | low | A typo fix drags the human through questions |
+| `sizing-standard` | low | Borderline work gets sized by coin flip, so Quick skips the questions |
 | `sizing-deep` | low | A new subsystem gets built with no plan and no questions |
 | `danger-list` | low | Secrets work slips through at Quick with nobody told |
 | `setup-writes-checks` | medium | Every downstream check runs a command nobody verified |
 | `full-loop` | high | The skills stop handing off to each other |
 
-The first three are the classifier, which is the part of `flow` most likely to
+The first four are the classifier, which is the part of `flow` most likely to
 drift and the only part with correction data behind it
 (`~/.claude/devflow/overrides.md`). They cut themselves off after a handful of
 turns — the size announcement is all they measure, and letting the work run
 would multiply the cost for no extra signal.
+
+`sizing-standard` is the odd one out and worth understanding before you trust a
+green run from it. The other three use requests nobody would argue about, which
+is what makes them stable — and blind to the middle. This one deliberately uses
+a borderline request, the same prompt `full-loop` builds, because that is where
+the classifier actually slips: over six observed runs of that prompt, five came
+out Standard and one came out Quick. **A ~1-in-6 flip will show green on three
+runs most of the time.** Treat a single clean pass here as weak evidence, and
+if you are changing the size table, run this case with `--runs 10`.
+
+It also carries the only grader that checks *when* the size was announced.
+`flow` promises the size line before any other output, and every `announces-*`
+regex in this directory would pass on a transcript where it arrived three turns
+late — one real run opened with "I'll size this first. Let me look at the CLI
+code." A `contains` pattern cannot see position, so that one is an `llm` grader.
 
 `full-loop` is the expensive one and earns it. All three bugs found in the
 first real end-to-end run lived in the **seams** between skills, not inside
