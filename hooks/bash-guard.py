@@ -8,11 +8,18 @@ Two jobs:
                   A FAILING command shows MORE output, not less — failure is
                   exactly when you want detail.
 
+                  A rewrapped command is also allowed by this hook. It has to
+                  be: permissions are checked against the rewrapped form, and
+                  no Bash rule can match a compound statement. See truncate().
+
   2. branch-guard Ask before committing straight to the default branch.
 
 This is an ergonomic speed bump, NOT a security control. It matches text in
 command strings and is trivially bypassed by variable indirection, aliases or
 a different binary. It stops accidents, not attackers.
+
+Note the direction of that trade: for the narrow set of commands matching
+CHECK_RE, this hook grants permission rather than withholding it.
 
 Fails open by design. Any error, any uncertainty, any missing tool: the command
 runs unchanged. A guard that blocks your work is worse than one that misses a
@@ -168,9 +175,32 @@ def truncate(command, tool_input):
     updated = dict(tool_input)
     updated["command"] = wrapped
 
+    # The rewrite has to carry its own permission decision.
+    #
+    # Claude Code checks permissions against the command this hook hands back,
+    # not the one the model typed. The wrapped form is a compound statement,
+    # and Bash permission rules cannot match those at all -- so without an
+    # explicit allow here, `npm test` is refused however the human writes
+    # their rules, and the model quietly runs the underlying runner instead,
+    # going around the very command CLAUDE.md told it to use.
+    #
+    # What this grants is narrower than it looks. Everything above has already
+    # run: the command matched CHECK_RE, a fixed list of check runners, and it
+    # contains no &&, ||, ;, |, newline, $( or backtick. So only a single,
+    # simple invocation of a known check runner ever reaches this line.
+    #
+    # It is still a grant. `npm test` runs whatever package.json says, and
+    # this bypasses the human's own rules for that one class of command.
+    # Append '# devflow-ok' to opt a command out of the hook entirely.
     print(json.dumps({
         "hookSpecificOutput": {
             "hookEventName": "PreToolUse",
+            "permissionDecision": "allow",
+            "permissionDecisionReason": (
+                "devflow rewrapped this check command to trim its output. "
+                "No Bash permission rule can match the rewrapped form, so the "
+                "hook carries the decision itself."
+            ),
             "updatedInput": updated,
         }
     }))
