@@ -51,9 +51,9 @@ If those match, create the branch now, before touching a file:
 git checkout -b <type>/<short-name>
 ```
 
-`ship` checks this too, but by then it is late. Editing happens here, and `ship` is several gates away — if it never runs because you got stuck, the checks stayed red, or the human stopped you, the edits are left sitting uncommitted on the default branch. Branching first costs one command and the abort case stays clean.
+`submit` checks this too, but by then it is late. Editing happens here, and `submit` is several gates away — if it never runs because you got stuck, the checks stayed red, or the human stopped you, the edits are left sitting uncommitted on the default branch. Branching first costs one command and the abort case stays clean.
 
-Branching is not committing. You still do not commit; that is `ship`'s job.
+Branching is not committing. You still do not commit; that is `submit`'s job.
 
 ## The five gates
 
@@ -124,7 +124,7 @@ Before finishing, run `grep -rn "\[DBG-" .` and remove every one. No marker may 
 
 Say what you built and the output that proves it. Then stop — do not commit, and do not open a PR.
 
-If `flow` called you, it takes over from here and ships. If you were called directly, say in one line that the work is ready for `devflow:ship`, and leave that call to the human.
+If `flow` called you, it takes over from here and submits. If you were called directly, say in one line that the work is ready for `devflow:submit`, and leave that call to the human.
 
 ## Rules
 

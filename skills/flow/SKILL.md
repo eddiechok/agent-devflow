@@ -1,6 +1,6 @@
 ---
 name: flow
-description: "Use when a request will change anything tracked in the repo - a feature, a bug fix, a refactor, a chore or a dependency bump, and equally copy, content, docs, config, styles, images or other assets. Editing a tracked file is the test, not whether the work sounds like coding. Enter here mid-task too, the moment an investigation turns into an edit. Sizes the work as Quick, Standard or Deep, then routes it through build and ship, so the work ends as a pull request rather than uncommitted changes. Accepts free text, a GitHub issue number like #123, or an issue URL. This is the entry point, start here."
+description: "Use when a request will change anything tracked in the repo - a feature, a bug fix, a refactor, a chore or a dependency bump, and equally copy, content, docs, config, styles, images or other assets. Editing a tracked file is the test, not whether the work sounds like coding. Enter here mid-task too, the moment an investigation turns into an edit. Sizes the work as Quick, Standard or Deep, then routes it through build and submit, so the work ends as a pull request rather than uncommitted changes. Accepts free text, a GitHub issue number like #123, or an issue URL. This is the entry point, start here."
 argument-hint: "[--quick|--deep] what you want, or #123"
 allowed-tools: Bash(git status:*), Bash(git branch:*), Bash(git rev-parse:*), Bash(gh issue view:*)
 ---
@@ -19,7 +19,7 @@ Size the work, then route it. One line before anything else.
 
 `$ARGUMENTS` is the request.
 
-If it starts with `#` or is a GitHub issue URL, read the issue first with `gh issue view NUMBER`. The issue body is the request. Remember the number so `ship` can close it.
+If it starts with `#` or is a GitHub issue URL, read the issue first with `gh issue view NUMBER`. The issue body is the request. Remember the number so `submit` can close it.
 
 If `--quick` or `--deep` is present, that is the size. Skip step 2, and **record the override** — see "Recording overrides" at the end. Do not argue with an explicit override.
 
@@ -124,13 +124,13 @@ Issue: #123 (if there is one)
 
 Build one piece at a time. After each piece is done and committed, you may `/clear` and continue from the plan file — it holds the state, so nothing is lost.
 
-## Step 5 — ship it
+## Step 5 — submit it
 
-When `build` comes back — after the last piece, if there were several — call `devflow:ship` yourself, in the same turn.
+When `build` comes back — after the last piece, if there were several — call `devflow:submit` yourself, in the same turn.
 
-Do not stop at "ready to ship" and hand it back. `build` deliberately does not know about shipping, so if you do not make this call nobody does, and the work sits finished-but-unshipped on a dirty working tree.
+Do not stop at "ready for a PR" and hand it back. `build` deliberately does not know about submitting, so if you do not make this call nobody does, and the work sits finished-but-uncommitted on a dirty working tree.
 
-The only reasons not to call `ship`:
+The only reasons not to call `submit`:
 
 - The build did not reach green. Say what is red and stop.
 - The human said not to.
@@ -160,6 +160,6 @@ Do not discuss it, do not ask about it. Record it and carry on with the size the
 - Never start with a question. Announce the size first.
 - Never go up a size without naming the reason.
 - Never do work that the size you announced does not call for.
-- Never finish without calling `ship`, or saying in one line why you did not.
-- Never call `devflow:land`. The open PR is where this loop ends; merging is the human's, and only they start it.
+- Never finish without calling `submit`, or saying in one line why you did not.
+- Never call `devflow:ship`. The open PR is where this loop ends; merging is the human's, and only they start it.
 - If the human overrules you, they are right. Record it and move on.

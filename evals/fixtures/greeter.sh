@@ -125,7 +125,7 @@ fi
 git init -q -b main
 
 # Set locally rather than relying on the sandbox having a global identity, and
-# turn signing off. `ship` commits during the run, and a missing user.email or
+# turn signing off. `submit` commits during the run, and a missing user.email or
 # a signing prompt would fail the case for a reason that has nothing to do
 # with devflow.
 git config user.email "eval@example.com"
@@ -135,13 +135,13 @@ git config commit.gpgsign false
 git add -A
 git commit -qm "feat: greeter cli"
 
-# A real remote, so `ship` can push and reach its PR step the way it would in
+# A real remote, so `submit` can push and reach its PR step the way it would in
 # a real repo. A bare repo is enough -- the PR call itself will fail without a
 # GitHub host, and how devflow reports that failure is worth seeing.
 #
 # mktemp, not a path beside $target: two cases whose workspaces share a parent
 # would otherwise scaffold onto the same bare repo, and the second push fails
-# as a non-fast-forward. Keeping it out of the work tree also stops `ship`
+# as a non-fast-forward. Keeping it out of the work tree also stops `submit`
 # from picking the bare repo up as project files.
 origin="$(mktemp -d)/greeter-origin.git"
 git init -q --bare "$origin"
@@ -149,7 +149,7 @@ git remote add origin "$origin"
 git push -q -u origin main
 
 # Deliberately left unset: origin/HEAD. That is the normal state of a fresh
-# clone, and it is what broke the default-branch detection in flow and ship.
+# clone, and it is what broke the default-branch detection in flow and submit.
 
 # ------------------------------------------------------------ self-verification
 
