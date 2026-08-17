@@ -147,7 +147,7 @@ Either way:
 - **Never hardcode a deploy command here.** Same rule as `## Checks`: the project is the source of truth, and a command invented by this skill is a command nobody verified.
 - If there is no block and nothing in CI to watch, **say so in one line** and go to cleanup. Do not invent a deploy so the report looks complete.
 
-If you had to work out what deploying means because the block was missing, **tell the human to add one** — once, in one line. Do not ask permission.
+If you had to work out what deploying means because the block was missing, **do not write it down yet.** Nothing is proven at this point. Come back to it at the end of step 5, once the deploy has actually worked.
 
 ## 5. Check it is really live
 
@@ -156,6 +156,28 @@ A green deploy is not a working site. Fetch the `Verify` URL and confirm **the c
 Same reasoning as `submit`'s live check: a passing pipeline sitting on top of a broken page is worse than an honest failure, because it ends the conversation instead of starting one.
 
 If it is not live, **say so plainly**, with what you saw. Do not report a successful deploy. The merge is already done and cannot be undone from here, so an accurate report is the entire remaining value of this step.
+
+### If there was no `## Deploy` block, offer to write one now
+
+**Only when the live check just passed.** You have done the one thing nobody could do earlier: run the deploy and watch the URL serve the change. That is evidence `setup` can never collect, because the only way to verify a deploy command is to deploy.
+
+Show what you actually ran, and ask:
+
+```
+No ## Deploy block in CLAUDE.md. I just ran:
+   Deploy: npx wrangler deploy
+   Verify: https://edxtech.com.my  (200, serving the new build)
+   Wait:   48s observed, suggest 120s
+Write this into CLAUDE.md?
+```
+
+Ask rather than assume. From here on that block is what every later run trusts, and a wrong line in it is precisely the silent failure the block exists to prevent.
+
+What may go in it:
+
+- **Only lines you exercised this run.** If the deploy happened on merge and you ran no command, write `Verify` and `Wait` and leave `Deploy` out entirely. An absent line is correct there, not a gap to fill in.
+- **`Wait` from what you observed, rounded up.** Not a guess, and not the exact figure either — that will be too tight on the first slow day.
+- **Never a command you did not run.** Same rule `setup` follows, and the reason this offer lives here instead of there.
 
 ## 6. Clean up
 
@@ -187,6 +209,7 @@ Session: want it archived?
 - Never merge a red PR, or one whose checks have not finished.
 - Never merge again on an error before checking whether the merge already landed — the default branch's SHA, read with `git ls-remote`. Not the API, which may be the thing that is broken, and not the branch's absence, which is a separate call that fails separately.
 - Never invent a deploy command the project did not give you.
+- Never write a `## Deploy` block for a deploy you did not just run and verify in this turn.
 - Never call a green pipeline a live check. Fetch the URL.
 - Never delete a branch, server or file this session did not create.
 - Never report a deploy as working without the output that proves it.

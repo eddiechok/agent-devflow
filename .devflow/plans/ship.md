@@ -77,3 +77,19 @@ irreversible action. Called anyway, deliberately, because "ship" matching
 The habit is only half-guarded: no PR on the branch hits the step 1 refusal, a
 PR that already exists does not. Written down in the README and in the skill so
 the gap is known rather than discovered.
+
+## The setup assumption, revisited
+
+The assumption above -- "`setup` is not changed", because `setup` is about check
+commands -- was too broad, and the question that exposed it was simply "the setup
+skill won't create the deploy block?"
+
+The real constraint is narrower than "wrong skill". `setup`'s rule is that it runs
+a command before recording it, and a deploy command cannot be checked without
+deploying. That rules out `setup` writing a `Deploy:` line. It does not rule out
+writing the block at all: `Verify:` is a URL you can fetch, `Wait:` is a number.
+
+So the block is now written by `ship`, offered after a deploy has actually run and
+the URL has actually served the change -- the one moment anything holds proof.
+Same rule as `setup`, applied at the only point where it can be satisfied. Nothing
+is ever written for a command that was not run this turn.
