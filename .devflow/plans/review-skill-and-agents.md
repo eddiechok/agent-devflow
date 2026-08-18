@@ -44,6 +44,11 @@ Issue: none
 9. [independent: yes] `submit` step 3's debug-marker grep stops failing on documentation.
    Verify: `grep -rn "\[DBG-" . --exclude-dir=node_modules --exclude-dir=.git --exclude='*.md'` returns nothing
 
+10. [independent: yes] `README.md` keeps up with the change: correct the two lines this work makes untrue — the danger-list line claiming `submit` runs `/security-review`, and the not-yet-built line saying `reviewer` does not exist — then document the agents, why the review split into a skill and two axes, and fix the attribution.
+    Verify: read `README.md`
+
+    **This piece was added after the fact, and later than the other nine.** The first review with a plan flagged the README edits as work nobody asked for, correctly, because this file did not mention them. Two of those edits were forced — the change made the old lines false — and one, the attribution fix, was asked for and simply missing here. Adding the piece was a deliberate decision, taken knowing it moves the plan toward the diff. Recorded rather than tidied away, because a plan that quietly grows to match the code is worth less than one that shows where it fell short.
+
 ## Out of scope
 
 - The `hardcase` agent — a second, adversarial read. Still on the not-yet list.
