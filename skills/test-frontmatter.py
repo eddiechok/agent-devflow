@@ -181,13 +181,36 @@ if yaml is None:
     print("\nnote: PyYAML not importable, so the parser cross-check was skipped.\n"
           "      The lint above ran regardless and is the load-bearing part.\n")
 else:
+    # A bool is the one value whose parsed form is spelled differently from its
+    # source and still round-trips: `true` parses to Python True, whose str() is
+    # `True`. Comparing the two as text reported every `disable-model-invocation`
+    # as a mismatch -- a false positive in the one test whose whole job is
+    # telling a real mismatch from a file that merely looks right.
+    YAML_TRUE = ("true", "yes", "on", "1")
+    YAML_FALSE = ("false", "no", "off", "0")
+
+    def round_trips(loaded_value, on_disk):
+        if isinstance(loaded_value, bool):
+            spellings = YAML_TRUE if loaded_value else YAML_FALSE
+            return on_disk.strip().lower() in spellings
+        return str(loaded_value) == on_disk
+
     for slug, (fm, values) in parsed.items():
         loaded = yaml.safe_load(fm) or {}
         for key, value in values.items():
             check(f"{slug}: {key} round-trips through PyYAML",
-                  str(loaded.get(key, "")) == literal(value),
+                  round_trips(loaded.get(key, ""), literal(value)),
                   f"on disk {literal(value)[-60:]!r}\n"
                   f"     parsed  {str(loaded.get(key, ''))[-60:]!r}")
+
+    # Same rule as the lint self-test below. A comparison that cannot fail is
+    # not a check, and the bool case above only widened what counts as equal.
+    check("round-trip self-test: True accepts 'true'", round_trips(True, "true"))
+    check("round-trip self-test: True rejects 'false'",
+          not round_trips(True, "false"))
+    check("round-trip self-test: text is still compared exactly",
+          round_trips("start here.", "start here.")
+          and not round_trips("start here.", "start here"))
 
 # ------------------------------- the lint must be able to fail, or it is noise
 
