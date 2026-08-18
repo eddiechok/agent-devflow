@@ -105,7 +105,7 @@ flowchart TD
 
 The two amber boxes are the only places you are normally needed. What the chart leaves out, all of it stopping the flow rather than bending it:
 
-- Anything on the **danger list** is forced to at least Standard, and `submit` also runs `/security-review`.
+- Anything on the **danger list** is forced to at least Standard, and `submit` names `/security-review` in its handoff. That one is a slash command, so only you can start it.
 - The **hook asks** before any commit that would land on the default branch.
 - **Three failed attempts** at the same problem and `build` stops, saying what each attempt ruled out, rather than trying a fourth.
 - If the **live check fails** twice, `submit` stops and does not open a PR. An honest failure beats a green-looking PR over a broken feature.
@@ -146,8 +146,32 @@ This is the only self-improvement machinery in Phase 1, and it is deliberately j
 | `setup` | Once per project: finds and verifies the check commands. Invoked by you only, so it costs nothing at runtime |
 | `flow` | Sizes the request, routes it, asks any questions in one batch |
 | `build` | Test first, watch it fail for the right reason, then make it pass |
-| `submit` | Runs the checks fresh, runs the app, commits, opens the PR. **Never merges.** |
+| `review` | Two axes in fresh agents — is it built right, is it the right thing — reported side by side, never blended |
+| `submit` | Runs the checks fresh, runs the app, calls `review`, commits, opens the PR. **Never merges.** |
 | `ship` | Merges it, watches the deploy, checks it is really live, cleans up. **Only you can start it** |
+
+## The agents
+
+`review` does not review. It pins the range, finds the spec, and spawns these two, which have never seen the session that wrote the code:
+
+| Agent | Axis | What it does |
+|---|---|---|
+| `reviewer` | Is it built right | Reads the whole branch — committed and not — and reports only findings it can attach a concrete failing case to |
+| `spec-reviewer` | Is it the right thing | Reads the plan or issue and reports what is missing, what was built wrong, and what nobody asked for. Runs only when a spec exists |
+
+The two reports are printed side by side and **never merged or ranked against each other**. A change can follow every rule in the repo while building the wrong thing; a blended verdict lets the passing axis hide the failing one.
+
+Both are agents rather than prompt templates, so their limits are real rather than requested: `tools:` grants read, grep, glob and bash, so neither one can edit a file or start another agent. Where every step came from is in [docs/provenance.md](docs/provenance.md).
+
+### Why `submit` does not run `/code-review`
+
+It used to say it did. It could not, for three separate reasons, and the failure was silent in the worst way: the instruction sat in the skill looking like a review had happened.
+
+- The plugin **may not be installed**. `submit` asserted it was.
+- `/code-review` is a **slash command**. A skill cannot type one at itself, so nothing on the automatic path can start it.
+- It reviews an **open pull request** and comments back on it. `submit` called for it at step 5, four steps before a PR exists.
+
+So the work split by what can actually run where. `review` is a skill and its two axes are agents, all three of which a skill *can* start, and they read a working tree — that is step 5. `/code-review` gets handed to you at step 8, with the PR number, once there is a PR for it to read. Neither one pretends to be the other.
 
 ### `ship` changed meaning — read this once
 
@@ -237,7 +261,7 @@ Phase 1 is deliberately the smallest useful thing. Deliberately absent:
 - A standalone `plan` skill. Deep work already writes `.devflow/plans/<name>.md` and resumes from it, but there is no way to invoke planning on its own, revise a plan once written, or tidy up old ones.
 - `debug` — the disciplined bug-fixing loop. For now bugs go through `build`.
 - `tend` — handling CI failures and review comments after the PR opens.
-- `reviewer` and `hardcase` agents — for now `submit` uses the built-in `/code-review`.
+- The `hardcase` agent — a second, adversarial read that tries to refute what `reviewer` found. For now one review is the whole review.
 - Cleanup of worktrees and folder copies. `ship` handles branches, dev servers and temp files; copies of the repo are still yours.
 - Capturing lessons.
 
@@ -247,10 +271,11 @@ These are only worth building if two weeks of real use shows you need them. Each
 
 Ideas adapted, with thanks:
 
-- **[obra/superpowers](https://github.com/obra/superpowers)** (MIT) — watch the test fail first; prove it before saying done; the three-size classifier, **with its "never go lighter" rule deliberately inverted**; never volunteer discard.
-- **[mattpocock/skills](https://github.com/mattpocock/skills)** (MIT) — ask every question in one round with a recommendation attached; test only at agreed seams.
+- **[obra/superpowers](https://github.com/obra/superpowers)** (MIT, and Apache-2.0 as the packaged plugin) — watch the test fail first; prove it before saying done; the three-size classifier, **with its "never go lighter" rule deliberately inverted**; never volunteer discard. From `requesting-code-review` and `receiving-code-review`: give the reviewer crafted context and never the session's history, review the work against its plan, and treat findings as suggestions to evaluate rather than orders to follow — which is why `submit` can reject one in writing.
+- **[mattpocock/skills](https://github.com/mattpocock/skills)** (MIT) — ask every question in one round with a recommendation attached; test only at agreed seams. From its `code-review` skill: **the two axes and the refusal to blend them**, scope creep as a finding in its own right, proving the fixed point resolves before spawning anything, and reporting "no spec available" rather than inventing requirements. Its twelve-smell baseline was **not** taken: it is judgement-call territory by design, which is the opposite of `reviewer`'s bar.
 - **[wshobson/commands](https://github.com/wshobson/commands)** (MIT) — the shape of a git workflow that fits in a few lines.
-- **Anthropic's `feature-dev` plugin** — reviewed for patterns only. Not copied: it is all rights reserved. The confidence-threshold idea for review findings is reimplemented, not lifted.
+- **Anthropic's [`code-review`](https://github.com/anthropics/claude-plugins-official) plugin** (Apache-2.0) — `reviewer`'s "Do not report" list is its false-positive taxonomy, rephrased: pre-existing problems, pedantic nitpicks, anything a linter or typechecker already catches, quality gripes no `CLAUDE.md` asked for. Its confidence filter is **reworked, not copied** — a 0-100 score across five bands, dropped below 80, became one question: can you name the input that fails? Its five review lenses were not carried over; `reviewer` uses four of its own.
+- **Anthropic's `feature-dev` plugin** (Apache-2.0) — reviewed for patterns only, nothing taken.
 
 ## License
 
