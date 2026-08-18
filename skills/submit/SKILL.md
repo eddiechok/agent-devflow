@@ -74,13 +74,27 @@ Rules, when you launched something:
 
 Only skip when there is genuinely nothing to exercise — a library with no entry point, a pure refactor with no observable change. Say so in one line. Do not invent a fake check, and do not call a passing test suite a live check; step 2 already ran that.
 
-## 5. Review the diff
+## 5. Review the change
 
-Run the built-in `/code-review` on the change. It is already installed and it is better than anything this skill would improvise.
+Invoke `devflow:review` with the branch point:
 
-If it reports something serious, **fix it and review again**. At most **2 rounds**. Anything still outstanding after that goes in the PR under **"Known issues"** rather than being hidden or looped on forever.
+```
+git merge-base HEAD origin/<default branch>
+```
 
-If the change touched anything on the danger list, also run the built-in `/security-review`.
+It pins the range, finds the plan or issue if there is one, and runs both axes in fresh agents. Do not do the review here — a session reviewing the code it just wrote carries every assumption that produced it.
+
+Then act on what comes back:
+
+- **Blocking**, **Missing** and **Built wrong** — fix, then review again. At most **2 rounds**.
+- **Nobody asked for this** — either take it out, or keep it and say why in the PR under **Assumptions**. Silently keeping it is not an option.
+- Anything still standing after 2 rounds goes in the PR under **Known issues**, not hidden and not looped on forever.
+
+**A finding can be wrong, and you are allowed to say so.** Check it against the code first, then reject it in one line with the technical reason, and put the rejection in the PR under **Known issues** so the call is visible to whoever merges. Never reject a finding you have not checked, and never reject one silently — an unread finding quietly dropped is worse than a false positive fixed.
+
+The review reports; it never edits. The fixes are yours.
+
+The built-in `/code-review` is a better review than this one, and it still does not belong here: it works on an **open pull request** and comments back on it, and there is no PR yet. It goes to the human at step 8, where one exists.
 
 ## 6. Commit
 
@@ -139,15 +153,26 @@ I checked this locally before pushing. I stopped my own server; step 5 is for yo
 
 **The steps must be steps you actually ran.** Instructions you never followed will be wrong.
 
-## 8. Stop
+## 8. Hand off, then stop
 
 **Never merge.** Opening the PR is where this skill ends.
+
+The PR now exists, so the two built-in reviews finally have something to run against. Both are slash commands — **only the human can type one**, which is exactly why they sit here and not inside the automatic path. Offer them in one line each, with the real PR number:
+
+```
+Second opinion, if you have them installed:
+  /code-review 12
+  /security-review    (this change touched database migrations)
+```
+
+Name `/security-review` only when the change actually touched the danger list. Never report either as run, and never write their findings into the PR body — you have not seen any.
 
 Never suggest throwing work away. If discarding a branch or force-pushing genuinely comes up, the human must type the word `discard` — "sure", "ok" and "go ahead" do not count.
 
 ## Rules
 
 - Never say "done", "fixed" or "passing" without output on screen proving it.
+- Never claim a review ran when it did not. A slash command you cannot type has not run.
 - Never add pipes or redirects to a check command. Bare, one per call.
 - Never commit on the default branch.
 - Never open a PR when the live check failed.
