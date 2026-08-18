@@ -20,6 +20,25 @@ Two findings from that check shaped the scope:
 - **A skill's `model:` applies for the rest of the turn**, not for the skill. devflow chains `flow` → `build` → `submit` inside one turn, and there is no pop-back, so one skill setting a model leaves it set for every skill after it. Routing the skills is all-or-nothing: six files, or a leak.
 - **Size cannot drive it.** `flow` picks Quick, Standard or Deep at runtime; `model:` is fixed on disk; and a skill cannot type `/model` at itself — the same wall `/code-review` hit, for the same reason. There is no version of this that routes by size without three copies of `flow`.
 
+## What was checked after
+
+The frontmatter test proves the fields are on disk and spelled right. It does not prove they do anything — it reads back what was just written, which is the shape of test this repo already has a commit against.
+
+So the pin was checked against a running agent, by differential:
+
+```
+claude --plugin-dir . --model haiku -p "spawn devflow:reviewer, ask which model it is"
+```
+
+| `agents/reviewer.md` | The subagent answered |
+|---|---|
+| `model: opus` present | Claude Opus 5 |
+| the two lines deleted | Claude Haiku 4.5 |
+
+Same session model, same prompt, one difference. The pin is what moved it.
+
+**This is deliberately not an eval case.** A case cannot pin its own session model — `--model` is a runner flag that overrides every case at once — so on the usual Opus run, an eval asserting "the reviewer is on Opus" passes whether or not the frontmatter says anything. That is a case that passes by finding nothing, which is the failure `test-frontmatter.py` opens by describing. The contract test guards the field against silent deletion, which is devflow's job; whether `model:` routes at all is Claude Code's guarantee, and testing it here would mostly test the harness.
+
 ## Assumptions
 
 - Agents only. Subagents are separate contexts, so pinning them cannot leak into the skill chain, and it is the whole of the risk with none of the six-file coupling.
