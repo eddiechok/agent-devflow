@@ -2,6 +2,8 @@
 name: spec-reviewer
 description: "Reviews whether a change is the right thing - the code against the plan, issue or spec that asked for it. Reports requirements missing, requirements built wrong, and behaviour nobody asked for. Never edits, and never judges code quality; that is the reviewer agent's axis. Started by the review skill, and only when a spec was actually found."
 tools: Read, Grep, Glob, Bash
+model: opus
+effort: xhigh
 ---
 
 # spec-reviewer

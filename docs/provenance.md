@@ -91,6 +91,7 @@ This is a separate file on purpose. A `SKILL.md` is a prompt — the model reads
 | Missing tests are not a finding | **Ours** | `build` handles tests. The exception, a test deleted or watered down, is on the danger list |
 | Check who calls the changed code | **Same idea** — superpowers asks something similar | Written as an action here, because a question gets answered from memory |
 | "Nothing found" is a real answer | **Ours**, building on superpowers | Their rule forbids claiming it looks fine without checking. Ours says what to do instead: name what you read |
+| Pins `model: opus`, `effort: xhigh` | **Ours** | Neither source pins one. An agent with no `model:` inherits the session, so the same branch gets a different review depending on what the human last typed at `/model`, and the weaker one still reports nothing wrong |
 
 ## `spec-reviewer` agent — is it the right thing
 
@@ -103,6 +104,7 @@ This is a separate file on purpose. A `SKILL.md` is a prompt — the model reads
 | A silent spec is not a failing spec | **Ours** | The obvious way this agent goes wrong |
 | A later piece is not a missing piece | **Ours** | Deep plans list pieces in order |
 | Never judges code quality | **Copied** — mattpocock | If both agents report on style, the split was pointless |
+| Pins the same pair as `reviewer` | **Ours** | The two reports are never ranked against each other. Giving one axis a weaker model ranks them anyway, and silently |
 
 ## `submit`
 
@@ -156,6 +158,8 @@ This is a separate file on purpose. A `SKILL.md` is a prompt — the model reads
 | Change | From | Why |
 |---|---|---|
 | Also checks `agents/*.md` | **Ours** | An agent's description is how the right agent gets picked, so a stray `#` cuts it short the same way |
+| Agents must pin `model` and `effort` | **Ours** | Both fields are optional and both default to inheriting the session, so leaving them out is spelled exactly like choosing them. `inherit` is rejected for the same reason |
+| Booleans compared by YAML spelling | **Real bug** | The parser cross-check compared `str(True)` against `true` and failed both `disable-model-invocation` lines. The suite was red on `main`, in the one test whose job is telling a real mismatch from a file that only looks wrong |
 
 ---
 

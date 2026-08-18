@@ -161,7 +161,7 @@ This is the only self-improvement machinery in Phase 1, and it is deliberately j
 
 The two reports are printed side by side and **never merged or ranked against each other**. A change can follow every rule in the repo while building the wrong thing; a blended verdict lets the passing axis hide the failing one.
 
-Both are agents rather than prompt templates, so their limits are real rather than requested: `tools:` grants read, grep, glob and bash, so neither one can edit a file or start another agent. Where every step came from is in [docs/provenance.md](docs/provenance.md).
+Both are agents rather than prompt templates, so their limits are real rather than requested: `tools:` grants read, grep, glob and bash, so neither one can edit a file or start another agent. Both also pin `model: opus` and `effort: xhigh`, so a review does not quietly become a cheaper review because of what you happened to have `/model` set to — an under-powered review still prints, and still reports nothing wrong. They pin the **same** pair deliberately: the two reports are never ranked against each other, and a weaker model on one axis would rank them without saying so. Where every step came from is in [docs/provenance.md](docs/provenance.md).
 
 ### Why `submit` does not run `/code-review`
 
@@ -262,6 +262,7 @@ Phase 1 is deliberately the smallest useful thing. Deliberately absent:
 - `debug` — the disciplined bug-fixing loop. For now bugs go through `build`.
 - `tend` — handling CI failures and review comments after the PR opens.
 - The `hardcase` agent — a second, adversarial read that tries to refute what `reviewer` found. For now one review is the whole review.
+- Model routing by size. The two agents pin a model; the six skills inherit whatever you are on. `flow` picks Quick, Standard or Deep at runtime, but a skill's `model:` is fixed on disk, and a skill cannot type `/model` at itself — the same wall `/code-review` hit. Routing the sizes would mean a skill per size, which is three copies of `flow` to keep in step.
 - Cleanup of worktrees and folder copies. `ship` handles branches, dev servers and temp files; copies of the repo are still yours.
 - Capturing lessons.
 

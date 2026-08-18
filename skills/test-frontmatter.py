@@ -138,6 +138,25 @@ for slug in skills:
 # Same contract, same parser, one directory up. An agent's description decides
 # whether it is the right agent to hand a job to, so a truncated one is the same
 # silent failure as a truncated skill description.
+#
+# Agents also carry the routing. `model` and `effort` are omittable, and both
+# default to inheriting the session -- so an agent that declares neither is not
+# broken, it is quietly whatever the human last typed at `/model`. A review run
+# on a weaker model than intended still prints a review, and still says nothing
+# went wrong. That is the same silent failure as a truncated description, which
+# is why the two are checked in the same place.
+#
+# `inherit` is a real value and deliberately not accepted here: it is spelled
+# the same as forgetting.
+
+AGENT_MODELS = {"opus", "sonnet", "haiku", "fable"}
+AGENT_EFFORTS = {"low", "medium", "high", "xhigh", "max"}
+
+
+def pins_a_model(value):
+    """Whether this value names one model. An alias or a full id, not `inherit`."""
+    return value in AGENT_MODELS or value.startswith("claude-")
+
 
 agents = sorted(
     f for f in os.listdir(AGENTS_DIR) if f.endswith(".md")
@@ -169,6 +188,16 @@ for filename in agents:
     for key, value in pairs:
         why = hazard(value)
         check(f"{label}: {key} survives YAML intact", why is None, why)
+
+    model = literal(values.get("model", ""))
+    check(f"{label}: pins a model", pins_a_model(model),
+          f"model={model!r}, expected one of {sorted(AGENT_MODELS)} or a "
+          f"claude-* id. Unset or 'inherit' means the review runs on whatever "
+          f"the session happened to be set to")
+
+    effort = literal(values.get("effort", ""))
+    check(f"{label}: pins an effort level", effort in AGENT_EFFORTS,
+          f"effort={effort!r}, expected one of {sorted(AGENT_EFFORTS)}")
 
 # ------------------------------------------- cross-check against a real parser
 
