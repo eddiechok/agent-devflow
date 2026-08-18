@@ -63,9 +63,19 @@ Every change goes through these in order. No skipping.
 
 Write the smallest test that fails because the thing you are about to build does not exist yet.
 
-**Test at seams, not at every function.** A seam is a boundary someone else's code calls through: an exported function, an API route, a component's public props. Testing internals produces tests that break every refactor and prove nothing.
+**Test at seams, not at every function.** A seam is a boundary someone else's code calls through: an exported function, an API route, a component's public props. The tell that you went inside one: the test breaks when you refactor, while the behaviour never changed. Reaching round the back counts too — checking the database directly instead of asking the interface what it returns.
 
 If it is not obvious where the seam is, say which one you picked and why, in one line, before writing the test.
+
+**The expected value has to come from somewhere other than the code.** A literal you know is right, a worked example, the spec, a number you did by hand.
+
+A test that works the answer out the same way the code does cannot ever disagree with it:
+
+```js
+expect(add(a, b)).toBe(a + b);
+```
+
+That one passes verify-RED as well — the function does not exist yet, so it fails, and it fails for the right reason. Every gate goes green and nothing was ever tested. You are the one writing both sides here, which is exactly why this is easy to do by accident.
 
 ### 2. Verify RED — watch it fail
 
@@ -132,5 +142,6 @@ If `flow` called you, it takes over from here and submits. If you were called di
 - Never add pipes or redirects to a check command. Bare, one per call.
 - Never write code before its test.
 - Never skip verify-RED because the test "obviously" fails.
+- Never let a test work out its expected value the way the code does.
 - Never widen scope mid-piece. Finish the piece, then raise the next one separately.
 - Run the full test suite once at the end, not after every edit.
