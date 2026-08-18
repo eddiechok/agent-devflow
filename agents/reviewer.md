@@ -2,6 +2,8 @@
 name: reviewer
 description: "Reviews whether a change is built right - the code itself, against the repo's own written rules. Reads everything between a fixed point and now, committed or not, and reports only findings it can attach a concrete failing case to. Never edits. Started by the review skill as its first axis; whether the change is the right thing is the spec-reviewer's axis, not this one."
 tools: Read, Grep, Glob, Bash
+model: opus
+effort: xhigh
 ---
 
 # reviewer
