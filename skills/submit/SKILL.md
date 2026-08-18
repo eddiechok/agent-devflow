@@ -49,10 +49,16 @@ If anything fails, fix it and run again. Do not continue with a red check.
 ## 3. Remove debug leftovers
 
 ```
-grep -rn "\[DBG-" . --exclude-dir=node_modules --exclude-dir=.git
+grep -rn "\[DBG-" . --exclude-dir=node_modules --exclude-dir=.git --exclude='*.md'
 ```
 
 Must return nothing.
+
+**Keep the quotes around `*.md`.** Unquoted, zsh tries to expand it before grep ever runs and fails the whole command with `no matches found` — bash passes it through, so this breaks for some people and not others.
+
+**Markdown is excluded on purpose.** A marker in a `.md` file is prose — a code sample, a note about the convention, or this plugin's own description of it. Without that exclusion the check fails forever in any repo that documents the convention, this one included, on hits that are all documentation. Markers matter in code, because code runs.
+
+**A hit in a file this branch did not touch is not yours.** Say so in one line and leave it. Cleaning up someone else's debugging inside your PR buries your change in noise.
 
 ## 4. Run the app — the live check
 
