@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Contract tests for the skills' YAML frontmatter.
+"""Contract tests for the skills' and agents' YAML frontmatter.
 
     python3 skills/test-frontmatter.py
 
@@ -32,6 +32,7 @@ import re
 import sys
 
 SKILLS_DIR = os.path.dirname(os.path.abspath(__file__))
+AGENTS_DIR = os.path.join(os.path.dirname(SKILLS_DIR), "agents")
 
 passed = 0
 failed = 0
@@ -131,6 +132,43 @@ for slug in skills:
     for key, value in pairs:
         why = hazard(value)
         check(f"{slug}: {key} survives YAML intact", why is None, why)
+
+# --------------------------------------------------------------- the agents
+#
+# Same contract, same parser, one directory up. An agent's description decides
+# whether it is the right agent to hand a job to, so a truncated one is the same
+# silent failure as a truncated skill description.
+
+agents = sorted(
+    f for f in os.listdir(AGENTS_DIR) if f.endswith(".md")
+) if os.path.isdir(AGENTS_DIR) else []
+
+check("found the agents to check", len(agents) >= 1, f"found {agents!r}")
+
+for filename in agents:
+    slug = filename[:-len(".md")]
+    label = f"agents/{slug}"
+    path = os.path.join(AGENTS_DIR, filename)
+    with open(path, encoding="utf-8") as fh:
+        fm = frontmatter(fh.read())
+
+    check(f"{label}: has a frontmatter block", fm is not None)
+    if fm is None:
+        continue
+
+    pairs = fields(fm)
+    parsed[label] = (fm, dict(pairs))
+    values = dict(pairs)
+
+    check(f"{label}: name matches its filename",
+          values.get("name") == slug,
+          f"name={values.get('name')!r}, file={filename!r}")
+
+    check(f"{label}: has a description", bool(literal(values.get("description", ""))))
+
+    for key, value in pairs:
+        why = hazard(value)
+        check(f"{label}: {key} survives YAML intact", why is None, why)
 
 # ------------------------------------------- cross-check against a real parser
 
