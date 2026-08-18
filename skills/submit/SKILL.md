@@ -12,7 +12,7 @@ Prove it works. Then open the PR. Never merge.
 ## Context
 
 - Branch: !`git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "no git"`
-- Default branch: !`git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's|origin/||' | grep . || echo main`
+- Default branch ref: !`git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null || echo origin/main`
 - Changed files: !`git status --short 2>/dev/null || true`
 
 ## 1. Check the branch
@@ -85,7 +85,7 @@ Only skip when there is genuinely nothing to exercise — a library with no entr
 Invoke `devflow:review` with the branch point:
 
 ```
-git merge-base HEAD origin/<default branch>
+git merge-base HEAD <default branch ref>
 ```
 
 It pins the range, finds the plan or issue if there is one, and runs both axes in fresh agents. Do not do the review here — a session reviewing the code it just wrote carries every assumption that produced it.

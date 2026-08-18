@@ -12,7 +12,7 @@ Two axes, two fresh agents, no blending.
 ## Context
 
 - Branch: !`git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "no git"`
-- Default branch: !`git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's|origin/||' | grep . || echo main`
+- Default branch ref: !`git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null || echo origin/main`
 - Changed files: !`git status --short 2>/dev/null || true`
 
 ## 1. Pin the fixed point
@@ -20,7 +20,7 @@ Two axes, two fresh agents, no blending.
 `$ARGUMENTS` is the fixed point if given. Otherwise use the branch point:
 
 ```
-git merge-base HEAD origin/<default branch>
+git merge-base HEAD <default branch ref>
 ```
 
 **Then prove it before spawning anything:**

@@ -13,7 +13,7 @@ Merge it, watch it go live, clean up behind it. You started this, so the merge i
 ## Context
 
 - Branch: !`git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "no git"`
-- Default branch: !`git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's|origin/||' | grep . || echo main`
+- Default branch ref: !`git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null || echo origin/main`
 - PR: !`gh pr view --json number,title,state,mergeStateStatus --jq '"#\(.number) \(.title) [\(.state)/\(.mergeStateStatus)]"' 2>/dev/null || echo "none for this branch"`
 
 ## The boundary
@@ -111,7 +111,7 @@ git ls-remote --heads origin
 
 ```
 git fetch origin --prune
-git merge --ff-only origin/<default>
+git merge --ff-only <default branch ref>
 ```
 
 If the remote branch outlived the merge, delete it on its own:

@@ -2,7 +2,7 @@
 name: flow
 description: "Use when a request will change anything tracked in the repo - a feature, a bug fix, a refactor, a chore or a dependency bump, and equally copy, content, docs, config, styles, images or other assets. Editing a tracked file is the test, not whether the work sounds like coding. Enter here mid-task too, the moment an investigation turns into an edit. Sizes the work as Quick, Standard or Deep, then routes it through build and submit, so the work ends as a pull request rather than uncommitted changes. Accepts free text, a GitHub issue number like #123, or an issue URL. This is the entry point, start here."
 argument-hint: "[--quick|--deep] what you want, or #123"
-allowed-tools: Bash(git status:*), Bash(git branch:*), Bash(git rev-parse:*), Bash(gh issue view:*)
+allowed-tools: Bash(git status:*), Bash(git branch:*), Bash(git rev-parse:*), Bash(git symbolic-ref:*), Bash(gh issue view:*)
 ---
 
 # flow
@@ -12,7 +12,7 @@ Size the work, then route it. One line before anything else.
 ## Context
 
 - Branch: !`git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "no git"`
-- Default branch: !`git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's|origin/||' | grep . || echo main`
+- Default branch ref: !`git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null || echo origin/main`
 - Status: !`git status --short 2>/dev/null | head -20 || true`
 
 ## Step 1 — get the request

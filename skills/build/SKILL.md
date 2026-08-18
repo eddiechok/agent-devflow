@@ -42,10 +42,12 @@ Before the first edit, check where you are:
 
 ```
 git rev-parse --abbrev-ref HEAD
-git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's|origin/||' || echo main
+git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null || echo origin/main
 ```
 
-If those match, create the branch now, before touching a file:
+The second one answers with the remote ref, `origin/main`, so compare the first against it with the `origin/` dropped. Do the stripping yourself rather than piping through `sed` — a pipe here costs a permission prompt for `sed` on top of the git command, in every project, forever.
+
+If they match, create the branch now, before touching a file:
 
 ```
 git checkout -b <type>/<short-name>
