@@ -53,6 +53,8 @@ If they match, create the branch now, before touching a file:
 git checkout -b <type>/<short-name>
 ```
 
+If they do not match you are already on a branch — **keep it, whatever it is called.** One someone else named, or one a harness created for you, satisfies this step as well as one you would have named. Renaming it can break a harness that pins where you are allowed to push.
+
 `submit` checks this too, but by then it is late. Editing happens here, and `submit` is several gates away — if it never runs because you got stuck, the checks stayed red, or the human stopped you, the edits are left sitting uncommitted on the default branch. Branching first costs one command and the abort case stays clean.
 
 Branching is not committing. You still do not commit; that is `submit`'s job.
