@@ -14,7 +14,11 @@ Merge it, watch it go live, clean up behind it. You started this, so the merge i
 
 - Branch: !`git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "no git"`
 - Default branch ref: !`git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null || echo origin/main`
-- PR: !`gh pr view --json number,title,state,mergeStateStatus --jq '"#\(.number) \(.title) [\(.state)/\(.mergeStateStatus)]"' 2>/dev/null || echo "none for this branch"`
+- PR: !`if command -v gh >/dev/null 2>&1; then gh pr view --json number,title,state,mergeStateStatus --jq '"#\(.number) \(.title) [\(.state)/\(.mergeStateStatus)]"' 2>/dev/null || echo "none for this branch"; else echo "no gh here — look the PR up another way"; fi`
+
+**`gh` is the example, not the requirement.** Every `gh` command below names *what to ask for*, not *how to ask*. Use whatever GitHub access this environment has — the CLI, an MCP server, the API. If it has none, say so in one line and stop. Never guess at a PR's state.
+
+Read the Context line the same way. `no gh here` is **not** `none for this branch`: the first says the CLI is missing, the second says the PR is. Only the second is a reason to send someone to `submit`.
 
 ## The boundary
 
@@ -34,6 +38,8 @@ Do not remove either. If you ever see a chain of skills arrive here without a hu
 `$ARGUMENTS` is a PR number if you were given one. Otherwise take the PR for the current branch.
 
 **If there is no PR, stop.** Say in one line that the work has not been submitted yet and that `devflow:submit` comes first.
+
+Be sure that is what you are looking at. A missing `gh` is not a missing PR, and telling someone to submit work that already has an open pull request wastes the run and reads as authoritative.
 
 Do not submit and merge in one command. That would run the code review, the live check, the commit, the push, the merge and the deploy without you ever seeing the pull request — which is the one artefact this whole loop exists to put in front of you.
 

@@ -235,6 +235,12 @@ and `submit` says so rather than stopping to ask twice.
 so `build` keeps it instead of making a `<type>/<short-name>` one. Off the default branch was
 always the real requirement; the naming was never the point.
 
+**There is no `gh`.** The web sandbox reaches GitHub through an MCP server instead, so every
+`gh` command in these skills names *what to ask for*, not *how to ask*. `ship` used to report a
+missing CLI as `none for this branch` — the same words it uses for a branch with no pull
+request — and would send you to `submit` for work that already had one open. It now tells the
+two apart.
+
 Nothing here detects the harness. Every rule is written to be true in both places.
 
 ## About the hook
