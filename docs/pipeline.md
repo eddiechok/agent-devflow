@@ -32,9 +32,11 @@ stateDiagram-v2
     Sized --> Building: build, on a branch
     Building --> Building: five gates, once per piece
     Building --> Submitted: submit
-    Submitted --> Reporting: a check goes red, or a review lands
+    Submitted --> Reporting: a check goes red, a review lands, or the base moved
     Reporting --> Building: tend, after it decides whose failure it is
+    Reporting --> Submitted: tend, when the conflict was the whole of it
     Submitted --> Sized: you want something different
+    Merged --> Sized: the branch is finished, so the next request is new work
     Submitted --> Merged: ship
     Merged --> Live: deploy watched, URL fetched
     Live --> [*]
@@ -48,9 +50,18 @@ stateDiagram-v2
     note right of Reporting
         tend never goes straight to a fix.
         Not every failure a PR reports
-        belongs to that PR.
+        belongs to that PR. A conflict is
+        the exception - the base moved, so
+        it is always this branch's.
     end note
 ```
+
+**`Merged --> Sized` is the edge that was missing longest.** A branch whose pull request
+has merged looks, from `git`, exactly like a branch mid-feature: not the default branch, so
+`build` keeps it. Work landing there diffs against a default branch that already contains
+it. `flow` step 0 now asks whether the PR is open rather than whether one exists, and sends
+a merged branch back to `Sized` as new work — cut from the default branch ref, not from
+where you are standing.
 
 `setup` is not on here on purpose. It runs once per project, before any of this, and it
 writes the `## Checks` block everything downstream trusts. It is not a state the work

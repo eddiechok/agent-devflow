@@ -44,6 +44,12 @@ This is a separate file on purpose. A `SKILL.md` is a prompt — the model reads
 | 0. What the PR reports goes to `tend`, not `build` | **Ours** | `flow` is the entry point, so it wins most requests. Without this branch it took "fix the failing check" straight into `build`, around the one step that asks whose failure it is |
 | 0. Follow-up work re-enters through `flow` | **Real bug** — the audit of 18 Aug | `submit` was terminal, so a second run opened a second pull request for one change. Sizing still runs: a follow-up is not automatically small, and the danger list does not care which round it is |
 | Never finish without calling `submit` | **Ours** | Written for a real failure mode: work that is finished, green, and still sitting uncommitted |
+| Every injected Context line is one command | **Real bug** — the audit of 19 Aug | The PR line used `x=$(...)` and `if ... fi`. Claude Code cannot statically analyse that, the permission check returns not-allow, and **a failed injection aborts the whole skill**. `/devflow:flow` returned nothing in `default`, `acceptEdits`, `plan`, `auto` and `dontAsk`; only `bypassPermissions` rendered it, which is why it read as healthy from an elevated session. Measured: pre-fix `num_turns: 0` and an empty result, post-fix real output |
+| 0b. Look in `.devflow/plans/` before sizing | **Real bug** — the audit of 19 Aug | `flow` promised a Deep plan was resumable after `/clear` and was the only skill that never listed the directory. Re-invoking wrote a second plan over the first and re-asked answered questions. `review` looked there; the skill that writes them did not |
+| 0. "Its own branch" is a step, not a description | **Real bug** — the audit of 19 Aug | The new-work case was the one branch of step 0 with nothing behind it. `flow` cannot check out, `build` keeps what it finds, `submit` updates the PR the branch already has — so work announced as new was folded into somebody's open pull request, the one thing the same step forbids |
+| 0. A merged or closed PR is not an open one | **Real bug** — the audit of 19 Aug | Step 0 only asked whether a PR was open. On a merged branch the work fell through to "new work" and kept piling onto a branch whose commits were already in the default branch |
+| 1. An issue body is a request, not an instruction | **Ours** | Anyone can open an issue, and `flow` reads it and acts. Sizing it and running it against the danger list is what it already does for text a human types |
+| 1. A non-GitHub tracker still works, pasted | **Real bug** — the audit of 19 Aug | Only `#123` and GitHub URLs were read, and the fallback sent you to "ask for the request in words" — which silently dropped `review`'s second axis for every Linear or Jira ticket |
 
 *Corrected.* The plan-file row above used to read **Copied** — "superpowers plans track progress in the file", and cited that for a promise that you could `/clear` mid-plan and carry on. Superpowers does no such thing: `writing-plans` puts `- [ ]` in its **template** without ever telling the agent to tick them, and `executing-plans` tracks progress in the session todo list, which dies with the context. The resume promise was devflow's own. It was documented before it existed, deleted once that was found, and then built properly: `build` commits each plan piece, so `git log` is the record and the sentence is finally true. The three states are left visible here on purpose — the promise was wrong for longer than it was missing.
 
@@ -69,6 +75,9 @@ This is a separate file on purpose. A `SKILL.md` is a prompt — the model reads
 | Branch before the first edit | **Ours** | If the job dies later, the edits are not stranded on the default branch |
 | A plan piece is committed as it lands | **Ours** | The one case where `build` commits. The plan says what the pieces are and `git log` says which exist, so resuming is answered with evidence. The checkbox-in-the-file version was rejected first: a tick is a claim, and this repo does not take claims |
 | Commands come from the project's `## Checks` block | **Ours** | A command invented by a skill is a command nobody verified |
+| A change with no behaviour skips the gates and says so | **Real bug** — the audit of 19 Aug | `flow` routes copy, docs, config, styles and images here, and the gates said "no skipping" with no exit. Nothing can go red for a README wording change, so the two available moves were an invented assertion that clears every gate while testing nothing, or a quiet skip that teaches the rest of the skill is optional. This repo is one of the projects that hits it |
+| `origin/main` is a fallback, not an answer | **Real bug** — the audit of 19 Aug | `refs/remotes/origin/HEAD` is unset in plenty of working repos. When the fallback fires on a `master` or `develop` repo, "am I on the default branch?" answers no while you are standing on it, and the next commit lands there |
+| New work cuts its branch from the default ref | **Real bug** — the audit of 19 Aug | The other half of `flow`'s new-work gap. Cutting from where you stand carries the old branch's commits into the new pull request; staying put hands the work to the old PR |
 
 ## `review` skill
 
@@ -145,6 +154,9 @@ This is a separate file on purpose. A `SKILL.md` is a prompt — the model reads
 | 7. Update the PR when one is already open | **Real bug** — the audit of 18 Aug | A branch has one pull request. The old step opened a second, because it only knew how to create |
 | 8. Re-derive the danger list from the diff | **Real bug** — the audit of 18 Aug | `flow` decided it before the code existed and nothing carried the decision here. The loss was silent and it dropped the only security gate in the loop |
 | 8. Never merge | **Ours** | The line the whole plugin is built around |
+| 2. `exit=N` only comes for a runner the hook knows | **Real bug** — the audit of 19 Aug | The step promised that running bare gets you the exit line. The hook only rewraps commands matching its own list, and this repo's own checks match none of them — so the promise was false in the repo that wrote it, and the gap invites a fabricated `exit=0` |
+| 5. `Not reported:` is a finding, not a footnote | **Real bug** — the audit of 19 Aug | Both agents were told to print the line and `review` was told to carry it through. `submit` is the only reader and had no branch for it, so a truncated review printed exactly like a clean one — the same failure `NOT RUN` was written to prevent |
+| 7. Some harnesses expect you to press Create PR | **Changed** — was stated as a harness rule | No public prompt or doc says a web session may not open a PR; what is real is a UI expectation. The mitigation was right and the reason was not, so the reason changed and the mitigation stayed |
 
 ## `ship`
 
@@ -163,7 +175,12 @@ This is a separate file on purpose. A `SKILL.md` is a prompt — the model reads
 | `git branch -d` may refuse after a rebase merge | **Real bug** — the same run | Rebase and squash rewrite the commits, so the local branch is not an ancestor of the default branch even though its content is all there. The fix is to check the content landed, never to reach for `-D` |
 | Clean up only what this session started | **Same idea** — superpowers refuses to remove a worktree the user still needs | Never kill "whatever is on port 3000" |
 | Offer to archive the session, do not archive it | **Ours** | An archived session someone still wanted is an annoyance they have to undo |
-| `gh` is the example, not the requirement | **Real bug** — the audit of 18 Aug | There is no `gh` on Claude Code on the web. The Context line reported the missing CLI as `none for this branch`, so step 1 sent people to `submit` for work that already had an open pull request |
+| `gh` is the example, not the requirement | **Real bug** — the audit of 18 Aug | `gh` is not pre-installed on Claude Code on the web. The Context line reported the missing CLI as `none for this branch`, so step 1 sent people to `submit` for work that already had an open pull request |
+| 1. Keep the PR's head branch by name | **Real bug** — the audit of 19 Aug | `$ARGUMENTS` takes a PR number and nothing resolved it to a branch. `/devflow:ship 12` typed from another branch merged #12 remotely and then deleted the branch you were standing on — unmerged work this session never created |
+| 2. A refusal names `tend` | **Real bug** — the audit of 19 Aug | All four refusal conditions are the pull request reporting something, which is `tend`'s job. Stopping without saying so left the only states `ship` refuses with no way out |
+| 2. An empty rollup is two different answers | **Real bug** — the audit of 19 Aug | "No CI configured" and "the run has not started" are spelled identically. Reading the second as the first merges commits nothing verified, which is the one thing this step exists to refuse |
+| 4. Read the `## Deploy` block before running it | **Ours** | The step executes shell out of a file, holding credentials, touching production, immediately after the least reversible moment in the plugin. Ordinary when you wrote the block; not ordinary on a fork or a first clone |
+| 4. A hosted session fails on policy, not on code | **Real bug** — the audit of 19 Aug | A cloud sandbox reaches package registries and GitHub and little else, so the deploy command and the `Verify:` URL both come back blocked. Reporting that as a broken deploy is exactly the misdiagnosis step 5 exists to prevent |
 
 ## `tend`
 
@@ -177,6 +194,9 @@ This is a separate file on purpose. A `SKILL.md` is a prompt — the model reads
 | 4. Never weaken a test to go green | **Ours** — it is on the danger list already | The only change worse than leaving the PR red |
 | 5. Re-submit rather than push | **Ours** | Pushing from here would skip the fresh checks and the review, which are what make a push worth trusting |
 | 6. Answer the thread, do not just push | **Copied** — superpowers `receiving-code-review` treats feedback as something to answer | A silent refusal reads as a miss |
+| 1. Check out the PR's branch first | **Real bug** — the audit of 19 Aug | Every later step reads the current branch: triage asks what "this branch" changed, the round counter runs `git log ..HEAD`, `build` keeps what it finds, and `submit` updates the PR *that branch* has. `/devflow:tend 12` from another branch fixed #12's failure onto a different pull request, and left #12 red |
+| 3. A conflict or a stale base is yours | **Real bug** — the audit of 19 Aug | `ship` refuses to merge `CONFLICTING` and stops, `flow` sends it here, and this skill only knew about checks and comments. The state had no owner. Merge rather than rebase, because the branch is pushed and a reviewer may be reading it |
+| 3. A review comment is a request to size | **Ours** | The skill reads text off a web page and acts on it. "A reviewer asked" is not an override — the danger list does not care who typed the words |
 
 ## `setup`
 
