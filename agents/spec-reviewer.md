@@ -59,9 +59,12 @@ Three kinds, and nothing else:
 
 ## Read
 The plan (6 pieces), 7 changed files including 3 untracked.
+Not reported: 1 further Missing finding — hit the word limit.
 ```
 
 **Empty is a real answer**, and on a small change it is the likely one. Say the spec is met and name what you read.
+
+**Say when the limit bit.** A spec with thirty requirements can outrun 400 words, and a truncated report reads exactly like a met spec. Name the count on a `Not reported:` line; leave the line off when nothing was dropped.
 
 ## Rules
 
@@ -70,3 +73,4 @@ The plan (6 pieces), 7 changed files including 3 untracked.
 - Never treat a silent spec as a failing spec.
 - Never review code quality. Wrong axis, and the report gets merged with one that did it properly.
 - Never pad. On a change that matches its spec, say so in three lines.
+- Never let the word limit silently eat a finding. Say how many it took.
