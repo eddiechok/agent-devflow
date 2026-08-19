@@ -2,7 +2,7 @@
 name: flow
 description: "Use when a request will change anything tracked in the repo - a feature, a bug fix, a refactor, a chore or a dependency bump, and equally copy, content, docs, config, styles, images or other assets. Editing a tracked file is the test, not whether the work sounds like coding. Enter here mid-task too, the moment an investigation turns into an edit. Sizes the work as Quick, Standard or Deep, then routes it through build and submit, so the work ends as a pull request rather than uncommitted changes. Accepts free text, a GitHub issue number like #123, or an issue URL. This is the entry point, start here."
 argument-hint: "[--quick|--deep] what you want, or #123"
-allowed-tools: Bash(git status:*), Bash(git branch:*), Bash(git rev-parse:*), Bash(git symbolic-ref:*), Bash(gh issue view:*)
+allowed-tools: Bash(git status:*), Bash(git branch:*), Bash(git rev-parse:*), Bash(git symbolic-ref:*), Bash(gh issue view:*), Bash(gh pr view:*)
 ---
 
 # flow
@@ -14,6 +14,27 @@ Size the work, then route it. One line before anything else.
 - Branch: !`git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "no git"`
 - Default branch ref: !`git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null || echo origin/main`
 - Status: !`git status --short 2>/dev/null | head -20 || true`
+- PR for this branch: !`if command -v gh >/dev/null 2>&1; then gh pr view --json number,state --jq '"#\(.number) [\(.state)]"' 2>/dev/null || echo "none"; else echo "no gh here — check another way"; fi`
+
+## Step 0 — is this a follow-up?
+
+Look at the branch before anything else. **If it already has an open pull request**, that work has been submitted and this request is one of two things.
+
+**A change to the work in that PR** — follow-up mode:
+
+- **Read before you ask.** The PR body's **Assumptions**, and the plan file if there is one, already hold what was decided in the first round. Ask only what they do not answer. Asking again for something the human has already told you is the interruption this plugin exists to avoid.
+- **Size it normally.** A follow-up is not automatically Quick. The danger list still applies, and a genuinely unclear change still earns its round of questions.
+- **Same branch, same PR.** `submit` updates it rather than opening a second.
+
+**New work that merely started here** — normal flow, its own branch, its own PR.
+
+Say which of the two you decided, in the same line as the size:
+
+```
+Standard — follow-up on #12, tightening the copy it added.
+```
+
+If the branch is one you may not leave — a harness that pins it, as Claude Code on the web does — say so and ask which the human wants: carry on inside this PR, or stop and start a fresh session. Never quietly bolt unrelated work onto someone's open pull request.
 
 ## Step 1 — get the request
 
@@ -170,6 +191,7 @@ Beyond that one line, do not discuss it and do not ask about it. Record it and c
 ## Rules
 
 - Never start with a question. Announce the size first.
+- Never bolt work onto an open pull request without saying that is what you are doing.
 - Never go up a size without naming the reason.
 - Never do work that the size you announced does not call for.
 - Never finish without calling `submit`, or saying in one line why you did not.
