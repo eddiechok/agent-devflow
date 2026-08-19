@@ -126,6 +126,8 @@ If the remote branch outlived the merge, delete it on its own:
 git push origin --delete <branch>
 ```
 
+If **that** is refused, see Cleanup below. A branch you could not delete is not a merge that did not land.
+
 **Merge did not land** — retry, with a wait. Cap it. An API that is still down after a few attempts is a finding to report, not something to sit through, and the work is safe either way: the PR is open and the branch is pushed.
 
 ## 4. Deploy
@@ -202,7 +204,15 @@ What may go in it:
 
 Only what this session is responsible for.
 
-**Branches.** The remote one went with `--delete-branch`. Delete the local one, switch to the default branch, fast-forward it. If the merge errored halfway, reconcile against the remote rather than assuming either side is right.
+**Branches.** The remote one usually went with `--delete-branch`. Check rather than assume — `git ls-remote --heads origin` — and delete it on its own if it is still there.
+
+**A refused delete is not a failed merge.** Some environments let you push a ref and refuse to delete one: Claude Code on the web answers `HTTP 403` to the delete while ordinary pushes work all day. Say so in one line, hand the branch to the human, and **do not retry it or look for another way round** — a policy denial is something to report, not something to defeat. Nothing about the merge changes; it already landed and step 7 says so.
+
+Then the local one: switch to the default branch and fast-forward it first, then delete the branch.
+
+**After a rebase or squash merge, `git branch -d` may warn or refuse.** Both methods rewrite the commits, so the branch's SHAs are not ancestors of the default branch even though every line of it is now there. Confirm the content landed — the default branch moved, and the diff is in it — then delete. Never reach for `-D` to make the warning go away. That is how work actually gets lost, and the warning is right more often than the hurry is.
+
+If the merge errored halfway, reconcile against the remote rather than assuming either side is right.
 
 **Dev servers.** Stop only the ones this session started. Never kill "whatever is on port 3000" — that may be something the human is running. The same rule `submit` applies to its live check.
 
@@ -231,4 +241,6 @@ Session: want it archived?
 - Never write a `## Deploy` block for a deploy you did not just run and verify in this turn.
 - Never call a green pipeline a live check. Fetch the URL.
 - Never delete a branch, server or file this session did not create.
+- Never report a refused branch delete as a failed merge, and never retry a policy denial.
+- Never force-delete a local branch to silence a warning after a rebase or squash merge.
 - Never report a deploy as working without the output that proves it.

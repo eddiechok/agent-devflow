@@ -159,6 +159,8 @@ This is a separate file on purpose. A `SKILL.md` is a prompt — the model reads
 | Any `## Deploy` line may repeat | **Real bug** | The first project that did not fit the one-command shape |
 | Fetch the URL after deploying | **Ours** — same reasoning as `submit`'s live check | A green pipeline is not a working site |
 | Write the `## Deploy` block only after it worked | **Ours** | The one moment the command is proven is right after it ran |
+| A refused branch delete is reported, not retried | **Real bug** — merging this plugin's own audit branch | The web proxy answers `403` to a ref delete while ordinary pushes work. Retrying a policy denial wastes the run; reporting it as a failed merge would be worse |
+| `git branch -d` may refuse after a rebase merge | **Real bug** — the same run | Rebase and squash rewrite the commits, so the local branch is not an ancestor of the default branch even though its content is all there. The fix is to check the content landed, never to reach for `-D` |
 | Clean up only what this session started | **Same idea** — superpowers refuses to remove a worktree the user still needs | Never kill "whatever is on port 3000" |
 | Offer to archive the session, do not archive it | **Ours** | An archived session someone still wanted is an annoyance they have to undo |
 | `gh` is the example, not the requirement | **Real bug** — the audit of 18 Aug | There is no `gh` on Claude Code on the web. The Context line reported the missing CLI as `none for this branch`, so step 1 sent people to `submit` for work that already had an open pull request |

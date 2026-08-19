@@ -254,6 +254,8 @@ and `submit` says so rather than stopping to ask twice.
 so `build` keeps it instead of making a `<type>/<short-name>` one. Off the default branch was
 always the real requirement; the naming was never the point.
 
+**Deleting the merged branch may be refused.** Pushing a ref works; deleting one answers `403`. `ship` reports it and hands the branch to you rather than retrying, and the merge is untouched either way — the two are separate calls, which this skill already knew.
+
 **There is no `gh`.** The web sandbox reaches GitHub through an MCP server instead, so every
 `gh` command in these skills names *what to ask for*, not *how to ask*. `ship` used to report a
 missing CLI as `none for this branch` — the same words it uses for a branch with no pull
