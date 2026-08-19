@@ -73,9 +73,12 @@ Touched: database migrations. / Nothing.
 ## Reviewed
 7 files, 210 lines, including 3 untracked. Read the callers of `sendMail`.
 Did not read: site/vendor/** (generated).
+Not reported: 2 further Blocking findings — hit the word limit.
 ```
 
 **Empty is a real answer.** Say so under `## Blocking` and still fill in `## Reviewed`. A clean review that names what it read is worth something; "looks good to me" is worth nothing.
+
+**Say when the limit bit.** Dropping weak findings is the point of the ceiling and needs no mention. Dropping a **Blocking** finding you could name a failing case for is different: without that line, a review that ran out of room prints exactly like one that found nothing. Name the count on a `Not reported:` line, and leave it off entirely when nothing was dropped.
 
 ## Rules
 
@@ -84,3 +87,4 @@ Did not read: site/vendor/** (generated).
 - Never report a count of files you did not open.
 - Never invent a line number. Cite the line you read, or cite no line.
 - Never pad. Two real findings beat two real findings and four maybes.
+- Never let the word limit silently eat a Blocking finding. Say how many it took.

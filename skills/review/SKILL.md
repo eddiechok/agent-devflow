@@ -84,6 +84,8 @@ If that answer does not come, the axis **did not run**. Report it as `NOT RUN` i
 
 No single overall winner. One worst finding per axis, or none.
 
+**Carry a `Not reported:` line through.** An axis that ran out of room is not an axis that found nothing, and `submit` decides what to fix from what you print. If either agent says findings were dropped, say so beside that axis — the same reason `NOT RUN` is not `none`.
+
 ## 5. Hand back
 
 If `submit` called this, return the report and stop — `submit` decides what to fix.
