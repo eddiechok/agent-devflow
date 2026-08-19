@@ -54,18 +54,30 @@ Both get the fixed point, the file list, and a **400 word ceiling**. Both run in
 
 Fresh context is the whole point. Do not paste this session's reasoning, your plan, or your own account of what the change does into either prompt — that is the thing an independent reviewer would not have. Give them the range and let them read it.
 
+### When the harness will not let you spawn an agent
+
+Some harnesses forbid starting an agent unless the human asked for one. Claude Code on the web says exactly that, in the system prompt. There, neither axis can start on its own.
+
+Do not skip it quietly, and do not review the code yourself instead — this session wrote it, which is the thing the two agents exist to avoid. Say it in one line and ask:
+
+```
+This harness only starts agents when you ask. Say "run the review" and both axes go.
+```
+
+If that answer does not come, the axis **did not run**. Report it as `NOT RUN` in step 4 with the reason, and let `submit` carry it into the PR. An axis that did not run is not a clean axis.
+
 ## 4. Report both, blended into neither
 
 ```markdown
 ## Built right
-<reviewer's report>
+<reviewer's report, or: NOT RUN — <why, in one line>>
 
 ## Right thing
-<spec-reviewer's report, or: no spec available, axis skipped>
+<spec-reviewer's report, or: no spec available, axis skipped, or: NOT RUN — <why>>
 
 ## Worst of each
-- Built right: <the one finding that matters most, or none>
-- Right thing: <the one finding that matters most, or none>
+- Built right: <the one finding that matters most, or none, or NOT RUN>
+- Right thing: <the one finding that matters most, or none, or NOT RUN>
 ```
 
 **Do not merge the two lists, and do not rank across them.** A change can follow every rule in the repo while building the wrong thing, or build exactly the right thing in a way the repo forbids. One blended verdict lets the passing axis hide the failing one, which is the whole reason the axes are separate.
@@ -84,4 +96,5 @@ If a human called it, add one line on what you would do first. Do not fix anythi
 - Never spawn an axis without proving the fixed point resolves first.
 - Never invent a spec, and never treat a missing spec as a finding.
 - Never merge the two axes or rank one against the other.
+- Never report an axis as clean when it did not run. `none` and `NOT RUN` are different answers.
 - Never pass this session's reasoning into an agent's prompt.

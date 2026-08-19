@@ -58,6 +58,7 @@ This is a separate file on purpose. A `SKILL.md` is a prompt — the model reads
 | Refactor stays inside the loop | **Copied** — superpowers, and deliberately not mattpocock, who moves refactoring out to review | Cleaning up while the test is green is the payoff for having written it |
 | Stop after 2 attempts, report after 3 | **Copied** — superpowers `systematic-debugging`: "3+ failures = architectural problem. Question pattern, don't fix again" | Three failures at one layer usually means the problem is at another |
 | Say what each failed attempt ruled out | **Copied** — superpowers | A map of what is not the cause is worth more than a fourth guess |
+| A branch someone else named is still a branch | **Real bug** — the edx-landing session | Off the default branch is the requirement. The `<type>/<short-name>` shape is a preference, and a harness that pins the branch outranks a preference |
 | `[DBG-` markers, grepped out before finishing | **Ours** | Debug logging is easy to add and easy to forget |
 | Branch before the first edit | **Ours** | If the job dies later, the edits are not stranded on the default branch |
 | Commands come from the project's `## Checks` block | **Ours** | A command invented by a skill is a command nobody verified |
@@ -77,6 +78,8 @@ This is a separate file on purpose. A `SKILL.md` is a prompt — the model reads
 | 3. Second agent only if there is a spec | **Ours** | A small fix has no spec. One agent, no extra cost |
 | 4. Never merge the two reports | **Copied** — mattpocock | One combined score lets a pass on one side cover a fail on the other |
 | 5. Reports, never fixes | **Ours** — same split as `build` and `submit` | The part that reads is not the part that writes |
+| 3. Say it out loud when the harness blocks the axes | **Real bug** — the edx-landing session of 18 Aug | Claude Code on the web forbids starting an agent unless the human asked. Silence looked exactly like a passing review |
+| 4. `NOT RUN` is its own state | **Ours** | `none` means two agents looked and found nothing. Without a separate word, a review that never started prints the same as a clean one |
 
 ## `reviewer` agent — is it built right
 
@@ -112,6 +115,7 @@ This is a separate file on purpose. A `SKILL.md` is a prompt — the model reads
 |---|---|---|
 | The overall order — verify, review, commit, push, PR | **Copied** — wshobson's `git-workflow`, which is twelve lines long | The whole shape of a git workflow, small enough to read at a glance |
 | 1. Branch check as a safety net | **Ours** | `build` should have branched already. This is for when it did not run |
+| 1. A branch you were handed counts | **Real bug** — the edx-landing session | The web harness names the branch and forbids pushing to another. Renaming it to fit the convention would break the only push that is allowed |
 | 2. Run the checks now, not "they passed earlier" | **Copied** — superpowers `verification-before-completion`: "Evidence before claims, always" | Earlier is not now, and the code changed in between |
 | 2. Run each command bare | **Ours** | The hook trims output and prints the exit code, but only for a plain command |
 | 3. Grep out the debug markers | **Ours** | Pairs with `build` adding them |
@@ -125,6 +129,8 @@ This is a separate file on purpose. A `SKILL.md` is a prompt — the model reads
 | 7. Use the preview link if one appeared | **Ours** | A preview is a real build on a clean machine, which catches what a laptop cannot |
 | 8. `/code-review` handed to you | **Real bug** — it could not run | Not installed, a slash command a skill cannot type at itself, and it reviews an **open PR**. Step 5 asked for it four steps before a PR existed |
 | 8. Never claim a review ran | **Ours** | The old step 5 said `/code-review` "is already installed". A false line in a prompt reads like a finished step |
+| 7. Invoking `submit` is the request for the PR | **Real bug** — the edx-landing session | The web harness says not to open a PR unless the human explicitly asked. The skill's own description says it opens one, so typing it is the asking — but somebody had to write that down |
+| 7. Blocked PR: push, then hand over the link and the command | **Ours** | The failure mode is silence. Finished, green and invisible is the state this skill exists to prevent |
 | 8. Never merge | **Ours** | The line the whole plugin is built around |
 
 ## `ship`

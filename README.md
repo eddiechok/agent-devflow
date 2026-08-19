@@ -206,6 +206,35 @@ login and permissions · secrets and keys · payments · database migrations · 
 | Skip the commit guard | append `# devflow-ok` to the command |
 | Force a bigger or smaller process | `/devflow:flow --deep` or `--quick` |
 
+## On Claude Code on the web
+
+The plugin installs and loads the same way there — put the `extraKnownMarketplaces` and
+`enabledPlugins` block in the repo's own `.claude/settings.json` and it comes with the
+clone. But the web harness writes instructions of its own into the system prompt, and
+three of them sit on top of devflow's steps.
+
+**You have to type `/devflow:flow` yourself.** This is the one the plugin cannot fix. A web
+session opens with a task description telling it to make the change, commit and push —
+a complete loop, already given, before any skill is consulted. A skill description does not
+outrank it. Left alone, the session does the work well and does none of devflow: in the run
+that prompted this section it invoked zero skills, ran no review, never opened the site, and
+opened no PR.
+
+**The review has to be asked for.** The harness says not to start an agent unless the human
+asked, and both review axes are agents. `review` now says so in one line and asks; say
+**"run the review"** and both start. If nothing is said the axes report `NOT RUN`, which
+`submit` carries into the PR under **Known issues**. A blocked review is never a clean one.
+
+**The PR is already asked for.** The harness says not to open a pull request unless the
+human explicitly asked. Invoking `submit` — or `flow`, which ends in it — *is* that request,
+and `submit` says so rather than stopping to ask twice.
+
+**Your branch is already made.** The harness creates it and forbids pushing anywhere else,
+so `build` keeps it instead of making a `<type>/<short-name>` one. Off the default branch was
+always the real requirement; the naming was never the point.
+
+Nothing here detects the harness. Every rule is written to be true in both places.
+
 ## About the hook
 
 `hooks/bash-guard.py` does three things, all cheap and all worth knowing about:

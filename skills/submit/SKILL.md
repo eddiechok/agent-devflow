@@ -25,6 +25,8 @@ git checkout -b <type>/<short-name>
 
 `build` should have done this before its first edit, so normally you are already on one. This is the safety net for when `build` did not run — you were called directly, or the work arrived some other way.
 
+**A branch you were handed counts.** Some harnesses create the branch and forbid pushing anywhere else; Claude Code on the web does both. Off the default branch is the whole requirement — never rename one to fit `<type>/<short-name>`.
+
 Never commit directly to the default branch.
 
 ## 2. Run the checks fresh
@@ -95,6 +97,7 @@ Then act on what comes back:
 - **Blocking**, **Missing** and **Built wrong** — fix, then review again. At most **2 rounds**.
 - **Nobody asked for this** — either take it out, or keep it and say why in the PR under **Assumptions**. Silently keeping it is not an option.
 - Anything still standing after 2 rounds goes in the PR under **Known issues**, not hidden and not looped on forever.
+- **`NOT RUN`** — an axis that could not start is not a passing axis. Name it under **Known issues**, and say in **Evidence** which axes ran. Never write "reviewed" over a review that did not happen.
 
 **A finding can be wrong, and you are allowed to say so.** Check it against the code first, then reject it in one line with the technical reason, and put the rejection in the PR under **Known issues** so the call is visible to whoever merges. Never reject a finding you have not checked, and never reject one silently — an unread finding quietly dropped is worse than a false positive fixed.
 
@@ -117,6 +120,10 @@ Types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `perf`, `build`, `ci`
 ## 7. Open the PR
 
 Push, then open a PR against the default branch.
+
+**Opening it is what you were asked for.** Some harnesses say not to open a pull request unless the human explicitly asked — Claude Code on the web does. Invoking this skill *is* that request; it says so in its own description, and so does `flow`. Do not stop here to ask again.
+
+If the environment blocks it anyway, push the branch and then give the human the compare link and the `gh pr create` command, in two lines. Never end silently on a pushed branch with no PR — work that is finished, green and invisible is the state this skill exists to prevent.
 
 If the repo has a PR template, follow its headings. Otherwise use this shape:
 
@@ -150,6 +157,7 @@ I checked this locally before pushing. I stopped my own server; step 5 is for yo
 - Tests: 48 passed, exit 0
 - Typecheck: clean
 - Live check: done, works
+- Review: both axes ran (or: built-right ran, right-thing NOT RUN — no spec)
 
 ## Known issues
 - (only if the review left something unresolved)
