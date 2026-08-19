@@ -93,6 +93,8 @@ This is a separate file on purpose. A `SKILL.md` is a prompt — the model reads
 | 3. 400 word limit | **Copied** — mattpocock | Makes the agent pick its best findings instead of handing you everything |
 | 3. Say when the 400 words ran out | **Ours** | The ceiling is meant to drop weak findings, which is fine. Dropping a Blocking one is not, and without a count a truncated review prints exactly like a clean one — the same hole as `NOT RUN` against `none`. **The count is the agent's own word for it and nothing checks it** — better than silence, weaker than evidence, and worth knowing which of the two you are reading |
 | 3. Second agent only if there is a spec | **Ours** | A small fix has no spec. One agent, no extra cost |
+| 3. `hardcase` only if `reviewer` found something | **Ours** | Same trade as the row above. A clean first axis has nothing to argue with, so the expensive step is skipped exactly when there is no work for it — which is the only kind of cheap this repo's rule 3 allows on a review |
+| 4. `Challenged` sits under `Built right` | **Ours** | It is about that axis, not beside it, so it is not a third axis and it never reaches `Worst of each`. There is no worst challenge |
 | 4. Never merge the two reports | **Copied** — mattpocock | One combined score lets a pass on one side cover a fail on the other |
 | 5. Reports, never fixes | **Ours** — same split as `build` and `submit` | The part that reads is not the part that writes |
 | 3. Say it out loud when the harness blocks the axes | **Real bug** — the edx-landing session of 18 Aug | Claude Code on the web forbids starting an agent unless the human asked. Silence looked exactly like a passing review |
@@ -114,6 +116,18 @@ This is a separate file on purpose. A `SKILL.md` is a prompt — the model reads
 | Check who calls the changed code | **Same idea** — superpowers asks something similar | Written as an action here, because a question gets answered from memory |
 | "Nothing found" is a real answer | **Ours**, building on superpowers | Their rule forbids claiming it looks fine without checking. Ours says what to do instead: name what you read |
 | Pins `model: opus`, `effort: xhigh` | **Ours** | Neither source pins one. An agent with no `model:` inherits the session, so the same branch gets a different review depending on what the human last typed at `/model`, and the weaker one still reports nothing wrong |
+
+## `hardcase` agent — is the first axis right
+
+| Step | From | Why |
+|---|---|---|
+| The agent exists at all | **Changed** — heliohq/ship's independent peer challenger, "code-grounded objections with file paths and snippets" | Theirs adds objections to a review. Ours subtracts from one: it is handed `reviewer`'s findings and told to break them, and it may not add a finding of its own |
+| Defaults to `Falls` | **Ours** | The asymmetry is the mechanism. A challenger that needs proof to reject sides with the reviewer by default and prints agreement it never earned. Measured on the audit of 19 Aug: 17 of 58 findings did not survive a refuter told to default the other way |
+| Challenges the first axis only | **Ours** | The two axes are not symmetrical. Every `spec-reviewer` finding quotes the spec line it rests on, so it is already anchored outside the reviewer's judgement. `reviewer`'s bar is naming a failing case, and a plausible case that cannot be reached clears it |
+| `Could not check` is its own bucket | **Ours** — same shape as `NOT RUN` and `Not reported:` | A challenge that did not happen is not a challenge that failed, and `submit` acts on the difference |
+| It gets no vote | **Ours** | Two agents disagreeing is not a majority. `submit` reads the refuting line itself before dropping a fix |
+| Never adds a finding of its own | **Ours** | There is no round for it, and a challenger that can also accuse has an incentive to trade |
+| Pins `model` and `effort` like the axes | **Ours** | A refuter that cannot follow the code refutes nothing and prints a clean sheet, which reads exactly like agreement |
 
 ## `spec-reviewer` agent — is it the right thing
 
@@ -139,6 +153,8 @@ This is a separate file on purpose. A `SKILL.md` is a prompt — the model reads
 | 2. Run each command bare | **Ours** | The hook trims output and prints the exit code, but only for a plain command |
 | 3. Grep out the debug markers | **Ours** | Pairs with `build` adding them |
 | 4. Run the app, not just the tests | **Ours**, extending superpowers' evidence rule | Tests only check what someone thought to test. A green suite sits happily on top of a broken page |
+| 4. First-hand beats second-hand | **Changed** — heliohq/ship's L1/L2 hierarchy: a screenshot or response body is proof, an HTTP 200 or "tests passed" is not | Same bar, stated as a question the reader can apply to evidence the list never anticipated: *would this have been true before the change?* The named tiers only cover the cases somebody thought of. `ship` step 5 carries the same words, and the two have to stay in step |
+| 5. `Challenged` is help with the call, not the call | **Ours** | `hardcase` reports; this step decides. A `Falls` gets its refuting line checked here before any fix comes off the list, and `Could not check` is treated as no challenge at all |
 | 4. Two tries, then stop and say so | **Same idea** — superpowers caps attempts too | An honest failure beats a PR that looks fine |
 | 5. Calls `review` instead of reviewing | **Copied** — superpowers splits asking for a review from doing one | Two jobs, two files. It also keeps the review out of the session that wrote the code |
 | 5. You may reject a finding, in writing | **Copied** — superpowers' `receiving-code-review` | Their rule: feedback is something to check, not an order. An agent is less accountable than a human reviewer, so a rejection has to be checked, written down, and visible in the PR |
@@ -170,6 +186,7 @@ This is a separate file on purpose. A `SKILL.md` is a prompt — the model reads
 | The default branch's SHA, not the branch's absence | **Real bug** | Merging and deleting are separate calls. One run merged, then failed the delete, and a retry loop concluded three times that nothing had merged |
 | Any `## Deploy` line may repeat | **Real bug** | The first project that did not fit the one-command shape |
 | Fetch the URL after deploying | **Ours** — same reasoning as `submit`'s live check | A green pipeline is not a working site |
+| 5. First-hand beats second-hand | **Changed** — heliohq/ship's L1/L2 hierarchy, via `submit` step 4 | The same words on purpose, and they have to stay in step. It bites hardest here: the merge has landed and cannot be undone, so an accurate report is all the step has left to give |
 | Write the `## Deploy` block only after it worked | **Ours** | The one moment the command is proven is right after it ran |
 | A refused branch delete is reported, not retried | **Real bug** — merging this plugin's own audit branch | The web proxy answers `403` to a ref delete while ordinary pushes work. Retrying a policy denial wastes the run; reporting it as a failed merge would be worse |
 | `git branch -d` may refuse after a rebase merge | **Real bug** — the same run | Rebase and squash rewrite the commits, so the local branch is not an ancestor of the default branch even though its content is all there. The fix is to check the content landed, never to reach for `-D` |

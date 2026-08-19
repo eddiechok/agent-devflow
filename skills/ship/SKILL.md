@@ -225,7 +225,20 @@ If you had to work out what deploying means because the block was missing, **do 
 
 A green deploy is not a working site. Fetch the `Verify` URL and confirm **the change you just merged** is actually there, not merely that something answered 200.
 
-Same reasoning as `submit`'s live check: a passing pipeline sitting on top of a broken page is worse than an honest failure, because it ends the conversation instead of starting one.
+Same reasoning as `submit`'s live check, and the same test — **would this have been true
+before the change?**
+
+- **First-hand** — the new copy in the page text. The favicon bytes differing from the old
+  ones. The endpoint returning the field you added. The command's real output.
+- **Second-hand** — a `200`. A green pipeline. "Deployment succeeded". A build number that
+  went up. Every one of those was equally true yesterday.
+
+**Only first-hand ends this step**, and here it matters more than anywhere else in the
+plugin: the merge has already landed and cannot be undone from here, so an accurate report
+is the entire remaining value of the step. Reporting second-hand evidence as proof does not
+just overstate — it closes the conversation that would have caught it.
+
+A passing pipeline sitting on top of a broken page is worse than an honest failure.
 
 If it is not live, **say so plainly**, with what you saw. Do not report a successful deploy. The merge is already done and cannot be undone from here, so an accurate report is the entire remaining value of this step.
 

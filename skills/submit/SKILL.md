@@ -84,6 +84,25 @@ Pick whichever of these the project actually is:
 
 Either way the rule is the same: exercise the change the way a user would, and put the output on screen.
 
+### What counts as proof
+
+**The test is one question: would this have been true before the change?** If yes, it
+proves nothing — it is evidence that something answered, not that the change works.
+
+- **First-hand** — the thing you are claiming, observed. The response body with the new
+  field in it. The page text showing the new label. The CLI's actual stdout for the flag
+  you added. A screenshot of the layout you fixed.
+- **Second-hand** — true either way. A `200`. A green pipeline. "Server started". An exit
+  code. "Tests passed" — step 2 already ran those, and a suite that never covered this
+  change passes just as loudly.
+
+**Only first-hand ends this step.** A server that boots is second-hand about a broken
+page, and it is the most common way this step gets faked: the launch worked, so the
+change must have. Go and look at the thing itself.
+
+This is the same rule `ship` step 5 applies to a deploy, and it has to stay the same rule —
+a green deploy is second-hand about a live site for exactly the same reason.
+
 Rules, when you launched something:
 - **Put a time limit on it.** If the app never becomes ready, that is a finding to report, not something to sit through.
 - **Stop the server when you are done.** Stop only the process you started. Never kill "whatever is on port 3000" — that may be something the human is running.
@@ -112,6 +131,14 @@ Then act on what comes back:
 - **`Not reported: N further findings`** — the axis ran out of room. Those findings exist and you have not seen them. **Run that axis again, scoped to what it did not reach**, and if the second run is also truncated, say so under **Known issues** with the count. A truncated review prints exactly like a clean one, which is the whole reason the line is there; dropping it here is the same failure as dropping `NOT RUN`.
 
 **A finding can be wrong, and you are allowed to say so.** Check it against the code first, then reject it in one line with the technical reason, and put the rejection in the PR under **Known issues** so the call is visible to whoever merges. Never reject a finding you have not checked, and never reject one silently — an unread finding quietly dropped is worse than a false positive fixed.
+
+**The `Challenged` section is help with exactly that call, not a decision already made.**
+
+- **Falls** — `hardcase` found the line that refutes it. **Check that line yourself**, then reject the finding with its reason. Two agents disagreeing is not a majority vote; it is one of them having read something the other did not, and you are the one who can go and look.
+- **Stands** — a finding that survived an agent whose whole job was to break it. Fix it. Rejecting one of these takes more than a one-line reason, and you had better be able to say what both of them missed.
+- **Could not check** — the challenge did not happen for that finding. Treat it exactly as if there had been no challenge at all. It is not a `Falls`.
+
+Never write "challenged" over a `hardcase` that did not run, and never let a `Falls` you did not verify take a fix off the list.
 
 The review reports; it never edits. The fixes are yours.
 

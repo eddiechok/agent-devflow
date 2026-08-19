@@ -54,6 +54,25 @@ Both get the fixed point, the file list, and a **400 word ceiling**. Both run in
 
 Fresh context is the whole point. Do not paste this session's reasoning, your plan, or your own account of what the change does into either prompt — that is the thing an independent reviewer would not have. Give them the range and let them read it.
 
+### Then challenge the first axis
+
+**`devflow:hardcase`** — a third agent, and the only one that runs second, because it
+needs something to argue with. Give it the fixed point and `reviewer`'s findings, and
+nothing else: not the spec, not `spec-reviewer`'s report, and not this session.
+
+**Only when `reviewer` reported something.** A clean first axis has nothing to refute, so
+say so in one line and skip it. This is the one place in the plugin where the expensive
+step is skipped by default, and it is safe because it is skipped exactly when there is no
+work for it.
+
+**It challenges the first axis only.** `spec-reviewer`'s findings each quote the line of
+the spec they rest on, so they are already anchored to something outside the reviewer's
+judgement. `reviewer`'s are not — its bar is naming a failing case, and a plausible case
+that cannot actually be reached passes that bar. That is the gap `hardcase` closes.
+
+It does not get a vote. It reports which findings stand, which fall and why, and `submit`
+decides. A challenge is one more thing on the table, not a verdict that removes one.
+
 ### When the harness will not let you spawn an agent
 
 Some sessions forbid starting an agent unless the human asked for one, in the system prompt. **This is a plan restriction, not a web one** — it rides on Pro, and it fires locally exactly as it does on the web, so do not go looking for it by asking where you are running. Look at your own instructions: if something there says not to spawn an agent unless asked, this section applies, and otherwise it does not. Where it applies, neither axis can start on its own.
@@ -74,6 +93,10 @@ If that answer does not come, the axis **did not run**. Report it as `NOT RUN` i
 ## Built right
 <reviewer's report, or: NOT RUN — <why, in one line>>
 
+## Challenged
+<hardcase's report, or: nothing to challenge — the first axis was clean,
+ or: NOT RUN — <why>>
+
 ## Right thing
 <spec-reviewer's report, or: no spec available, axis skipped, or: NOT RUN — <why>>
 
@@ -81,6 +104,12 @@ If that answer does not come, the axis **did not run**. Report it as `NOT RUN` i
 - Built right: <the one finding that matters most, or none, or NOT RUN>
 - Right thing: <the one finding that matters most, or none, or NOT RUN>
 ```
+
+**`Challenged` sits under `Built right` because it is about that axis, not beside it.**
+It is not a third axis and it never appears in `Worst of each` — there is no worst
+challenge. Print `hardcase`'s three sections as it wrote them, `Falls` first, and do not
+delete a finding from `Built right` because it fell. Both readings go to `submit`
+together; the point is that whoever decides can see the argument, not just its outcome.
 
 **Do not merge the two lists, and do not rank across them.** A change can follow every rule in the repo while building the wrong thing, or build exactly the right thing in a way the repo forbids. One blended verdict lets the passing axis hide the failing one, which is the whole reason the axes are separate.
 
@@ -102,3 +131,5 @@ If a human called it, add one line on what you would do first. Do not fix anythi
 - Never merge the two axes or rank one against the other.
 - Never report an axis as clean when it did not run. `none` and `NOT RUN` are different answers.
 - Never pass this session's reasoning into an agent's prompt.
+- Never run `hardcase` against the spec axis, and never let it add a finding of its own.
+- Never drop a finding because `hardcase` broke it. Print both and let `submit` decide.
