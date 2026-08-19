@@ -58,10 +58,30 @@ fixed and is not repeated here. This plan covers the rest.
    piece 1 — "is there an open PR" has to work without `gh`.
    Verify: read `submit` step 7 and `flow` step 0
 
+8. [independent: yes] **The 400-word ceiling stops eating findings silently.** Both agents
+   carry a `Not reported:` count, and `review` passes it through. Dropping weak findings
+   is the ceiling's job; dropping a Blocking one while printing like a clean review is not.
+   Verify: read both agents' return blocks
+
+9. [independent: no] **`build` commits each plan piece as it lands**, so `git log` answers
+   which pieces are built and a plan is resumable for real. `submit` stops short of an
+   empty commit when the branch is already committed. Depends on nothing in this plan, but
+   it re-opens a decision this branch already took — see the note below.
+   Verify: read `build`'s commit section; `python3 skills/test-frontmatter.py`
+
+10. [independent: yes] **`tend`** — the skill for a pull request that is already open and
+    is telling you something: a red check, a reviewer's comment. Triage first, fix through
+    `build`, re-submit through `submit`, which updates the PR.
+    Verify: `claude plugin validate .`; read the skill
+
+**Pieces 8, 9 and 10 were added after the fact**, when the three items this plan had put
+out of scope were asked for together. Piece 9 in particular reverses a decision taken
+earlier on this same branch — the resume promise was deleted rather than built, and is now
+built. Recorded rather than tidied away, because a plan quietly rewritten to match the code
+is worth less than one that shows where it changed its mind.
+
 ## Out of scope
 
-- `tend`. Handling CI failures and review comments after the PR opens is still on the
-  not-yet list; piece 7 only makes a second `submit` safe.
-- Per-piece commits for Deep work. The resume promise was deleted rather than built,
-  and building it is a separate decision.
-- The 400-word review ceiling not scaling with a five-piece branch. Flagged, not fixed.
+- Reviewing per piece rather than per branch. `review` still runs once, over the whole
+  branch, at `submit` time.
+- Anything that merges. `ship` is still the only skill that does, and only a human starts it.
