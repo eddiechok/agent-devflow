@@ -98,6 +98,8 @@ flowchart TD
     BUILD["build<br/>write the test<br/>watch it fail<br/>then make it pass"] --> SUBMIT["submit<br/>feature branch<br/>checks re-run fresh<br/>run the app, code review<br/>conventional commit, push"]
     SUBMIT --> YOU2{{"You review the PR"}}
     YOU2 -->|"want changes"| REQ
+    YOU2 -->|"CI red, or comments"| TEND["tend<br/>triage what the PR reports<br/>whose failure is it<br/>then fix it"]
+    TEND --> BUILD
     YOU2 -->|"/devflow:ship"| SHIP["ship<br/>merge<br/>watch the deploy<br/>check it is really live<br/>delete the branch, tidy up"]
 
     classDef human fill:#fde68a,stroke:#b45309,color:#111
@@ -160,7 +162,8 @@ This is the only self-improvement machinery in Phase 1, and it is deliberately j
 | `flow` | Sizes the request, routes it, asks any questions in one batch |
 | `build` | Test first, watch it fail for the right reason, then make it pass |
 | `review` | Two axes in fresh agents — is it built right, is it the right thing — reported side by side, never blended |
-| `submit` | Runs the checks fresh, runs the app, calls `review`, commits, opens the PR. **Never merges.** |
+| `submit` | Runs the checks fresh, runs the app, calls `review`, commits, opens the PR — or updates the one already open. **Never merges.** |
+| `tend` | After the PR is open: works out what a red check or a review comment is really saying, whether this branch caused it, then fixes it and re-submits |
 | `ship` | Merges it, watches the deploy, checks it is really live, cleans up. **Only you can start it** |
 
 ## The agents
@@ -308,7 +311,6 @@ Phase 1 is deliberately the smallest useful thing. Deliberately absent:
 
 - A standalone `plan` skill. Deep work already writes `.devflow/plans/<name>.md` and resumes from it, but there is no way to invoke planning on its own, revise a plan once written, or tidy up old ones.
 - `debug` — the disciplined bug-fixing loop. For now bugs go through `build`.
-- `tend` — handling CI failures and review comments after the PR opens.
 - The `hardcase` agent — a second, adversarial read that tries to refute what `reviewer` found. For now one review is the whole review.
 - Model routing by size. The two agents pin a model; the six skills inherit whatever you are on. `flow` picks Quick, Standard or Deep at runtime, but a skill's `model:` is fixed on disk, and a skill cannot type `/model` at itself — the same wall `/code-review` hit. Routing the sizes would mean a skill per size, which is three copies of `flow` to keep in step.
 - Cleanup of worktrees and folder copies. `ship` handles branches, dev servers and temp files; copies of the repo are still yours.
