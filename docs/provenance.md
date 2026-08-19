@@ -82,7 +82,7 @@ This is a separate file on purpose. A `SKILL.md` is a prompt — the model reads
 | 2. Never make up requirements | **Copied** — mattpocock | No spec means we say "no spec", not that we imagine one |
 | 3. Fresh agents, no session history | **Copied** — superpowers and mattpocock | The session that wrote the code believes everything that went into it |
 | 3. 400 word limit | **Copied** — mattpocock | Makes the agent pick its best findings instead of handing you everything |
-| 3. Say when the 400 words ran out | **Ours** | The ceiling is meant to drop weak findings, which is fine. Dropping a Blocking one is not, and without a count a truncated review prints exactly like a clean one — the same hole as `NOT RUN` against `none` |
+| 3. Say when the 400 words ran out | **Ours** | The ceiling is meant to drop weak findings, which is fine. Dropping a Blocking one is not, and without a count a truncated review prints exactly like a clean one — the same hole as `NOT RUN` against `none`. **The count is the agent's own word for it and nothing checks it** — better than silence, weaker than evidence, and worth knowing which of the two you are reading |
 | 3. Second agent only if there is a spec | **Ours** | A small fix has no spec. One agent, no extra cost |
 | 4. Never merge the two reports | **Copied** — mattpocock | One combined score lets a pass on one side cover a fail on the other |
 | 5. Reports, never fixes | **Ours** — same split as `build` and `submit` | The part that reads is not the part that writes |

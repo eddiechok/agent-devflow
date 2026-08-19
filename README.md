@@ -77,7 +77,7 @@ Then, once you have looked at the PR and want it finished:
 /devflow:ship 123
 ```
 
-`flow` sizes the work and routes it. You should not normally need to call the others directly — except `ship`, which is the one skill nothing else can call.
+`flow` sizes the work and routes it. You should not normally need to call the others directly — except `ship`, which is the one skill nothing else can call, and `tend`, which `flow` does route to but which you will usually reach for yourself the moment you see a red check.
 
 ### The loop
 

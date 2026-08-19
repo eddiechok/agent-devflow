@@ -14,9 +14,11 @@ Size the work, then route it. One line before anything else.
 - Branch: !`git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "no git"`
 - Default branch ref: !`git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null || echo origin/main`
 - Status: !`git status --short 2>/dev/null | head -20 || true`
-- PR for this branch: !`if command -v gh >/dev/null 2>&1; then gh pr view --json number,state --jq '"#\(.number) [\(.state)]"' 2>/dev/null || echo "none"; else echo "no gh here — check another way"; fi`
+- PR for this branch: !`base=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null || echo origin/main); n=$(git rev-list --count "$base"..HEAD 2>/dev/null || echo 0); if [ "$n" = "0" ]; then echo "none — nothing committed ahead of $base"; elif command -v gh >/dev/null 2>&1; then gh pr view --json number,state --jq '"#\(.number) [\(.state)]"' 2>/dev/null || echo "none"; else echo "$n commits ahead, no gh here — check another way"; fi`
 
 ## Step 0 — is this a follow-up?
+
+The Context line answers this without touching the network on a fresh branch: nothing committed ahead of the default branch means there is nothing a pull request could be about, so it does not go and ask. `flow` runs on every change, including the typo fixes it is tuned for, and a round-trip on all of them to answer a question git can settle locally is a poor trade.
 
 Look at the branch before anything else. **If it already has an open pull request**, that work has been submitted and this request is one of three things.
 

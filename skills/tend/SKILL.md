@@ -59,6 +59,14 @@ Through `devflow:build`, which means the same five gates as any other change: th
 
 **Two rounds on the same failure, then stop.** Say what each attempt ruled out and hand it back. Three pushes at one red check is the same signal as three patches at one bug: the problem is somewhere other than where you are looking.
 
+**Count across runs, not within one.** Nothing about this skill survives the session, and a red check is exactly the thing you get invoked at three separate times. Before the first fix, read what is already there:
+
+```
+git log <default branch ref>..HEAD --oneline
+```
+
+A commit that already names this failure means someone has been here — most likely you, in an earlier run. It counts. Two rounds is two across all of them, and the third time the useful answer is what has been ruled out, not another attempt.
+
 Never get to green by weakening the thing that caught you. Deleting, skipping or loosening a test to make a check pass is on the danger list, and it is the one change here that is worse than leaving the PR red.
 
 ## 5. Re-submit
