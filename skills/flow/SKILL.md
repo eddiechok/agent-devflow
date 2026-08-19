@@ -18,7 +18,7 @@ Size the work, then route it. One line before anything else.
 
 ## Step 0 — is this a follow-up?
 
-Look at the branch before anything else. **If it already has an open pull request**, that work has been submitted and this request is one of two things.
+Look at the branch before anything else. **If it already has an open pull request**, that work has been submitted and this request is one of three things.
 
 **A change to the work in that PR** — follow-up mode:
 
@@ -26,9 +26,13 @@ Look at the branch before anything else. **If it already has an open pull reques
 - **Size it normally.** A follow-up is not automatically Quick. The danger list still applies, and a genuinely unclear change still earns its round of questions.
 - **Same branch, same PR.** `submit` updates it rather than opening a second.
 
+**Something the PR itself is reporting** — a check went red, a reviewer left comments, a review asked for changes. **Hand it to `devflow:tend` and stop.** Do not take it into `build` from here.
+
+That is the whole reason `tend` exists: not every failure a pull request reports belongs to the pull request, and a fix pushed for a failure nobody attributed is worse than no fix. `tend` reads what is actually red, decides whose it is, and comes back through `build` and `submit` itself. You would be routing around the one step that stops the mistake.
+
 **New work that merely started here** — normal flow, its own branch, its own PR.
 
-Say which of the two you decided, in the same line as the size:
+Say which of the three you decided, in the same line as the size:
 
 ```
 Standard — follow-up on #12, tightening the copy it added.
@@ -192,6 +196,7 @@ Beyond that one line, do not discuss it and do not ask about it. Record it and c
 
 - Never start with a question. Announce the size first.
 - Never bolt work onto an open pull request without saying that is what you are doing.
+- Never fix what a PR is reporting without going through `tend` first. Attribution comes before the fix.
 - Never go up a size without naming the reason.
 - Never do work that the size you announced does not call for.
 - Never finish without calling `submit`, or saying in one line why you did not.

@@ -142,7 +142,7 @@ Word for word the same command, so the two cannot drift apart. No marker may sur
 
 ## Commit the piece — only when you were given one
 
-If `flow` handed you a piece from `.devflow/plans/<name>.md`, commit it as soon as it is green and refactored, before handing back:
+If `flow` handed you a piece from `.devflow/plans/<name>.md`, commit it once it is green, refactored, swept of debug markers and the full suite has run once — then hand back:
 
 ```
 <type>(<scope>): <the piece, as an imperative subject>
@@ -158,7 +158,9 @@ Commit the piece and nothing else. Not a half-finished next piece, and not unrel
 
 Say what you built and the output that proves it. Then stop — do not open a PR.
 
-If `flow` called you, it takes over from here and submits. If you were called directly, say in one line that the work is ready for `devflow:submit`, and leave that call to the human.
+If a skill called you — `flow`, or `tend` fixing what a pull request reported — it takes over from here and submits. Say what you built and stop; do not tell it to run `submit`, it already knows.
+
+If a **human** called you directly, say in one line that the work is ready for `devflow:submit`, and leave that call to them.
 
 ## Rules
 
@@ -169,4 +171,4 @@ If `flow` called you, it takes over from here and submits. If you were called di
 - Never let a test work out its expected value the way the code does.
 - Never widen scope mid-piece. Finish the piece, then raise the next one separately.
 - Never commit anything but a finished plan piece, and never open a PR.
-- Run the full test suite once at the end, not after every edit.
+- Run the full test suite once before handing back — not after every edit, and not never. On a plan piece that run is what makes committing it safe, so a five-piece plan runs it five times and that is the price of five trustworthy checkpoints.
