@@ -44,7 +44,7 @@ This is a separate file on purpose. A `SKILL.md` is a prompt — the model reads
 | 0. Follow-up work re-enters through `flow` | **Real bug** — the audit of 18 Aug | `submit` was terminal, so a second run opened a second pull request for one change. Sizing still runs: a follow-up is not automatically small, and the danger list does not care which round it is |
 | Never finish without calling `submit` | **Ours** | Written for a real failure mode: work that is finished, green, and still sitting uncommitted |
 
-*Corrected.* The plan-file row above used to read **Copied** — "superpowers plans track progress in the file", and cited that for a promise that you could `/clear` mid-plan and carry on. Superpowers does no such thing: `writing-plans` puts `- [ ]` in its **template** without ever telling the agent to tick them, and `executing-plans` tracks progress in the session todo list, which dies with the context. The resume promise was devflow's own, it was never built, and it is now on the not-yet list instead of in the docs as a feature.
+*Corrected.* The plan-file row above used to read **Copied** — "superpowers plans track progress in the file", and cited that for a promise that you could `/clear` mid-plan and carry on. Superpowers does no such thing: `writing-plans` puts `- [ ]` in its **template** without ever telling the agent to tick them, and `executing-plans` tracks progress in the session todo list, which dies with the context. The resume promise was devflow's own. It was documented before it existed, deleted once that was found, and then built properly: `build` commits each plan piece, so `git log` is the record and the sentence is finally true. The three states are left visible here on purpose — the promise was wrong for longer than it was missing.
 
 ## `build`
 
@@ -66,6 +66,7 @@ This is a separate file on purpose. A `SKILL.md` is a prompt — the model reads
 | `[DBG-` markers, grepped out before finishing | **Ours** | Debug logging is easy to add and easy to forget |
 | The marker sweep is `submit`'s command, word for word | **Real bug** — the audit of 18 Aug | `build`'s copy never got the `--exclude-dir` fix, so it walked `node_modules`, where a vendored `[DBG-` is a marker it is told to remove and has no business touching |
 | Branch before the first edit | **Ours** | If the job dies later, the edits are not stranded on the default branch |
+| A plan piece is committed as it lands | **Ours** | The one case where `build` commits. The plan says what the pieces are and `git log` says which exist, so resuming is answered with evidence. The checkbox-in-the-file version was rejected first: a tick is a claim, and this repo does not take claims |
 | Commands come from the project's `## Checks` block | **Ours** | A command invented by a skill is a command nobody verified |
 
 ## `review` skill

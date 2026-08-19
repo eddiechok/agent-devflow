@@ -145,9 +145,9 @@ Issue: #123 (if there is one)
    Verify: pnpm test src/api/settings
 ```
 
-Build one piece at a time, in order.
+Build one piece at a time, in order. **`build` commits each piece as it goes green**, which is what makes a long plan survivable: you may `/clear` between pieces and pick up from the plan plus `git log <default branch ref>..HEAD`. The plan says what the pieces are; the log says which of them exist.
 
-The plan file is the spec `review`'s second axis reads, not a progress tracker: nothing writes back to it, and nothing commits between pieces. **Do not `/clear` mid-plan** — the file cannot tell you which pieces are built, and neither can `git log`.
+The file itself is still not a progress tracker — nothing writes back to it. It is the spec `review`'s second axis reads.
 
 ## Step 5 — submit it
 

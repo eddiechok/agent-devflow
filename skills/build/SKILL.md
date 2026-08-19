@@ -57,7 +57,7 @@ If they do not match you are already on a branch — **keep it, whatever it is c
 
 `submit` checks this too, but by then it is late. Editing happens here, and `submit` is several gates away — if it never runs because you got stuck, the checks stayed red, or the human stopped you, the edits are left sitting uncommitted on the default branch. Branching first costs one command and the abort case stays clean.
 
-Branching is not committing. You still do not commit; that is `submit`'s job.
+Branching is not committing. Committing happens in one case only — a finished plan piece, below. Everything else is `submit`'s.
 
 ## The five gates
 
@@ -140,9 +140,23 @@ grep -rn "\[DBG-" . --exclude-dir=node_modules --exclude-dir=.git --exclude='*.m
 
 Word for word the same command, so the two cannot drift apart. No marker may survive into a commit. Markdown is excluded because a marker there is a code sample, not something that runs — `submit` step 3 skips it for the same reason, and keeps the quotes for the same reason too: zsh expands a bare `*.md` and the command dies before grep sees it.
 
+## Commit the piece — only when you were given one
+
+If `flow` handed you a piece from `.devflow/plans/<name>.md`, commit it as soon as it is green and refactored, before handing back:
+
+```
+<type>(<scope>): <the piece, as an imperative subject>
+```
+
+Types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `perf`, `build`, `ci` — the same list `submit` step 6 uses, and it has to stay the same list.
+
+**This is the only case where `build` commits**, and the reason is narrow. A Quick or Standard change is one piece, and `submit` commits it after the checks and the review, which is where that belongs. A plan is several pieces across a job long enough to outlive the context that started it, and a commit per piece is what makes it resumable: `git log <default branch ref>..HEAD` then answers *which pieces are built* with evidence, rather than a checkbox somebody had to remember to tick.
+
+Commit the piece and nothing else. Not a half-finished next piece, and not unrelated tidying that came along with it.
+
 ## Handing back
 
-Say what you built and the output that proves it. Then stop — do not commit, and do not open a PR.
+Say what you built and the output that proves it. Then stop — do not open a PR.
 
 If `flow` called you, it takes over from here and submits. If you were called directly, say in one line that the work is ready for `devflow:submit`, and leave that call to the human.
 
@@ -154,4 +168,5 @@ If `flow` called you, it takes over from here and submits. If you were called di
 - Never skip verify-RED because the test "obviously" fails.
 - Never let a test work out its expected value the way the code does.
 - Never widen scope mid-piece. Finish the piece, then raise the next one separately.
+- Never commit anything but a finished plan piece, and never open a PR.
 - Run the full test suite once at the end, not after every edit.

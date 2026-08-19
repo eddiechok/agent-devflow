@@ -133,7 +133,7 @@ Deep work writes its plan into the project, at `.devflow/plans/<short-name>.md`.
 
 That file is the spec, not a progress tracker. Its job is to hold the assumptions and the pieces, and to be what `review`'s second axis judges the work against.
 
-**Do not `/clear` part-way through a plan.** Nothing writes progress back to the file and nothing commits between pieces, so neither the plan nor `git log` can tell you which pieces are built. Finish a plan in one session. Resuming long work is on the [not yet](#what-is-not-here-yet) list.
+**A plan is resumable, and the record is `git log`, not the file.** `build` commits each piece as it goes green, so you can `/clear` between pieces and pick up from the plan plus the log: the plan says what the pieces are, the log says which of them exist. Nothing has to remember to tick a box — which is the reason to trust it, and the reason the checkbox version of this was rejected.
 
 Commit it or ignore it, as you prefer — devflow neither adds it to `.gitignore` nor expects it there.
 
@@ -309,7 +309,6 @@ Phase 1 is deliberately the smallest useful thing. Deliberately absent:
 - A standalone `plan` skill. Deep work already writes `.devflow/plans/<name>.md` and resumes from it, but there is no way to invoke planning on its own, revise a plan once written, or tidy up old ones.
 - `debug` — the disciplined bug-fixing loop. For now bugs go through `build`.
 - `tend` — handling CI failures and review comments after the PR opens.
-- Resumable Deep work. Nothing records which pieces are built and nothing commits between them, so a `/clear` mid-plan loses that. This was documented as working until the claim was checked; it never was.
 - The `hardcase` agent — a second, adversarial read that tries to refute what `reviewer` found. For now one review is the whole review.
 - Model routing by size. The two agents pin a model; the six skills inherit whatever you are on. `flow` picks Quick, Standard or Deep at runtime, but a skill's `model:` is fixed on disk, and a skill cannot type `/model` at itself — the same wall `/code-review` hit. Routing the sizes would mean a skill per size, which is three copies of `flow` to keep in step.
 - Cleanup of worktrees and folder copies. `ship` handles branches, dev servers and temp files; copies of the repo are still yours.

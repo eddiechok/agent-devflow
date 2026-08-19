@@ -115,7 +115,9 @@ Conventional commits, so `git log` doubles as a changelog:
 <why this change, not what — the diff already says what>
 ```
 
-Types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `perf`, `build`, `ci`.
+Types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `perf`, `build`, `ci`. `build` uses this same list for plan pieces; the two have to stay in step.
+
+**A Deep branch may already be committed.** `build` commits each plan piece as it lands, so the working tree can be clean by the time you reach this step — and the fixes from step 5 may be all that is left. If there is nothing to commit, say so in one line and go on. Never make an empty commit to have something to show for the step.
 
 ## 7. Open the PR — or update the one already there
 
