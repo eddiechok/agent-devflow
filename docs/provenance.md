@@ -40,6 +40,8 @@ This is a separate file on purpose. A `SKILL.md` is a prompt — the model reads
 | "Independent" is stricter than "different files" | **Ours** | The failure it prevents is specific: two pieces that each pass their own tests and break when joined |
 | The plan file holds the assumptions and the pieces | **Changed** — superpowers `writing-plans` | Theirs is a document of `- [ ]` steps to work through. Ours holds what was decided and what to build, and doubles as the spec `review`'s second axis reads |
 | Size overrides recorded globally | **Ours** | Free labelled data about a classifier that will be wrong sometimes |
+| The override line is printed as well as written | **Real bug** — the audit of 18 Aug | On a hosted session `~/.claude` is inside a container that is deleted at the end of it, so every override recorded on the web had been thrown away |
+| 0. Follow-up work re-enters through `flow` | **Real bug** — the audit of 18 Aug | `submit` was terminal, so a second run opened a second pull request for one change. Sizing still runs: a follow-up is not automatically small, and the danger list does not care which round it is |
 | Never finish without calling `submit` | **Ours** | Written for a real failure mode: work that is finished, green, and still sitting uncommitted |
 
 *Corrected.* The plan-file row above used to read **Copied** — "superpowers plans track progress in the file", and cited that for a promise that you could `/clear` mid-plan and carry on. Superpowers does no such thing: `writing-plans` puts `- [ ]` in its **template** without ever telling the agent to tick them, and `executing-plans` tracks progress in the session todo list, which dies with the context. The resume promise was devflow's own, it was never built, and it is now on the not-yet list instead of in the docs as a feature.
@@ -62,6 +64,7 @@ This is a separate file on purpose. A `SKILL.md` is a prompt — the model reads
 | Say what each failed attempt ruled out | **Copied** — superpowers | A map of what is not the cause is worth more than a fourth guess |
 | A branch someone else named is still a branch | **Real bug** — the edx-landing session | Off the default branch is the requirement. The `<type>/<short-name>` shape is a preference, and a harness that pins the branch outranks a preference |
 | `[DBG-` markers, grepped out before finishing | **Ours** | Debug logging is easy to add and easy to forget |
+| The marker sweep is `submit`'s command, word for word | **Real bug** — the audit of 18 Aug | `build`'s copy never got the `--exclude-dir` fix, so it walked `node_modules`, where a vendored `[DBG-` is a marker it is told to remove and has no business touching |
 | Branch before the first edit | **Ours** | If the job dies later, the edits are not stranded on the default branch |
 | Commands come from the project's `## Checks` block | **Ours** | A command invented by a skill is a command nobody verified |
 
@@ -82,6 +85,8 @@ This is a separate file on purpose. A `SKILL.md` is a prompt — the model reads
 | 5. Reports, never fixes | **Ours** — same split as `build` and `submit` | The part that reads is not the part that writes |
 | 3. Say it out loud when the harness blocks the axes | **Real bug** — the edx-landing session of 18 Aug | Claude Code on the web forbids starting an agent unless the human asked. Silence looked exactly like a passing review |
 | 4. `NOT RUN` is its own state | **Ours** | `none` means two agents looked and found nothing. Without a separate word, a review that never started prints the same as a clean one |
+| 2. Find the plan by listing the directory | **Real bug** — the audit of 18 Aug | Matching a filename against the branch name fails wherever a harness names the branch, which is exactly where Deep work still has a spec to judge against |
+| 2. An issue you cannot open is not a spec | **Ours** — the same rule as never inventing one | Skipping the axis is honest. Reviewing against a guessed issue is not |
 
 ## `reviewer` agent — is it built right
 
@@ -133,6 +138,9 @@ This is a separate file on purpose. A `SKILL.md` is a prompt — the model reads
 | 8. Never claim a review ran | **Ours** | The old step 5 said `/code-review` "is already installed". A false line in a prompt reads like a finished step |
 | 7. Invoking `submit` is the request for the PR | **Real bug** — the edx-landing session | The web harness says not to open a PR unless the human explicitly asked. The skill's own description says it opens one, so typing it is the asking — but somebody had to write that down |
 | 7. Blocked PR: push, then hand over the link and the command | **Ours** | The failure mode is silence. Finished, green and invisible is the state this skill exists to prevent |
+| 4. Use `run` if it exists, else the project's own way | **Real bug** — the audit of 18 Aug | The same shape as the `/code-review` assertion, which was fixed once as a special case rather than as a rule. Now it is a rule |
+| 7. Update the PR when one is already open | **Real bug** — the audit of 18 Aug | A branch has one pull request. The old step opened a second, because it only knew how to create |
+| 8. Re-derive the danger list from the diff | **Real bug** — the audit of 18 Aug | `flow` decided it before the code existed and nothing carried the decision here. The loss was silent and it dropped the only security gate in the loop |
 | 8. Never merge | **Ours** | The line the whole plugin is built around |
 
 ## `ship`
@@ -150,6 +158,7 @@ This is a separate file on purpose. A `SKILL.md` is a prompt — the model reads
 | Write the `## Deploy` block only after it worked | **Ours** | The one moment the command is proven is right after it ran |
 | Clean up only what this session started | **Same idea** — superpowers refuses to remove a worktree the user still needs | Never kill "whatever is on port 3000" |
 | Offer to archive the session, do not archive it | **Ours** | An archived session someone still wanted is an annoyance they have to undo |
+| `gh` is the example, not the requirement | **Real bug** — the audit of 18 Aug | There is no `gh` on Claude Code on the web. The Context line reported the missing CLI as `none for this branch`, so step 1 sent people to `submit` for work that already had an open pull request |
 
 ## `setup`
 

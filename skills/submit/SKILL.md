@@ -117,13 +117,28 @@ Conventional commits, so `git log` doubles as a changelog:
 
 Types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `perf`, `build`, `ci`.
 
-## 7. Open the PR
+## 7. Open the PR — or update the one already there
 
-Push, then open a PR against the default branch.
+**First, does this branch already have an open pull request?** Ask through whatever GitHub access this environment has. The answer decides what this step does, and getting it wrong opens a second pull request for one change.
+
+**No PR** — push, then open one against the default branch.
+
+**A PR already open** — push to the same branch, then **update that PR**. Never open a second one for a branch that has one, and report the number you updated rather than announcing a new one. What moves and what does not:
+
+- **Evidence** — rewritten. It describes the checks *this* run made, not the ones the first run made.
+- **Known issues** — worked out again from this run's review. Anything fixed since comes out.
+- **What** and **Why** — extended if the change grew. Do not rewrite the original reason to match a follow-up.
+- **Assumptions** — appended to, never replaced. The first round's assumptions were true when they were taken, and the human may already have read them.
+
+Then one line on what moved:
+
+```
+updated #12 — 2 commits, evidence refreshed, 1 known issue cleared
+```
 
 **Opening it is what you were asked for.** Some harnesses say not to open a pull request unless the human explicitly asked — Claude Code on the web does. Invoking this skill *is* that request; it says so in its own description, and so does `flow`. Do not stop here to ask again.
 
-If the environment blocks it anyway, push the branch and then give the human the compare link and the `gh pr create` command, in two lines. Never end silently on a pushed branch with no PR — work that is finished, green and invisible is the state this skill exists to prevent.
+If the environment blocks it anyway, push the branch and then give the human the compare link and the command for whatever access they have — `gh pr create`, or the equivalent — in two lines. Never end silently on a pushed branch with no PR — work that is finished, green and invisible is the state this skill exists to prevent.
 
 If the repo has a PR template, follow its headings. Otherwise use this shape:
 
@@ -194,6 +209,7 @@ Never suggest throwing work away. If discarding a branch or force-pushing genuin
 - Never assert that a skill, command or CLI exists. Check, then fall back, then say which you used. `/code-review` was asserted once and could not run; `run` and `gh` are the same shape.
 - Never add pipes or redirects to a check command. Bare, one per call.
 - Never commit on the default branch.
+- Never open a second pull request for a branch that already has one open.
 - Never open a PR when the live check failed.
 - Never invent check commands the project did not give you.
 - Never merge, and never call `devflow:ship`. The open PR is where this skill ends.
