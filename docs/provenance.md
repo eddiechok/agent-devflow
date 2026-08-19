@@ -38,9 +38,11 @@ This is a separate file on purpose. A `SKILL.md` is a prompt — the model reads
 | Deep work writes a plan file | **Changed** — superpowers `writing-plans` | Same idea, opposite size. Theirs is exhaustive: every step 2-5 minutes, real code in every step, no placeholders. Ours holds the pieces and the assumptions, and nothing that would rot |
 | Pieces sized to one reviewable diff | **Changed** — superpowers sizes by minutes of work | A piece is a diff someone has to read, so review is the thing worth optimising |
 | "Independent" is stricter than "different files" | **Ours** | The failure it prevents is specific: two pieces that each pass their own tests and break when joined |
-| The plan file is the state, so you can `/clear` | **Copied** — superpowers plans track progress in the file | Long work outlives the context window |
+| The plan file holds the assumptions and the pieces | **Changed** — superpowers `writing-plans` | Theirs is a document of `- [ ]` steps to work through. Ours holds what was decided and what to build, and doubles as the spec `review`'s second axis reads |
 | Size overrides recorded globally | **Ours** | Free labelled data about a classifier that will be wrong sometimes |
 | Never finish without calling `submit` | **Ours** | Written for a real failure mode: work that is finished, green, and still sitting uncommitted |
+
+*Corrected.* The plan-file row above used to read **Copied** — "superpowers plans track progress in the file", and cited that for a promise that you could `/clear` mid-plan and carry on. Superpowers does no such thing: `writing-plans` puts `- [ ]` in its **template** without ever telling the agent to tick them, and `executing-plans` tracks progress in the session todo list, which dies with the context. The resume promise was devflow's own, it was never built, and it is now on the not-yet list instead of in the docs as a feature.
 
 ## `build`
 
