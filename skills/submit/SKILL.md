@@ -202,6 +202,8 @@ Second opinion, if you have them installed:
 
 Name `/security-review` only when the change actually touched the danger list. Never report either as run, and never write their findings into the PR body — you have not seen any.
 
+If a check goes red on the PR after this, or a reviewer asks for something, that is `devflow:tend` — it works out whose failure it is before anything gets pushed, and comes back through here so the same PR is updated.
+
 Never suggest throwing work away. If discarding a branch or force-pushing genuinely comes up, the human must type the word `discard` — "sure", "ok" and "go ahead" do not count.
 
 ## Rules

@@ -162,6 +162,19 @@ This is a separate file on purpose. A `SKILL.md` is a prompt — the model reads
 | Offer to archive the session, do not archive it | **Ours** | An archived session someone still wanted is an annoyance they have to undo |
 | `gh` is the example, not the requirement | **Real bug** — the audit of 18 Aug | There is no `gh` on Claude Code on the web. The Context line reported the missing CLI as `none for this branch`, so step 1 sent people to `submit` for work that already had an open pull request |
 
+## `tend`
+
+| Step | From | Why |
+|---|---|---|
+| The skill exists at all | **Ours** | `submit` stopped at the open PR and `ship` refused to merge a red one. Between those two there was nothing, so a red check or a review comment left the loop with no next step |
+| 3. Triage before touching anything | **Ours** | The failure a PR reports is not always the PR's. Pushing a fix for someone else's breakage buries the change you are trying to land |
+| 3. "Flaky" is what you say after checking | **Ours** | It is the most convenient possible diagnosis, which is exactly why it needs evidence. Re-run once, for a reason you can name |
+| 4. Fix through `build`, five gates and all | **Ours** | A CI failure is a bug report with the reproduction attached. That is the easiest test there is to write, so there is no excuse to skip the test |
+| 4. Two rounds, then stop | **Same idea** — `build` stops after 3, `submit` reviews at most twice | Three pushes at one red check means the problem is not where you are looking |
+| 4. Never weaken a test to go green | **Ours** — it is on the danger list already | The only change worse than leaving the PR red |
+| 5. Re-submit rather than push | **Ours** | Pushing from here would skip the fresh checks and the review, which are what make a push worth trusting |
+| 6. Answer the thread, do not just push | **Copied** — superpowers `receiving-code-review` treats feedback as something to answer | A silent refusal reads as a miss |
+
 ## `setup`
 
 | Step | From | Why |
