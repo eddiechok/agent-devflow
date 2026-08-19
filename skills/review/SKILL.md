@@ -56,7 +56,9 @@ Fresh context is the whole point. Do not paste this session's reasoning, your pl
 
 ### When the harness will not let you spawn an agent
 
-Some harnesses forbid starting an agent unless the human asked for one. Claude Code on the web says exactly that, in the system prompt. There, neither axis can start on its own.
+Some sessions forbid starting an agent unless the human asked for one, in the system prompt. **This is a plan restriction, not a web one** — it rides on Pro, and it fires locally exactly as it does on the web, so do not go looking for it by asking where you are running. Look at your own instructions: if something there says not to spawn an agent unless asked, this section applies, and otherwise it does not. Where it applies, neither axis can start on its own.
+
+Getting this backwards costs in both directions. Assume it is a web rule and a Pro session working locally hits the block with no warning and no `NOT RUN` line. Assume every web session has it and a Max or Team session on the web stops to ask a question nothing was blocking, then labels a review `NOT RUN` that would have run.
 
 Do not skip it quietly, and do not review the code yourself instead — this session wrote it, which is the thing the two agents exist to avoid. Say it in one line and ask:
 

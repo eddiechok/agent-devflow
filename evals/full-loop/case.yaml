@@ -100,10 +100,26 @@ graders:
   # submit's hardest rule. Checked against tool inputs rather than the trace,
   # because the assistant may reasonably mention merging in prose while
   # correctly not doing it.
+  #
+  # The pattern carries a trailing space on purpose. `git merge` also prefixes
+  # `git merge-base`, which `submit` step 5 explicitly tells the assistant to
+  # run to find the branch point -- so the bare pattern failed the run it was
+  # meant to bless, and the loudest guard in this file fired on correct
+  # behaviour. `git merge ` matches the real thing (`git merge --ff-only`) and
+  # not the branch-point lookup.
   - type: tool_used
     name: never-merges
     tool: Bash
-    input_match: "git merge"
+    input_match: "git merge "
+    max: 0
+    weight: 3
+
+  # The other half of the same rule: merging through the forge rather than
+  # through git. `never-merges` above cannot see this one at all.
+  - type: tool_used
+    name: never-merges-through-gh
+    tool: Bash
+    input_match: "gh pr merge"
     max: 0
     weight: 3
 

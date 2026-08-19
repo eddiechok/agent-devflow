@@ -29,10 +29,15 @@ Run each command exactly as the `## Checks` block writes it, **one command per
 call**. No pipes, no redirects, no `&&`, no `; echo $?`.
 
 The bash hook trims long check output and prints `exit=N` itself — but only for
-a plain command. Shape it yourself and the hook steps aside by design, and you
-lose the trimming *and* the exit line. Doing it by hand is fragile anyway:
-`${PIPESTATUS[0]}` after a `;` silently printed nothing in a real run, because
-the shell was not the one that syntax assumes.
+a plain command, and only for the runners on its own list. Shape it yourself and
+the hook steps aside by design, and you lose the trimming *and* the exit line.
+Doing it by hand is fragile anyway: `${PIPESTATUS[0]}` after a `;` silently
+printed nothing in a real run, because the shell was not the one that syntax
+assumes.
+
+If the project's check command is not one the hook recognises, there is no
+`exit=N` line and there was never going to be one. Say the outcome in words
+instead. Do not write the line yourself.
 
 Arguments are still bare — `pnpm test src/db` is fine. Shell plumbing is not.
 
@@ -47,6 +52,15 @@ git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null || echo origin/mai
 
 The second one answers with the remote ref, `origin/main`, so compare the first against it with the `origin/` dropped. Do the stripping yourself rather than piping through `sed` — a pipe here costs a permission prompt for `sed` on top of the git command, in every project, forever.
 
+**`origin/main` is a fallback, not an answer.** `refs/remotes/origin/HEAD` is only set if
+the repo was cloned or somebody ran `git remote set-head`, and plenty of working repos have
+neither. When it is unset the `|| echo origin/main` fires and you are **guessing**, so on a
+repo whose default branch is `master`, `develop` or `trunk`, "am I on the default branch?"
+answers no while you stand on it, and the next commit goes straight there. If the fallback
+fired, find the real default before comparing — `git remote show origin` says it, and so
+does the forge — or say in one line that you could not, and branch anyway. Branching when
+you did not need to costs nothing; the other mistake is the one the hook exists to catch.
+
 If they match, create the branch now, before touching a file:
 
 ```
@@ -55,13 +69,54 @@ git checkout -b <type>/<short-name>
 
 If they do not match you are already on a branch — **keep it, whatever it is called.** One someone else named, or one a harness created for you, satisfies this step as well as one you would have named. Renaming it can break a harness that pins where you are allowed to push.
 
+**One exception, and it is narrow: you were told this is new work.** `flow` decides that,
+and only `flow` can — the branch alone cannot tell you, because a branch with a merged PR
+and a branch mid-feature look identical from here. When you were told, cut a fresh branch
+**from the default branch ref**, not from where you are standing:
+
+```
+git checkout -b <type>/<short-name> <default branch ref>
+```
+
+Cutting it from here instead would carry the old branch's commits into the new pull
+request. And staying put is worse: `submit` finds the pull request already open for this
+branch and updates it, which bolts unrelated work onto somebody's PR.
+
 `submit` checks this too, but by then it is late. Editing happens here, and `submit` is several gates away — if it never runs because you got stuck, the checks stayed red, or the human stopped you, the edits are left sitting uncommitted on the default branch. Branching first costs one command and the abort case stays clean.
 
 Branching is not committing. Committing happens in one case only — a finished plan piece, below. Everything else is `submit`'s.
 
+## First: is there anything a test could catch?
+
+`flow` routes copy, content, docs, config, styles and images here as readily as code, so
+the answer is genuinely no often enough that it needs an answer. There is no test that can
+go red for a README wording change, an image swap, a colour token, an `.env.example` line
+or a Terraform variable — and a whole repo can be like that, this plugin included.
+
+The gates below assume behaviour. When there is none, **say so in one line and skip to the
+checks** — run the project's `## Checks` block, show the output, and go on to handing back:
+
+```
+No behaviour to test — README wording. Running the checks instead.
+```
+
+That is a real answer and it is the honest one. The two failures it exists to prevent are
+both worse:
+
+- **An invented assertion.** `expect(readme).toContain("Install")` goes red before the edit
+  and green after, so gate 2 and gate 4 both pass and nothing was ever tested. It is the
+  same defect as the tautological test below, arriving through a door the gates leave open.
+- **Skipping quietly.** A skill that says "no skipping" and then gets skipped teaches that
+  the rest of it is optional too.
+
+**The bar is narrow, and default to testing.** "I cannot see the seam" is not the same as
+"there is no seam" — a config value something reads, a route a page serves, a class a
+component applies are all behaviour, and they get a test. Only reach for this when the
+change cannot fail at runtime because nothing runs it.
+
 ## The five gates
 
-Every change goes through these in order. No skipping.
+Every change with behaviour goes through these in order. No skipping.
 
 ### 1. RED — write the test first
 

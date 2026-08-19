@@ -40,11 +40,22 @@ call. No pipes, no redirects, no `&&`, no `; echo $?`.
 
 The real output **and the exit code** both have to reach the screen: the exit
 code is what proves the run happened, and an outer loop watching this session
-can only see what you actually printed. Running bare is how you get both — the
-hook trims the output and prints `exit=N` for you. Shape the command yourself
-and the hook steps aside by design, taking the trimming and the exit line with
-it. `${PIPESTATUS[0]}` after a `;` silently printed nothing in a real run,
-because the shell was not the one that syntax assumes.
+can only see what you actually printed.
+
+Running bare is what lets the hook help. Shape the command yourself and it
+steps aside by design, taking the trimming and the exit line with it.
+`${PIPESTATUS[0]}` after a `;` silently printed nothing in a real run, because
+the shell was not the one that syntax assumes.
+
+**But the hook only knows the runners on its own list** — `npm test`, `pytest`,
+`cargo test`, `tsc` and friends. A project whose `## Checks` block names
+something else gets no rewrap and therefore **no `exit=N` line**, however bare
+the command was. This plugin is such a project: `python3 skills/test-frontmatter.py`
+matches nothing on that list. So run it bare, read the result, and **say the
+outcome in words** — "exit 0", "failed, 2 cases" — rather than waiting for a
+line that is not coming. Never write `exit=0` yourself as though the hook
+printed it; a fabricated exit line is worse than none, because that line is
+what an outer loop trusts.
 
 If anything fails, fix it and run again. Do not continue with a red check.
 
@@ -98,6 +109,7 @@ Then act on what comes back:
 - **Nobody asked for this** — either take it out, or keep it and say why in the PR under **Assumptions**. Silently keeping it is not an option.
 - Anything still standing after 2 rounds goes in the PR under **Known issues**, not hidden and not looped on forever.
 - **`NOT RUN`** — an axis that could not start is not a passing axis. Name it under **Known issues**, and say in **Evidence** which axes ran. Never write "reviewed" over a review that did not happen.
+- **`Not reported: N further findings`** — the axis ran out of room. Those findings exist and you have not seen them. **Run that axis again, scoped to what it did not reach**, and if the second run is also truncated, say so under **Known issues** with the count. A truncated review prints exactly like a clean one, which is the whole reason the line is there; dropping it here is the same failure as dropping `NOT RUN`.
 
 **A finding can be wrong, and you are allowed to say so.** Check it against the code first, then reject it in one line with the technical reason, and put the rejection in the PR under **Known issues** so the call is visible to whoever merges. Never reject a finding you have not checked, and never reject one silently — an unread finding quietly dropped is worse than a false positive fixed.
 
@@ -138,7 +150,7 @@ Then one line on what moved:
 updated #12 — 2 commits, evidence refreshed, 1 known issue cleared
 ```
 
-**Opening it is what you were asked for.** Some harnesses say not to open a pull request unless the human explicitly asked — Claude Code on the web does. Invoking this skill *is* that request; it says so in its own description, and so does `flow`. Do not stop here to ask again.
+**Opening it is what you were asked for.** Some harnesses expect the human to press **Create PR** themselves, and a session there can read that as a rule against opening one. Invoking this skill *is* the request; it says so in its own description, and so does `flow`. Do not stop here to ask again.
 
 If the environment blocks it anyway, push the branch and then give the human the compare link and the command for whatever access they have — `gh pr create`, or the equivalent — in two lines. Never end silently on a pushed branch with no PR — work that is finished, green and invisible is the state this skill exists to prevent.
 

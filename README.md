@@ -234,17 +234,25 @@ The plugin installs and loads the same way there — put the `extraKnownMarketpl
 clone. But the web harness writes instructions of its own into the system prompt, and
 three of them sit on top of devflow's steps.
 
-**You have to type `/devflow:flow` yourself.** This is the one the plugin cannot fix. A web
-session opens with a task description telling it to make the change, commit and push —
-a complete loop, already given, before any skill is consulted. A skill description does not
-outrank it. Left alone, the session does the work well and does none of devflow: in the run
-that prompted this section it invoked zero skills, ran no review, never opened the site, and
-opened no PR.
+**You have to start it yourself, and say it in words.** This is the one the plugin cannot
+fix. A web session opens with a task description telling it to make the change, commit and
+push — a complete loop, already given, before any skill is consulted. A skill description
+does not outrank it. Left alone, the session does the work well and does none of devflow:
+in the run that prompted this section it invoked zero skills, ran no review, never opened
+the site, and opened no PR.
 
-**The review has to be asked for.** The harness says not to start an agent unless the human
-asked, and both review axes are agents. `review` now says so in one line and asks; say
-**"run the review"** and both start. If nothing is said the axes report `NOT RUN`, which
-`submit` carries into the PR under **Known issues**. A blocked review is never a clean one.
+Ask for it as **"use the devflow flow skill"** rather than `/devflow:flow`. A plugin's
+skills do not always register as slash commands on the web, and the Skill tool works either
+way. The durable version is a prefilled task link — `claude.ai/code?prompt=...&repositories=owner/repo`
+— which puts the words in the box for you.
+
+**The review may have to be asked for — but that is your plan, not the web.** The
+instruction not to start an agent unless the human asked rides on **Pro**, and it fires
+locally exactly as it does on the web. Both review axes are agents, so where it applies
+`review` says so in one line and asks; say **"run the review"** and both start. If nothing
+is said the axes report `NOT RUN`, which `submit` carries into the PR under **Known
+issues**. A blocked review is never a clean one. On Max or Team, on the web or off, nothing
+blocks it and the question should never appear.
 
 **The PR is already asked for.** The harness says not to open a pull request unless the
 human explicitly asked. Invoking `submit` — or `flow`, which ends in it — *is* that request,
@@ -256,11 +264,20 @@ always the real requirement; the naming was never the point.
 
 **Deleting the merged branch may be refused.** Pushing a ref works; deleting one answers `403`. `ship` reports it and hands the branch to you rather than retrying, and the merge is untouched either way — the two are separate calls, which this skill already knew.
 
-**There is no `gh`.** The web sandbox reaches GitHub through an MCP server instead, so every
-`gh` command in these skills names *what to ask for*, not *how to ask*. `ship` used to report a
-missing CLI as `none for this branch` — the same words it uses for a branch with no pull
-request — and would send you to `submit` for work that already had one open. It now tells the
-two apart.
+**`gh` is not pre-installed.** The web sandbox reaches GitHub through built-in tools and a
+credential proxy, which cover issues, pull requests, diffs and comments with no setup — so
+every `gh` command in these skills names *what to ask for*, not *how to ask*. You can also
+`apt install -y gh` in the environment's setup script and it comes up already authenticated
+through the same proxy. One sharp edge either way: the proxy serves only a pinned set of
+GraphQL operations, so `--json mergeStateStatus,statusCheckRollup,reviewDecision` can come
+back 403 where the REST form works. `ship` used to report a missing CLI as `none for this
+branch` — the same words it uses for a branch with no pull request — and would send you to
+`submit` for work that already had one open. It now tells the two apart.
+
+**`ship` is a local skill.** The default network level on a hosted session reaches package
+registries and GitHub and nothing else, so a deploy command and a `Verify:` URL against
+your own domain both fail on policy rather than on code. Merge from the web if you like;
+run `ship` from your machine.
 
 Nothing here detects the harness. Every rule is written to be true in both places.
 
