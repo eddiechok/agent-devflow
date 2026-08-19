@@ -122,7 +122,9 @@ Issue: #123 (if there is one)
    Verify: pnpm test src/api/settings
 ```
 
-Build one piece at a time. After each piece is done and committed, you may `/clear` and continue from the plan file — it holds the state, so nothing is lost.
+Build one piece at a time, in order.
+
+The plan file is the spec `review`'s second axis reads, not a progress tracker: nothing writes back to it, and nothing commits between pieces. **Do not `/clear` mid-plan** — the file cannot tell you which pieces are built, and neither can `git log`.
 
 ## Step 5 — submit it
 
