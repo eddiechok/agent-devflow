@@ -163,6 +163,8 @@ I checked this locally before pushing. I stopped my own server; step 5 is for yo
 - (only if the review left something unresolved)
 ```
 
+**An empty Assumptions section is a claim.** It reads as "nothing was assumed". If it is empty because the context holding the answers is gone rather than because there were none, say that in one line instead of omitting the section.
+
 **Check whether a preview link appeared** on the PR. If one did, put it first — a preview is a real build with real environment variables on a clean machine, and it catches things your laptop cannot. If none appeared, give the local steps and do not mention a link that is not coming.
 
 **The steps must be steps you actually ran.** Instructions you never followed will be wrong.
@@ -178,6 +180,8 @@ Second opinion, if you have them installed:
   /code-review 12
   /security-review    (this change touched database migrations)
 ```
+
+**Work the danger list out from the diff, not from memory.** `flow` decided it before any code was written, and that decision does not always survive to here — a compaction, a long Deep job, or a `submit` you were invoked into directly all lose it. Losing it is silent, and what it drops is the only security gate in the loop. Read the diff against the list in `flow` and decide again. Deciding twice costs a moment; missing it costs the gate.
 
 Name `/security-review` only when the change actually touched the danger list. Never report either as run, and never write their findings into the PR body — you have not seen any.
 

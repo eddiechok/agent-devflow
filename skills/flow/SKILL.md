@@ -157,7 +157,15 @@ Work out your own size first, so the record shows what would have happened:
 
 Include the project name. Patterns show up across repos.
 
-Do not discuss it, do not ask about it. Record it and carry on with the size the human asked for.
+**Print the line as well as writing it**, exactly once:
+
+```
+override recorded: guessed Quick, you said Deep
+```
+
+On a hosted session — Claude Code on the web included — `~/.claude` is inside a container that is deleted when the session ends, so the file you just wrote may not be there tomorrow. The reply is in the transcript, which is.
+
+Beyond that one line, do not discuss it and do not ask about it. Record it and carry on with the size the human asked for.
 
 ## Rules
 
