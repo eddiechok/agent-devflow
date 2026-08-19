@@ -98,6 +98,7 @@ flowchart TD
     BUILD["build<br/>write the test<br/>watch it fail<br/>then make it pass"] --> SUBMIT["submit<br/>feature branch<br/>checks re-run fresh<br/>run the app, code review<br/>conventional commit, push"]
     SUBMIT --> YOU2{{"You review the PR"}}
     YOU2 -->|"want changes"| REQ
+    REQ -->|"PR already reporting something"| TEND
     YOU2 -->|"CI red, or comments"| TEND["tend<br/>triage what the PR reports<br/>whose failure is it<br/>then fix it"]
     TEND --> BUILD
     YOU2 -->|"/devflow:ship"| SHIP["ship<br/>merge<br/>watch the deploy<br/>check it is really live<br/>delete the branch, tidy up"]
@@ -126,6 +127,8 @@ It announces the size in one line before doing anything, so you can disagree imm
 `submit` stops at the pull request; you read it and want something different. Go back through `flow`. It checks the branch first, sees the open PR, and treats the request as a **follow-up**: same branch, same PR, and `submit` **updates** it instead of opening a second one.
 
 Follow-up mode reads before it asks. The PR's **Assumptions** and the plan file already hold what you decided the first time, so you are only asked what is genuinely new. Sizing still runs — a follow-up can be anything from a typo to a rethink — and the danger list still applies.
+
+If what you want changed is something the **PR itself is reporting** — a check went red, a reviewer asked for something — `flow` hands it to `tend` rather than taking it into `build`. Not every failure a pull request reports belongs to that pull request, and `tend` is the step that asks whose it is before anything gets pushed.
 
 If the request turns out to be new work rather than a change to that PR, `flow` says so and starts a fresh branch. Where the branch is pinned and it cannot, it asks you which you meant.
 

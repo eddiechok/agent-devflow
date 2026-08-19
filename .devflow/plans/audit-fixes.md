@@ -63,10 +63,10 @@ fixed and is not repeated here. This plan covers the rest.
    is the ceiling's job; dropping a Blocking one while printing like a clean review is not.
    Verify: read both agents' return blocks
 
-9. [independent: no] **`build` commits each plan piece as it lands**, so `git log` answers
+9. [independent: yes] **`build` commits each plan piece as it lands**, so `git log` answers
    which pieces are built and a plan is resumable for real. `submit` stops short of an
-   empty commit when the branch is already committed. Depends on nothing in this plan, but
-   it re-opens a decision this branch already took — see the note below.
+   empty commit when the branch is already committed. It re-opens a decision this branch
+   already took — see the note below.
    Verify: read `build`'s commit section; `python3 skills/test-frontmatter.py`
 
 10. [independent: yes] **`tend`** — the skill for a pull request that is already open and

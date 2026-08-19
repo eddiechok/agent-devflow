@@ -41,6 +41,7 @@ This is a separate file on purpose. A `SKILL.md` is a prompt — the model reads
 | The plan file holds the assumptions and the pieces | **Changed** — superpowers `writing-plans` | Theirs is a document of `- [ ]` steps to work through. Ours holds what was decided and what to build, and doubles as the spec `review`'s second axis reads |
 | Size overrides recorded globally | **Ours** | Free labelled data about a classifier that will be wrong sometimes |
 | The override line is printed as well as written | **Real bug** — the audit of 18 Aug | On a hosted session `~/.claude` is inside a container that is deleted at the end of it, so every override recorded on the web had been thrown away |
+| 0. What the PR reports goes to `tend`, not `build` | **Ours** | `flow` is the entry point, so it wins most requests. Without this branch it took "fix the failing check" straight into `build`, around the one step that asks whose failure it is |
 | 0. Follow-up work re-enters through `flow` | **Real bug** — the audit of 18 Aug | `submit` was terminal, so a second run opened a second pull request for one change. Sizing still runs: a follow-up is not automatically small, and the danger list does not care which round it is |
 | Never finish without calling `submit` | **Ours** | Written for a real failure mode: work that is finished, green, and still sitting uncommitted |
 
