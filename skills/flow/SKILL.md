@@ -19,7 +19,9 @@ Size the work, then route it. One line before anything else.
 
 `$ARGUMENTS` is the request.
 
-If it starts with `#` or is a GitHub issue URL, read the issue first with `gh issue view NUMBER`. The issue body is the request. Remember the number so `submit` can close it.
+If it starts with `#` or is a GitHub issue URL, read the issue first — `gh issue view NUMBER`, or whatever GitHub access this environment has. The issue body is the request. Remember the number so `submit` can close it.
+
+If you cannot read it, **ask for the request in words**. A number you could not open is not a request, and sizing one you guessed at is worse than asking.
 
 If `--quick` or `--deep` is present, that is the size. Skip step 2, and **record the override** — see "Recording overrides" at the end. Do not argue with an explicit override.
 

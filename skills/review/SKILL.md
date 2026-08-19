@@ -39,8 +39,8 @@ If both come back empty, say so and stop. There is no review to run.
 
 In this order, first hit wins:
 
-1. **A plan file** — `.devflow/plans/<name>.md` matching the branch or the work. Deep work writes one.
-2. **An issue** — a reference in the branch name or the commits since the fixed point, like `Closes #45`. Read it with `gh issue view`.
+1. **A plan file** — **list `.devflow/plans/`** and pick the one whose subject is this work. Deep work writes one. Do not match the filename against the branch name: a harness that names your branch for you, as Claude Code on the web does, makes that match fail on exactly the work that has a spec. If several are plausible, name them and ask.
+2. **An issue** — a reference in the branch name or the commits since the fixed point, like `Closes #45`. Read it with `gh issue view`, or whatever GitHub access this environment has. If you cannot open it, there is no spec — say so and skip the axis. A spec you could not read is not a spec.
 3. **Nothing.** That is a normal answer for a Quick fix.
 
 **Never invent requirements.** No spec means the second axis does not run — not that you imagine what it would have said.

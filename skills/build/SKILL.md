@@ -132,7 +132,13 @@ If you add temporary logging while working, tag it:
 console.log("[DBG-a3f] payload:", payload);
 ```
 
-Before finishing, run `grep -rn "\[DBG-" . --exclude='*.md'` and remove every one. No marker may survive into a commit. Markdown is excluded because a marker there is a code sample, not something that runs — `submit` step 3 skips it for the same reason, and keeps the quotes for the same reason too: zsh expands a bare `*.md` and the command dies before grep sees it.
+Before finishing, run the same sweep `submit` step 3 runs, and remove every hit:
+
+```
+grep -rn "\[DBG-" . --exclude-dir=node_modules --exclude-dir=.git --exclude='*.md'
+```
+
+Word for word the same command, so the two cannot drift apart. No marker may survive into a commit. Markdown is excluded because a marker there is a code sample, not something that runs — `submit` step 3 skips it for the same reason, and keeps the quotes for the same reason too: zsh expands a bare `*.md` and the command dies before grep sees it.
 
 ## Handing back
 

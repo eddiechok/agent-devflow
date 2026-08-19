@@ -68,7 +68,7 @@ Tests only check what someone thought to test. A passing suite and a clean diff 
 
 Pick whichever of these the project actually is:
 
-- **Something that has to be launched** — a web app, a server, a desktop app. **Use the built-in `run` skill.** Do not write your own launcher.
+- **Something that has to be launched** — a web app, a server, a desktop app. **Use the built-in `run` skill if this environment has it.** If it does not, launch the app the way the project's own README or scripts say to, under the rules below. Do not invent a launcher when the project already documents one.
 - **Something you just execute** — a CLI, a script, a one-shot command. **Run it directly**, with the arguments the change affects, and show the output. `node src/cli.js --loud` *is* the live check for a CLI; reaching for a launcher here adds nothing.
 
 Either way the rule is the same: exercise the change the way a user would, and put the output on screen.
@@ -187,6 +187,7 @@ Never suggest throwing work away. If discarding a branch or force-pushing genuin
 
 - Never say "done", "fixed" or "passing" without output on screen proving it.
 - Never claim a review ran when it did not. A slash command you cannot type has not run.
+- Never assert that a skill, command or CLI exists. Check, then fall back, then say which you used. `/code-review` was asserted once and could not run; `run` and `gh` are the same shape.
 - Never add pipes or redirects to a check command. Bare, one per call.
 - Never commit on the default branch.
 - Never open a PR when the live check failed.
