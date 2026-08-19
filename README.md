@@ -107,6 +107,8 @@ flowchart TD
     class YOU1,YOU2 human
 ```
 
+A second view of the same thing — where work can *sit*, and what is allowed to move it — is in [docs/pipeline.md](docs/pipeline.md). This chart answers what happens next; that one answers where the work is now.
+
 The two amber boxes are the only places you are normally needed. What the chart leaves out, all of it stopping the flow rather than bending it:
 
 - Anything on the **danger list** is forced to at least Standard, and `submit` names `/security-review` in its handoff. That one is a slash command, so only you can start it.
