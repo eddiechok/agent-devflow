@@ -2,6 +2,15 @@
 
 Seven cases. Run them before you push a change to a skill.
 
+## Which runner
+
+**`claude plugin eval` is gated.** It exits 1 with `plugin eval is currently in
+early access` before running anything, and there is no documented way to ask for
+access — the command is absent from the [plugins
+reference](https://code.claude.com/docs/en/plugins-reference) entirely. If you
+have it, use it: it also scores the `llm` graders and runs a no-plugin baseline
+arm.
+
 ```bash
 claude plugin eval . --scaffold --allow-tools Bash Write Edit
 ```
@@ -10,6 +19,48 @@ claude plugin eval . --scaffold --allow-tools Bash Write Edit
 and scaffold scripts do not run unless you ask for them. `--allow-tools` is
 required because the cases need to write files and run commands. Both are
 deliberate — the runner will not do either on your behalf.
+
+**Otherwise use `run.py`**, which drives the same `case.yaml` files through
+`claude -p --output-format stream-json` and scores everything that needs no
+judge:
+
+```bash
+python3 evals/run.py                          # every case
+python3 evals/run.py --case sizing-* --runs 1
+python3 evals/run.py --dry-run                # parse and print, run nothing
+```
+
+It scores **26 of the 33 graders** — every `regex`, `tool_used`, `tool_order`
+and `file_exists`. The seven `llm` graders come back `skip`, stay out of the
+denominator, and are counted in the summary. **A skip is never a pass**, the
+same way `NOT RUN` is never `none`.
+
+`evals/test-run.py` is its contract test — parser and graders, no model, no
+cost. It is in `CLAUDE.md`'s `## Checks` block. `run.py` itself is not, because
+it spends money.
+
+### One thing `run.py` decides, that you should know about
+
+**A rendered `SKILL.md` is not part of the trace.** The `Skill` tool returns the
+whole skill body as a tool result, and `skills/flow/SKILL.md` contains its own
+worked examples — `Quick — single-file copy change.` at line 165 and `Deep — new
+subsystem, touches auth (danger list).` at 169. Count those as trace and three
+weight-3 graders stop measuring anything:
+
+| Grader | What it would do |
+|---|---|
+| `sizing-quick` / `announces-quick` | pass on any run that merely loaded `flow` |
+| `sizing-quick` / `not-sized-heavier` | fail on every run, forever |
+| `danger-list` / `never-quick` | fail on every run, forever |
+
+So the result of a `Skill` call is dropped and everything else is kept. A skill's
+body is input to the model, not evidence of what it did.
+
+The limit, said out loud: a plain `Read` of a `SKILL.md` would land in the trace
+and could fool a sizing grader the same way. Nothing in these cases does that —
+the scaffolds build a throwaway project that does not contain the plugin — but do
+not write a case that greps the plugin source and then judges a size with a bare
+`regex`/`trace` grader.
 
 ## What each case is for
 
@@ -55,6 +106,28 @@ PR, which was then made by hand and merged, which `submit` forbids.
 `flow`'s instruction to call `submit` was never wrong. It never loaded. Every
 other case in this directory starts one step after the step that broke, which
 is why five green runs said nothing about it.
+
+**It is still red, and it is the only one.** First measured run, 20 Aug 2026,
+the first time any of these cases could be executed at all:
+
+```
+auto-trigger   FAIL  0/5 weighted
+  FAIL reaches-flow-unprompted   w=3  0 call(s), wanted at least 1
+  FAIL announces-a-size          w=2  not found in the trace
+```
+
+Six of seven cases pass every grader `run.py` scores. This one fails both of
+its, on a plain-English request — *"the README description for this CLI is too
+dry, reword it to something friendlier"* — which is exactly the shape the case
+was written for. Nothing here has regressed; this is the original bug, still
+unfixed, now with a number against it.
+
+**Do not treat this as a flaky case to be re-run.** It is the most consequential
+gap in the plugin: if `flow` does not fire, nothing downstream of it runs, and
+every other green case in this directory is measuring a loop that was never
+entered. The README's web section already concedes half of this — that you have
+to start it yourself there. What this case says is that the same is true
+locally, for a request that never mentions code.
 
 `full-loop` is the expensive one and earns it. All three bugs found in the
 first real end-to-end run lived in the **seams** between skills, not inside
