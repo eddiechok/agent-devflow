@@ -12,11 +12,11 @@ This is **Phase 1**. It is small on purpose. See [What is not here yet](#what-is
 
 They are in order. When two disagree, the higher one wins.
 
-**1. Be correct, above everything else.** If the work is wrong, nothing else matters. Sometimes being cheap makes you redo the work. That is not a cost decision. That is a correctness problem in disguise.
+**1. Be correct, and prove it.** If the work is wrong, nothing else matters. A claim with no proof counts as wrong until shown otherwise. "Tests pass" needs the output. "Reviewed" needs the report. "Live" needs the page.
 
 **2. Ask as little as possible, but not less than that.** Zero questions is not the goal. The goal is few interruptions, placed where they matter most.
 
-**3. Be cheap where it is a real trade.** Never be cheap on code review. Never on hard bugs. Never on anything on the danger list.
+**3. Spend where it matters.** A typo gets no questions and no plan. A review gets the best model, every time. Never save on code review, hard bugs, or anything on the danger list.
 
 ## Install
 

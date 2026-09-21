@@ -104,6 +104,19 @@ you are picking up** — `Deep — resuming email-alerts, pieces 1-2 built, star
 go straight to `devflow:build` with the next unbuilt piece. Skip step 2 and skip the
 questions; both were settled in the first round and the plan holds their answers.
 
+**Then look at the `Status` line.** A dirty tree on a resumed plan is a piece that was
+started and not committed — the session died, you stopped it, or `build` gave up after
+three tries. It is not the next piece. It is the first unbuilt one, part done.
+
+```
+Deep — resuming email-alerts, pieces 1-2 built, piece 3 started and not committed
+```
+
+Hand `build` **that** piece, and say the tree is dirty. It keeps what is there and writes a
+test at the seam before touching it, which is its rule for code that arrived without one.
+Never start piece 3 from scratch beside a half-built piece 3, and never clean the tree to
+make the resume simpler — that is the work, thrown away.
+
 Only when no plan matches is this a new request. A plan whose subject is plainly something
 else does not match, and neither does one whose pieces are all in the log — that job is
 finished, and this is new work.
