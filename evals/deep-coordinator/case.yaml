@@ -1,0 +1,106 @@
+schema_version: "1.1"
+name: deep-coordinator
+description: A Deep request with a two-piece plan is built by one builder agent per piece, in order, and still ends in submit.
+tags: [flow, build, submit, agents, regression]
+
+context:
+  # Same greeter as full-loop, Checks block included. Two pieces fit it
+  # without inventing a web stack.
+  scaffold_script: ./scaffold.sh
+
+execution:
+  # Pre-answered on purpose: Deep asks one round and waits, and in -p mode
+  # nobody answers. "yes to all" is a valid reply per flow. --deep skips the
+  # sizing step so the run spends its turns on the loop, which is what this
+  # case measures.
+  prompt: "/devflow:flow --deep add a shout option and a lang option (en, ms, zh) to greet(), each as its own piece. Nobody is here to answer questions: take every recommendation, yes to all, and do not wait."
+  max_turns: 60
+  timeout_seconds: 1800
+  # Agent is the point. Without it the harness refuses the builders, flow
+  # falls through to in-session build, and this case measures nothing.
+  allowed_tools: [Bash, Read, Write, Edit, Glob, Grep, Skill, Agent]
+
+# High cost: a whole Deep job, two builders, a submit. One run is enough to
+# see the loop; the pieces themselves are covered by full-loop.
+runs: 1
+
+graders:
+  - type: regex
+    name: announces-deep
+    target: trace
+    pattern: "Deep\\s*[—–-]"
+    match: contains
+    weight: 3
+
+  # The reason this case exists. flow's Deep path hands each piece to a fresh
+  # devflow:builder, so a two-piece plan is two Agent calls, not zero.
+  - type: tool_used
+    name: one-builder-per-piece
+    tool: Agent
+    input_match: "devflow:builder"
+    min: 2
+    weight: 3
+
+  # The other half: the session coordinates, it does not build. flow calling
+  # devflow:build itself here means it bypassed the loop. `session_only`
+  # matters: a subagent's tool calls ARE in the parent's stream-json trace,
+  # and the first paid run failed this grader on the two builders' own calls
+  # to build, which are exactly what should happen.
+  - type: tool_used
+    name: does-not-build-in-session
+    tool: Skill
+    input_match: "devflow:build"
+    max: 0
+    session_only: true
+    weight: 2
+
+  # Regression guard from full-loop, kept because the coordinator path is a
+  # new way to stop at "done" without submitting.
+  - type: tool_used
+    name: reaches-submit
+    tool: Skill
+    input_match: "devflow:submit"
+    min: 1
+    weight: 3
+
+  - type: tool_order
+    name: builders-run-before-submit
+    before:
+      tool: Agent
+      input_match: "devflow:builder"
+    after:
+      tool: Skill
+      input_match: "devflow:submit"
+    weight: 3
+
+  # flow prints the builder's commit line after each report. A trace without
+  # one means the reports were never read, or never came back as five lines.
+  - type: regex
+    name: relays-the-builder-report
+    target: trace
+    pattern: "commit: [0-9a-f]{7}"
+    match: contains
+    weight: 2
+
+  # The fallback line. If the harness refused agents, flow was right to say
+  # so and build in-session -- but then this run measured nothing about the
+  # loop, and a pass would be a false one. Low weight; the Agent graders
+  # above already fail such a run.
+  - type: regex
+    name: agents-were-not-refused
+    target: trace
+    pattern: "building in-session"
+    match: not_contains
+    weight: 1
+
+  - type: tool_used
+    name: never-reaches-ship
+    tool: Skill
+    input_match: "devflow:ship"
+    max: 0
+    weight: 3
+
+expected_outcome: >
+  A "Deep —" size line, then a plan file with two pieces, then two Agent
+  calls to devflow:builder in order, each followed by a relayed commit line,
+  then submit. No devflow:build call from the session itself, and no ship.

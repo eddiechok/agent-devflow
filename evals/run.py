@@ -3,8 +3,8 @@
 
 `claude plugin eval` is gated — it exits 1 with "currently in early access"
 before running anything — so the cases in this directory were unrunnable. This
-runs the graders that need no model, which is most of them: of the 37 graders
-across the eight cases, 29 are `regex`, `tool_used`, `tool_order` or
+runs the graders that need no model, which is most of them: of the 45 graders
+across the nine cases, 37 are `regex`, `tool_used`, `tool_order` or
 `file_exists`, and every one of those is decidable from a `stream-json` trace.
 
 **It does not run the `llm` graders, and it never reports one as passed.** They
@@ -270,6 +270,10 @@ def tool_calls(events):
                     "id": block.get("id"),
                     "name": block.get("name"),
                     "input": block.get("input") or {},
+                    # Set when a subagent made the call. The parent's stream
+                    # carries its agents' tool calls too, so a grader that
+                    # means "the session itself" has to filter on this.
+                    "parent": event.get("parent_tool_use_id"),
                 })
     return calls
 
@@ -335,6 +339,8 @@ def _matching_calls(ctx, spec):
     hits = []
     for index, call in enumerate(ctx.events and tool_calls(ctx.events) or []):
         if tool and call.get("name") != tool:
+            continue
+        if spec.get("session_only") and call.get("parent"):
             continue
         if needle and needle not in json.dumps(call.get("input") or {}):
             continue

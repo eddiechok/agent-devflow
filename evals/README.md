@@ -1,6 +1,6 @@
 # evals
 
-Eight cases. Run them before you push a change to a skill. One is manual, see below.
+Nine cases. Run them before you push a change to a skill. One is manual, see below.
 
 ## Which runner
 
@@ -30,7 +30,7 @@ python3 evals/run.py --case sizing-* --runs 1
 python3 evals/run.py --dry-run                # parse and print, run nothing
 ```
 
-It scores **29 of the 37 graders** — every `regex`, `tool_used`, `tool_order`
+It scores **37 of the 45 graders** — every `regex`, `tool_used`, `tool_order`
 and `file_exists`. The eight `llm` graders come back `skip`, stay out of the
 denominator, and are counted in the summary. **A skip is never a pass**, the
 same way `NOT RUN` is never `none`.
@@ -79,6 +79,7 @@ not write a case that greps the plugin source and then judges a size with a bare
 | `auto-trigger` | low | Work never reaches `flow` at all, so nothing ever ships |
 | `setup-writes-checks` | medium | Every downstream check runs a command nobody verified |
 | `full-loop` | high | The skills stop handing off to each other |
+| `deep-coordinator` | high | A Deep job builds every piece in one session again, and outgrows its window by piece 4 |
 | `plans-on-tracker` | high, **manual** | A project that keeps plans on GitHub gets a file instead, or a plan nobody can close |
 
 `plans-on-tracker` is **manual**. It needs a real GitHub repo with issues on and
@@ -209,6 +210,13 @@ command that was refused still counts as used. `full-loop` was written with a
 on a transcript where every `npm test` was denied. When what you care about is
 that a command *ran*, assert on something only a real run produces — output it
 prints, a file it writes — rather than on the call being made.
+
+A third trap, from `deep-coordinator`: **a subagent's tool calls are in the
+parent's trace too.** Its "the session never calls `build` itself" grader
+failed the first paid run on the two builders' own calls to `build`, which were
+the correct behaviour. When a `tool_used` grader means the session and not its
+agents, set `session_only: true`; the default counts both, so no older case
+changed.
 
 A second trap, from the same case: **do not assert on output only a hook
 produces, unless the hook is certain to fire.** `full-loop` used to look for

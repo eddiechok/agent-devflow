@@ -268,6 +268,37 @@ check("grader: tool_used max 0 with a match",
       verdict({"type": "tool_used", "tool": "Bash", "input_match": "npm test", "max": 0}),
       "fail")
 
+# A subagent's tool calls ARE in the parent's stream-json trace, tagged with
+# `parent_tool_use_id`. deep-coordinator's first paid run found this the hard
+# way: its "the session never calls build itself" grader fired on the two
+# builders' own calls to build. `session_only` counts the session's calls and
+# not its agents'; the default still counts both, so no older case changes.
+SUBAGENT_BUILD = EVENTS[:-1] + [
+    {"type": "assistant", "parent_tool_use_id": None, "message": {"content": [
+        {"type": "tool_use", "id": "t3", "name": "Agent",
+         "input": {"subagent_type": "devflow:builder", "prompt": "piece 1"}},
+    ]}},
+    {"type": "assistant", "parent_tool_use_id": "t3", "message": {"content": [
+        {"type": "tool_use", "id": "t4", "name": "Skill", "input": {"skill": "devflow:build"}},
+    ]}},
+    {"type": "result", "result": "done"},
+]
+
+check("grader: tool_used counts a subagent's call by default",
+      verdict({"type": "tool_used", "tool": "Skill", "input_match": "devflow:build", "min": 1},
+              ctx(SUBAGENT_BUILD)),
+      "pass")
+
+check("grader: tool_used session_only ignores a subagent's call  <-- deep-coordinator run 1",
+      verdict({"type": "tool_used", "tool": "Skill", "input_match": "devflow:build",
+               "max": 0, "session_only": True}, ctx(SUBAGENT_BUILD)),
+      "pass")
+
+check("grader: tool_used session_only still sees the session's own call",
+      verdict({"type": "tool_used", "tool": "Agent", "input_match": "devflow:builder",
+               "min": 1, "session_only": True}, ctx(SUBAGENT_BUILD)),
+      "pass")
+
 # The bug this runner was written to check. `git merge` prefixes `git merge-base`,
 # which submit step 5 tells the assistant to run.
 MERGE_BASE = [{"type": "assistant", "message": {"content": [
