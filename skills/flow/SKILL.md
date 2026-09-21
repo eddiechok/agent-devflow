@@ -87,6 +87,20 @@ If the branch is one you may not leave — a harness that pins it, as Claude Cod
 The `Plans on disk` Context line lists `.devflow/plans/`. **If one of them is this work,
 you are resuming, not starting.**
 
+**A project whose `## Plans` block says `github` keeps them as issues too.** Look there
+as well — but only when `Commits ahead` is above `0`. A fresh Deep job has no pieces
+committed and nothing to resume, and step 0 already refuses the network for a `0`. Ask
+through whatever GitHub access this environment has:
+
+```
+gh issue list --label devflow:plan --state open --json number,title
+```
+
+Match by subject, exactly as you would a filename. Read the body of the one that matches;
+it has the same shape as a plan file. If `gh` cannot answer, say so in one line and use the
+files alone — a plan issue you cannot read is a job you cannot resume from here, and the
+honest line is "could not check GitHub for a plan".
+
 That is the whole point of writing the plan into the project: a Deep job is long enough to
 outlive the context that started it, and `/clear` between pieces is a supported move, not
 a failure. But nothing resumes by itself. Arrive here without looking and you write a
