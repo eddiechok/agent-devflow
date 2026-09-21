@@ -1,6 +1,6 @@
 ---
 name: setup
-description: Prepare a project to use devflow. Detects the test, typecheck and lint commands, runs them to confirm they actually work, then writes a Checks block into the project CLAUDE.md. Run once per project, or again when the commands change.
+description: Prepare a project to use devflow. Detects the test, typecheck and lint commands, runs them to confirm they actually work, then writes a Checks block into the project CLAUDE.md. Also asks where Deep plans live, in a file or on GitHub, and writes a Plans block. Run once per project, or again when the commands change.
 disable-model-invocation: true
 ---
 
@@ -22,10 +22,10 @@ Read the project's `CLAUDE.md` and look for a `## Checks` block.
 
 If one exists, **do not overwrite it.** Run each command in it and report:
 
-- all pass → say so in one line and stop
+- all pass → say so in one line, then go to step 5 if there is no `## Plans` block yet
 - one fails or is missing → say which, suggest a fix, and ask before changing anything
 
-A block someone wrote deliberately is not yours to replace.
+A block someone wrote deliberately is not yours to replace. The same goes for `## Plans`: if it is there, leave it, and only say what it says.
 
 ## 2. Work out the commands
 
@@ -90,7 +90,49 @@ Only include lines you actually ran. Three is typical, one is fine.
 
 Two honest lines beat one invented wrapper script. Do not add a `Makefile` or an npm script to make the block tidier — that is changing the project to suit the tool.
 
-## 5. Report
+## 5. Where do plans live?
+
+Deep work writes a plan. It can live in a file, `.devflow/plans/<name>.md`, or as a GitHub issue. The project decides. Ask once, with the recommendation attached:
+
+```
+Where should Deep plans live?
+   -> Recommend: local (.devflow/plans/). Pick github if you want plans
+      visible as issues, closed on merge, and listed as a backlog.
+```
+
+**Local is the default.** No answer, or no block, means local. Nothing downstream needs the block to exist.
+
+**Picking github means two things, and say both out loud:**
+
+- The web sandbox has no `gh`. A plan on GitHub cannot be read there. Runs on the web fall back to a local file for that job and say so. Pick local for repos you work on from the web.
+- Anyone who can edit the issue can edit the plan, and a plan is an order to `build`. Fine on your own repos. Think twice on a public one.
+
+**Prove it before writing it.** Same rule as the checks. For github, run this bare:
+
+```
+gh issue list --limit 1
+```
+
+It must answer. An error means no `gh`, no auth, or no remote, and that is not a project you can write `github` for. Say which, and write `local` instead, or nothing.
+
+Then make sure the label exists. A plan issue carries `devflow:plan`, and `flow` looks for it by that label:
+
+```
+gh label create devflow:plan --description "A devflow Deep plan" --color 0E8A16
+```
+
+An error that says the label already exists is fine. Any other error, stop and say so.
+
+Write the block:
+
+```markdown
+## Plans
+- Tracker: github
+```
+
+Or `local`. One line, one value. Nothing else goes in this block.
+
+## 6. Report
 
 Keep it short:
 
@@ -99,6 +141,7 @@ Checks written to CLAUDE.md.
   Test:      pnpm test        pass (48 tests, 6s)
   Typecheck: pnpm typecheck   pass
   Lint:      pnpm lint        pass
+Plans: github (label devflow:plan exists)
 
 No ## Deploy block written — that is ship's to add, the first time it
 deploys and can prove the command works.
@@ -116,4 +159,5 @@ Then mention, once, only if relevant:
 - Never add pipes or redirects to a check command. Bare, one per call.
 - Never overwrite an existing `## Checks` block without asking.
 - Never invent a command to fill a row. Missing is better than wrong.
-- Never add anything to `CLAUDE.md` except the `## Checks` block.
+- Never write `Tracker: github` without `gh issue list` having answered in this run.
+- Never add anything to `CLAUDE.md` except the `## Checks` and `## Plans` blocks, and never a block you did not prove.
