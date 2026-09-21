@@ -169,6 +169,20 @@ for name in sorted(os.listdir(HERE)):
 
 check_true("parser: found the case files to check", passed > 10)
 
+# A session that never started is an error, not a scored run. The CLI
+# answers "Not logged in" as a one-turn success with cost 0, and scoring
+# that as FAIL reads as the plugin failing.
+try:
+    run.events_or_raise([
+        {"type": "assistant", "message": {"content": [
+            {"type": "text", "text": "Not logged in \u00b7 Please run /login"}]}},
+        {"type": "result", "subtype": "success", "num_turns": 1, "total_cost_usd": 0},
+    ])
+    check("runner: a not-logged-in session raises, not scores", "no error", "CaseError")
+except run.CaseError as exc:
+    check("runner: a not-logged-in session raises, not scores", "CaseError", "CaseError")
+    check_true("runner: the error says to log in", "log" in str(exc).lower())
+
 # A manual case stays out of the default set and comes in when named.
 names = [c["name"] for c in run.load_cases(None)]
 check_true("cases: a manual case is left out by default", "plans-on-tracker" not in names)

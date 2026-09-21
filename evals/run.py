@@ -501,6 +501,27 @@ def run_once(case, workdir, permission_mode):
             "no stream-json events came back (exit %d).\nstdout: %s\nstderr: %s"
             % (done.returncode, done.stdout[:400], done.stderr[:400])
         )
+    return events_or_raise(events)
+
+
+def events_or_raise(events):
+    """A session that never started is an error, not a run to score.
+
+    `claude -p` with no login answers "Not logged in" as a one-turn success
+    at cost 0. Scored, that is a FAIL that reads as the plugin failing. A
+    desktop-app session does not pass its login to a child `claude`, so this
+    is the first thing a real run hits.
+    """
+    for e in events:
+        if e.get("type") != "assistant":
+            continue
+        for c in (e.get("message") or {}).get("content") or []:
+            if c.get("type") == "text" and "not logged in" in c.get("text", "").lower():
+                raise CaseError(
+                    "claude is not logged in from this shell. Run `claude` in a "
+                    "terminal and /login first; a desktop-app session does not "
+                    "pass its login to a child `claude -p`."
+                )
     return events
 
 

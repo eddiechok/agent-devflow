@@ -35,6 +35,12 @@ and `file_exists`. The eight `llm` graders come back `skip`, stay out of the
 denominator, and are counted in the summary. **A skip is never a pass**, the
 same way `NOT RUN` is never `none`.
 
+**A session that never started is an error, not a score.** `claude -p` with no login
+answers "Not logged in" as a one-turn success at cost 0. Scored, that read as the plugin
+failing 2/8. `run.py` now raises with the fix instead. Note the trap: a session inside the
+desktop app does **not** pass its login to a child `claude -p`. Run the evals from a
+terminal where `claude auth status` says `loggedIn: true`.
+
 `evals/test-run.py` is its contract test — parser and graders, no model, no
 cost. It is in `CLAUDE.md`'s `## Checks` block. `run.py` itself is not, because
 it spends money.
