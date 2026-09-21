@@ -97,7 +97,9 @@ gh issue list --label devflow:plan --state open --json number,title
 ```
 
 Match by subject, exactly as you would a filename. Read the body of the one that matches;
-it has the same shape as a plan file. If `gh` cannot answer, say so in one line and use the
+it has the same shape as a plan file. **If both a file and an issue match, the issue wins**
+— the file is either stale or a fallback from a run that could not reach GitHub. Say which
+one you resumed from. If `gh` cannot answer, say so in one line and use the
 files alone — a plan issue you cannot read is a job you cannot resume from here, and the
 honest line is "could not check GitHub for a plan".
 
@@ -303,8 +305,12 @@ Write it where the project keeps plans. Look for a `## Plans` block in `CLAUDE.m
 **`github` means an issue.** Open it with the label `devflow:plan`, the plan name as the title, and the plan below as the body:
 
 ```
-gh issue create --label devflow:plan --title "<what this is>" --body-file <the plan>
+gh issue create --label devflow:plan --title "<what this is>" --body-file /tmp/devflow-plan.md
 ```
+
+Write the body to that temp path, outside the repo, and remove it after. **Never under
+`.devflow/plans/`** — on a `github` project that file is what the issue replaces, and a
+file left there makes the next step 0b find two plans for one job.
 
 Print the number on the size line, `Deep — plan #45`, so it is in the transcript. Then `submit` can close it, and the next session can find it.
 
