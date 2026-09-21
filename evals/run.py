@@ -3,7 +3,7 @@
 
 `claude plugin eval` is gated — it exits 1 with "currently in early access"
 before running anything — so the cases in this directory were unrunnable. This
-runs the graders that need no model, which is most of them: of the 33 graders
+runs the graders that need no model, which is most of them: of the 37 graders
 across the eight cases, 29 are `regex`, `tool_used`, `tool_order` or
 `file_exists`, and every one of those is decidable from a `stream-json` trace.
 
