@@ -449,6 +449,10 @@ def load_cases(pattern):
             continue
         with open(path) as fh:
             doc = parse_yaml(fh.read())
+        # A manual case needs something no scaffold can fake -- a real
+        # tracker, a real deploy. It runs only when named with --case.
+        if doc.get("manual") and not pattern:
+            continue
         doc["_dir"] = os.path.join(HERE, name)
         doc.setdefault("name", name)
         cases.append(doc)
