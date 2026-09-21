@@ -305,7 +305,7 @@ Session: want it archived?
 - Never invent a deploy command the project did not give you.
 - Never write a `## Deploy` block for a deploy you did not just run and verify in this turn.
 - Never call a green pipeline a live check. Fetch the URL.
-- Never delete a branch, server or file this session did not create.
+- Never delete any branch but this PR's head branch. Never stop a server or delete a file this session did not create.
 - Never report a refused branch delete as a failed merge, and never retry a policy denial.
 - Never force-delete a local branch to silence a warning after a rebase or squash merge.
 - Never report a deploy as working without the output that proves it.
