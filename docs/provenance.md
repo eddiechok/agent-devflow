@@ -261,6 +261,13 @@ The three states are left visible here on purpose. The promise was wrong for lon
 | Formatters that write are not checks | **Real bug** — the review of 21 Sep | `black .` and `prettier --write src/` got the hook's own `allow`, with no prompt. A formatter rewrites the repo. The grant was sold as "check runners" |
 | The runner must start the command | **Real bug** — the review of 21 Sep | `cat docs/prettier.md` and `git log --author=black` matched on a word in an argument and got the allow. Anchored now, with env assignments and `npx`-style launchers permitted in front |
 
+## `run.py`
+
+| Change | From | Why |
+|---|---|---|
+| A not-logged-in session raises instead of scoring | **Real bug** — the first live run of plans-on-tracker, 21 Sep | `claude -p` from a desktop-app session had no login. It answered "Not logged in" in one turn at cost 0, and the runner scored that 2/8 FAIL. That read as the plugin failing a case it never ran. A run that never started is not evidence about the plugin |
+| Manual cases run only when named | **Ours** | A case that needs a real tracker cannot scaffold. Skipping it by default keeps the cheap set cheap |
+
 ## `test-frontmatter.py`
 
 | Change | From | Why |
