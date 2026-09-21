@@ -62,6 +62,8 @@ A line may repeat. Two `Test:` lines run in order. This repo's own [CLAUDE.md](C
 
 A second block, `## Deploy`, is optional. You never write it by hand. `ship` offers to add it after its first verified deploy.
 
+It also asks where Deep plans live. Local is the default: a file in `.devflow/plans/`. Pick `github` and each Deep plan becomes an issue, labelled `devflow:plan`, closed when the work merges. It writes a `## Plans` block only after `gh` has answered.
+
 Run it again if the commands change. It will not overwrite a block you wrote without asking.
 
 ## Use it

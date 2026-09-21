@@ -48,6 +48,8 @@ Notes about where an idea came from would cost tokens on every run forever. They
 | Pieces sized to one reviewable diff | **Changed** — superpowers sizes by minutes of work | A piece is a diff someone has to read. So review is the thing worth optimising |
 | "Independent" is stricter than "different files" | **Ours** | The failure it prevents is specific. Two pieces each pass their own tests, then break when joined |
 | The plan file holds the assumptions and the pieces | **Changed** — superpowers `writing-plans` | Theirs is a document of `- [ ]` steps to work through. Ours holds what was decided and what to build. It doubles as the spec `review`'s second axis reads |
+| Deep writes the plan to an issue when `## Plans` says so | **Changed** — mattpocock's `to-spec`, which publishes the spec to the tracker | Theirs always publishes. Ours asks the project, and falls back to the file on any failure. A plan in a file is a plan |
+| 0b. Resume from a plan issue, only when commits are ahead | **Ours** | A fresh Deep job has nothing to resume, and step 0 already refuses the network for a `0`. So the lookup lands where `flow` already calls `gh`, and a typo fix never pays for it |
 | Size overrides recorded globally | **Ours** | Free labelled data about a classifier that will be wrong sometimes |
 | The override line is printed as well as written | **Real bug** — the audit of 18 Aug | On a hosted session `~/.claude` sits inside a container. That container is deleted at the end of it. So every override recorded on the web had been thrown away |
 | 0. What the PR reports goes to `tend`, not `build` | **Ours** | `flow` is the entry point, so it wins most requests. Without this branch it took "fix the failing check" straight into `build`. That goes around the one step that asks whose failure it is |
@@ -164,6 +166,7 @@ The three states are left visible here on purpose. The promise was wrong for lon
 
 | Step | From | Why |
 |---|---|---|
+| 7. `Closes #N` for the plan issue | **Ours** | The plan is finished when the work merges. The issue closing is what says so on the tracker, and nothing else would |
 | The overall order — verify, review, commit, push, PR | **Copied** — wshobson's `git-workflow`, which is twelve lines long | The whole shape of a git workflow, small enough to read at a glance |
 | 1. Branch check as a safety net | **Ours** | `build` should have branched already. This is for when it did not run |
 | 1. A branch you were handed counts | **Real bug** — the edx-landing session | The web harness names the branch and forbids pushing to another. Renaming it to fit the convention would break the only push that is allowed |
@@ -239,6 +242,9 @@ The three states are left visible here on purpose. The promise was wrong for lon
 
 | Step | From | Why |
 |---|---|---|
+| 5. Ask where plans live, local or github | **Changed** — mattpocock's `setup-matt-pocock-skills`, which wires a repo to GitHub, Linear or local markdown | Theirs picks a tracker for specs, tickets and triage. Ours picks it for one thing, the Deep plan, and local stays the default. Linear and Jira stay pasted in, because `flow` cannot read them and an adapter each is a plugin of its own |
+| 5. Write `github` only after `gh issue list` answered | **Ours** | The same rule as `## Checks`. A tracker written down but never reached fails silently on the first Deep job |
+| 5. Say the two costs out loud | **Ours** | No `gh` on the web sandbox, and an editable issue is an editable order to `build`. Both are true and neither is obvious at setup time |
 | The whole skill | **Ours** | None of the three sources has one. mattpocock's setup writes an issue-tracker note, a different job |
 | Never write a command you have not run | **Same idea** — superpowers' "evidence before claims" | The failure is silent. A wrong command exits 0, and everything downstream reports the work as proven |
 | Read the manifest, never guess from convention | **Ours** | `pnpm test` and `npm test` are not interchangeable. Lockfiles say which |
