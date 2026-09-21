@@ -110,6 +110,9 @@ There are two exceptions. `ship` is the one skill nothing else can call. `flow` 
                     │                     write the test     │
                     │                     watch it fail      │
                     │                     make it pass       │
+                    │                     Deep: one builder  │
+                    │                     agent per piece,   │
+                    │                     each commits       │
                     │                       │                │
                     │                       ▼                │
                     │                     submit             │
@@ -140,6 +143,7 @@ Here is what the chart leaves out. All of it stops the flow rather than bending 
 - The **hook asks** before any commit that would land on the default branch.
 - **Three failed attempts** at the same problem and `build` stops. It says what each attempt ruled out. It does not try a fourth.
 - If the **live check fails** twice, `submit` stops and does not open a PR. An honest failure beats a green-looking PR over a broken feature.
+- A **builder that says `stuck`** stops a Deep job. `flow` says which piece, and what the builder ruled out, then hands it to you. It does not try that piece again.
 
 | Size | For | What happens |
 |---|---|---|
@@ -197,7 +201,7 @@ login and permissions · secrets and keys · payments · database migrations · 
 
 `submit` opens the PR. `ship` merges it. Only you can start `ship`. On a branch with no PR, `ship` stops and points you at `submit`. Where a PR exists, it merges.
 
-`review` runs two agents that never saw the session: `reviewer` asks *is it built right*, `spec-reviewer` asks *is it the right thing*. A third, `hardcase`, tries to break `reviewer`'s findings. The two reports are never blended.
+`review` runs two agents that never saw the session: `reviewer` asks *is it built right*, `spec-reviewer` asks *is it the right thing*. A third, `hardcase`, tries to break `reviewer`'s findings. The two reports are never blended. A fourth, `builder`, is not a reviewer: on a Deep job it builds one plan piece, commits it, and reports back in five lines. One builder per piece.
 
 ## More
 

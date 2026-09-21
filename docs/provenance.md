@@ -182,7 +182,7 @@ The three states are left visible here on purpose. The promise was wrong for lon
 
 | Step | From | Why |
 |---|---|---|
-| 7. `Closes #N` for the plan issue | **Ours** | The plan is finished when the work merges. The issue closing is what says so on the tracker, and nothing else would |
+| 8. `Closes #N` for the plan issue | **Ours** | The plan is finished when the work merges. The issue closing is what says so on the tracker, and nothing else would |
 | The overall order — verify, review, commit, push, PR | **Copied** — wshobson's `git-workflow`, which is twelve lines long | The whole shape of a git workflow, small enough to read at a glance |
 | 1. Branch check as a safety net | **Ours** | `build` should have branched already. This is for when it did not run |
 | 1. A branch you were handed counts | **Real bug** — the edx-landing session | The web harness names the branch and forbids pushing to another. Renaming it to fit the convention would break the only push that is allowed |
@@ -196,20 +196,21 @@ The three states are left visible here on purpose. The promise was wrong for lon
 | 5. Calls `review` instead of reviewing | **Copied** — superpowers splits asking for a review from doing one | Two jobs, two files. It also keeps the review out of the session that wrote the code |
 | 5. You may reject a finding, in writing | **Copied** — superpowers' `receiving-code-review` | Their rule: feedback is something to check, not an order. An agent is less accountable than a human reviewer. So a rejection has to be checked, written down, and visible in the PR |
 | 5. Scope creep is a decision, not a fix | **Ours** | Quietly deleting work nobody asked for is as bad as quietly keeping it |
-| 6. Conventional commits | **Same idea** — wshobson says "following conventions" | Makes `git log` a changelog |
-| 7. The PR body shape | **Ours** | **Assumptions** pairs with `flow`'s one round of questions. **How to check this yourself** has to be steps that were actually run |
-| 7. Use the preview link if one appeared | **Ours** | A preview is a real build on a clean machine. It catches what a laptop cannot |
-| 8. `/code-review` handed to you | **Real bug** — it could not run | Not installed. A slash command a skill cannot type at itself. And it reviews an **open PR**. Step 5 asked for it four steps before a PR existed |
-| 8. Never claim a review ran | **Ours** | The old step 5 said `/code-review` "is already installed". A false line in a prompt reads like a finished step |
-| 7. Invoking `submit` is the request for the PR | **Real bug** — the edx-landing session | The web harness says not to open a PR unless the human explicitly asked. The skill's own description says it opens one, so typing it is the asking. But somebody had to write that down |
-| 7. Blocked PR: push, then hand over the link and the command | **Ours** | The failure mode is silence. Finished, green and invisible is the state this skill exists to prevent |
+| 7. Conventional commits | **Same idea** — wshobson says "following conventions" | Makes `git log` a changelog |
+| 8. The PR body shape | **Ours** | **Assumptions** pairs with `flow`'s one round of questions. **How to check this yourself** has to be steps that were actually run |
+| 8. Use the preview link if one appeared | **Ours** | A preview is a real build on a clean machine. It catches what a laptop cannot |
+| 9. `/code-review` handed to you | **Real bug** — it could not run | Not installed. A slash command a skill cannot type at itself. And it reviews an **open PR**. Step 5 asked for it four steps before a PR existed |
+| 9. Never claim a review ran | **Ours** | The old step 5 said `/code-review` "is already installed". A false line in a prompt reads like a finished step |
+| 8. Invoking `submit` is the request for the PR | **Real bug** — the edx-landing session | The web harness says not to open a PR unless the human explicitly asked. The skill's own description says it opens one, so typing it is the asking. But somebody had to write that down |
+| 8. Blocked PR: push, then hand over the link and the command | **Ours** | The failure mode is silence. Finished, green and invisible is the state this skill exists to prevent |
 | 4. Use `run` if it exists, else the project's own way | **Real bug** — the audit of 18 Aug | The same shape as the `/code-review` assertion. That one was fixed as a special case rather than as a rule. Now it is a rule |
-| 7. Update the PR when one is already open | **Real bug** — the audit of 18 Aug | A branch has one pull request. The old step opened a second, because it only knew how to create |
-| 8. Re-derive the danger list from the diff | **Real bug** — the audit of 18 Aug | `flow` decided it before the code existed, and nothing carried the decision here. The loss was silent, and it dropped the only security gate in the loop |
-| 8. Never merge | **Ours** | The line the whole plugin is built around |
+| 8. Update the PR when one is already open | **Real bug** — the audit of 18 Aug | A branch has one pull request. The old step opened a second, because it only knew how to create |
+| 9. Re-derive the danger list from the diff | **Real bug** — the audit of 18 Aug | `flow` decided it before the code existed, and nothing carried the decision here. The loss was silent, and it dropped the only security gate in the loop |
+| 9. Never merge | **Ours** | The line the whole plugin is built around |
 | 2. `exit=N` only comes for a runner the hook knows | **Real bug** — the audit of 19 Aug | The step promised that running bare gets you the exit line. The hook only rewraps commands matching its own list, and this repo's own checks match none of them. So the promise was false in the repo that wrote it. The gap invites a fabricated `exit=0` |
 | 5. `Not reported:` is a finding, not a footnote | **Real bug** — the audit of 19 Aug | Both agents were told to print the line, and `review` was told to carry it through. `submit` is the only reader and had no branch for it. So a truncated review printed exactly like a clean one. That is the same failure `NOT RUN` was written to prevent |
-| 7. Some harnesses expect you to press Create PR | **Changed** — was stated as a harness rule | No public prompt or doc says a web session may not open a PR. What is real is a UI expectation. The mitigation was right and the reason was not. So the reason changed and the mitigation stayed |
+| 6. Fix the docs the change made stale | **Real bug** — `docs/pipeline.md` after the builder-per-piece change | Nothing before this step reads the docs. `build` tests behaviour and `review` judges the code, so a diagram that stopped matching the skill it draws went stale with no red anywhere, and a human found it later. One read on the branch is cheaper than the drift |
+| 8. Some harnesses expect you to press Create PR | **Changed** — was stated as a harness rule | No public prompt or doc says a web session may not open a PR. What is real is a UI expectation. The mitigation was right and the reason was not. So the reason changed and the mitigation stayed |
 
 ## `ship`
 
