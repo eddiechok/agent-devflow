@@ -113,7 +113,7 @@ Where should Deep plans live?
 gh issue list --limit 1
 ```
 
-It must answer. An error means no `gh`, no auth, or no remote, and that is not a project you can write `github` for. Say which, and write `local` instead, or nothing.
+It must answer. An error means no `gh`, no auth, or no remote, and that is not a project you can write `github` for. Say which, and **write no `## Plans` block at all**. No block means local, and that is the safe outcome without a claim the human did not make.
 
 Then make sure the label exists. A plan issue carries `devflow:plan`, and `flow` looks for it by that label:
 

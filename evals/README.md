@@ -78,7 +78,8 @@ not write a case that greps the plugin source and then judges a size with a bare
 `plans-on-tracker` is **manual**. It needs a real GitHub repo with issues on and
 a logged-in `gh`, which no scaffold can fake. `run.py` leaves it out unless you
 name it: set `DEVFLOW_EVAL_REPO=owner/name` to a throwaway repo you own, then
-`python3 evals/run.py --case plans-on-tracker`. Its second half, the resume after
+`python3 evals/run.py --case plans-on-tracker`. Close any `devflow:plan` issue left open
+by an earlier run first, or the new run resumes it instead of planning. Its second half, the resume after
 a `/clear`, has no grader at all, because it needs a second session. Do that
 part by hand and read the size line.
 

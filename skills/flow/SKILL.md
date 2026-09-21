@@ -88,9 +88,10 @@ The `Plans on disk` Context line lists `.devflow/plans/`. **If one of them is th
 you are resuming, not starting.**
 
 **A project whose `## Plans` block says `github` keeps them as issues too.** Look there
-as well — but only when `Commits ahead` is above `0`. A fresh Deep job has no pieces
-committed and nothing to resume, and step 0 already refuses the network for a `0`. Ask
-through whatever GitHub access this environment has:
+as well — but only when `Commits ahead` is anything other than `0`, **including `unknown`**,
+the same test step 0 uses. A fresh Deep job has no pieces committed and nothing to resume,
+and step 0 already refuses the network for a `0`. Ask through whatever GitHub access this
+environment has:
 
 ```
 gh issue list --label devflow:plan --state open --json number,title
@@ -302,7 +303,7 @@ Write it where the project keeps plans. Look for a `## Plans` block in `CLAUDE.m
 
 **No block, or `local`, means a file**: `.devflow/plans/<short-name>.md`.
 
-**`github` means an issue.** Open it with the label `devflow:plan`, the plan name as the title, and the plan below as the body:
+**`github` means an issue.** First list the open ones — `gh issue list --label devflow:plan --state open --json number,title` — and if one already matches this work, **that is the plan**: a session was cleared after planning and before the first commit, which is the one case step 0b cannot see. Resume it, and do not open a second. Otherwise open one with the label `devflow:plan`, the plan name as the title, and the plan below as the body:
 
 ```
 gh issue create --label devflow:plan --title "<what this is>" --body-file /tmp/devflow-plan.md
@@ -312,7 +313,13 @@ Write the body to that temp path, outside the repo, and remove it after. **Never
 `.devflow/plans/`** — on a `github` project that file is what the issue replaces, and a
 file left there makes the next step 0b find two plans for one job.
 
-Print the number on the size line, `Deep — plan #45`, so it is in the transcript. Then `submit` can close it, and the next session can find it.
+Then print one line, exactly once, so the number is in the transcript:
+
+```
+plan: #45
+```
+
+The size line is already on screen by now; this is its own line, like `glossary:` and `override recorded:`. `submit` reads it to close the issue, and you read it back after a `/clear`.
 
 **If that fails, write the file and say so in one line.** No `gh`, no auth, a web sandbox — none of those is a reason to stop. A plan in a file is a plan. `Plans: github asked for, wrote .devflow/plans/<name>.md instead — gh answered <the error>`.
 

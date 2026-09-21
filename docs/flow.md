@@ -41,7 +41,7 @@ A project can keep its Deep plans as issues instead of files. `setup` asks once 
 
 No block, or `local`, means the file. Then:
 
-- `flow` opens an issue with the label `devflow:plan`. The plan is the body. The number goes on the size line: `Deep — plan #45`.
+- `flow` opens an issue with the label `devflow:plan`. The plan is the body. It prints `plan: #45` on its own line.
 - `flow` resumes from it after a `/clear`. Only when commits are ahead, so a typo fix never touches the network.
 - `review` reads it as the spec, before any file.
 - `submit` adds `Closes #45`. The plan closes when the work merges.

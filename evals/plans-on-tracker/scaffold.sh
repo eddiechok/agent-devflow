@@ -40,6 +40,8 @@ MD
 npm test >/dev/null 2>&1 || { echo "scaffold.sh: npm test does not pass on the fresh fixture" >&2; exit 1; }
 gh label create devflow:plan --description "A devflow Deep plan" --color 0E8A16 2>/dev/null || true
 
+# Safe to run again: commit only if something changed, and set the upstream
+# so a freshly created empty repo works too.
 git add -A
-git commit -qm "chore: greeter fixture with plans on github"
-git push -q
+git diff --cached --quiet || git commit -qm "chore: greeter fixture with plans on github"
+git push -q -u origin HEAD
