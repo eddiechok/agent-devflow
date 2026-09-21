@@ -119,6 +119,7 @@ There are two exceptions. `ship` is the one skill nothing else can call. `flow` 
                     │                     checks, fresh      │
                     │                     run the app        │
                     │                     review             │
+                    │                     fix stale docs     │
                     │                     commit, push       │
                     │                     open the PR        │
                     │                       │                │
@@ -128,14 +129,14 @@ There are two exceptions. `ship` is the one skill nothing else can call. `flow` 
                   failure?                 the PR
                   then fix                  │
                                             ▼
-                                      /devflow:ship
+                                [YOU] /devflow:ship
                                       merge. Watch the deploy.
                                       Check it is live. Tidy up.
 ```
 
 There is a second view of the same thing in [docs/pipeline.md](docs/pipeline.md). It shows where work can *sit*, and what is allowed to move it. This chart answers what happens next. That one answers where the work is now.
 
-The two `[YOU]` marks are the only places you are normally needed.
+The three `[YOU]` marks are the only places you are normally needed. The third, `ship`, is the one only you can start.
 
 Here is what the chart leaves out. All of it stops the flow rather than bending it:
 
