@@ -34,7 +34,7 @@ The session that wrote the plan does not build it. Each piece goes to a fresh `b
 
 The reason is the window. One session building every piece is full of piece 1 by the time piece 4 starts. Then compaction keeps a summary and drops the plan. With a builder per piece, the session holds the plan and five lines per piece: `piece`, `test`, `commit`, `seam`, `stuck`.
 
-The builder gets three things: the plan path, the piece number, and whether the tree is dirty. It runs the `build` skill on that piece, commits it, and reports. It cannot ask you anything. So each piece carries a `Done when:` line, which is where it stops. If a seam was unclear, it says which one it picked. If it fails three times, it says `stuck`, and `flow` stops the job and hands it to you.
+The builder gets three things: the plan path, the piece number, and whether the tree is dirty. It runs the `build` skill on that piece, commits it, and reports. It cannot ask you anything. So each piece carries a `Done when:` line, which is where it stops. If a seam was unclear, it says which one it picked. If it fails three times, or hits a design decision the plan did not make, it says `stuck`, and `flow` stops the job and hands it to you. If a piece is done but the builder has a doubt, it says so, and the doubt lands in the PR under Assumptions.
 
 Never two builders at once. Two agents committing to one branch is a merge conflict with nobody to solve it.
 
