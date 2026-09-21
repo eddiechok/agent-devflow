@@ -118,8 +118,9 @@ git log <default branch ref>..HEAD --oneline
 
 The plan says what the pieces are; the log says which of them are built. **Announce where
 you are picking up** — `Deep — resuming email-alerts, pieces 1-2 built, starting 3` — and
-go straight to `devflow:build` with the next unbuilt piece. Skip step 2 and skip the
-questions; both were settled in the first round and the plan holds their answers.
+go straight to the builder loop under "Deep — one builder per piece" with the next unbuilt
+piece. Skip step 2 and skip the questions; both were settled in the first round and the
+plan holds their answers.
 
 **Then look at the `Status` line.** A dirty tree on a resumed plan is a piece that was
 started and not committed — the session died, you stopped it, or `build` gave up after
@@ -129,8 +130,9 @@ three tries. It is not the next piece. It is the first unbuilt one, part done.
 Deep — resuming email-alerts, pieces 1-2 built, piece 3 started and not committed
 ```
 
-Hand `build` **that** piece, and say the tree is dirty. It keeps what is there and writes a
-test at the seam before touching it, which is its rule for code that arrived without one.
+Hand the builder **that** piece, and say the tree is dirty — it is the third input the
+builder takes, and it passes it through to `build`, which keeps what is there and writes a
+test at the seam before touching it, its rule for code that arrived without one.
 Never start piece 3 from scratch beside a half-built piece 3, and never clean the tree to
 make the resume simpler — that is the work, thrown away.
 
@@ -209,7 +211,7 @@ If you arrived here mid-turn, because a question or an investigation turned into
 
 **Standard** → if anything is genuinely ambiguous, ask **one** round of questions (see below), then `devflow:build`. If nothing is ambiguous, go straight to `devflow:build`.
 
-**Deep** → ask one round of questions, get agreement, then work through the pieces with `devflow:build`, one at a time.
+**Deep** → ask one round of questions, get agreement, write the plan, then work through the pieces **one builder agent per piece**, in order — see "Deep — one builder per piece" below.
 
 Every size then goes on to step 5. `build` finishing is not the job finishing.
 
@@ -351,9 +353,56 @@ Build one piece at a time, in order. **`build` commits each piece as it goes gre
 
 The plan itself is still not a progress tracker — nothing writes back to it, file or issue. It is the spec `review`'s second axis reads.
 
+### Deep — one builder per piece
+
+**This session coordinates. It does not build.** One session building every piece fills
+its own window with piece 1 by the time piece 4 starts, and then compaction keeps a summary
+and drops the plan. So each piece goes to a fresh `devflow:builder` agent, and what comes
+back to this session is five lines, not a build.
+
+The loop, from the first unbuilt piece — right after the plan is written, or wherever
+step 0b said you are picking up:
+
+1. **Spawn one `devflow:builder`.** Give it exactly three things: the plan path (or the
+   plan issue's body, pasted), the piece number, and `clean` or `dirty` — the tree state
+   from step 0b, and `clean` for every piece after the first. Nothing else: not this
+   session's reasoning, not what the last builder said, not a hint about the seam. The
+   plan holds everything a piece needs, and that is the test of whether the plan is good.
+2. **Wait for its report and read all five lines.** `piece`, `test`, `commit`, `seam`,
+   `stuck`. A builder that returned fewer, or returned prose, did not finish — treat it as
+   `stuck: yes` and go to step 4.
+3. **`stuck: no` and a commit** → print the report's `commit` and `seam` lines, one each,
+   and go back to 1 with the next piece. Do not verify its work yourself — the commit and
+   the test line are the evidence, and re-running the build here is what fills the window.
+4. **`stuck: yes`** → stop the loop. Say which piece, what the builder ruled out, and what
+   it would look at next, in its words. If its line says `tree dirty`, say that too, so a
+   resume from step 0b hands the next builder the right flag. Do not spawn another builder
+   at the same piece, and do not finish it in-session — the human decides.
+5. **After the last piece** → step 5, `submit`, as for every size.
+
+**One builder at a time, always.** Two builders committing to one branch at once is a
+merge conflict nobody is there to solve, and a piece that depends on the one before it
+cannot start until that one is in. Sequential is the whole design; parallel builders in
+worktrees are a later change, if sequential ever proves too slow.
+
+**Where the harness only starts agents when asked** — the same restriction `review` names,
+a plan one, not a web one, and you tell by looking at your own instructions — ask once,
+before the first piece:
+
+```
+This harness only starts agents when you ask. Say "build the pieces" and one builder runs per piece.
+```
+
+If that answer does not come, build every piece in this session through `devflow:build`,
+one at a time, exactly as before this section existed. Say so in one line — `building
+in-session: agents not permitted` — and carry on. Nothing is lost but the window. Ask
+once for the whole job, not once per piece.
+
+Quick and Standard do not change. One piece, one session, straight through `build`.
+
 ## Step 5 — submit it
 
-When `build` comes back — after the last piece, if there were several — call `devflow:submit` yourself, in the same turn.
+When `build` comes back — or the last builder's report, on a Deep job — call `devflow:submit` yourself, in the same turn.
 
 Do not stop at "ready for a PR" and hand it back. `build` deliberately does not know about submitting, so if you do not make this call nobody does, and the work sits finished-but-uncommitted on a dirty working tree.
 
@@ -403,5 +452,8 @@ Beyond that one line, do not discuss it and do not ask about it. Record it and c
 - Never ask a question whose premise another question in the same round decides.
 - Never write a term into `CONTEXT.md` that the human did not settle, and never write implementation detail there.
 - Never finish without calling `submit`, or saying in one line why you did not.
+- Never spawn two builders at once. One piece, one agent, in plan order.
+- Never skip a builder's report. Five lines, read before the next piece starts; fewer is `stuck`.
+- Never build a Deep piece in-session while agents are available. Only when the harness refused, and say so.
 - Never call `devflow:ship`. The open PR is where this loop ends; merging is the human's, and only they start it.
 - If the human overrules you, they are right. Record it and move on.
