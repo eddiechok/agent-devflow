@@ -91,7 +91,8 @@ stuck: no
 - `piece:` — the number and its subject, from the plan.
 - `test:` — the summary line of the full-suite run, and the command that produced it. If a
   check runner printed `exit=N`, quote that too. Never a paraphrase of a run you did not do.
-- `commit:` — the short SHA, or `none` if you stopped before it.
+- `commit:` — the short SHA, or `none` if you stopped before it. `none` only ever goes
+  with `stuck: yes`; a piece without its commit is not finished, whatever the tests said.
 - `seam:` — where you put the test, and why in a few words. `none — no behaviour to test`
   is a real answer for a docs or config piece, and it should say what the checks did instead.
 - `stuck:` — `no`, or `yes` followed by what you ruled out and what you would look at next.
