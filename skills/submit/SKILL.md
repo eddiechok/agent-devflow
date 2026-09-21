@@ -33,7 +33,9 @@ Never commit directly to the default branch.
 
 Run the project's test, typecheck and lint commands from the `## Checks` block in `CLAUDE.md`.
 
-**Run them now, in this turn. Not "they passed earlier".**
+**The checks must postdate the last edit.** Not "they passed earlier" — earlier is before the edit that broke them.
+
+**One exception, and it is narrow.** If `build` ran **every command in the `## Checks` block**, in this session, so that its output is already on this screen, and no file has changed since — then that output is this step's output. Say so in one line — `checks: build's run stands, no edit since` — and go on. Running the same suite twice on the same tree prints the same result and proves nothing new; it only fills the window. It does not apply on a Deep job: the builders ran the checks inside their own agents, and five lines came back, not output. Nor when `build` ran the suite but not the lint; `build`'s handback rule only promises the suite. Any edit since, including one you made a moment ago, means run them again.
 
 **Run each one bare** — exactly as the Checks block writes it, one command per
 call. No pipes, no redirects, no `&&`, no `; echo $?`.
@@ -129,8 +131,10 @@ Do not do the review here — a session reviewing the code it just wrote carries
 Then act on what comes back:
 
 - **Blocking**, **Missing** and **Built wrong** — fix, then review again. At most **2 rounds**.
+- **Round 2 is scoped, not a fresh review.** It goes to the axis agent directly — `devflow:reviewer`, or `devflow:spec-reviewer` for its own findings — with the fixed point, round 1's findings in the agent's own words, and the files changed since. That is a range and another agent's report, not this session's reasoning, so `review`'s rule holds. A full re-read of the branch finds the same clean files again at the same price, and the cost of a review should go where the change went.
 - **Nobody asked for this** — either take it out, or keep it and say why in the PR under **Assumptions**. Silently keeping it is not an option.
 - Anything still standing after 2 rounds goes in the PR under **Known issues**, not hidden and not looped on forever.
+- **The last review must postdate the last edit.** A fix you make after the last round is an edit nobody has read, and so is a doc fix at step 6. Both get one short look at step 7, before the commit. It is a look, not a round.
 - **`NOT RUN`** — an axis that could not start is not a passing axis. Name it under **Known issues**, and say in **Evidence** which axes ran. Never write "reviewed" over a review that did not happen.
 - **`Not reported: N further findings`** — the axis ran out of room. Those findings exist and you have not seen them. **Run that axis again, scoped to what it did not reach**, and if the second run is also truncated, say so under **Known issues** with the count. A truncated review prints exactly like a clean one, which is the whole reason the line is there; dropping it here is the same failure as dropping `NOT RUN`.
 
@@ -157,6 +161,10 @@ The bar is narrow: a doc that is now **wrong**, not a doc that could say more. D
 This step exists because nothing before it reads the docs. `build` tests behaviour and `review` judges the code, so a diagram that stops matching the skill it draws goes stale with no red anywhere. `docs/pipeline.md` did exactly that after the builder-per-piece change, and a human found it later. One read here is cheaper than the drift.
 
 ## 7. Commit
+
+**If any file changed since step 2's run, run the checks again first.** A marker removed at 3, a live-check fix at 4, a review fix at 5, a doc at 6 — any of them means step 2's run no longer covers the tree you are about to commit. Same rule as step 2: the checks must postdate the last edit. Bare, one per call, output on screen.
+
+**If any file changed since the last review that read it, one short look first.** Round 2 counts as a read of the lines it was scoped to. `devflow:reviewer` only, scoped to the lines that changed, a **200 word ceiling**, and no `hardcase`. If it finds something new, **stop editing** and put it under **Known issues** — a further fix would need a further look, and the loop has to end somewhere the human can see. The checks and the look both postdate the last edit; that is the whole of the rule, stated at the last place an edit can land.
 
 Conventional commits, so `git log` doubles as a changelog:
 
