@@ -195,6 +195,7 @@ The three states are left visible here on purpose. The promise was wrong for lon
 
 | Step | From | Why |
 |---|---|---|
+| 6. Delete only this PR's head branch | **Real bug** — the review of 21 Sep | The rule said never delete a branch this session did not create. Step 6 said delete the PR's head branch. `ship` almost always runs in a later session than the one that made the branch, so the two fought on every run |
 | `ship` merges. `submit` opens the PR | **Ours** — a rename | `ship` used to mean *open a pull request and stop*. That job moved to `submit`, and `ship` became merge and deploy. The word moved onto the more dangerous action on purpose, so the old habit gets broken. On a branch with no PR, `ship` stops and points at `submit`. Where a PR exists it merges, and nothing catches that |
 | The shape — verify, act, clean up | **Same idea** — superpowers `finishing-a-development-branch` | Both end a branch the same way. Theirs offers four options including "push and create PR". devflow splits that in two, so opening a PR and merging one are never the same keystroke |
 | Only a human starts it | **Ours** | `disable-model-invocation: true` in the harness, plus rules in `flow` and `submit`. The first is real. The second is only an instruction |
@@ -242,6 +243,14 @@ The three states are left visible here on purpose. The promise was wrong for lon
 | Read the manifest, never guess from convention | **Ours** | `pnpm test` and `npm test` are not interchangeable. Lockfiles say which |
 | Do not overwrite an existing block | **Ours** | Someone wrote it on purpose |
 | A line may repeat, no wrapper script | **Ours** | Two honest lines beat one invented script. Adding a script is changing the project to suit the tool |
+
+## `bash-guard.py`
+
+| Change | From | Why |
+|---|---|---|
+| `#` and `&` stop the rewrap | **Real bug** — the review of 21 Sep | The wrapper is one line. `pytest tests/ # slow` became `{ pytest tests/ # slow ; } > ...` and the comment ate the rest. Bash: "unexpected end of file". The check never ran. `npm test &` broke the same way |
+| Formatters that write are not checks | **Real bug** — the review of 21 Sep | `black .` and `prettier --write src/` got the hook's own `allow`, with no prompt. A formatter rewrites the repo. The grant was sold as "check runners" |
+| The runner must start the command | **Real bug** — the review of 21 Sep | `cat docs/prettier.md` and `git log --author=black` matched on a word in an argument and got the allow. Anchored now, with env assignments and `npx`-style launchers permitted in front |
 
 ## `test-frontmatter.py`
 
