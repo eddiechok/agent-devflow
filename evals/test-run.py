@@ -169,6 +169,12 @@ for name in sorted(os.listdir(HERE)):
 
 check_true("parser: found the case files to check", passed > 10)
 
+# A manual case stays out of the default set and comes in when named.
+names = [c["name"] for c in run.load_cases(None)]
+check_true("cases: a manual case is left out by default", "plans-on-tracker" not in names)
+names = [c["name"] for c in run.load_cases("plans-on-*")]
+check_true("cases: a manual case runs when named", names == ["plans-on-tracker"])
+
 # Spot-check one value the naive parser would get wrong.
 with open(os.path.join(HERE, "full-loop", "case.yaml")) as fh:
     full_loop = run.parse_yaml(fh.read())

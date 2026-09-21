@@ -1,6 +1,6 @@
 # evals
 
-Seven cases. Run them before you push a change to a skill.
+Eight cases. Run them before you push a change to a skill. One is manual, see below.
 
 ## Which runner
 
@@ -73,6 +73,14 @@ not write a case that greps the plugin source and then judges a size with a bare
 | `auto-trigger` | low | Work never reaches `flow` at all, so nothing ever ships |
 | `setup-writes-checks` | medium | Every downstream check runs a command nobody verified |
 | `full-loop` | high | The skills stop handing off to each other |
+| `plans-on-tracker` | high, **manual** | A project that keeps plans on GitHub gets a file instead, or a plan nobody can close |
+
+`plans-on-tracker` is **manual**. It needs a real GitHub repo with issues on and
+a logged-in `gh`, which no scaffold can fake. `run.py` leaves it out unless you
+name it: set `DEVFLOW_EVAL_REPO=owner/name` to a throwaway repo you own, then
+`python3 evals/run.py --case plans-on-tracker`. Its second half, the resume after
+a `/clear`, has no grader at all, because it needs a second session. Do that
+part by hand and read the size line.
 
 The first four are the classifier, which is the part of `flow` most likely to
 drift and the only part with correction data behind it

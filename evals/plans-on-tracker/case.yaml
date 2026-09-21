@@ -1,0 +1,61 @@
+schema_version: "1.1"
+name: plans-on-tracker
+description: A project whose Plans block says github gets its Deep plan as a devflow:plan issue, resumes from it after a clear, and closes it from the PR.
+tags: [flow, setup, plans]
+
+# MANUAL. This case needs a real GitHub repo with issues enabled and a gh that
+# is logged in. It cannot scaffold that locally, so run.py leaves it out unless
+# you name it: python3 evals/run.py --case plans-on-tracker
+manual: true
+
+context:
+  # Point this at a throwaway repo you own. The scaffold clones it, writes a
+  # CLAUDE.md with Checks and "Tracker: github", and commits.
+  scaffold_script: ./scaffold.sh
+
+execution:
+  prompt: "/devflow:flow --deep add a settings page for email alerts"
+  max_turns: 30
+  timeout_seconds: 900
+  allowed_tools: [Bash, Read, Write, Edit, Glob, Grep, Skill, Agent]
+
+runs: 1
+
+graders:
+  - type: regex
+    name: announces-deep-with-issue
+    target: trace
+    # The size line carries the issue number when the plan went to GitHub.
+    pattern: "Deep\\s*[—–-].*plan #\\d+"
+    match: contains
+    weight: 3
+
+  - type: tool_used
+    name: opens-a-plan-issue
+    tool: Bash
+    input_match: "gh issue create --label devflow:plan"
+    min: 1
+    weight: 3
+
+  - type: file_exists
+    name: no-plan-file-written
+    path: .devflow/plans
+    exists: false
+    weight: 2
+
+  - type: llm
+    name: closes-the-plan-issue
+    focus: trace
+    criteria: >
+      The PR body submit wrote must contain a "Closes #N" line for the plan
+      issue, not only for a request issue. PASS if it does. FAIL if the plan
+      issue number appears nowhere in the PR body.
+
+expected_outcome: >
+  The size line reads "Deep — plan #N ...". One issue labelled devflow:plan
+  exists with the Pieces and Assumptions sections in its body. No file is
+  written under .devflow/plans. The PR closes the plan issue.
+
+  Then, by hand: /clear, run the same prompt again, and check the size line
+  reads "Deep — resuming ..., pieces N built". That half has no grader
+  because it needs a second session.
