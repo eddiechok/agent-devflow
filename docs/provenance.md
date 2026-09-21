@@ -20,7 +20,7 @@ Notes about where an idea came from would cost tokens on every run forever. They
 **The sources**, all read in full unless noted:
 
 - **superpowers 5.1.0** (Apache-2.0) — `test-driven-development`, `writing-plans`, `requesting-code-review`, `receiving-code-review`, `verification-before-completion`, `finishing-a-development-branch`, `systematic-debugging`
-- **[mattpocock/skills](https://github.com/mattpocock/skills)** (MIT) — `code-review`, `tdd`, `grilling`, `implement`, `wayfinder`, `triage`
+- **[mattpocock/skills](https://github.com/mattpocock/skills)** (MIT) — `code-review`, `tdd`, `grilling`, `domain-modeling`, `implement`, `wayfinder`, `triage`
 - **[wshobson/commands](https://github.com/wshobson/commands)** (MIT) — `workflows/git-workflow.md`
 - **Anthropic's [`code-review`](https://github.com/anthropics/claude-plugins-official) plugin** (Apache-2.0) — the slash command
 
@@ -35,6 +35,13 @@ Notes about where an idea came from would cost tokens on every run forever. They
 | Announce the size in one line, first | **Changed** — superpowers announces the skill it is using | Same instinct, more useful content. Which skill is running tells you nothing you can disagree with. A size does |
 | All questions in one numbered round, each with a recommended answer | **Copied** — mattpocock's `grilling`: "Ask the whole frontier in one round: number each question and give your recommended answer" | Drip-fed questions turn one job into six turns |
 | One round only, then take the recommendations | **Ours** | `grilling` keeps going in rounds as answers unlock more questions. devflow stops after one and moves. It is trying to finish a change, not design a system |
+| Facts are the agent's to find, decisions are the human's | **Copied** — mattpocock's `grilling`: "Finding _facts_ is your job, never the user's" | The old rule was "only ask what you cannot determine yourself". That is a do-not, and a do-not only fires when the model already had doubts. Sorting the list is a step, so it runs every time. Also rule 1 before rule 2: a fact from the human's memory is worse than one from the repo, and it lands in **Assumptions** looking decided |
+| Ask only what another question in the round does not decide | **Changed** — mattpocock's `grilling` frontier | Theirs loops until nothing is left. Ours takes the filter and not the loop. A held question takes its recommendation. Fewer wasted questions, no extra rounds |
+| Deep may ask a second round, capped at one | **Ours** | The filter leaves a hole at Deep: a held question the plan cannot be written without. One more round closes it. Two is the ceiling |
+| `CONTEXT.md`, a `## Words` glossary the project keeps | **Changed** — mattpocock's `domain-modeling` | Theirs has ADRs, a context map and a skill of its own. Ours is the smallest loop: `flow` writes a word the human settled, `flow` and `build` read it next job. Before this, devflow wrote nothing a later run read |
+| Only the human's settled terms, and no implementation detail | **Copied** — mattpocock's `domain-modeling`: "totally devoid of implementation details" | File names rot in a week. One stale line and nobody trusts the rest. The "only what the human settled" half is ours: a file the plugin can write alone is a file the next run has to check |
+| The glossary is created lazily | **Copied** — mattpocock: "Create files lazily" | Same reason `setup` will not write a `## Deploy` block it cannot prove |
+| The glossary is **not** passed to `review` | **Ours** | `reviewer` must name an input that fails. A bad word cannot fail an input. Give it a style guide and it reports style |
 | Unanswered questions become PR **Assumptions** | **Ours** | Turns a blocking question into a note that can be checked at merge time |
 | The danger list | **Ours** | Nothing like it in the three sources |
 | Deep work writes a plan file | **Changed** — superpowers `writing-plans` | Same idea, opposite size. Theirs is exhaustive: every step 2-5 minutes, real code in every step, no placeholders. Ours holds the pieces and the assumptions. It holds nothing that would rot |
@@ -86,6 +93,8 @@ The three states are left visible here on purpose. The promise was wrong for lon
 | A change with no behaviour skips the gates and says so | **Real bug** — the audit of 19 Aug | `flow` routes copy, docs, config, styles and images here. The gates said "no skipping" with no exit. Nothing can go red for a README wording change. So the two available moves were both bad: an invented assertion that clears every gate while testing nothing, or a quiet skip that teaches the rest of the skill is optional. This repo is one of the projects that hits it |
 | `origin/main` is a fallback, not an answer | **Real bug** — the audit of 19 Aug | `refs/remotes/origin/HEAD` is unset in plenty of working repos. The fallback then fires on a `master` or `develop` repo. "Am I on the default branch?" answers no while you are standing on it, and the next commit lands there |
 | New work cuts its branch from the default ref | **Real bug** — the audit of 19 Aug | The other half of `flow`'s new-work gap. Cutting from where you stand carries the old branch's commits into the new pull request. Staying put hands the work to the old PR |
+| Read `CONTEXT.md` for test names and identifiers | **Copied** — mattpocock's `tdd`: "test names and interface vocabulary match the project's domain language" | A test named against the glossary is a test nobody finds again |
+| `build` never writes to `CONTEXT.md` | **Ours** | Only `flow` asks the human, so only `flow` writes. One writer keeps the file trustworthy. A wrong word is reported, not fixed in silence |
 
 ## `review` skill
 
@@ -186,6 +195,7 @@ The three states are left visible here on purpose. The promise was wrong for lon
 
 | Step | From | Why |
 |---|---|---|
+| `ship` merges. `submit` opens the PR | **Ours** — a rename | `ship` used to mean *open a pull request and stop*. That job moved to `submit`, and `ship` became merge and deploy. The word moved onto the more dangerous action on purpose, so the old habit gets broken. On a branch with no PR, `ship` stops and points at `submit`. Where a PR exists it merges, and nothing catches that |
 | The shape — verify, act, clean up | **Same idea** — superpowers `finishing-a-development-branch` | Both end a branch the same way. Theirs offers four options including "push and create PR". devflow splits that in two, so opening a PR and merging one are never the same keystroke |
 | Only a human starts it | **Ours** | `disable-model-invocation: true` in the harness, plus rules in `flow` and `submit`. The first is real. The second is only an instruction |
 | Refuse a PR that is red or still running | **Ours** | Starting the skill is consent to merge. It is not consent to merge anything |
@@ -237,6 +247,7 @@ The three states are left visible here on purpose. The promise was wrong for lon
 
 | Change | From | Why |
 |---|---|---|
+| The test exists at all | **Real bug** | In a plain YAML scalar a `#` after a space opens a comment. `... like #123 ...` cut 60 characters off `flow`'s description, including "This is the entry point, start here.", the sentence most likely to make the skill fire. The file read correctly the whole time. Quoting the value fixes it. The test stops it coming back, and refuses to pass by finding no skills |
 | Also checks `agents/*.md` | **Ours** | An agent's description is how the right agent gets picked. A stray `#` cuts it short the same way |
 | Agents must pin `model` and `effort` | **Ours** | Both fields are optional. Both default to inheriting the session. So leaving them out is spelled exactly like choosing them. `inherit` is rejected for the same reason |
 | Booleans compared by YAML spelling | **Real bug** | The parser cross-check compared `str(True)` against `true` and failed both `disable-model-invocation` lines. The suite was red on `main`. That was in the one test whose job is telling a real mismatch from a file that only looks wrong |
@@ -256,6 +267,18 @@ Not every source that was read left a mark. These were compared against devflow 
 | superpowers' Iron Law | Deleting untested code and starting over. See the `build` table. This is the strongest disagreement in the repo |
 | superpowers' strengths section in reviews | Praise helps a human trust the rest of the feedback. Nothing reads devflow's review but `submit`, which cannot act on it |
 | superpowers' review after every task | Reviewing each task as it lands, to stop errors compounding. That is a change to `build`, not to `review`. It is also a bigger bet than the problem so far justifies |
+
+## Credits, in full
+
+The README keeps one line per source. This is the long form it used to carry.
+
+
+- **[obra/superpowers](https://github.com/obra/superpowers)** (MIT, and Apache-2.0 as the packaged plugin) — watch the test fail first. Prove it before saying done. The three-size classifier, **with its "never go lighter" rule inverted on purpose**. Never volunteer discard. From `requesting-code-review` and `receiving-code-review`: give the reviewer crafted context and never the session's history. Review the work against its plan. Treat findings as suggestions to evaluate rather than orders to follow. That last one is why `submit` can reject a finding in writing.
+- **[mattpocock/skills](https://github.com/mattpocock/skills)** (MIT) — ask every question in one round, with a recommendation attached. Test only at agreed seams. From its `code-review` skill: **the two axes and the refusal to blend them**. Also scope creep as a finding in its own right, proving the fixed point resolves before spawning anything, and reporting "no spec available" rather than inventing requirements. Its twelve-smell baseline was **not** taken. It is judgement-call territory by design, which is the opposite of `reviewer`'s bar. From `grilling`: ask only what is answerable now, and **facts are the agent's job, decisions are the human's**. Its loop of rounds until nothing is left was **not** taken. From `domain-modeling`: the `CONTEXT.md` glossary, made lazily, meaning only. Its ADRs and context map were not taken.
+- **[wshobson/commands](https://github.com/wshobson/commands)** (MIT) — the shape of a git workflow that fits in a few lines.
+- **[heliohq/ship](https://github.com/heliohq/ship)** — two ideas, both reworked. Its **independent peer challenger** became `hardcase`, with the defaults inverted. Theirs produces objections. Ours tries to destroy them, and defaults to *falls*. Its evidence hierarchy became the **first-hand / second-hand** test in `submit` step 4 and `ship` step 5. In theirs, L1 is a screenshot or a response body. L2 is an HTTP 200 or "tests passed", and L2 is insufficient. Restated as one question you can apply yourself: *would this have been true before the change?* Its pipeline shape was **not** taken. It runs every job through the full sequence, which is the thing the Quick tier exists to refuse.
+- **Anthropic's [`code-review`](https://github.com/anthropics/claude-plugins-official) plugin** (Apache-2.0) — `reviewer`'s "Do not report" list is its false-positive taxonomy, rephrased: pre-existing problems, pedantic nitpicks, anything a linter or typechecker already catches, quality gripes no `CLAUDE.md` asked for. Its confidence filter is **reworked, not copied**. Theirs is a 0-100 score across five bands, dropped below 80. Ours became one question: can you name the input that fails? Its five review lenses were not carried over. `reviewer` uses four of its own.
+- **Anthropic's `feature-dev` plugin** (Apache-2.0) — reviewed for patterns only, nothing taken.
 
 ## How much to trust this
 
