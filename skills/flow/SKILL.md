@@ -183,23 +183,75 @@ If you arrived here mid-turn, because a question or an investigation turned into
 
 Every size then goes on to step 5. `build` finishing is not the job finishing.
 
-### Asking questions — one round only
+### The project's words
 
-When you need input, ask **everything you can answer now, in one numbered list**. Never drip-feed one question per turn.
+The project can have a `CONTEXT.md` at its root. It has one `## Words` block. Each line is one word and what it means here.
 
-Only ask what you genuinely cannot determine yourself. Read the code first. A question you could have answered by opening a file is a wasted interruption.
+Read it before you write the questions. Use its words in your questions and in the plan.
 
-Give every question a recommended answer:
+If the human uses a word that fights the glossary, ask. That is a real ambiguity:
+
+```
+The glossary says a "session" is the browser one. Do you mean the agent run?
+   -> Recommend: yes. The browser one gets its own word.
+```
+
+When an answer settles what a word means, write it down at once. Append to `CONTEXT.md`. Create the file if it is missing:
+
+```markdown
+## Words
+- **Session** — one agent run, start to finish. The browser kind is a *login*.
+```
+
+Then print one line and move on:
+
+```
+glossary: added "Session"
+```
+
+Three rules:
+
+- **Only words the human settled.** Not words you decided. Not words you read from the code.
+- **Meaning only.** No file paths. No function names. No design choices. Those rot. A meaning does not.
+- **Lazily.** No settled word, no file.
+
+This is the one file devflow writes that a later run reads. A plan is for one job. `CONTEXT.md` outlives the job.
+
+### Asking questions — one round, only what is answerable
+
+Ask everything that is answerable now, in one numbered list. Never one question per turn.
+
+#### Facts are your job. Decisions are the human's
+
+Sort each question into one of the two before you write the list.
+
+A **fact** is already in the repo. How the flag is stored. What imports this module. Go and read it. Do not ask. The human answers from memory. The code cannot be wrong about itself.
+
+A **decision** is a call only the human can make. Taste. Product. Priority. Ask those.
+
+This is also what makes `yes to all` safe. A recommendation on a decision is an opinion. A recommendation on a fact is a guess. A guess lands in **Assumptions** and looks like a decision.
+
+#### Drop what another question decides
+
+A question is answerable only when its premise is settled. "Where does the cache live?" waits for "should there be a cache?". Do not ask both at once.
+
+Hold it back. On Quick and Standard it takes its recommendation and goes into **Assumptions**.
+
+**Deep may ask one second round.** Only for a held question the plan cannot be written without. Say it is the last round. Two is the ceiling. More than two is a design session, not a change.
+
+#### Give every question a recommended answer
 
 ```
 1. Should this replace the existing export, or sit alongside it?
    -> Recommend: replace. Nothing else imports it.
 
 2. Store the flag per-user or globally?
-   -> Recommend: per-user, matching how notifications already work.
+   -> Recommend: per-user. Checked: notifications already store per-user.
 
 Reply "yes to all" to take every recommendation.
 ```
+
+Question 2 shows the split. "Per-user or global" is a decision, so it is asked. "How notifications store it" is a fact, so it was looked up and handed over.
 
 Anything the human does not answer takes the recommendation, and **goes into the PR body under "Assumptions"** so it can be checked at merge time instead of blocking now.
 
@@ -279,6 +331,9 @@ Beyond that one line, do not discuss it and do not ask about it. Record it and c
 - Never fix what a PR is reporting without going through `tend` first. Attribution comes before the fix.
 - Never go up a size without naming the reason.
 - Never do work that the size you announced does not call for.
+- Never ask the human a question the repo already answers. Go and read it.
+- Never ask a question whose premise another question in the same round decides.
+- Never write a term into `CONTEXT.md` that the human did not settle, and never write implementation detail there.
 - Never finish without calling `submit`, or saying in one line why you did not.
 - Never call `devflow:ship`. The open PR is where this loop ends; merging is the human's, and only they start it.
 - If the human overrules you, they are right. Record it and move on.
