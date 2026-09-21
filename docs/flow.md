@@ -30,6 +30,27 @@ Nothing has to remember to tick a box. That is the reason to trust it. That is a
 
 Commit the file or ignore it, as you prefer. devflow does not add it to `.gitignore`. It does not expect it there either.
 
+## Plans on GitHub
+
+A project can keep its Deep plans as issues instead of files. `setup` asks once and writes:
+
+```markdown
+## Plans
+- Tracker: github
+```
+
+No block, or `local`, means the file. Then:
+
+- `flow` opens an issue with the label `devflow:plan`. The plan is the body. The number goes on the size line: `Deep — plan #45`.
+- `flow` resumes from it after a `/clear`. Only when commits are ahead, so a typo fix never touches the network.
+- `review` reads it as the spec, before any file.
+- `submit` adds `Closes #45`. The plan closes when the work merges.
+- `build` never reads the tracker. `flow` hands it the piece.
+
+Two costs, and `setup` says both out loud. The web sandbox has no `gh`, so a run there falls back to a file and says so. And anyone who can edit the issue can edit the plan. A plan is an order to `build`.
+
+Local and GitHub only. A Linear or Jira ticket is still pasted in as the request.
+
 ## The project's words
 
 Some things outlive one job. What this project means by *session*. Or *account*.

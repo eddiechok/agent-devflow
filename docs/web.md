@@ -54,6 +54,11 @@ branch was always the real requirement. The naming was never the point.
 `403`. `ship` reports it and hands the branch to you rather than retrying. The merge is
 untouched either way. The two are separate calls, which this skill already knew.
 
+**Plans on GitHub fall back to a file here.** A project whose `## Plans` block says
+`github` cannot open or read a plan issue without `gh`. `flow` writes the file instead
+and says so on the size line. The resume after a `/clear` then reads the file, not the
+tracker. Nothing is lost; the plan is where the web session can reach it.
+
 **`gh` is not pre-installed.** The web sandbox reaches GitHub through built-in tools and a
 credential proxy. Those cover issues, pull requests, diffs and comments with no setup. So
 every `gh` command in these skills names *what to ask for*, not *how to ask*.
