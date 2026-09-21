@@ -191,6 +191,7 @@ One or two sentences.
 The reason, or the issue it closes.
 
 Closes #123
+Closes #45   (the plan issue, if the project keeps plans on GitHub)
 
 ## Assumptions
 - Took the recommendation on X, because no answer was given
@@ -218,6 +219,8 @@ I checked this locally before pushing. I stopped my own server; step 5 is for yo
 ## Known issues
 - (only if the review left something unresolved)
 ```
+
+**A plan issue closes with the PR.** If the project's `## Plans` block says `github` and this work has a `devflow:plan` issue, add `Closes #N` for it under **Why**. The plan is finished when the work is merged, and the issue closing is what says so on the tracker. Find the number on the size line `flow` printed, or by listing open `devflow:plan` issues and matching the subject. Do not guess a number.
 
 **An empty Assumptions section is a claim.** It reads as "nothing was assumed". If it is empty because the context holding the answers is gone rather than because there were none, say that in one line instead of omitting the section.
 
