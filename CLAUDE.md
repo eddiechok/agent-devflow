@@ -23,3 +23,12 @@ something is genuinely wrong. Do not add `--strict`; it turns the intentional
 warning into an error.
 
 There is no typecheck: nothing here is a typed language.
+
+## Deploy
+- Deploy: claude plugin update devflow@eddiechok-devflow --scope local
+- Verify: test -d "$HOME/.claude/plugins/cache/eddiechok-devflow/devflow/$(git rev-parse --short=12 HEAD)"
+- Wait: 10s
+
+A merge to `main` changes nothing a session sees. The plugin is installed at
+local scope from this checkout, and the update copies the checkout into a cache
+directory named after the commit. Restart the session after it.
