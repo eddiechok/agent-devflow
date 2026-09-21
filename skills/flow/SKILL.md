@@ -336,9 +336,16 @@ Issue: #123 (if there is one)
 ## Pieces
 1. [independent: no] Add the storage column and migration
    Verify: pnpm test src/db
+   Done when: the column exists and the migration runs clean on an empty db
 2. [independent: no] Read it in the settings API
    Verify: pnpm test src/api/settings
+   Done when: GET /settings returns the stored value
 ```
+
+**Every piece carries a `Done when:` line.** `Verify:` is the command that goes green;
+`Done when:` is the observable state that means the piece is finished and the next one
+may start. Whoever builds the piece may have no session to ask, so the plan has to say
+where the piece stops. One line, stated as something you can check, not as intent.
 
 Build one piece at a time, in order. **`build` commits each piece as it goes green**, which is what makes a long plan survivable: you may `/clear` between pieces and pick up from the plan plus `git log <default branch ref>..HEAD`. The plan says what the pieces are; the log says which of them exist.
 
