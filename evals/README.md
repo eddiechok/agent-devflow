@@ -211,13 +211,6 @@ on a transcript where every `npm test` was denied. When what you care about is
 that a command *ran*, assert on something only a real run produces — output it
 prints, a file it writes — rather than on the call being made.
 
-A third trap, from `deep-coordinator`: **a subagent's tool calls are in the
-parent's trace too.** Its "the session never calls `build` itself" grader
-failed the first paid run on the two builders' own calls to `build`, which were
-the correct behaviour. When a `tool_used` grader means the session and not its
-agents, set `session_only: true`; the default counts both, so no older case
-changed.
-
 A second trap, from the same case: **do not assert on output only a hook
 produces, unless the hook is certain to fire.** `full-loop` used to look for
 `exit=\d`, printed by bash-guard's wrapper, as proof the wrapper had run. But
@@ -231,6 +224,13 @@ The lesson generalises: a hook's own contract belongs in a direct test of the
 hook, not in an eval transcript. `hooks/test-bash-guard.py` checks all of it —
 including the `allow` that regression was about — deterministically, in under a
 second, for no tokens. Reach for an eval grader only for what needs a real run.
+
+A third trap, from `deep-coordinator`: **a subagent's tool calls are in the
+parent's trace too.** Its "the session never calls `build` itself" grader
+failed the first paid run on the two builders' own calls to `build`, which were
+the correct behaviour. When a `tool_used` grader means the session and not its
+agents, set `session_only: true`; the default counts both, so no older case
+changed.
 
 Check a new grader both ways before trusting it. Point it at a transcript
 where the skill did the right thing **and** one where it did not; a grader
