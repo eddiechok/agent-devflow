@@ -20,7 +20,7 @@ The request may turn out to be new work rather than a change to that PR. Then `f
 
 ## Where a Deep plan goes
 
-Deep work writes its plan into the project, at `.devflow/plans/<short-name>.md`. The plan holds the assumptions it took. It also holds the pieces to build. Each piece says whether it depends on another piece.
+Deep work writes its plan into the project, at `.devflow/plans/<short-name>.md`. The plan holds the assumptions it took. It also holds the pieces to build. Each piece says whether it depends on another piece, the command that proves it, and a `Done when:` line — the state that means the piece is finished. That last line is there because whoever builds the piece may have nobody to ask.
 
 That file is the spec, not a progress tracker. Its job is to hold the assumptions and the pieces. It is also what `review`'s second axis judges the work against.
 
