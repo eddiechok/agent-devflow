@@ -108,7 +108,9 @@ check("a passing run is trimmed to a short tail",
 check("a failing run shows MORE: matches plus a longer tail",
       'head -n 60' in rewritten(out) and 'tail -n 40' in rewritten(out))
 
-for cmd in ("pytest", "cargo test", "go test ./...", "tsc", "npm run lint"):
+for cmd in ("pytest", "cargo test", "go test ./...", "tsc", "npm run lint",
+            "npx vitest", "bundle exec rspec", "CI=true npm test",
+            "eslint src/", "ruff check ."):
     check(f"recognised as a check runner: {cmd!r}",
           decision(call(cmd)) == "allow")
 
@@ -124,6 +126,19 @@ for name, cmd in [
     ("# devflow-ok opts out entirely", "npm test  # devflow-ok"),
     ("not a check runner", "ls -la"),
     ("empty command", "   "),
+    # A comment or a trailing & would break the one-line wrapper, so the
+    # check would never run at all.
+    ("a # comment  <-- broke the wrapper", "pytest tests/ # slow"),
+    ("backgrounded with &", "npm test &"),
+    # Formatters rewrite files. That is not a check, and must not be allowed
+    # on the hook's say-so.
+    ("formatter: black", "black ."),
+    ("formatter: prettier --write", "prettier --write src/"),
+    ("formatter: eslint --fix", "eslint --fix src/"),
+    ("formatter: ruff format", "ruff format ."),
+    # The runner has to be the command, not a word in an argument.
+    ("runner word in a path", "cat docs/prettier.md"),
+    ("runner word in an argument", "git log --author=black"),
 ]:
     check(f"passes through untouched: {name}", call(cmd) == {},
           f"got {call(cmd)!r}")
