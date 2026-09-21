@@ -158,7 +158,7 @@ and a perfectly good spec: paste the text, and if the work is Deep, put it in th
 so `review`'s second axis has something to judge against. Never quietly drop that axis
 because the tracker was the wrong shape — say the spec came in as pasted text.
 
-If `--quick` or `--deep` is present, that is the size. Skip step 2, and **record the override** — see "Recording overrides" at the end. Do not argue with an explicit override.
+If `--quick` or `--deep` is present, that is the size. Still work out your own size, silently, then skip the rest of step 2. **If yours differs, record the override** — see "Recording overrides" at the end. If it matches, there was no correction: record nothing and print nothing. Do not argue with an explicit override.
 
 ## Step 2 — size it
 
@@ -365,7 +365,9 @@ If the human used `--quick` or `--deep`, they are correcting a mistake this skil
 
 Global on purpose. These are notes about **this plugin**, not about the project you happen to be in. Kept per-project they would scatter across every repo you work in, get committed into unrelated projects, and be impossible to review together — which is the only way they are useful.
 
-Work out your own size first, so the record shows what would have happened:
+Work out your own size first, so the record shows what would have happened. **Only a flag that differs from your own size is a correction.** `--deep` on work you would have called Deep is not an override, and a line saying `guessed: Deep | correct: Deep` teaches the classifier nothing. Write nothing in that case.
+
+When it differs:
 
 ```
 - 2026-08-16 | myapp | "fix the login redirect" | guessed: Quick | correct: Deep

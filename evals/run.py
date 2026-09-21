@@ -538,6 +538,12 @@ def run_case(case, runs, permission_mode, keep_temp):
         try:
             scaffold(case, workdir)
             events = run_once(case, workdir, permission_mode)
+            if keep_temp:
+                # The trace is the only record of what the session did. Without
+                # it a failed run costs a second paid run just to find out why.
+                with open(os.path.join(workdir, "devflow-trace.jsonl"), "w") as fh:
+                    for e in events:
+                        fh.write(json.dumps(e) + "\n")
             ctx = Context(events, build_trace(events), workdir)
             results = []
             for g in graders:
@@ -556,7 +562,7 @@ def run_case(case, runs, permission_mode, keep_temp):
             run_scores.append({"ok": False, "earned": 0, "scored": 0, "skipped": 0})
         finally:
             if keep_temp:
-                print("    kept: %s" % workdir)
+                print("    kept: %s  (trace in devflow-trace.jsonl)" % workdir)
             else:
                 shutil.rmtree(workdir, ignore_errors=True)
     return run_scores
