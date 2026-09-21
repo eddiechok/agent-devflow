@@ -21,9 +21,11 @@ there. It quietly runs `node --test` instead, going around the command your `## 
 block named. So the hook carries the decision itself.
 
 Only a single, simple call to a known check runner ever gets that far. The command must
-match the built-in list: `npm test`, `pytest`, `cargo test`, `go test`, `tsc`, and
-friends. It must contain no `&&`, `||`, `;`, `|`, newline, `$(` or backtick. Anything else
-passes through untouched, and faces your normal rules.
+**start with** a runner from the built-in list: `npm test`, `pytest`, `cargo test`, `go test`,
+`tsc`, and friends. A runner word inside an argument does not count. It must contain no
+`&&`, `||`, `;`, `|`, `&`, `#`, newline, `$(` or backtick. A formatter that writes files
+(`--fix`, `--write`, `ruff format`) is not a check and is left alone. Anything else passes
+through untouched, and faces your normal rules.
 
 This is why `build` and `submit` both insist on running check commands **bare**, one per
 call.

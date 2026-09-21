@@ -119,26 +119,43 @@ def guard_branch(command, cwd):
 
 # Only rewrap commands that produce a wall of check output. Everything else is
 # left completely alone.
+#
+# Anchored to the start of the command on purpose. This regex is also the
+# allow-list (see truncate), so a runner word buried in an argument --
+# `cat docs/prettier.md`, `git log --author=black` -- must not match.
+# Env assignments and the usual launchers (`npx`, `bundle exec`, ...) may
+# come first; nothing else may.
 CHECK_RE = re.compile(
-    r"\b("
-    r"(npm|pnpm|yarn|bun)\s+(run\s+)?(test|typecheck|lint|build|check)"
-    r"|(jest|vitest|mocha|ava|playwright|cypress)"
-    r"|pytest|tox|(python3?\s+-m\s+(pytest|unittest))"
-    r"|go\s+(test|build|vet)"
-    r"|cargo\s+(test|build|clippy|check)"
-    r"|(mvn|gradle|\./gradlew)\s+\S*(test|build)"
-    r"|(bundle\s+exec\s+)?rspec|rake\s+test"
-    r"|dotnet\s+(test|build)"
-    r"|(tsc|eslint|ruff|mypy|flake8|black|prettier)"
-    r"|make\s+(test|check|lint|build)"
+    r"^\s*"
+    r"(?:\w+=\S*\s+)*"
+    r"(?:(?:npx|bunx|pnpm\s+exec|pnpm\s+dlx|yarn\s+dlx|poetry\s+run|uv\s+run|bundle\s+exec)\s+)?"
+    r"(?:"
+    r"(?:npm|pnpm|yarn|bun)\s+(?:run\s+)?(?:test|typecheck|lint|build|check)"
+    r"|(?:jest|vitest|mocha|ava|playwright|cypress)"
+    r"|pytest|tox|python3?\s+-m\s+(?:pytest|unittest)"
+    r"|go\s+(?:test|build|vet)"
+    r"|cargo\s+(?:test|build|clippy|check)"
+    r"|(?:mvn|gradle|\./gradlew)\s+\S*(?:test|build)"
+    r"|rspec|rake\s+test"
+    r"|dotnet\s+(?:test|build)"
+    r"|tsc|eslint|ruff|mypy|flake8"
+    r"|make\s+(?:test|check|lint|build)"
     r")\b",
     re.IGNORECASE,
 )
 
+# A formatter that rewrites files is not a check, and must not get the allow.
+# `black` and `prettier` are not in CHECK_RE at all for the same reason.
+WRITES = re.compile(r"(?:^|\s)--(?:fix|fix-only|write)\b|^\s*(?:\w+=\S*\s+)*(?:npx\s+)?ruff\s+format\b")
+
 # Already shaped by the caller, or contains control flow whose meaning we would
 # risk changing. Leave both alone.
+#
+# `#` and `&` are here because the wrapper is one line: a comment would eat
+# the rest of it, and `... & ; }` is a syntax error. Either way the check
+# would never run.
 ALREADY_SHAPED = re.compile(r"(\|\s*(head|tail|grep)\b|>\s*/dev/null|2>&1)")
-CONTROL_FLOW = ("&&", "||", ";", "|", "\n", "$(", "`")
+CONTROL_FLOW = ("&&", "||", ";", "|", "&", "#", "\n", "$(", "`")
 
 FAIL_PAT = (
     "error|fail|failed|failing|assert|expect|panic|traceback|exception"
@@ -148,6 +165,8 @@ FAIL_PAT = (
 
 def truncate(command, tool_input):
     if not CHECK_RE.search(command):
+        passthrough()
+    if WRITES.search(command):
         passthrough()
     if ALREADY_SHAPED.search(command):
         passthrough()
@@ -185,9 +204,10 @@ def truncate(command, tool_input):
     # going around the very command CLAUDE.md told it to use.
     #
     # What this grants is narrower than it looks. Everything above has already
-    # run: the command matched CHECK_RE, a fixed list of check runners, and it
-    # contains no &&, ||, ;, |, newline, $( or backtick. So only a single,
-    # simple invocation of a known check runner ever reaches this line.
+    # run: the command STARTS with a runner from CHECK_RE, a fixed list, it is
+    # not a formatter writing files, and it contains no &&, ||, ;, |, &, #,
+    # newline, $( or backtick. So only a single, simple invocation of a known
+    # check runner ever reaches this line.
     #
     # It is still a grant. `npm test` runs whatever package.json says, and
     # this bypasses the human's own rules for that one class of command.
