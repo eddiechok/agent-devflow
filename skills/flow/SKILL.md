@@ -373,7 +373,10 @@ step 0b said you are picking up:
    `stuck: no`, did not finish — treat it as `stuck: yes` with the tree dirty, and go to
    step 4. A piece is only done when its commit is in.
 3. **`stuck: no` and a commit** → print the report's `commit` and `seam` lines, one each,
-   and go back to 1 with the next piece. Do not verify its work yourself — the commit and
+   and any `concern` the `stuck` line carries. A concern is a done piece the builder still
+   wants a human to look at. Printing it is not what keeps it: the builder also wrote it
+   as a `Concern:` line in the piece's commit body, which is what `submit` reads into the
+   PR's **Assumptions** after any `/clear`. Then go back to 1 with the next piece. Do not verify its work yourself — the commit and
    the test line are the evidence, and re-running the build here is what fills the window.
 4. **`stuck: yes`** → stop the loop. Say which piece, what the builder ruled out, and what
    it would look at next, in its words. If its line says `tree dirty`, or step 2 decided
