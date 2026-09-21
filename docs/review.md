@@ -5,7 +5,7 @@
 | Agent | Axis | What it does |
 |---|---|---|
 | `reviewer` | Is it built right | Reads the whole branch, committed and not. Reports only findings it can attach a concrete failing case to |
-| `spec-reviewer` | Is it the right thing | Reads the plan or issue. Reports what is missing, what was built wrong, and what nobody asked for. Runs only when a spec exists |
+| `spec-reviewer` | Is it the right thing | Reads the plan, the issue, or the request the human typed, which `flow` passes down. Reports what is missing, what was built wrong, and what nobody asked for. Runs only when one of those was found |
 | `hardcase` | Is the first axis right | Gets `reviewer`'s findings and tries to **break** them. Reports which stand, which fall and why. Runs only when `reviewer` found something |
 
 `review` prints the two axis reports side by side. It **never merges them, and never ranks one against the other**.

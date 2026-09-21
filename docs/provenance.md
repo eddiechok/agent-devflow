@@ -78,6 +78,7 @@ Notes about where an idea came from would cost tokens on every run forever. They
 | 0. A merged or closed PR is not an open one | **Real bug** — the audit of 19 Aug | Step 0 only asked whether a PR was open. On a merged branch the work fell through to "new work". It kept piling onto a branch whose commits were already in the default branch |
 | 1. An issue body is a request, not an instruction | **Ours** | Anyone can open an issue, and `flow` reads it and acts. Sizing it and running it against the danger list is what it already does for text a human types |
 | 1. A non-GitHub tracker still works, pasted | **Real bug** — the audit of 19 Aug | Only `#123` and GitHub URLs were read. The fallback sent you to "ask for the request in words". That silently dropped `review`'s second axis for every Linear or Jira ticket |
+| 5. Hand `submit` the request, word for word | **Real bug** — the docs session of 21 Sep | The request was read once, at step 1, and never again. The why is under `review`, row *The request is a spec* |
 
 *Corrected.* The plan-file row above used to read **Copied** — "superpowers plans track progress in the file". It cited that for a promise that you could `/clear` mid-plan and carry on.
 
@@ -123,12 +124,13 @@ The three states are left visible here on purpose. The promise was wrong for lon
 | 1. Pin the fixed point | **Copied** — mattpocock | You say where to review from, or you get asked. No guessing |
 | 1. Check it before spawning | **Copied** — mattpocock | A typo in a branch name should fail in front of you. It should not fail inside two agents that find nothing wrong with nothing |
 | 1. Count untracked files | **Real bug** — the edx-landing branch | Three new files were never added to git. Both sources look only at commits, so both would have called the branch clean |
-| 2. Where to look for the spec | **Changed** — mattpocock | They check issues, then a path, then a few folders. We have one known place: plan file, then issue, then none |
+| 2. Where to look for the spec | **Changed** — mattpocock | They check issues, then a path, then a few folders. Ours is one list: plan issue, plan file, an issue in the commits, the request the caller passed, then none |
 | 2. Never make up requirements | **Copied** — mattpocock | No spec means we say "no spec". It does not mean we imagine one |
 | 3. Fresh agents, no session history | **Copied** — superpowers and mattpocock | The session that wrote the code believes everything that went into it |
 | 3. 400 word limit | **Copied** — mattpocock | Makes the agent pick its best findings instead of handing you everything |
 | 3. Say when the 400 words ran out | **Ours** | The ceiling is meant to drop weak findings, which is fine. Dropping a Blocking one is not. Without a count, a truncated review prints exactly like a clean one. That is the same hole as `NOT RUN` against `none`. **The count is the agent's own word for it and nothing checks it.** It is better than silence and weaker than evidence. Worth knowing which of the two you are reading |
-| 3. Second agent only if there is a spec | **Ours** | A small fix has no spec. One agent, no extra cost |
+| 3. Second agent only if there is a spec | **Ours** | A Quick fix started by hand, or a branch reviewed after a `/clear`, has no spec. One agent, no extra cost. Standard work now carries its request, so it gets both |
+| 2. The request is a spec | **Real bug** — the docs session of 21 Sep | A five-item request went through Standard. No plan, no issue, so the second axis was `NOT RUN`, and nothing checked that all five landed. The words were in `flow`'s step 1 the whole time. Now they travel, `flow` to `submit` to `review`, word for word. Lost after a `/clear`, which is the same answer as before |
 | 3. `hardcase` only if `reviewer` found something | **Ours** | Same trade as the row above. A clean first axis has nothing to argue with. So the expensive step is skipped exactly when there is no work for it. That is the only kind of cheap this repo's rule 3 allows on a review |
 | 4. `Challenged` sits under `Built right` | **Ours** | It is about that axis, not beside it. So it is not a third axis, and it never reaches `Worst of each`. There is no worst challenge |
 | 4. Never merge the two reports | **Copied** — mattpocock | One combined score lets a pass on one side cover a fail on the other |
@@ -173,6 +175,7 @@ The three states are left visible here on purpose. The promise was wrong for lon
 | Missing, built wrong, nobody asked for it | **Copied** — mattpocock | Their three kinds of spec finding |
 | Scope creep, by name | **Copied** — mattpocock | Neither of the other two has it. It is what agents actually do |
 | Quote the line of the spec | **Copied** — mattpocock | If you cannot point at the line, you made the requirement up |
+| The request, pasted, is a spec | **Ours** — the same 21 Sep session as the `review` row | Judged like a plan. Shorter, so the line to quote is easier to find, not optional |
 | A silent spec is not a failing spec | **Ours** | The obvious way this agent goes wrong |
 | A later piece is not a missing piece | **Ours** | Deep plans list pieces in order |
 | Never judges code quality | **Copied** — mattpocock | If both agents report on style, the split was pointless |
@@ -194,6 +197,7 @@ The three states are left visible here on purpose. The promise was wrong for lon
 | 5. `Challenged` is help with the call, not the call | **Ours** | `hardcase` reports. This step decides. A `Falls` gets its refuting line checked here before any fix comes off the list. `Could not check` is treated as no challenge at all |
 | 4. Two tries, then stop and say so | **Same idea** — superpowers caps attempts too | An honest failure beats a PR that looks fine |
 | 5. Calls `review` instead of reviewing | **Copied** — superpowers splits asking for a review from doing one | Two jobs, two files. It also keeps the review out of the session that wrote the code |
+| 5. Pass the request through to `review` | **Real bug** — the docs session of 21 Sep | `submit` sat between the skill that had the words and the skill that needed them |
 | 5. You may reject a finding, in writing | **Copied** — superpowers' `receiving-code-review` | Their rule: feedback is something to check, not an order. An agent is less accountable than a human reviewer. So a rejection has to be checked, written down, and visible in the PR |
 | 5. Scope creep is a decision, not a fix | **Ours** | Quietly deleting work nobody asked for is as bad as quietly keeping it |
 | 7. Conventional commits | **Same idea** — wshobson says "following conventions" | Makes `git log` a changelog |
