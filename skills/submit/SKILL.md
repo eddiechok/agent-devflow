@@ -1,7 +1,7 @@
 ---
 name: submit
 description: Use when the code is finished and ready to become a pull request. Runs the project checks fresh, runs the app to confirm the change really works, writes a conventional commit, and opens a PR with steps for the human to check it. Never merges; merging is what the ship skill does, and only a human starts that.
-argument-hint: "[optional note for the PR title]"
+argument-hint: "[request: the words the human typed, passed on to review as the spec]"
 allowed-tools: Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git branch:*), Bash(git rev-parse:*), Bash(git symbolic-ref:*)
 ---
 
@@ -120,7 +120,11 @@ Invoke `devflow:review` with the branch point:
 git merge-base HEAD <default branch ref>
 ```
 
-It pins the range, finds the plan or issue if there is one, and runs both axes in fresh agents. Do not do the review here — a session reviewing the code it just wrote carries every assumption that produced it.
+It pins the range, finds the plan or issue if there is one, and runs both axes in fresh agents.
+
+**Pass it the request text too, if you were given one.** `flow` hands it over at its step 5 as `request: <text>`, word for word; hand it to `review` in the same form, after the fixed point. On work with no plan and no issue, that text is the spec the second axis reads, and without it that axis does not run. If you were invoked directly and have no request, say so in one line and let the axis skip — do not write one from memory of the diff.
+
+Do not do the review here — a session reviewing the code it just wrote carries every assumption that produced it.
 
 Then act on what comes back:
 

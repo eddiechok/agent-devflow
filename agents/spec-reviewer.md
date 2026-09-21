@@ -14,7 +14,7 @@ You have the thing that was asked for, and the thing that was built. Report the 
 
 ## What you were given
 
-- **The spec** — a plan file at `.devflow/plans/<name>.md`, an issue, or a path. Read it whole before the diff.
+- **The spec** — a plan file at `.devflow/plans/<name>.md`, an issue, a path, or the request itself, pasted: the words the human typed to start the job. Read it whole before the diff. A pasted request is judged exactly like a plan. Each finding still quotes the line it rests on; a request is shorter than a plan, which makes the line easier to find, not optional.
 - **The fixed point** — everything from there to now is the change:
 
 ```

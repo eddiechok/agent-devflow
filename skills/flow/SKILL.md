@@ -409,6 +409,13 @@ Quick and Standard do not change. One piece, one session, straight through `buil
 
 When `build` comes back — or the last builder's report, on a Deep job — call `devflow:submit` yourself, in the same turn.
 
+**Hand it the request, word for word.** The text from step 1, or the issue body, goes to
+`submit` as `request: <text>`, on every size. `submit` passes it to `review`, and `review`'s second
+axis judges the change against it. On Deep the plan is the fuller spec and `review` finds
+it on its own; pass the request anyway, it costs one paste. Standard work has no plan, so
+the words the human typed are the only spec there is — and until this line existed, nobody
+read them again after step 1.
+
 Do not stop at "ready for a PR" and hand it back. `build` deliberately does not know about submitting, so if you do not make this call nobody does, and the work sits finished-but-uncommitted on a dirty working tree.
 
 The only reasons not to call `submit`:

@@ -1,7 +1,7 @@
 ---
 name: review
 description: "Use when a branch needs reviewing before it becomes a pull request, or when you want a read on work you did not write. Reviews everything between a fixed point and now along two axes, kept apart on purpose - is it built right, and is it the right thing. Each axis runs in a fresh agent that never sees this session's reasoning. Called by submit at step 5, and safe to start yourself on any branch."
-argument-hint: "[fixed point - a branch, tag or SHA. Defaults to the branch point]"
+argument-hint: "[fixed point - a branch, tag or SHA. Defaults to the branch point] [request: the words the human typed, for step 2]"
 allowed-tools: Bash(git rev-parse:*), Bash(git merge-base:*), Bash(git diff:*), Bash(git log:*), Bash(git status:*), Bash(git symbolic-ref:*), Bash(gh issue view:*)
 ---
 
@@ -17,7 +17,7 @@ Two axes, two fresh agents, no blending.
 
 ## 1. Pin the fixed point
 
-`$ARGUMENTS` is the fixed point if given. Otherwise use the branch point:
+`$ARGUMENTS` has two optional parts, in this order: a fixed point, then `request:` followed by the request text. The fixed point is the first word **only if that word is not `request:`**. Everything after `request:` is text for step 2 — never a ref, never resolved. No fixed point, or `$ARGUMENTS` that starts with `request:`, means the branch point:
 
 ```
 git merge-base HEAD <default branch ref>
@@ -41,8 +41,9 @@ In this order, first hit wins:
 
 0. **A plan issue** — only if the project's `CLAUDE.md` has a `## Plans` block saying `github`. List them: `gh issue list --label devflow:plan --state open --json number,title`, or whatever GitHub access this environment has. Pick the one whose subject is this work and read its body; it has the shape of a plan file. If `gh` cannot answer, say so and go on to the file — the same job may have fallen back to one.
 1. **A plan file** — **list `.devflow/plans/`** and pick the one whose subject is this work. Deep work writes one. Do not match the filename against the branch name: a harness that names your branch for you, as Claude Code on the web does, makes that match fail on exactly the work that has a spec. If several are plausible, name them and ask.
-2. **An issue** — a reference in the branch name or the commits since the fixed point, like `Closes #45`. Read it with `gh issue view`, or whatever GitHub access this environment has. If you cannot open it, there is no spec — say so and skip the axis. A spec you could not read is not a spec.
-3. **Nothing.** That is a normal answer for a Quick fix.
+2. **An issue** — a reference in the branch name or the commits since the fixed point, like `Closes #45`. Read it with `gh issue view`, or whatever GitHub access this environment has. If you cannot open it, say so and go on to the next item. A spec you could not read is not a spec, but the request may still be one.
+3. **The request itself** — the text after `request:` in `$ARGUMENTS`, if any. Standard work has no plan file, so the words the human typed are the only spec there is. Pass it to `spec-reviewer` as pasted contents, and say in the report that the spec was the request. A request you were not handed is not a spec: after a `/clear` it is gone, and the answer is the one below, as it always was.
+4. **Nothing.** That is a normal answer for a Quick fix, or for a `review` you started yourself on a branch.
 
 **Never invent requirements.** No spec means the second axis does not run — not that you imagine what it would have said.
 
