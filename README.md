@@ -145,7 +145,7 @@ Here is what the chart leaves out. All of it stops the flow rather than bending 
 |---|---|---|
 | **Quick** | Typos, chores, most bug fixes | Straight to building. No questions. |
 | **Standard** | Changing existing behaviour | Questions only if genuinely unclear. |
-| **Deep** | New features, wide refactors | One round of questions, two at most. Then a written plan. |
+| **Deep** | New features, wide refactors | One round of questions, two at most. Then a written plan, and one builder agent per piece. |
 
 It announces the size in one line before doing anything. That way you can disagree straight away.
 
@@ -205,7 +205,7 @@ One page each. Read them when you need them.
 
 | Page | What it covers |
 |---|---|
-| [docs/flow.md](docs/flow.md) | Follow-ups on an open PR. Where a Deep plan goes. The `CONTEXT.md` glossary. Size overrides. |
+| [docs/flow.md](docs/flow.md) | Follow-ups on an open PR. Where a Deep plan goes. One builder per piece. The `CONTEXT.md` glossary. Size overrides. |
 | [docs/review.md](docs/review.md) | The three agents. Why two axes. Why `hardcase` defaults to *falls*. |
 | [docs/pipeline.md](docs/pipeline.md) | Where work can sit, and what moves it. |
 | [docs/web.md](docs/web.md) | Claude Code on the web. Start with "use the devflow flow skill". On Pro, say "run the review". `ship` is local only. |

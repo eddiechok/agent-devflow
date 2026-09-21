@@ -28,6 +28,20 @@ That file is the spec, not a progress tracker. Its job is to hold the assumption
 
 Nothing has to remember to tick a box. That is the reason to trust it. That is also why the checkbox version did not survive.
 
+## One builder per piece
+
+The session that wrote the plan does not build it. Each piece goes to a fresh `builder` agent, one at a time, in plan order.
+
+The reason is the window. One session building every piece is full of piece 1 by the time piece 4 starts. Then compaction keeps a summary and drops the plan. With a builder per piece, the session holds the plan and five lines per piece: `piece`, `test`, `commit`, `seam`, `stuck`.
+
+The builder gets three things: the plan path, the piece number, and whether the tree is dirty. It runs the `build` skill on that piece, commits it, and reports. It cannot ask you anything. So each piece carries a `Done when:` line, which is where it stops. If a seam was unclear, it says which one it picked. If it fails three times, it says `stuck`, and `flow` stops the job and hands it to you.
+
+Never two builders at once. Two agents committing to one branch is a merge conflict with nobody to solve it.
+
+On a harness that only starts agents when you ask, `flow` asks once for the whole job. Say no, and it builds every piece in the session, as it did before. Nothing is lost but the window.
+
+Quick and Standard do not change. One piece, one session.
+
 Commit the file or ignore it, as you prefer. devflow does not add it to `.gitignore`. It does not expect it there either.
 
 ## Plans on GitHub
