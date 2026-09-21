@@ -86,6 +86,7 @@ That part is easy to get wrong. `build` and `submit` split the commit between th
 sequenceDiagram
     actor You
     participant flow
+    participant builder
     participant build
     participant review
     participant submit
@@ -97,11 +98,13 @@ sequenceDiagram
     You-->>flow: answers, or "yes to all"
     flow->>flow: writes .devflow/plans/email-alerts.md
 
-    loop one per piece
-        flow->>build: build this piece
+    loop one per piece, a fresh builder each time
+        flow->>builder: the plan, the piece number, clean or dirty
+        builder->>build: build this piece
         build->>build: test first, watch it fail, make it pass
         build->>build: full suite, then commit the piece
-        build-->>flow: green, with the output that proves it
+        build-->>builder: green, with the output that proves it
+        builder-->>flow: five lines: piece, test, commit, seam, stuck
     end
 
     flow->>submit: submit

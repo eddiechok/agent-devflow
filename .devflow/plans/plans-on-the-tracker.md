@@ -61,7 +61,7 @@ this is a choice the project makes, not the plugin. Default stays local.
 
 4. [independent: no] `review` and `submit` know about the plan issue
    `review` step 2: plan issue first, then plan file, then an issue in the
-   commits, then nothing. `submit` step 7: `Closes #N` for the plan issue,
+   commits, then nothing. `submit` step 8: `Closes #N` for the plan issue,
    and the PR body links it under What.
    Verify: python3 skills/test-frontmatter.py
    Done when: a PR from a github-tracked Deep job closes the plan issue on

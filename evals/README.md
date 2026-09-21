@@ -132,7 +132,7 @@ auto-trigger   FAIL  0/5 weighted
   FAIL announces-a-size          w=2  not found in the trace
 ```
 
-Six of seven cases pass every grader `run.py` scores. This one fails both of
+Six of seven cases — seven was the count that day; there are nine now — pass every grader `run.py` scores. This one fails both of
 its, on a plain-English request — *"the README description for this CLI is too
 dry, reword it to something friendlier"* — which is exactly the shape the case
 was written for. Nothing here has regressed; this is the original bug, still

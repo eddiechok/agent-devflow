@@ -213,7 +213,7 @@ If `flow` handed you a piece from `.devflow/plans/<name>.md`, commit it once it 
 <type>(<scope>): <the piece, as an imperative subject>
 ```
 
-Types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `perf`, `build`, `ci` — the same list `submit` step 6 uses, and it has to stay the same list.
+Types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `perf`, `build`, `ci` — the same list `submit` step 7 uses, and it has to stay the same list.
 
 **This is the only case where `build` commits**, and the reason is narrow. A Quick or Standard change is one piece, and `submit` commits it after the checks and the review, which is where that belongs. A plan is several pieces across a job long enough to outlive the context that started it, and a commit per piece is what makes it resumable: `git log <default branch ref>..HEAD` then answers *which pieces are built* with evidence, rather than a checkbox somebody had to remember to tick.
 

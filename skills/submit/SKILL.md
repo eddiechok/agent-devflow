@@ -142,9 +142,17 @@ Never write "challenged" over a `hardcase` that did not run, and never let a `Fa
 
 The review reports; it never edits. The fixes are yours.
 
-The built-in `/code-review` is a better review than this one, and it still does not belong here: it works on an **open pull request** and comments back on it, and there is no PR yet. It goes to the human at step 8, where one exists.
+The built-in `/code-review` is a better review than this one, and it still does not belong here: it works on an **open pull request** and comments back on it, and there is no PR yet. It goes to the human at step 9, where one exists.
 
-## 6. Commit
+## 6. Update the docs the change made stale
+
+Find the docs that describe what changed: the README, anything under `docs/`, `CLAUDE.md`, and the description of any skill or agent the change touched. Read the parts that talk about this behaviour. If a doc now says something the code no longer does, fix it here, on this branch, so the doc lands in the same pull request as the code that dated it.
+
+The bar is narrow: a doc that is now **wrong**, not a doc that could say more. Do not write new pages, and do not touch a doc the change did not date. A line beside the code that dated it is the whole step; anything bigger goes back through `flow` as its own request.
+
+This step exists because nothing before it reads the docs. `build` tests behaviour and `review` judges the code, so a diagram that stops matching the skill it draws goes stale with no red anywhere. `docs/pipeline.md` did exactly that after the builder-per-piece change, and a human found it later. One read here is cheaper than the drift.
+
+## 7. Commit
 
 Conventional commits, so `git log` doubles as a changelog:
 
@@ -156,9 +164,9 @@ Conventional commits, so `git log` doubles as a changelog:
 
 Types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `perf`, `build`, `ci`. `build` uses this same list for plan pieces; the two have to stay in step.
 
-**A Deep branch may already be committed.** `build` commits each plan piece as it lands, so the working tree can be clean by the time you reach this step — and the fixes from step 5 may be all that is left. If there is nothing to commit, say so in one line and go on. Never make an empty commit to have something to show for the step.
+**A Deep branch may already be committed.** `build` commits each plan piece as it lands, so the working tree can be clean by the time you reach this step — and the fixes from steps 5 and 6 may be all that is left. If there is nothing to commit, say so in one line and go on. Never make an empty commit to have something to show for the step.
 
-## 7. Open the PR — or update the one already there
+## 8. Open the PR — or update the one already there
 
 **First, does this branch already have an open pull request?** Ask through whatever GitHub access this environment has. The answer decides what this step does, and getting it wrong opens a second pull request for one change.
 
@@ -240,7 +248,7 @@ commit body nobody reads is the same as never raising it.
 
 **The steps must be steps you actually ran.** Instructions you never followed will be wrong.
 
-## 8. Hand off, then stop
+## 9. Hand off, then stop
 
 **Never merge.** Opening the PR is where this skill ends.
 
