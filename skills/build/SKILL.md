@@ -41,6 +41,16 @@ instead. Do not write the line yourself.
 
 Arguments are still bare — `pnpm test src/db` is fine. Shell plumbing is not.
 
+## Find the project's words
+
+The project can have a `CONTEXT.md` at its root. Read its `## Words` block. It says what this project's words mean. `flow` wrote it when the human settled a word.
+
+Use those words. In test names. In identifiers. In the commit subject.
+
+`build` reads it. `build` never writes it. Only `flow` writes it, because only `flow` asks the human. If a word in it looks wrong, say so when you hand back. Do not fix the file.
+
+No `CONTEXT.md` is normal. Most projects get one only after a Deep job settles the first word.
+
 ## Get off the default branch first
 
 Before the first edit, check where you are:
@@ -224,6 +234,7 @@ If a **human** called you directly, say in one line that the work is ready for `
 - Never write code before its test.
 - Never skip verify-RED because the test "obviously" fails.
 - Never let a test work out its expected value the way the code does.
+- Never write to `CONTEXT.md`. Read it, use its words, and report a wrong one rather than fixing it.
 - Never widen scope mid-piece. Finish the piece, then raise the next one separately.
 - Never commit anything but a finished plan piece, and never open a PR.
 - Run the full test suite once before handing back — not after every edit, and not never. On a plan piece that run is what makes committing it safe, so a five-piece plan runs it five times and that is the price of five trustworthy checkpoints.
