@@ -277,7 +277,26 @@ Split the work into pieces. Each piece must be:
 
 "Independent" is stricter than "different files". Two pieces are only independent if **neither depends on a design decision the other makes**. Two unrelated endpoints, independent. One defines a type the other consumes, **not** independent — both will finish, both will pass their own tests, and it will break when they are joined.
 
-Write it to `.devflow/plans/<short-name>.md`:
+Write it where the project keeps plans. Look for a `## Plans` block in `CLAUDE.md`:
+
+```markdown
+## Plans
+- Tracker: github
+```
+
+**No block, or `local`, means a file**: `.devflow/plans/<short-name>.md`.
+
+**`github` means an issue.** Open it with the label `devflow:plan`, the plan name as the title, and the plan below as the body:
+
+```
+gh issue create --label devflow:plan --title "<what this is>" --body-file <the plan>
+```
+
+Print the number on the size line, `Deep — plan #45`, so it is in the transcript. Then `submit` can close it, and the next session can find it.
+
+**If that fails, write the file and say so in one line.** No `gh`, no auth, a web sandbox — none of those is a reason to stop. A plan in a file is a plan. `Plans: github asked for, wrote .devflow/plans/<name>.md instead — gh answered <the error>`.
+
+Either way the plan has this shape:
 
 ```markdown
 # <what this is>
@@ -296,7 +315,7 @@ Issue: #123 (if there is one)
 
 Build one piece at a time, in order. **`build` commits each piece as it goes green**, which is what makes a long plan survivable: you may `/clear` between pieces and pick up from the plan plus `git log <default branch ref>..HEAD`. The plan says what the pieces are; the log says which of them exist.
 
-The file itself is still not a progress tracker — nothing writes back to it. It is the spec `review`'s second axis reads.
+The plan itself is still not a progress tracker — nothing writes back to it, file or issue. It is the spec `review`'s second axis reads.
 
 ## Step 5 — submit it
 
