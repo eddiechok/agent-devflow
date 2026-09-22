@@ -199,6 +199,29 @@ for filename in agents:
     check(f"{label}: pins an effort level", effort in AGENT_EFFORTS,
           f"effort={effort!r}, expected one of {sorted(AGENT_EFFORTS)}")
 
+# ------------------------------------------ the builder runs in a worktree
+#
+# `flow` starts several builders at once, one per chain, and the builder is the
+# only agent here that edits files and commits -- the other three are read-only.
+# Without `isolation: worktree` the harness runs every one of them in the main
+# checkout, on one branch, where they overwrite each other's edits and interleave
+# their commits. Nothing announces that: each builder still reports its piece
+# green, and the damage only shows up afterwards as a branch nobody can untangle.
+# Same silent failure as an unpinned model, so it is checked in the same place.
+
+builder_values = parsed.get("agents/builder", (None, {}))[1]
+
+check("agents/builder: has a frontmatter block to check",
+      bool(builder_values),
+      "agents/builder.md was never parsed above")
+
+check("agents/builder: runs in its own worktree",
+      literal(builder_values.get("isolation", "")) == "worktree",
+      f"isolation={builder_values.get('isolation')!r}, expected 'worktree'. "
+      f"Builders run in parallel, one per chain; unset means they all share "
+      f"the one checkout and the one branch")
+
+
 # ------------------------------------------- cross-check against a real parser
 
 try:
