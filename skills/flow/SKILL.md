@@ -224,6 +224,12 @@ is split here, before anything is sized. **Default is do not split.** A "feature
 something that could ship alone and that a user would ask for in its own sentence — parts
 that depend on each other are one feature, not several.
 
+**A request that already says how it wants to be built has decided for you.**
+"Each as its own piece", "in one PR", "together", a numbered list of parts of one job —
+that is one feature with pieces, not several features. The pieces go to step 4's plan,
+where the independent ones become their own chains. Split only what the human did not
+already shape.
+
 **When the request is one feature, skip this step entirely** — no line, no question, go
 straight to step 2. Only a request that genuinely names more than one prints anything here.
 

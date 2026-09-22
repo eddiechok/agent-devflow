@@ -103,7 +103,7 @@ Local and GitHub only. A Linear or Jira ticket is still pasted in as the request
 
 One flow run ends as one PR. A request that names three features would end as one PR carrying three things, or as a plan that mixes them, so `flow` splits before it sizes anything.
 
-**Default is do not split.** A feature is something that could ship alone and that a user would ask for in its own sentence. Parts that depend on each other are one feature, not several — splitting those would hand `build` a piece that cannot pass on its own.
+**Default is do not split.** A feature is something that could ship alone and that a user would ask for in its own sentence. Parts that depend on each other are one feature, not several — splitting those would hand `build` a piece that cannot pass on its own. And a request that already says how it wants to be built — "each as its own piece", "in one PR" — is one feature with pieces, not several features: the human shaped it, and its pieces belong to the plan, not the backlog.
 
 The question comes before the size line, not after, because sizing needs to know which feature it is sizing. Ask first, size the one kept feature second, and the size line means what it says.
 
