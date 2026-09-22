@@ -448,6 +448,57 @@ check("flow: the Rules list carries the one-feature-per-run rule",
       re.search(r"## Rules.*one feature per run", flow_text, re.S) is not None,
       f"{FLOW_PATH}'s Rules list never mentions one feature per run")
 
+
+# --------------------------- step 1b parks the rest, to GitHub or to a file
+#
+# The label create command, the issue create command, the file shape and the
+# printed `parked:` line are exact commands and exact text a resumed run and
+# a human both read literally, so they are pinned word for word -- the same
+# reason the settings and stop lines earlier in this file are pinned.
+
+BACKLOG_LABEL_CMD = (
+    'gh label create devflow:backlog --description "A devflow parked feature" '
+    "--color 5319E7"
+)
+
+check("flow: step 1b creates the devflow:backlog label before filing issues",
+      BACKLOG_LABEL_CMD in flow_text,
+      f"no line {BACKLOG_LABEL_CMD!r} in {FLOW_PATH}")
+
+BACKLOG_ISSUE_CMD = (
+    "gh issue create --label devflow:backlog --title "
+)
+
+check("flow: step 1b files a devflow:backlog issue per parked feature",
+      BACKLOG_ISSUE_CMD in flow_text and "/tmp/devflow-backlog.md" in flow_text,
+      f"{FLOW_PATH} never runs 'gh issue create --label devflow:backlog "
+      f"--title ... --body-file /tmp/devflow-backlog.md'")
+
+check("flow: step 1b writes a backlog file with the parked-from line",
+      ".devflow/backlog/<short-name>.md" in flow_text
+      and "Parked from:" in flow_text,
+      f"{FLOW_PATH} never writes .devflow/backlog/<short-name>.md with a "
+      f"'Parked from:' line")
+
+check("flow: step 1b prints the parked: line for the issue case",
+      "parked: #46 add export, #47 fix login" in flow_text,
+      f"{FLOW_PATH} never prints the exact 'parked: #46 add export, "
+      f"#47 fix login' example")
+
+check("flow: step 1b prints the parked: line for the file case",
+      "parked: .devflow/backlog/add-export.md, .devflow/backlog/fix-login.md"
+      in flow_text,
+      f"{FLOW_PATH} never prints the exact file-case 'parked:' example")
+
+BACKLOG_FALLBACK_LINE = (
+    "Plans: github asked for, parked to .devflow/backlog/<name>.md instead "
+    "— gh answered <the error>"
+)
+
+check("flow: step 1b falls back to the file on a gh failure",
+      BACKLOG_FALLBACK_LINE in flow_text,
+      f"no line {BACKLOG_FALLBACK_LINE!r} in {FLOW_PATH}")
+
 flow_values = parsed.get("flow", (None, {}))[1]
 
 check("flow: description says it accepts a backlog file path",
