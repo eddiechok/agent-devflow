@@ -17,7 +17,7 @@ Two axes, two fresh agents, no blending.
 
 ## 1. Pin the fixed point
 
-`$ARGUMENTS` has two optional parts, in this order: a fixed point, then `request:` followed by the request text. The fixed point is the first word **only if that word is not `request:`**. Everything after `request:` is text for step 2 — never a ref, never resolved. No fixed point, or `$ARGUMENTS` that starts with `request:`, means the branch point:
+`$ARGUMENTS` has two optional parts, in this order: a fixed point, then `request:` followed by the request text. The fixed point is the first word **only if that word is not `request:`**. Everything after `request:` is text for step 2 — up to a `no-behaviour:` line if `submit` passed one — never a ref, never resolved. No fixed point, or `$ARGUMENTS` that starts with `request:`, means the branch point:
 
 ```
 git merge-base HEAD <default branch ref>
@@ -46,6 +46,20 @@ In this order, first hit wins:
 4. **Nothing.** That is a normal answer for a Quick fix, or for a `review` you started yourself on a branch.
 
 **Never invent requirements.** No spec means the second axis does not run — not that you imagine what it would have said.
+
+## No behaviour to review
+
+If `$ARGUMENTS` carries a line beginning `no-behaviour:`, **spawn no agent**. Print one line and go straight to step 4:
+
+```
+review skipped — no behaviour: <reason>
+```
+
+In the step 4 report, write `skipped — no behaviour` under each of **Built right**, **Challenged** and **Right thing**, and against both lines of **Worst of each**.
+
+**`no-behaviour:` is a line `submit` passes down, and never something `review` works out from the diff.** It carries the reason `build` gave at its own gate for writing no test, word for word. Deciding it here would mean reading the change in order to judge whether the change is worth reading, and file types cannot stand in for that judgement — in this repo a `.md` skill file is behaviour.
+
+**It is a third state, and it is not the other two.** `NOT RUN` is an axis that should have run and could not. `none` is an axis that ran and found nothing. `skipped — no behaviour` is an axis that was never owed a run, and `submit` reads it as nothing to fix.
 
 ## 3. Spawn the axes
 
@@ -93,18 +107,19 @@ If that answer does not come, the axis **did not run**. Report it as `NOT RUN` i
 
 ```markdown
 ## Built right
-<reviewer's report, or: NOT RUN — <why, in one line>>
+<reviewer's report, or: NOT RUN — <why, in one line>, or: skipped — no behaviour>
 
 ## Challenged
 <hardcase's report, or: nothing to challenge — the first axis was clean,
- or: NOT RUN — <why>>
+ or: NOT RUN — <why>, or: skipped — no behaviour>
 
 ## Right thing
-<spec-reviewer's report, or: no spec available, axis skipped, or: NOT RUN — <why>>
+<spec-reviewer's report, or: no spec available, axis skipped, or: NOT RUN — <why>,
+ or: skipped — no behaviour>
 
 ## Worst of each
-- Built right: <the one finding that matters most, or none, or NOT RUN>
-- Right thing: <the one finding that matters most, or none, or NOT RUN>
+- Built right: <the one finding that matters most, or none, or NOT RUN, or skipped — no behaviour>
+- Right thing: <the one finding that matters most, or none, or NOT RUN, or skipped — no behaviour>
 ```
 
 **`Challenged` sits under `Built right` because it is about that axis, not beside it.**
@@ -131,7 +146,8 @@ If a human called it, add one line on what you would do first. Do not fix anythi
 - Never spawn an axis without proving the fixed point resolves first.
 - Never invent a spec, and never treat a missing spec as a finding.
 - Never merge the two axes or rank one against the other.
-- Never report an axis as clean when it did not run. `none` and `NOT RUN` are different answers.
+- Never report an axis as clean when it did not run. `none`, `NOT RUN` and `skipped — no behaviour` are three different answers.
+- Never work `no behaviour` out from the diff. It is a line `submit` passed down, or it is not there.
 - Never pass this session's reasoning into an agent's prompt.
 - Never run `hardcase` against the spec axis, and never let it add a finding of its own.
 - Never drop a finding because `hardcase` broke it. Print both and let `submit` decide.

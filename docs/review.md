@@ -30,4 +30,14 @@ The two axes pin the **same** pair on purpose. Their reports are never ranked ag
 
 `hardcase` pins it for a different reason. A refuter that cannot follow the code refutes nothing. It prints a clean sheet that reads like agreement.
 
+## The one change that gets no review
+
+`submit` can hand `review` a line `no-behaviour: <reason>`. Then no agent starts at all, and all three sections of the report read `skipped — no behaviour`.
+
+The reason comes from `build`, which has a gate for the change that no test can catch. Carrying that answer forward is cheaper than paying three Opus agents to rediscover it, and it is the only place in the plugin where a review is skipped outright rather than merely finding nothing.
+
+It is a **third state**. `NOT RUN` is an axis that should have run and could not — a finding for the PR. `none` is an axis that ran and found nothing. `skipped — no behaviour` is an axis that was never owed a run, and `submit` reads it as nothing to fix.
+
+`review` never works it out for itself. It cannot: deciding would mean reading the change in order to judge whether the change is worth reading. Nor can file types stand in — in this repo a `.md` skill file is the behaviour, so a rule keyed on the extension would skip the review on exactly the changes that most need one.
+
 Where every step came from is in [docs/provenance.md](docs/provenance.md).
