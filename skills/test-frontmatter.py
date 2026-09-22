@@ -275,6 +275,58 @@ else:
           "      skipped. The .gitignore line is still checked above.\n")
 
 
+# ------------------- and the base the harness cuts those worktrees from
+#
+# A subagent's worktree branches from the repository's *default* branch, not
+# from the branch the session is standing on, unless `worktree.baseRef` is set
+# to "head". Anthropic's worktrees page says so outright. Nothing announces the
+# difference: every chain still builds, every test still passes, and every one
+# of them is missing the stacked base branch and every chain merged before it --
+# the damage shows up at the merge, as a diff nobody can explain.
+#
+# So `flow` writes the setting itself, and then proves it took, because the
+# setting may only be read when a session starts. Four things are load-bearing
+# and a prompt is the only place any of them lives: the key's exact spelling,
+# the file it is written to, the refusal to write the committed one, and the
+# command that checks the result. They are pinned as text here for the same
+# reason the `.gitignore` line above is.
+
+FLOW_PATH = os.path.join(SKILLS_DIR, "flow", "SKILL.md")
+with open(FLOW_PATH, encoding="utf-8") as fh:
+    flow_text = fh.read()
+
+SETTINGS_LINE = (
+    "settings: wrote worktree.baseRef = head to .claude/settings.local.json "
+    "\u2014 chain worktrees branch from here, and so will your own --worktree sessions"
+)
+
+STOP_LINE = (
+    "chain <letter> branched from the default branch \u2014 the setting did not "
+    "take; restart the session and run flow again to resume"
+)
+
+check("flow: prints the worktree.baseRef line word for word",
+      SETTINGS_LINE in flow_text,
+      f"no line {SETTINGS_LINE!r} in {FLOW_PATH}. The human reads that line and "
+      f"nothing else says their own --worktree sessions changed too")
+
+check("flow: refuses to write the committed settings file",
+      re.search(r"[Nn]ever write[^\n]*\.claude/settings\.json", flow_text)
+      is not None,
+      "no 'never write .claude/settings.json' rule in flow. That file is "
+      "committed, and baseRef is a preference about one machine")
+
+check("flow: checks the chain branch descends from this one",
+      "git merge-base --is-ancestor" in flow_text,
+      "flow never runs 'git merge-base --is-ancestor'. Writing the setting is "
+      "not proof it took -- it may only be read at session start")
+
+check("flow: says what to do when the setting did not take",
+      STOP_LINE in flow_text,
+      f"no line {STOP_LINE!r} in {FLOW_PATH}. A chain off the wrong base must "
+      f"stop the loop, not get merged")
+
+
 # ------------------------------------------- cross-check against a real parser
 
 try:
