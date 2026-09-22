@@ -712,6 +712,125 @@ check("flat self-test: still misses a phrase that is not there",
                                               "nothing new)"))
 
 
+# ------------------- and the folder the session itself is standing in
+#
+# The worktrees checked earlier are the builders'. This one is the session's
+# own, and it exists because `build` cuts the feature branch with
+# `git checkout -b`, which moves the *whole folder*. Two sessions open on one
+# checkout share that folder, so the second one to start new work takes it, and
+# the first finds its branch changed underneath it mid-build. Nothing announces
+# that either. Size has nothing to do with it: a Quick typo fix moves the folder
+# exactly as a Deep job does.
+#
+# So step 0c asks whether the folder is this session's to branch in, and moves
+# into a worktree of its own when it is not. Several things live only in the
+# prompt and are pinned here for the same reason the baseRef lines are: the two
+# printed lines a human reads, the command that tells a linked worktree from the
+# main checkout, the sentence that stops the model refusing EnterWorktree at the
+# moment it fires, and the refusal to fall through into branching anyway.
+
+WORKTREE_TAKEN_LINE = (
+    "worktree: this folder is on <branch> — taking my own checkout "
+    "instead of moving it"
+)
+
+WORKTREE_REFUSED_LINE = (
+    "worktree refused — this folder belongs to <branch>. "
+    "Start again with: claude --worktree"
+)
+
+check("flow: has a step 0c for the folder the session is standing in",
+      "## Step 0c" in flow_text,
+      f"{FLOW_PATH} has no '## Step 0c' section. New work runs "
+      f"`git checkout -b`, which moves the whole folder out from under any "
+      f"other session open on the same checkout")
+
+check("flow: prints the worktree line word for word",
+      WORKTREE_TAKEN_LINE in flat(flow_text),
+      f"no line {WORKTREE_TAKEN_LINE!r} in {FLOW_PATH}. Moving a session into "
+      f"its own checkout without saying so is the quiet kind of surprise this "
+      f"whole step exists to stop")
+
+check("flow: says what to do when the worktree is refused",
+      WORKTREE_REFUSED_LINE in flat(flow_text),
+      f"no line {WORKTREE_REFUSED_LINE!r} in {FLOW_PATH}. Without it the "
+      f"refusal path falls through into branching in the shared folder, which "
+      f"is the exact outcome step 0c exists to prevent")
+
+check("flow: tells a linked worktree apart from the main checkout",
+      "git rev-parse --path-format=absolute --git-dir --git-common-dir"
+      in flow_text,
+      f"{FLOW_PATH} never runs 'git rev-parse --path-format=absolute "
+      f"--git-dir --git-common-dir'. A session already in a worktree owns its "
+      f"folder, and must not be sent into a second one")
+
+# The bare form is not a lesser version of the line above, it is the bug. Asked
+# for without `--path-format=absolute`, git answers `--git-common-dir` relative
+# to the current directory: from `docs/` in a plain checkout it prints `../.git`
+# against an absolute `--git-dir`, which step 0c reads as "already in a
+# worktree" and waves through. The whole guard then does nothing for any session
+# started below the repo root, and says nothing while not doing it. Reproduced
+# on git 2.49 and found by the review of 22 Sep 2026, which is why the absence
+# of the broken form is pinned beside the presence of the working one.
+
+check("flow: does not compare the two git dirs in their bare form",
+      not re.search(r"git rev-parse --git-(dir|common-dir)\s*$",
+                    flow_text, re.M),
+      f"{FLOW_PATH} runs 'git rev-parse --git-dir' or '--git-common-dir' "
+      f"bare. Those disagree in a plain checkout entered from a subdirectory, "
+      f"so the guard skips exactly the folder it exists to protect")
+
+check("flow: names EnterWorktree as the tool that moves the session",
+      "EnterWorktree" in flow_text,
+      f"{FLOW_PATH} never names the EnterWorktree tool")
+
+check("flow: is itself the project instruction EnterWorktree asks for",
+      "project instruction that tool asks for" in flat(flow_text),
+      f"{FLOW_PATH} never says it is the instruction EnterWorktree requires. "
+      f"That tool's own description says to use it only when the user or "
+      f"project instructions asked for a worktree, so without this line it "
+      f"gets refused at the moment it fires")
+
+check("flow: never falls through to branching in a folder it does not own",
+      re.search(r"[Dd]o not carry on in this folder", flow_text) is not None,
+      f"{FLOW_PATH} never refuses to carry on in a folder that belongs to "
+      f"another branch. A fallback that branches anyway is not a fallback")
+
+check("flow: still has build cut the branch from the default ref in the worktree",
+      "The worktree is a folder, not a base" in flat(flow_text),
+      f"{FLOW_PATH} never says the worktree does not settle the base. With "
+      f"worktree.baseRef = head the new checkout is cut from the very branch "
+      f"this work has nothing to do with, so build must still be told to cut "
+      f"from the default branch ref")
+
+check("flow: step 0c leaves a follow-up and a resume where they are",
+      re.search(r"## Step 0c.*?[Oo]nly for new work", flow_text, re.S)
+      is not None,
+      f"{FLOW_PATH} step 0c never says it is for new work only. A follow-up "
+      f"from step 0 and a resume from step 0b both belong on the branch this "
+      f"folder is already on")
+
+check("flow: the Rules list carries the shared-folder rule",
+      re.search(r"## Rules.*folder that belongs to another", flow_text, re.S)
+      is not None,
+      f"{FLOW_PATH}'s Rules list never mentions branching in a folder that "
+      f"belongs to another session")
+
+check("flow: allowed-tools includes EnterWorktree",
+      "EnterWorktree" in flow_values.get("allowed-tools", ""),
+      "flow's allowed-tools never lists EnterWorktree")
+
+DOCS_FLOW_PATH = os.path.join(REPO_ROOT, "docs", "flow.md")
+with open(DOCS_FLOW_PATH, encoding="utf-8") as fh:
+    docs_flow_text = fh.read()
+
+check("docs/flow: records why the session takes a worktree of its own",
+      "claude --worktree" in docs_flow_text
+      and re.search(r"[Ss]tep 0c", docs_flow_text) is not None,
+      f"{DOCS_FLOW_PATH} never explains step 0c next to the other worktree "
+      f"rules, so the reasoning lives only in the skill it constrains")
+
+
 # ------------------------------------------- cross-check against a real parser
 
 try:

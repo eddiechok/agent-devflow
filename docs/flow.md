@@ -44,6 +44,24 @@ Quick and Standard do not change. One piece, one session.
 
 Commit the file or ignore it, as you prefer. devflow does not add it to `.gitignore`. It does not expect it there either.
 
+## The folder the session is standing in
+
+The worktrees below are the builders'. This one is yours, and it is a different problem with the same answer.
+
+**`git checkout -b` moves the whole folder.** `build` cuts the feature branch that way, so two sessions open on one checkout are two sessions sharing one branch pointer. The second to start new work takes it, and the first finds its branch changed underneath it mid-build, with nothing said. **Size has nothing to do with it.** A Quick typo fix moves the folder exactly as a Deep job does, which is why the guard is not a property of the size table.
+
+**Step 0c is the guard, and it asks about the folder rather than about you.** There is no reliable way to ask git whether another session is live, and guessing at one would be a check that is wrong in both directions. So `flow` asks the two things git does answer. Already in a linked worktree — `git rev-parse --path-format=absolute --git-dir --git-common-dir`, and the two answers differ — means this folder holds one session by construction, and nothing changes. On the default branch means the folder is parked where new work is cut from, and nothing changes. Only a folder that is *neither* is a folder parked on somebody's work, and that is the one case that takes a worktree of its own, through the **EnterWorktree** tool.
+
+**It is deliberately conservative, and the escape is one command.** A folder sitting on an old feature branch gets a worktree even when you are alone in it, because "alone" is the part `flow` cannot see. `git checkout main` before you start puts the folder back on the default branch and step 0c goes quiet.
+
+**The skill says out loud that it is the instruction.** `EnterWorktree`'s own description says to reach for a worktree only when the human or the project asked for one. A skill that quietly assumed it counted would be refused at the moment it fired, on the one path where being refused is expensive — so step 0c states it, in the text, where the model reads it.
+
+**`--path-format=absolute` is load-bearing, and it was not there first.** Asked for bare, git answers `--git-common-dir` relative to the current directory: from `docs/` in a plain checkout it prints `../.git` against an absolute `--git-dir`. Step 0c reads two different answers as "already in a worktree" and waves the folder through, so the guard did nothing at all for any session started below the repo root — and said nothing while not doing it. The review of 22 Sep 2026 caught it before the first PR; `skills/test-frontmatter.py` now pins the absence of the bare form beside the presence of the working one.
+
+**A worktree settles the folder, not the base.** `worktree.baseRef` is `head` on any machine where `flow` has written it for the chains, so the new checkout comes off the branch the folder happened to be on — the very work this request has nothing to do with. Step 0c does not touch that setting; it hands `build` the same "new work, fresh branch cut from the default branch ref" it always did, and `build`'s `checkout -b` fixes the base inside a folder where it reaches nobody.
+
+**The fallback does not branch anyway.** No `EnterWorktree` in the harness, or a call that fails or is refused, ends the run with `worktree refused — this folder belongs to <branch>. Start again with: claude --worktree`. Carrying on is the exact outcome the step exists to prevent, so there is no path through it that ends in `checkout -b` on a folder somebody else is using.
+
 ## Chains and worktrees
 
 A Deep run of eight pieces took 43 minutes. Six of them did not depend on each other. They were built one after another anyway, because the rule was one builder at a time — and that rule was right about the danger and wrong about the unit.

@@ -30,8 +30,8 @@ python3 evals/run.py --case sizing-* --runs 1
 python3 evals/run.py --dry-run                # parse and print, run nothing
 ```
 
-It scores **41 of the 50 graders** — every `regex`, `tool_used`, `tool_order`
-and `file_exists`. The nine `llm` graders come back `skip`, stay out of the
+It scores **44 of the 54 graders** — every `regex`, `tool_used`, `tool_order`
+and `file_exists`. The ten `llm` graders come back `skip`, stay out of the
 denominator, and are counted in the summary. **A skip is never a pass**, the
 same way `NOT RUN` is never `none`.
 
@@ -49,8 +49,8 @@ it spends money.
 
 **A rendered `SKILL.md` is not part of the trace.** The `Skill` tool returns the
 whole skill body as a tool result, and `skills/flow/SKILL.md` contains its own
-worked examples — `Quick — single-file copy change.` at line 340 and `Deep — new
-subsystem, touches auth (danger list).` at 344. Count those as trace and three
+worked examples — `Quick — single-file copy change.` at line 403 and `Deep — new
+subsystem, touches auth (danger list).` at 407. Count those as trace and three
 weight-3 graders stop measuring anything:
 
 | Grader | What it would do |
@@ -82,6 +82,7 @@ not write a case that greps the plugin source and then judges a size with a bare
 | `deep-coordinator` | high | A Deep job builds every chain in one session again and outgrows its window, or the chains never merge back and the PR is missing a chain's work |
 | `plans-on-tracker` | high, **manual** | A project that keeps plans on GitHub gets a file instead, or a plan nobody can close |
 | `backlog-parks-extras` | low | A three-feature prompt ships as one PR or drops two features on the floor |
+| `worktree-guard` | medium | A second session cuts its branch in the shared checkout and moves the folder out from under a session already working in it |
 
 `plans-on-tracker` is **manual**. It needs a real GitHub repo with issues on and
 a logged-in `gh`, which no scaffold can fake. `run.py` leaves it out unless you
@@ -133,7 +134,7 @@ auto-trigger   FAIL  0/5 weighted
   FAIL announces-a-size          w=2  not found in the trace
 ```
 
-Six of seven cases — seven was the count that day; there are ten now — pass every grader `run.py` scores. This one fails both of
+Six of seven cases — seven was the count that day; there are eleven now — pass every grader `run.py` scores. This one fails both of
 its, on a plain-English request — *"the README description for this CLI is too
 dry, reword it to something friendlier"* — which is exactly the shape the case
 was written for. Nothing here has regressed; this is the original bug, still
