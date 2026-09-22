@@ -98,15 +98,20 @@ sequenceDiagram
     You-->>flow: answers, or "yes to all"
     flow->>flow: writes .devflow/plans/email-alerts.md
 
-    loop one per piece, a fresh builder each time
-        flow->>builder: the plan, the piece number, clean or dirty
-        builder->>build: build this piece
+    par chain A, in its own worktree on its own branch
+        flow->>builder: the plan body, chain A, clean or dirty
+        builder->>build: build chain A's pieces, in order
         build->>build: test first, watch it fail, make it pass
         build->>build: full suite, then commit the piece
         build-->>builder: green, with the output that proves it
-        builder-->>flow: five lines: piece, test, commit, seam, stuck
+        builder-->>flow: branch, then five lines per piece
+    and chain B, and up to two more chains at once
+        flow->>builder: the plan body, chain B, clean or dirty
+        builder-->>flow: branch, then five lines per piece
     end
 
+    flow->>flow: merge-tree each chain branch, then git merge --no-ff
+    flow->>flow: remove the worktrees and the chain branches
     flow->>submit: submit
     submit->>submit: checks fresh, then run the app
     submit->>review: review from the branch point
