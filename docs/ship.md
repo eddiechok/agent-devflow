@@ -39,6 +39,12 @@ Be sure that is what you are looking at. A missing `gh` is not a missing PR, and
 
 Do not submit and merge in one command. That would run the code review, the live check, the commit, the push, the merge and the deploy without you ever seeing the pull request — which is the one artefact this whole loop exists to put in front of you.
 
+### Stacked pull requests
+
+On 22 September 2026, `gh pr merge 23 --rebase --delete-branch` closed #24 as a side effect. #24 was stacked on #23's branch — its base was `feat/review-no-behaviour-exit`, not `main` — and deleting that branch in the same call as the merge closed it. GitHub did not retarget it. Once the base branch was gone, `gh pr edit --base main` answered "Cannot change the base branch of a closed pull request" and `gh pr reopen` answered "Could not open the pull request". The only way out was a fresh PR for the same branch, #25, with a body that pointed back at #24.
+
+Two rules follow. A PR whose base is not the default branch is not `ship`'s to merge: merging it lands it inside the base PR, the deploy runs on nothing, and the human reviewed the base PR as one thing. So `ship` says it is stacked, names the base PR, and stops. And a PR that other open PRs are based on is merged **without** `--delete-branch`; each stacked PR is pointed at the default branch with `gh pr edit --base` and checked still open, and only then is the branch deleted. GitHub retargets a stacked PR itself only while the base branch still exists, and `--delete-branch` removes that window.
+
 ## Step 2 — what running this skill consents to
 
 Running this skill is your consent to merge. It is not consent to merge something red, and it is not consent to guess at a check that is still running.

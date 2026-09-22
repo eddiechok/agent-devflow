@@ -52,6 +52,29 @@ on the default branch rather than on wherever you started.
 
 Be sure that is what you are looking at. A missing `gh` is not a missing PR.
 
+**Read its base too, and stop if the base is not the default branch** — the Context
+line's `Default branch ref` with `origin/` dropped, since `baseRefName` comes back bare:
+
+```
+gh pr view <n> --json baseRefName --jq .baseRefName
+```
+
+A PR whose base is another branch is **stacked**: merging it lands it inside that branch's
+PR, not on the default branch, and the deploy would run on nothing. Say the PR is stacked
+and its base PR must ship first, name that base PR — `gh pr list --head <base branch>` —
+and stop.
+
+**Then ask whether anything is stacked on this PR:**
+
+```
+gh pr list --base <head branch> --state open --json number,title
+```
+
+Write the numbers down. Step 3 merges this PR **without** deleting its branch when the
+list is not empty, and step 6 retargets each of them to the default branch before the
+branch goes. Delete the branch first and GitHub closes every one of them, and a closed PR
+whose base is gone can be neither retargeted nor reopened.
+
 Do not submit and merge in one command.
 
 ## 2. Refuse a PR that is not ready
@@ -110,6 +133,14 @@ Delete the remote branch as part of it:
 ```
 gh pr merge <n> --rebase --delete-branch
 ```
+
+**Unless step 1 found PRs stacked on this one.** Then merge without the flag:
+
+```
+gh pr merge <n> --rebase
+```
+
+The branch stays until step 6 has pointed every stacked PR at the default branch.
 
 ### When the merge command errors
 
@@ -250,7 +281,23 @@ What may go in it:
 
 Only what this session is responsible for.
 
-**Branches.** The remote one usually went with `--delete-branch`. Check rather than assume — `git ls-remote --heads origin` — and delete it on its own if it is still there.
+**Stacked PRs first.** For each PR step 1 found based on this branch, point it at the
+default branch, and check it is still open after:
+
+```
+gh pr edit <stacked n> --base <default branch>
+gh pr view <stacked n> --json state,baseRefName
+```
+
+Only when every one of them says `OPEN` on the default branch does the branch go. A
+stacked PR still carries the merged commits under their old SHAs; rebasing it is its
+author's to do, not yours, and step 7 names the PRs you retargeted so they know.
+
+**Branches.** The remote one usually went with `--delete-branch`. Check rather than assume — `git ls-remote --heads origin` — and delete it on its own if it is still there:
+
+```
+git push origin --delete <head branch>
+```
 
 **A refused delete is not a failed merge.** Some environments let you push a ref and refuse to delete one: Claude Code on the web answers `HTTP 403` to the delete while ordinary pushes work all day. Say so in one line, hand the branch to the human, and **do not retry it or look for another way round** — a policy denial is something to report, not something to defeat.
 
