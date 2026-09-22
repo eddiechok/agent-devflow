@@ -162,7 +162,7 @@ final look: fixed in place — skills/ship/SKILL.md, 2 lines
 final look: known issue — docs/pipeline.md, not on this branch
 ```
 
-A fix made here is the one edit on the branch no agent has read. Name it in the PR body under **Evidence** — `Final look: fixed <file>, <what> — unread by an agent` — so the reader knows to read those lines themselves. The loop stays bounded: review, round 2, look, at most one small fix, done.
+A fix made here is the one edit on the branch no agent has read. Name it in the PR body under **Evidence**, in these words — `Final look: fixed <file>, <what> — unread by an agent, so read those lines yourself` — because the reader is the only one who can read them now. The loop stays bounded: review, round 2, look, at most one small fix, done.
 
 Conventional commits, so `git log` doubles as a changelog:
 

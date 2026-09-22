@@ -520,8 +520,9 @@ said you are picking up:
    restarted session reads exactly that state at step 0b. A merge here would bury a wrong
    base under a merge commit, which is the one outcome nobody can unpick later.
 3. **Print what came back**, per chain: the `branch:` line, then each piece's `commit` and
-   `seam`, one each, and any `concern` a `stuck` line carries. A seam is a boundary other
-   code calls through, and it is where that piece's test sits. A concern is a done piece
+   `seam`, one each, and any `concern` a `stuck` line carries. **Print the seam under the
+   label `tested at:`**, never as `seam:` — that is this plugin's word for it, and the
+   person reading the report has not read this skill. A concern is a done piece
    the builder still wants a human to look at. Do not verify the work yourself — the
    commits and the test lines are the evidence, and rebuilding it here is what fills the
    window this loop exists to protect.

@@ -470,16 +470,19 @@ check("ship: the report names the PRs it retargeted",
       f"that step 7 names them is not kept")
 
 
-# --------------------------- the printed lines explain their own jargon
+# --------------------------------- what is printed uses the reader's words
 #
-# `seam`, "both axes" and the three review answers are devflow's words, not the
-# reader's. Each is printed to a human who never read the skill that defines it:
-# the seam reaches them through `flow`'s chain report, the axes and the answers
-# through the PR body. The definitions do exist -- in the prose of the skill
-# that owns each word -- and prose one file away is prose nobody reads at the
-# moment they need it. So the gloss travels with the printed line, and it is
-# pinned here because an explanatory half-line is exactly what a later tidy-up
-# takes out.
+# `seam` and "both axes" are devflow's words, and they stay that way in the
+# skills, which only the model reads. What reaches a human does not get to keep
+# them. Two places print to someone who never read the skill that owns the
+# word: `flow`'s chain report, where a piece's seam is labelled `tested at:`,
+# and the PR body, where Evidence names both review axes and says what the
+# final look asks of the reader.
+#
+# Glossing the word where the model reads it is the other fix, and it is the
+# wrong one: it pays for every model read to help one human read. The label is
+# pinned here instead, because a label in the reader's words is exactly what a
+# later tidy-up folds back into the internal one.
 
 def flat(text):
     """One line, single-spaced. These files wrap their prose at about 95
@@ -488,14 +491,6 @@ def flat(text):
     word ahead of it changed, which is a test that punishes editing."""
     return " ".join(text.split())
 
-
-REVIEW_PATH = os.path.join(SKILLS_DIR, "review", "SKILL.md")
-with open(REVIEW_PATH, encoding="utf-8") as fh:
-    review_text = fh.read()
-
-BUILDER_PATH = os.path.join(AGENTS_DIR, "builder.md")
-with open(BUILDER_PATH, encoding="utf-8") as fh:
-    builder_text = fh.read()
 
 evidence_review = [line for line in submit_text.split("\n")
                    if line.startswith("- Review:")]
@@ -508,36 +503,27 @@ check("submit: the Evidence Review line names both axes in plain words",
       f"reader never read the review skill")
 
 check("submit: the Evidence Final look line says to read those lines yourself",
-      "read those lines yourself" in submit_text,
+      "read those lines yourself" in flat(submit_text),
       f"{SUBMIT_PATH}: the 'Final look' line says 'unread by an agent' without "
       f"saying what that asks of the reader")
 
-REVIEW_LEGEND = "ran, found nothing"
+SEAM_LABEL = "`tested at:`"
 
-check("review: the report template carries a legend for its three answers",
-      REVIEW_LEGEND in flat(review_text),
-      f"{REVIEW_PATH} step 4 prints `none`, `NOT RUN` and `skipped -- no "
-      f"behaviour` with no legend beside the template saying how they differ")
-
-SEAM_GLOSS = "a boundary other code calls through"
-
-check("agents/builder: the seam line says what a seam is",
-      SEAM_GLOSS in flat(builder_text),
-      f"{BUILDER_PATH}: the `seam:` bullet never says {SEAM_GLOSS!r}, and "
-      f"`flow` prints that line straight to a human")
-
-check("flow: says what a seam is where it prints one",
-      SEAM_GLOSS in flat(flow_text),
-      f"{FLOW_PATH}: the chain loop prints each piece's seam and never says "
-      f"{SEAM_GLOSS!r}")
+check("flow: prints a piece's seam under a label the reader knows",
+      SEAM_LABEL in flat(flow_text),
+      f"{FLOW_PATH}: the chain loop never says to print the seam as "
+      f"{SEAM_LABEL}. `seam` is this plugin's word, and step 3 is where it "
+      f"would otherwise reach someone who never read this skill")
 
 # Same rule as the lint self-test at the end of this file. `flat` widens what
 # counts as a match, and a widened match that cannot miss is not a check.
 check("flat self-test: finds a phrase the source wrapped",
-      SEAM_GLOSS in flat("A seam is a boundary\n  other code calls through."))
+      "read those lines yourself" in flat("unread by an agent, so read those\n"
+                                          "  lines yourself (or: nothing new)"))
 
 check("flat self-test: still misses a phrase that is not there",
-      SEAM_GLOSS not in flat("`seam:` — where you put that piece's test."))
+      "read those lines yourself" not in flat("— unread by an agent (or: "
+                                              "nothing new)"))
 
 
 # ------------------------------------------- cross-check against a real parser
