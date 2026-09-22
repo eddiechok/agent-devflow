@@ -34,3 +34,5 @@ Two honest lines beat one invented wrapper script.
 ## Step 5 — where plans live
 
 No block means local, and that is the safe outcome without a claim the human did not make.
+
+The second label, `devflow:backlog`, is made alongside `devflow:plan` for the same reason: `flow` needs it the first time a request names more than one feature, and asking for it there would cost a round trip this step can pay for once, up front. A project on `local` gets no label, but `flow` still has somewhere to park the rest — a file under `.devflow/backlog/`.
