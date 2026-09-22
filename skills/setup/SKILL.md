@@ -10,11 +10,8 @@ Work out this project's check commands, **prove they run**, then write them down
 
 Run once per project. Run again if the commands change or the checks start behaving oddly.
 
-## Why this matters
-
-Everything downstream trusts the `## Checks` block. `build` runs it after every change, `submit` runs it fresh before opening a PR, and the output hook keys off it.
-
-A wrong or stale command here fails **silently**: `submit` runs something harmless, sees exit 0, and reports the work as proven. That is the worst kind of failure in this plugin, so nothing gets written to `CLAUDE.md` until it has actually been run.
+Why these rules are what they are: [docs/setup.md](../../docs/setup.md). Read it only if a
+rule looks wrong.
 
 ## 1. Already set up?
 
@@ -48,16 +45,10 @@ Notes that matter:
 
 ## 3. Run each one
 
-This is the point of the skill. **Run every command you found and show the output.**
+**Run every command you found and show the output.**
 
 Run each one **bare**, exactly as you would write it into the block, one command
-per call. No pipes, no redirects, no `&&`, no `; echo $?`. The bash hook trims
-the output and prints `exit=N` itself, which is the pass/fail signal you need
-here — but only for a plain command. Shape it yourself and the hook steps aside,
-and you are back to reading a wall of output and guessing the exit code.
-
-This matters more here than anywhere: a command you cannot read the exit code of
-is a command you have not really proven, and proving them is the whole job.
+per call. No pipes, no redirects, no `&&`, no `; echo $?`.
 
 For each: report `pass`, `fail`, or `not found`.
 
@@ -88,7 +79,7 @@ Only include lines you actually ran. Three is typical, one is fine.
 - Test: python3 skills/test-frontmatter.py
 ```
 
-Two honest lines beat one invented wrapper script. Do not add a `Makefile` or an npm script to make the block tidier — that is changing the project to suit the tool.
+Do not add a `Makefile` or an npm script to make the block tidier — that is changing the project to suit the tool.
 
 ## 5. Where do plans live?
 
@@ -113,7 +104,7 @@ Where should Deep plans live?
 gh issue list --limit 1
 ```
 
-It must answer. An error means no `gh`, no auth, or no remote, and that is not a project you can write `github` for. Say which, and **write no `## Plans` block at all**. No block means local, and that is the safe outcome without a claim the human did not make.
+It must answer. An error means no `gh`, no auth, or no remote, and that is not a project you can write `github` for. Say which, and **write no `## Plans` block at all**.
 
 Then make sure the label exists. A plan issue carries `devflow:plan`, and `flow` looks for it by that label:
 
