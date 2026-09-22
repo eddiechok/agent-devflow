@@ -215,7 +215,7 @@ wrong.
 
 | Page | What it covers |
 |---|---|
-| [docs/flow.md](docs/flow.md) | Why `flow`'s steps are what they are. Follow-ups on an open PR. Where a Deep plan goes. One feature per run, parking the rest to `devflow:backlog` or `.devflow/backlog/`. One builder per chain, in parallel worktrees. The `CONTEXT.md` glossary. Size overrides. |
+| [docs/flow.md](docs/flow.md) | Why `flow`'s steps are what they are. Follow-ups on an open PR. Where a Deep plan goes. One feature per run, parking the rest to `devflow:backlog` or `.devflow/backlog/`. One builder per chain, in parallel worktrees. Why new work in a folder parked on someone else's branch takes a worktree of its own. The `CONTEXT.md` glossary. Size overrides. |
 | [docs/build.md](docs/build.md) | Why `build`'s gates are what they are. Running the checks bare. Where the expected value comes from. Watching it fail. When there is nothing a test could catch. |
 | [docs/submit.md](docs/submit.md) | Why `submit`'s steps are what they are. Checks that postdate the last edit. The live check. The commit and the PR body. |
 | [docs/review.md](docs/review.md) | Why `review`'s steps are what they are. The three agents. Why two axes. Why `hardcase` defaults to *falls*. The one change that gets no review. |
@@ -236,7 +236,7 @@ Phase 1 is the smallest useful thing. These stay out on purpose:
 - A standalone `plan` skill. You cannot revise a plan once written.
 - `debug`, a bug-fixing loop. Bugs go through `build` for now.
 - Model routing by size. A skill cannot change its own model.
-- Cleanup of folder copies. The worktrees `flow` cuts for a Deep job's chains are removed when they merge.
+- Cleanup of folder copies. The worktrees `flow` cuts for a Deep job's chains are removed when they merge. The one step 0c takes for the session itself is not: it holds your branch, and the harness asks you to keep or remove it when the session ends.
 - Capturing lessons.
 
 Add each one when two weeks of real use shows you need it. Not before.

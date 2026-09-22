@@ -1,0 +1,63 @@
+schema_version: "1.1"
+name: worktree-guard
+description: New work in a folder parked on another branch takes a worktree, not the folder.
+tags: [flow, worktree]
+
+context:
+  scaffold_script: ./scaffold.sh
+
+execution:
+  # The scaffold parks the checkout on feat/another-session. This request is new
+  # work, so `build` would cut a branch with `git checkout -b` and move the whole
+  # folder -- out from under whoever is on that branch. Step 0c is what stops it.
+  prompt: "/devflow:flow add a --shout flag to greet() that upper-cases the greeting. Nobody is here to answer: yes to all, do not wait."
+  max_turns: 10
+  timeout_seconds: 300
+  allowed_tools: [Bash, Read, Edit, Write, Glob, Grep, Skill, EnterWorktree]
+
+runs: 3
+
+graders:
+  - type: regex
+    name: names-the-folder-it-will-not-take
+    target: trace
+    pattern: "worktree: this folder is on"
+    match: contains
+    weight: 3
+
+  - type: tool_used
+    name: moves-into-a-worktree
+    tool: EnterWorktree
+    min: 1
+    weight: 3
+
+  # The contract itself, and the only grader that would catch a run which moved
+  # into a worktree *after* already branching in the shared folder. A `checkout
+  # -b` is still expected -- it is how the feature branch gets cut from the
+  # default ref -- so what is graded is the order, never the absence.
+  - type: tool_order
+    name: takes-the-worktree-before-cutting-a-branch
+    before:
+      tool: EnterWorktree
+    after:
+      tool: Bash
+      input_match: "checkout -b"
+    weight: 4
+
+  - type: llm
+    name: refuses-rather-than-branching-anyway
+    focus: trace
+    criteria: >
+      PASS if the assistant either moved this session into its own worktree
+      before cutting any branch, or stopped and told the human to start again
+      with `claude --worktree`. FAIL if it ran `git checkout -b` in the shared
+      folder that was parked on feat/another-session, whatever it said while
+      doing so, and FAIL if it left feat/another-session checked out in that
+      folder while building on a different branch.
+
+expected_outcome: >
+  Reaches step 0c, sees the folder is on feat/another-session rather than the
+  default branch and is not already a linked worktree, prints "worktree: this
+  folder is on feat/another-session — taking my own checkout instead of moving
+  it", calls EnterWorktree, and only then lets build cut the feature branch from
+  the default branch ref. Never runs `git checkout -b` in the shared folder.

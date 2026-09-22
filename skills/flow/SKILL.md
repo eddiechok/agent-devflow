@@ -2,7 +2,7 @@
 name: flow
 description: "Use when a request will change anything tracked in the repo - a feature, a bug fix, a refactor, a chore or a dependency bump, and equally copy, content, docs, config, styles, images or other assets. Editing a tracked file is the test, not whether the work sounds like coding. Enter here mid-task too, the moment an investigation turns into an edit. Sizes the work as Quick, Standard or Deep, then routes it through build and submit, so the work ends as a pull request rather than uncommitted changes. Accepts free text, a GitHub issue number like #123, an issue URL, or a backlog file path under .devflow/backlog/. This is the entry point, start here."
 argument-hint: "[--quick|--deep] what you want, #123, or .devflow/backlog/<name>.md"
-allowed-tools: Bash(git status:*), Bash(git branch:*), Bash(git rev-parse:*), Bash(git symbolic-ref:*), Bash(git rev-list:*), Bash(ls:*), Bash(gh issue view:*), Bash(gh pr view:*), Bash(gh issue list:*), Bash(gh issue create:*), Bash(gh label create:*), Bash(rm .devflow/backlog/*)
+allowed-tools: Bash(git status:*), Bash(git branch:*), Bash(git rev-parse:*), Bash(git symbolic-ref:*), Bash(git rev-list:*), Bash(ls:*), Bash(gh issue view:*), Bash(gh pr view:*), Bash(gh issue list:*), Bash(gh issue create:*), Bash(gh label create:*), Bash(rm .devflow/backlog/*), EnterWorktree
 ---
 
 # flow
@@ -180,6 +180,69 @@ between the two paths, and it is handled by staying on the sequential one for on
 Only when no plan matches is this a new request. A plan whose subject is plainly something
 else does not match, and neither does one whose pieces are all in the log — that job is
 finished, and this is new work.
+
+## Step 0c — is this folder yours to branch in?
+
+**Only for new work.** A follow-up from step 0 and a resume from step 0b both belong on
+the branch this folder is already standing on, so they change nothing here and go straight
+to step 1. This step is for every run that decided **new work, fresh branch** — including
+the plain `Commits ahead of origin/HEAD: 0` one, which decides it without saying much.
+
+New work means `build` runs `git checkout -b`, and that moves **the whole folder**. Another
+session open on this same checkout is standing in that folder, and nothing tells it: its
+branch changes underneath it, mid-build. **The size of the work has nothing to do with
+it** — a Quick typo fix moves the folder exactly as a Deep job does.
+
+Two questions, in this order.
+
+**First: are you already in a linked worktree?**
+
+```
+git rev-parse --path-format=absolute --git-dir --git-common-dir
+```
+
+Two different answers mean yes. A worktree holds one session by construction, so this
+folder is nobody else's and **nothing changes** — go to step 1, and print nothing.
+
+**`--path-format=absolute` is the whole command, not decoration.** Ask for those two
+without it and git answers one of them relative to the current directory, so in a plain
+checkout entered anywhere below the root — `docs/`, a monorepo package — they differ and
+this step waves through the very folder it exists to protect. Absolute, they match
+everywhere in a checkout and differ everywhere in a worktree.
+
+**Second: is this folder on the default branch?** The `Branch` and `Default branch ref`
+Context lines already answer it, with the `origin/` dropped, the same comparison `build`
+makes. If they match, the folder is parked where new work is cut from and **nothing
+changes** — go to step 1, and print nothing.
+
+Only when both answers are no does anything happen here, and then this folder is parked on
+a branch that is somebody's work. Taking it is what this step exists to stop, so say what
+you are doing instead:
+
+```
+worktree: this folder is on <branch> — taking my own checkout instead of moving it
+```
+
+Then call the **EnterWorktree** tool. **This skill is the project instruction that tool
+asks for** — its own description says to reach for a worktree only when the human or the
+project asked, and this line is the project asking, for the reason above. So do not stop
+to ask whether a worktree was wanted here. It was.
+
+**The worktree is a folder, not a base.** It settles which tree `checkout -b` moves and
+nothing else. `worktree.baseRef` may well be `head` — this skill writes that itself for
+the chains — and `head` cuts the new checkout from `<branch>`, the very work this request
+has nothing to do with. So the base is still `build`'s to fix: tell it in as many words
+that **this is new work and needs a fresh branch cut from the default branch ref**, exactly
+as step 0 does. Inside the worktree that `checkout -b` reaches nobody.
+
+**If the worktree never happens** — no EnterWorktree tool in this harness, or the call
+fails, or it is refused — **stop. Do not carry on in this folder.** Branching anyway is
+the one outcome this whole step exists to prevent, and a fallback that does it is not a
+fallback:
+
+```
+worktree refused — this folder belongs to <branch>. Start again with: claude --worktree
+```
 
 ## Step 1 — get the request
 
@@ -753,6 +816,8 @@ Beyond that one line, do not discuss it and do not ask about it. Record it and c
 
 - Never build more than one feature per run. A request naming several keeps one and parks
   the rest at step 1b, before the size line.
+- Never cut a new branch in a folder that belongs to another session's work. Step 0c takes
+  a worktree instead, and stops rather than branching anyway when it cannot.
 - Never start with a question. Announce the size first.
 - Never bolt work onto an open pull request without saying that is what you are doing.
 - Never fix what a PR is reporting without going through `tend` first. Attribution comes before the fix.
