@@ -49,8 +49,8 @@ it spends money.
 
 **A rendered `SKILL.md` is not part of the trace.** The `Skill` tool returns the
 whole skill body as a tool result, and `skills/flow/SKILL.md` contains its own
-worked examples — `Quick — single-file copy change.` at line 289 and `Deep — new
-subsystem, touches auth (danger list).` at 293. Count those as trace and three
+worked examples — `Quick — single-file copy change.` at line 334 and `Deep — new
+subsystem, touches auth (danger list).` at 338. Count those as trace and three
 weight-3 graders stop measuring anything:
 
 | Grader | What it would do |

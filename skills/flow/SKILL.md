@@ -249,8 +249,53 @@ sizes, not how the kept one is built, so it runs even on a request that turns ou
 Quick. **`--quick` and `--deep` do not stop the split** — they size the kept feature only,
 after this round has picked it.
 
-Once the kept feature is settled, park the others — see the parking rules right after this
-step — then step 2 sizes the kept feature alone.
+Once the kept feature is settled, park the others, one entry each, the same way step 4
+writes a plan — look for a `## Plans` block in `CLAUDE.md`.
+
+**`## Plans` says `github`:** make the label if it is missing ("already exists" is fine),
+then file one issue per parked feature.
+
+```
+gh label create devflow:backlog --description "A devflow parked feature" --color 5319E7
+```
+
+```
+gh issue create --label devflow:backlog --title "<feature>" --body-file /tmp/devflow-backlog.md
+```
+
+Write the body to that temp path, outside the repo — the feature's own text, plus one
+line `Parked from: <the feature this run built>`, never the whole original request — and
+remove it after each issue is filed.
+
+**No block, `local`, or a `gh` failure:** write a file instead, one per parked feature, at
+`.devflow/backlog/<short-name>.md`:
+
+```markdown
+# <feature>
+
+<the feature's own text>
+
+Parked from: <the feature this run built>
+```
+
+Either way, print exactly one line once every feature is parked:
+
+```
+parked: #46 add export, #47 fix login
+```
+
+```
+parked: .devflow/backlog/add-export.md, .devflow/backlog/fix-login.md
+```
+
+**If `## Plans` said `github` and `gh` fails**, fall back to the file and say so instead
+of the `parked:` line, the same way step 4's plan falls back:
+
+```
+Plans: github asked for, parked to .devflow/backlog/<name>.md instead — gh answered <the error>
+```
+
+Then step 2 sizes the kept feature alone.
 
 ## Step 2 — size it
 
