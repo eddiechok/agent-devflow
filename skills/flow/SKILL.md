@@ -216,9 +216,47 @@ because the tracker was the wrong shape — say the spec came in as pasted text.
 
 If `--quick` or `--deep` is present, that is the size. Still work out your own size, silently, then skip the rest of step 2. **If yours differs, record the override** — see "Recording overrides" at the end. If it matches, there was no correction: record nothing and print nothing. Do not argue with an explicit override.
 
+## Step 1b — one feature per run
+
+**One flow run ends as one PR.** A request that names three features would end as one PR
+carrying three things, or as a plan that mixes them, so a request that names more than one
+is split here, before anything is sized. **Default is do not split.** A "feature" is
+something that could ship alone and that a user would ask for in its own sentence — parts
+that depend on each other are one feature, not several.
+
+**When the request is one feature, skip this step entirely** — no line, no question, go
+straight to step 2. Only a request that genuinely names more than one prints anything here.
+
+When it names more than one, say so first, so this step never opens with a bare question
+either:
+
+```
+features: N found — one per run
+```
+
+Then ask exactly one numbered list, two questions, each with a recommendation:
+
+```
+1. Keep one feature this run and park the rest? Recommend: yes — one flow run, one PR.
+2. Which first? Recommend: <the feature the others depend on, or the first one named
+   if none does>.
+
+Reply "yes to all" to take both recommendations.
+```
+
+**This round does not count against step 4's rounds.** It settles which feature step 2
+sizes, not how the kept one is built, so it runs even on a request that turns out to be
+Quick. **`--quick` and `--deep` do not stop the split** — they size the kept feature only,
+after this round has picked it.
+
+Once the kept feature is settled, park the others — see the parking rules right after this
+step — then step 2 sizes the kept feature alone.
+
 ## Step 2 — size it
 
-Pick one. Default **down**. Only go heavier when there is a concrete reason.
+Pick one. Default **down**. Only go heavier when there is a concrete reason. **This step
+sizes the kept feature alone** — step 1b already set the rest aside, so nothing here is
+sized against a request that still names more than one thing.
 
 | Size | Use when | What it means |
 |---|---|---|
@@ -660,6 +698,8 @@ Beyond that one line, do not discuss it and do not ask about it. Record it and c
 
 ## Rules
 
+- Never build more than one feature per run. A request naming several keeps one and parks
+  the rest at step 1b, before the size line.
 - Never start with a question. Announce the size first.
 - Never bolt work onto an open pull request without saying that is what you are doing.
 - Never fix what a PR is reporting without going through `tend` first. Attribution comes before the fix.
