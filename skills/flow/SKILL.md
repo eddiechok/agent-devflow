@@ -374,6 +374,43 @@ comes back here is a `branch:` line and five lines per piece, not a build.
 inside a chain depend on each other, and the chains do not, so building chain B after
 chain A buys nothing but wall-clock time.
 
+**Before the first chain spawns, point the worktrees at this branch.** A subagent's
+worktree is cut from the repository's **default branch**, not from where this session is
+standing, unless `worktree.baseRef` says `"head"` — Anthropic's worktrees documentation is
+explicit about it. On a branch stacked on another PR, or on any chain after the first merge,
+a worktree cut from the default branch is missing the base it was supposed to build on, and
+nothing says so: the chain builds, its tests pass, and the diff is inexplicable at the merge.
+
+Read `worktree.baseRef` from `.claude/settings.local.json`, `.claude/settings.json` and
+`~/.claude/settings.json`. **If any of them already says `"head"`, print nothing** and carry
+on. Otherwise merge `{"worktree": {"baseRef": "head"}}` into `.claude/settings.local.json`
+— create the file if it is missing, and keep every key already in it — then print exactly
+one line:
+
+```
+settings: wrote worktree.baseRef = head to .claude/settings.local.json — chain worktrees branch from here, and so will your own --worktree sessions
+```
+
+The line says the side effect out loud because there is one, and it is not only about
+chains: every `--worktree` session the human starts afterwards branches from `HEAD` too.
+Changing a machine's settings quietly is worse than the sentence it costs to say it.
+
+**Never write `.claude/settings.json`.** That one is committed, and this is a preference
+about this machine, not a change to the project. If the write fails — no permission, a file
+that is not valid JSON — say why in one line and take the sequential path below. Spawning
+chains from the wrong base is the failure this whole step exists to avoid, so falling back
+is the safe answer, not a lesser one.
+
+**Then record this branch's SHA**, before the first spawn:
+
+```
+git rev-parse HEAD
+```
+
+Writing the setting is not proof it took: it may only be read when a session starts, and
+this session started before you wrote it. Step 2 below checks the result instead of
+trusting it, and that SHA is what it checks against.
+
 The loop, from the plan's chains — right after the plan is written, or wherever step 0b
 said you are picking up:
 
@@ -390,6 +427,25 @@ said you are picking up:
    back as prose, one with no `branch:` line, or one saying `commit: none` beside
    `stuck: no`, did not finish: treat it as `stuck: yes` with that chain's tree dirty.
    A piece is only done when its commit is in.
+
+   **Then check the branch it reported was cut from here**, once per chain, before it
+   counts as done:
+
+   ```
+   git merge-base --is-ancestor <the SHA recorded above> <that chain branch>
+   ```
+
+   A non-zero exit means the worktree was cut from the default branch after all: the
+   setting did not take in this session, and everything that chain committed is built on
+   the wrong base. **Do not merge it.** Stop the loop and say:
+
+   ```
+   chain <letter> branched from the default branch — the setting did not take; restart the session and run flow again to resume
+   ```
+
+   Leave that chain's worktree and its branch on disk — its commits are the work, and a
+   restarted session reads exactly that state at step 0b. A merge here would bury a wrong
+   base under a merge commit, which is the one outcome nobody can unpick later.
 3. **Print what came back**, per chain: the `branch:` line, then each piece's `commit` and
    `seam`, one each, and any `concern` a `stuck` line carries. A concern is a done piece
    the builder still wants a human to look at. Do not verify the work yourself — the
