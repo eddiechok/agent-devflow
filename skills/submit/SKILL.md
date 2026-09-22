@@ -107,7 +107,7 @@ git merge-base HEAD <default branch ref>
 
 **Pass it the request text too, if you were given one.** `flow` hands it over at its step 5 as `request: <text>`, word for word; hand it to `review` in the same form, after the fixed point. If you were invoked directly and have no request, say so in one line and let the axis skip — do not write one from memory of the diff.
 
-**Pass `no-behaviour: <reason>` too, when `build` said there was nothing to test.** `build` has one gate for that, and it prints `No behaviour to test — <reason>`. Hand that reason on, after the fixed point and the request. `review` then starts no agent and reports all three sections as `skipped — no behaviour`, which you read as **nothing to fix**: no findings, no rounds, nothing for **Known issues**, and `Review: skipped, no behaviour` under **Evidence** at step 8.
+**Pass `no-behaviour: <reason>` too, when `build` said there was nothing to test.** `build` has one gate for that, and it prints `No behaviour to test — <reason>`. Hand that reason on **as its own line**, after the fixed point and the request — `review` recognises it only at a line start. `review` then starts no agent and reports all three sections as `skipped — no behaviour`, which you read as **nothing to fix**: no findings, no rounds, nothing for **Known issues**, and `Review: skipped, no behaviour` under **Evidence** at step 8.
 
 Only `build` decides this, and only for the change in front of it. If `build` ran the gates, the axes run — never reach for the exit yourself because the diff looks small or because it is all markdown.
 

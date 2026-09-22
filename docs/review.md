@@ -38,7 +38,7 @@ The reason comes from `build`, which has a gate for the change that no test can 
 
 It is a **third state**. `NOT RUN` is an axis that should have run and could not — a finding for the PR. `none` is an axis that ran and found nothing. `skipped — no behaviour` is an axis that was never owed a run, and `submit` reads it as nothing to fix.
 
-`review` never works it out for itself. It cannot: deciding would mean reading the change in order to judge whether the change is worth reading. Nor can file types stand in — in this repo a `.md` skill file is the behaviour, so a rule keyed on the extension would skip the review on exactly the changes that most need one.
+`review` never works it out for itself. Deciding it here would mean reading the change in order to judge whether the change is worth reading, and file types cannot stand in for that judgement — in this repo a `.md` skill file is behaviour. A rule keyed on the extension would skip the review on exactly the changes that most need one.
 
 ## The reasons, step by step
 

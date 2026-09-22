@@ -77,6 +77,10 @@ It pins the range, finds the plan or issue if there is one, and runs both axes i
 
 On work with no plan and no issue, that text is the spec the second axis reads, and without it that axis does not run.
 
+### Why `no-behaviour:` goes on its own line
+
+`review` only recognises it at the start of a line, so glued onto the request text it is spec, not a signal.
+
 ### Why round 2 is scoped
 
 That is a range and another agent's report, not this session's reasoning, so `review`'s rule holds. A full re-read of the branch finds the same clean files again at the same price, and the cost of a review should go where the change went.
