@@ -327,6 +327,30 @@ check("flow: says what to do when the setting did not take",
       f"stop the loop, not get merged")
 
 
+# A setting written a moment ago is not in force: settings are read when a
+# session starts, and this session started before `flow` wrote the file. So the
+# very run that writes `worktree.baseRef` is the one run that must not spawn
+# chains -- every worktree it cut would come off the default branch, the
+# ancestor check would catch it, and a whole job's work would have to be rebuilt
+# after a restart. That run takes the sequential path instead and says so in one
+# line. The line and the rule are pinned here for the same reason the four above
+# are: a prompt is the only place either of them lives.
+
+WROTE_NOW_LINE = (
+    "chains next session: worktree.baseRef was just written"
+)
+
+check("flow: names the run that just wrote the setting",
+      WROTE_NOW_LINE in flow_text,
+      f"no line {WROTE_NOW_LINE!r} in {FLOW_PATH}. The run that writes the "
+      f"setting cannot use it, and has to say which run can")
+
+check("flow: that run does not spawn chains",
+      re.search(r"[Dd]o not spawn chains", flow_text) is not None,
+      "flow never says not to spawn chains on the run that wrote the setting. "
+      "Writing it and spawning anyway cuts every worktree from the wrong base")
+
+
 # ------------------------------------------- cross-check against a real parser
 
 try:
