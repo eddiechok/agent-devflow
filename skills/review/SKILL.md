@@ -1,7 +1,7 @@
 ---
 name: review
 description: "Use when a branch needs reviewing before it becomes a pull request, or when you want a read on work you did not write. Reviews everything between a fixed point and now along two axes, kept apart on purpose - is it built right, and is it the right thing. Each axis runs in a fresh agent that never sees this session's reasoning. Called by submit at step 5, and safe to start yourself on any branch."
-argument-hint: "[fixed point - a branch, tag or SHA. Defaults to the branch point] [request: the words the human typed, for step 2]"
+argument-hint: "[fixed point - a branch, tag or SHA. Defaults to the branch point] [request: the words the human typed, for step 2] [no-behaviour: build's reason, on its own line]"
 allowed-tools: Bash(git rev-parse:*), Bash(git merge-base:*), Bash(git diff:*), Bash(git log:*), Bash(git status:*), Bash(git symbolic-ref:*), Bash(gh issue view:*)
 ---
 
@@ -20,7 +20,7 @@ rule looks wrong.
 
 ## 1. Pin the fixed point
 
-`$ARGUMENTS` has two optional parts, in this order: a fixed point, then `request:` followed by the request text. The fixed point is the first word **only if that word is not `request:`**. Everything after `request:` is text for step 2 — up to a `no-behaviour:` line if `submit` passed one — never a ref, never resolved. No fixed point, or `$ARGUMENTS` that starts with `request:`, means the branch point:
+`$ARGUMENTS` has three optional parts, in this order: a fixed point, then `request:` followed by the request text, then a `no-behaviour:` line. The fixed point is the first word **only if that word is neither `request:` nor `no-behaviour:`**. Everything after `request:` is text for step 2 — up to a `no-behaviour:` line if `submit` passed one — never a ref, never resolved. No fixed point, or `$ARGUMENTS` that starts with `request:`, means the branch point:
 
 ```
 git merge-base HEAD <default branch ref>
@@ -60,7 +60,7 @@ review skipped — no behaviour: <reason>
 
 In the step 4 report, write `skipped — no behaviour` under each of **Built right**, **Challenged** and **Right thing**, and against both lines of **Worst of each**.
 
-**`no-behaviour:` is a line `submit` passes down, and never something `review` works out from the diff.** It carries the reason `build` gave at its own gate for writing no test, word for word. Deciding it here would mean reading the change in order to judge whether the change is worth reading, and file types cannot stand in for that judgement — in this repo a `.md` skill file is behaviour.
+**`no-behaviour:` is a line `submit` passes down, and never something `review` works out from the diff.** It carries the reason `build` gave at its own gate for writing no test, word for word.
 
 **It is a third state, and it is not the other two.** `NOT RUN` is an axis that should have run and could not. `none` is an axis that ran and found nothing. `skipped — no behaviour` is an axis that was never owed a run, and `submit` reads it as nothing to fix.
 

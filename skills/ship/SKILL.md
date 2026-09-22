@@ -28,9 +28,7 @@ you say anything. Nothing here is a reason to guess.
 
 ## The boundary
 
-This skill merges. It is only safe for as long as it cannot be reached without you.
-
-Two separate things keep it that way, and it matters which is which:
+Two separate things keep this skill unreachable without you, and it matters which is which:
 
 - **`disable-model-invocation: true`** closes the automatic path, in the harness rather than by request.
 - **`flow` and `submit` are told never to call it.** That closes the deliberate path — and it is only an instruction, so it is the weaker half. It is written into their Rules as well as here.
@@ -115,7 +113,7 @@ gh pr merge <n> --rebase --delete-branch
 
 ### When the merge command errors
 
-**Find out whether it worked before you react.** GitHub can fail *after* the merge has already landed, and the error looks exactly like one from before it.
+**Find out whether it worked before you react.** The error looks the same before and after the merge lands.
 
 Two real runs, one skill, opposite meanings:
 
