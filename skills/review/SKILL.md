@@ -118,8 +118,6 @@ If that answer does not come, the axis **did not run**. Report it as `NOT RUN` i
 - Right thing: <the one finding that matters most, or none, or NOT RUN, or skipped — no behaviour>
 ```
 
-`none` — ran, found nothing. `NOT RUN` — should have run, could not. `skipped — no behaviour` — never owed a run.
-
 **`Challenged` sits under `Built right` because it is about that axis, not beside it.**
 It is not a third axis and it never appears in `Worst of each` — there is no worst
 challenge. Print `hardcase`'s three sections as it wrote them, `Falls` first, and do not
