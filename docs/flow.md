@@ -106,3 +106,115 @@ Each line is a real example of the classifier getting it wrong, with your correc
 This is the only self-improvement machinery in Phase 1. It only collects, on purpose. There is no review step yet.
 
 Read the file when it has twenty or so lines in it. See whether a pattern is there. If one is, that is a change to `flow`. Make it through the normal flow, since this repo is just another project.
+
+## The reasons, step by step
+
+Every paragraph below was moved here out of `skills/flow/SKILL.md`, word for word. The
+skill holds the steps; this holds why they are what they are.
+
+### The Context block
+
+**Every injected line above is a single command on purpose.** An injected command
+that Claude Code cannot statically analyse fails its permission check, and a failed
+injection **aborts the whole skill** — Claude never sees one word of this file. Shell
+control flow does it: `if ... fi`, and `x=$(...)` capture. A `||` fallback and a single
+pipe are fine, which is why every line here is shaped that way. Do not compress these
+back into one clever line; the branching belongs below, where the model does it.
+
+### Step 0 — is this a follow-up?
+
+`flow` runs on every change, including the typo fixes it is tuned for, and a round-trip on
+all of them to answer a question git already settled is a poor trade.
+
+Asking again for something the human has already told you is the interruption this plugin
+exists to avoid.
+
+That is the whole reason `tend` exists: not every failure a pull request reports belongs to
+the pull request, and a fix pushed for a failure nobody attributed is worse than no fix.
+`tend` reads what is actually red, decides whose it is, and comes back through `build` and
+`submit` itself. You would be routing around the one step that stops the mistake.
+
+Nothing downstream will create it for you: `build` keeps whatever branch it finds, and
+`submit` only guards the default one, so work you called new lands on the old branch and
+`submit` folds it into the pull request that is already open — the one thing this step
+exists to prevent.
+
+### Step 0b — is this plan already running?
+
+That is the whole point of writing the plan into the project: a Deep job is long enough to
+outlive the context that started it, and `/clear` between pieces is a supported move, not
+a failure. But nothing resumes by itself. Arrive here without looking and you write a
+second plan over the first, re-ask questions the human already answered, and rebuild
+pieces that are already committed.
+
+### Step 1 — get the request
+
+Anyone can open an issue, and you cannot tell from here who did.
+
+A number you could not open is not a request, and sizing one you guessed at is worse than
+asking.
+
+### Step 4 — the project's words
+
+This is the one file devflow writes that a later run reads. A plan is for one job.
+`CONTEXT.md` outlives the job.
+
+### Step 4 — asking questions
+
+The human answers from memory. The code cannot be wrong about itself.
+
+This is also what makes `yes to all` safe. A recommendation on a decision is an opinion. A
+recommendation on a fact is a guess. A guess lands in **Assumptions** and looks like a
+decision.
+
+More than two is a design session, not a change.
+
+Question 2 shows the split. "Per-user or global" is a decision, so it is asked. "How
+notifications store it" is a fact, so it was looked up and handed over.
+
+### Step 4 — writing the plan down
+
+`submit` reads it to close the issue, and you read it back after a `/clear`.
+
+Whoever builds the piece may have no session to ask, so the plan has to say where the piece
+stops.
+
+### Step 4 — one builder per piece
+
+One session building every piece fills its own window with piece 1 by the time piece 4
+starts, and then compaction keeps a summary and drops the plan.
+
+The plan holds everything a piece needs, and that is the test of whether the plan is good.
+
+Printing it is not what keeps it: the builder also wrote it as a `Concern:` line in the
+piece's commit body, which is what `submit` reads into the PR's **Assumptions** after any
+`/clear`.
+
+Two builders committing to one branch at once is a merge conflict nobody is there to solve,
+and a piece that depends on the one before it cannot start until that one is in. Sequential
+is the whole design; parallel builders in worktrees are a later change, if sequential ever
+proves too slow.
+
+### Step 5 — submit it
+
+`submit` passes it to `review`, and `review`'s second axis judges the change against it.
+
+Standard work has no plan, so the words the human typed are the only spec there is — and
+until this line existed, nobody read them again after step 1.
+
+`build` deliberately does not know about submitting, so if you do not make this call nobody
+does, and the work sits finished-but-uncommitted on a dirty working tree.
+
+### Recording overrides
+
+If the human used `--quick` or `--deep`, they are correcting a mistake this skill would
+have made. That is free labelled test data and it should not be lost.
+
+Global on purpose. These are notes about **this plugin**, not about the project you happen
+to be in. Kept per-project they would scatter across every repo you work in, get committed
+into unrelated projects, and be impossible to review together — which is the only way they
+are useful.
+
+On a hosted session — Claude Code on the web included — `~/.claude` is inside a container
+that is deleted when the session ends, so the file you just wrote may not be there
+tomorrow. The reply is in the transcript, which is.
