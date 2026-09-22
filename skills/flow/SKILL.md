@@ -1,8 +1,8 @@
 ---
 name: flow
-description: "Use when a request will change anything tracked in the repo - a feature, a bug fix, a refactor, a chore or a dependency bump, and equally copy, content, docs, config, styles, images or other assets. Editing a tracked file is the test, not whether the work sounds like coding. Enter here mid-task too, the moment an investigation turns into an edit. Sizes the work as Quick, Standard or Deep, then routes it through build and submit, so the work ends as a pull request rather than uncommitted changes. Accepts free text, a GitHub issue number like #123, or an issue URL. This is the entry point, start here."
-argument-hint: "[--quick|--deep] what you want, or #123"
-allowed-tools: Bash(git status:*), Bash(git branch:*), Bash(git rev-parse:*), Bash(git symbolic-ref:*), Bash(git rev-list:*), Bash(ls:*), Bash(gh issue view:*), Bash(gh pr view:*)
+description: "Use when a request will change anything tracked in the repo - a feature, a bug fix, a refactor, a chore or a dependency bump, and equally copy, content, docs, config, styles, images or other assets. Editing a tracked file is the test, not whether the work sounds like coding. Enter here mid-task too, the moment an investigation turns into an edit. Sizes the work as Quick, Standard or Deep, then routes it through build and submit, so the work ends as a pull request rather than uncommitted changes. Accepts free text, a GitHub issue number like #123, an issue URL, or a backlog file path under .devflow/backlog/. This is the entry point, start here."
+argument-hint: "[--quick|--deep] what you want, #123, or .devflow/backlog/<name>.md"
+allowed-tools: Bash(git status:*), Bash(git branch:*), Bash(git rev-parse:*), Bash(git symbolic-ref:*), Bash(git rev-list:*), Bash(ls:*), Bash(gh issue view:*), Bash(gh pr view:*), Bash(gh issue list:*), Bash(gh issue create:*), Bash(gh label create:*), Bash(rm .devflow/backlog/*)
 ---
 
 # flow
@@ -152,8 +152,10 @@ on a resumed plan is a piece that was started and not committed — the session 
 stopped it, or `build` gave up after three tries. It is not the next piece. It is that
 chain's first unbuilt piece, part done.
 
-**A `?? .devflow/plans/` line is not dirt:** the plan file is untracked until `submit`
-commits it, so only *other* changed or untracked files make the tree dirty.
+**A `?? .devflow/plans/` line is not dirt, and neither is `?? .devflow/backlog/`:** the
+plan file is untracked until `submit` commits it, and a backlog file parked this run is
+untracked the same way until the run that keeps it commits it, so only *other* changed or
+untracked files make the tree dirty.
 
 ```
 Deep — resuming email-alerts, chain A merged, chain B started and not committed
@@ -182,6 +184,19 @@ finished, and this is new work.
 ## Step 1 — get the request
 
 `$ARGUMENTS` is the request.
+
+**A path under `.devflow/backlog/` is not free text — it is a feature this project already
+decided to build later.** Read the file; its contents are the request, exactly as an
+issue body is. Then remove the file and say so, so the deletion ships in this run's own
+PR rather than lingering as a stale entry the next run reads and parks all over again:
+
+```
+rm .devflow/backlog/<name>.md
+```
+
+```
+backlog: took .devflow/backlog/<name>.md — the file is deleted in this branch
+```
 
 If it starts with `#` or is a GitHub issue URL, read the issue first — `gh issue view NUMBER`, or whatever GitHub access this environment has. The issue body is the request. Remember the number so `submit` can close it.
 
