@@ -29,6 +29,7 @@ where it is not, the lint still stands on its own.
 
 import os
 import re
+import subprocess
 import sys
 
 SKILLS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -220,6 +221,58 @@ check("agents/builder: runs in its own worktree",
       f"isolation={builder_values.get('isolation')!r}, expected 'worktree'. "
       f"Builders run in parallel, one per chain; unset means they all share "
       f"the one checkout and the one branch")
+
+
+# ------------------------------- and the directory that isolation creates
+#
+# The harness puts each builder's checkout under `.claude/worktrees/`. That is a
+# checkout of this same repo, so leaving it untracked turns one parallel Deep run
+# into hundreds of files in `git status` -- and `submit`, which stages what is
+# there, would commit a checkout into the repo it was cut from. Anthropic's
+# worktrees page says to ignore it. The line is checked here, next to the
+# `isolation` setting that is the reason the directory exists at all: the two go
+# in together or neither is safe.
+
+REPO_ROOT = os.path.dirname(SKILLS_DIR)
+WORKTREE_DIR = ".claude/worktrees/"
+
+try:
+    with open(os.path.join(REPO_ROOT, ".gitignore"), encoding="utf-8") as fh:
+        gitignore_lines = [line.strip() for line in fh]
+except FileNotFoundError:
+    gitignore_lines = []
+
+check("gitignore: lists the builders' worktree directory",
+      WORKTREE_DIR in gitignore_lines,
+      f"no {WORKTREE_DIR!r} line in .gitignore. Every builder's checkout lands "
+      f"there, and an unignored one is untracked files the next commit sweeps up")
+
+
+def in_a_git_work_tree():
+    """Whether git is here and this copy is a checkout. The plugin cache is not."""
+    try:
+        done = subprocess.run(["git", "rev-parse", "--is-inside-work-tree"],
+                              cwd=REPO_ROOT, capture_output=True, text=True)
+    except OSError:
+        return False
+    return done.returncode == 0 and done.stdout.strip() == "true"
+
+
+# Same shape as the PyYAML cross-check below: where git is available, ask git
+# itself rather than trusting a string match on the file. Where it is not -- the
+# installed plugin is a plain copied directory -- the text check above still
+# stands on its own.
+if in_a_git_work_tree():
+    ignored = subprocess.run(
+        ["git", "check-ignore", "-q", WORKTREE_DIR + "chain-a"],
+        cwd=REPO_ROOT, capture_output=True, text=True)
+    check("gitignore: git itself ignores a builder's worktree",
+          ignored.returncode == 0,
+          f"git check-ignore exited {ignored.returncode} for "
+          f"{WORKTREE_DIR + 'chain-a'!r}; 0 means ignored")
+else:
+    print("\nnote: not a git work tree, so the git check-ignore cross-check was\n"
+          "      skipped. The .gitignore line is still checked above.\n")
 
 
 # ------------------------------------------- cross-check against a real parser

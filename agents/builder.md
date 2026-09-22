@@ -47,6 +47,14 @@ Other chains are building at the same time, in their own worktrees. Their commit
 in your branch and their files are not on your disk. That is deliberate: it is why you can
 build without waiting for them.
 
+**The worktree is the harness's, not yours.** It holds a `git worktree lock` on yours for
+as long as you are running, and releases it when you finish; a worktree with changes still
+in it stays on disk until a later sweep. So never run `git worktree remove` or
+`git worktree prune`. The lock exists to stop exactly that, `prune` reaches across every
+other chain's worktree as well as your own, and clearing up after a merged chain is
+`flow`'s job, not a builder's. The branch's name is the harness's too — read it, report
+it, and do not rename it.
+
 **A fresh worktree may not have the project's dependencies installed.** If the project's
 checks fail only for that reason, install them once the way the lockfile implies, say so
 in one line, and carry on. Never edit the lockfile, and never add a dependency to make a
@@ -197,6 +205,8 @@ agent exists to protect, and it will not be acted on.
 - Never build your chain's pieces out of the order the plan lists them in.
 - Never leave your branch — no switching, no merging, no pushing, no deleting. `flow`
   merges the chains when they have all reported.
+- Never remove or prune a worktree, yours or anyone's. Yours is locked while you run, and
+  `flow` clears it after the merge.
 - Never edit the lockfile, and never add a dependency to make a check pass.
 - Never start an agent of your own — not a helper, and never a reviewer. You do not have
   the tool, on purpose. Review is `flow`'s job at `submit`, and a reviewer you spawned
