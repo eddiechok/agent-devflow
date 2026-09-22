@@ -92,31 +92,41 @@ one you resumed from. If `gh` cannot answer, say so in one line and use the
 files alone — a plan issue you cannot read is a job you cannot resume from here, and the
 honest line is "could not check GitHub for a plan".
 
-Read the plan, then read what exists:
+Read the plan, then read what exists — three things, not one:
 
 ```
 git log <default branch ref>..HEAD --oneline
+git branch --list
+git worktree list
 ```
 
-The plan says what the pieces are; the log says which of them are built. **Announce where
-you are picking up** — `Deep — resuming email-alerts, pieces 1-2 built, starting 3` — and
-go straight to the builder loop under "Deep — one builder per piece" with the next unbuilt
-piece. Skip step 2 and skip the questions; both were settled in the first round and the
-plan holds their answers.
+The plan says what the pieces are, the log says which of them are built, and the branches
+and worktrees say which chains were started. **Announce where you are picking up** —
+`Deep — resuming email-alerts, chain A merged, chain B started` — and go straight to the
+loop under "Deep — one builder per chain" with the chains that are not done. Skip step 2
+and skip the questions; both were settled in the first round and the plan holds their
+answers.
 
-**Then look at the `Status` line.** A dirty tree on a resumed plan is a piece that was
-started and not committed — the session died, you stopped it, or `build` gave up after
-three tries. It is not the next piece. It is the first unbuilt one, part done.
+**A chain branch that exists and is not merged is a chain that was started.** Say so, and
+pick that chain up at the merge step rather than rebuilding it — its pieces are already
+committed on that branch, and a second builder at the same chain would build them twice.
+`git branch --no-merged` names the ones still outstanding. A chain whose branch is gone
+and whose pieces are in the log finished and merged already; leave it alone.
+
+**Then look at the `Status` line**, and at any worktree the list still shows. A dirty tree
+on a resumed plan is a piece that was started and not committed — the session died, you
+stopped it, or `build` gave up after three tries. It is not the next piece. It is that
+chain's first unbuilt piece, part done.
 
 ```
-Deep — resuming email-alerts, pieces 1-2 built, piece 3 started and not committed
+Deep — resuming email-alerts, chain A merged, chain B started and not committed
 ```
 
-Hand the builder **that** piece, and say the tree is dirty — it is the third input the
-builder takes, and it passes it through to `build`, which keeps what is there and writes a
-test at the seam before touching it, its rule for code that arrived without one.
-Never start piece 3 from scratch beside a half-built piece 3, and never clean the tree to
-make the resume simpler — that is the work, thrown away.
+Hand the builder **that chain**, and say the tree is dirty — it is the third input the
+builder takes, and it passes it through to `build` for the first piece it picks up, which
+keeps what is there and writes a test at the seam before touching it, its rule for code
+that arrived without one. Never start a chain from scratch beside a half-built one, and
+never clean the tree to make the resume simpler — that is the work, thrown away.
 
 Only when no plan matches is this a new request. A plan whose subject is plainly something
 else does not match, and neither does one whose pieces are all in the log — that job is
@@ -193,7 +203,7 @@ If you arrived here mid-turn, because a question or an investigation turned into
 
 **Standard** → if anything is genuinely ambiguous, ask **one** round of questions (see below), then `devflow:build`. If nothing is ambiguous, go straight to `devflow:build`.
 
-**Deep** → ask one round of questions, get agreement, write the plan, then work through the pieces **one builder agent per piece**, in order — see "Deep — one builder per piece" below.
+**Deep** → ask one round of questions, get agreement, write the plan, then build it **one builder agent per chain, several chains at once** — see "Deep — one builder per chain" below.
 
 Every size then goes on to step 5. `build` finishing is not the job finishing.
 
@@ -354,48 +364,107 @@ worktrees, on separate branches that get merged back. Four rules decide the lett
 
 The plan itself is still not a progress tracker — nothing writes back to it, file or issue. It is the spec `review`'s second axis reads.
 
-### Deep — one builder per piece
+### Deep — one builder per chain
 
-**This session coordinates. It does not build.** So each piece goes to a fresh
-`devflow:builder` agent, and what comes back to this session is five lines, not a build.
+**This session coordinates. It does not build.** So each chain goes to a fresh
+`devflow:builder` agent, which works in its own git worktree on its own branch, and what
+comes back here is a `branch:` line and five lines per piece, not a build.
 
-The loop, from the first unbuilt piece — right after the plan is written, or wherever
-step 0b said you are picking up:
+**The chains run at the same time.** That is the whole point of the letters: the pieces
+inside a chain depend on each other, and the chains do not, so building chain B after
+chain A buys nothing but wall-clock time.
 
-1. **Spawn one `devflow:builder`.** Give it exactly three things: the plan path (or the
-   plan issue's body, pasted), the piece number, and `clean` or `dirty` — the tree state
-   from step 0b, and `clean` for every piece after the first. Nothing else: not this
-   session's reasoning, not what the last builder said, not a hint about the seam.
-2. **Wait for its report and read all five lines.** `piece`, `test`, `commit`, `seam`,
-   `stuck`. A builder that returned fewer, returned prose, or said `commit: none` beside
-   `stuck: no`, did not finish — treat it as `stuck: yes` with the tree dirty, and go to
-   step 4. A piece is only done when its commit is in.
-3. **`stuck: no` and a commit** → print the report's `commit` and `seam` lines, one each,
-   and any `concern` the `stuck` line carries. A concern is a done piece the builder still
-   wants a human to look at. Then go back to 1 with the next piece. Do not verify its work
-   yourself — the commit and the test line are the evidence, and re-running the build here
-   is what fills the window.
-4. **`stuck: yes`** → stop the loop. Say which piece, what the builder ruled out, and what
-   it would look at next, in its words. If its line says `tree dirty`, or step 2 decided
-   the tree is dirty, say that too, so a resume from step 0b hands the next builder the
-   right flag. Do not spawn another builder
-   at the same piece, and do not finish it in-session — the human decides.
-5. **After the last piece** → step 5, `submit`, as for every size.
+The loop, from the plan's chains — right after the plan is written, or wherever step 0b
+said you are picking up:
 
-**One builder at a time, always.**
+1. **Spawn one `devflow:builder` per chain, up to four at once.** Give each exactly three
+   things: the plan body **pasted in full**, never a path — the plan file is untracked in
+   the tree you are standing in, so a worktree cannot resolve one — the chain letter, and
+   `clean` or `dirty`. Nothing else: not this session's reasoning,
+   not what another builder said, not a hint about the seam. **Four is the cap**; a fifth
+   chain waits and starts when a slot frees. Do not spawn `chain: final` here — it runs
+   alone, at step 7.
+2. **Wait for every report and read all of it.** One `branch:` line, then `piece`, `test`,
+   `commit`, `seam` and `stuck` for each piece that chain built — sixteen lines for a
+   chain of three. A report with fewer lines than its chain's pieces need, one that came
+   back as prose, one with no `branch:` line, or one saying `commit: none` beside
+   `stuck: no`, did not finish: treat it as `stuck: yes` with that chain's tree dirty.
+   A piece is only done when its commit is in.
+3. **Print what came back**, per chain: the `branch:` line, then each piece's `commit` and
+   `seam`, one each, and any `concern` a `stuck` line carries. A concern is a done piece
+   the builder still wants a human to look at. Do not verify the work yourself — the
+   commits and the test lines are the evidence, and rebuilding it here is what fills the
+   window this loop exists to protect.
+4. **On any `stuck: yes`** → stop spawning new chains, and let the ones already running
+   finish and report — killing them throws away pieces they have already committed. Then
+   stop the job: say which chain and which piece, what the builder ruled out and what it
+   would look at next, in its words. If its line says `tree dirty`, say that too, so a
+   resume from step 0b hands the next builder the right flag. **Do not merge anything**,
+   and leave the finished chains on their branches: step 0b reads exactly that state and
+   picks the job up at step 5. Do not spawn another builder at the same chain, and do not
+   finish the piece in-session — the human decides.
+5. **Merge each chain branch into this branch**, in plan order, once every chain has
+   reported. The branch name is the one that chain reported on its `branch:` line; you did
+   not choose it and you do not guess it. Check before you merge:
+
+   ```
+   git merge-tree --write-tree <this branch> <chain branch>
+   ```
+
+   **A non-zero exit is a conflict, and it stops the job.** Name the two chains and the
+   files, and hand it to the human. Never resolve it yourself: the plan says two chains
+   never edit the same file, so a conflict means the plan was wrong, and a wrong plan is
+   fixed in the plan, not patched over in a merge. A zero exit means merge it:
+
+   ```
+   git merge --no-ff <chain branch>
+   ```
+
+   `--no-ff` always, so every chain leaves one merge commit naming it and the builders'
+   own SHAs stay exactly as they reported them. **This merge is local**, into the feature
+   branch, on this machine. It is not a pull request merge and it never touches the
+   default branch, so what `submit` and `ship` promise is unchanged.
+6. **Remove each merged chain's worktree and branch.** `git worktree list` says where they
+   are:
+
+   ```
+   git worktree remove <path>
+   git branch -d <chain branch>
+   ```
+
+   A worktree the harness already removed is not an error — say nothing and carry on.
+   `-d`, never `-D`: a branch git refuses to delete is a branch whose work is not in, and
+   that is worth stopping for rather than forcing past.
+7. **Then `chain: final`, if the plan has one** — one builder, alone, after every other
+   chain has merged, so it sees all of their work on this branch. That is why it exists:
+   its pieces touch the files every other chain would otherwise have written into at once.
+   Same loop, steps 1 to 6, for that one chain.
+8. **When the last chain is merged** → step 5, `submit`, as for every size.
+
+**Where the harness cannot give a builder its own worktree** — no `isolation` option on
+the agent tool, or the first spawn using it fails — say so once:
+
+```
+chains in-session: no worktree isolation
+```
+
+Then run the old path: one builder per **piece**, in plan order, one at a time, on this
+branch, with no merge step and no cleanup, because there are no chain branches to merge.
+The `chain:` letters are only an ordering hint in that mode. Nothing is lost but the
+wall-clock time. Say it once for the whole job, not once per chain.
 
 **Where the harness only starts agents when asked** — the same restriction `review` names,
 a plan one, not a web one, and you tell by looking at your own instructions — ask once,
-before the first piece:
+before the first chain:
 
 ```
-This harness only starts agents when you ask. Say "build the pieces" and one builder runs per piece.
+This harness only starts agents when you ask. Say "build the chains" and one builder runs per chain.
 ```
 
 If that answer does not come, build every piece in this session through `devflow:build`,
-one at a time, exactly as before this section existed. Say so in one line — `building
-in-session: agents not permitted` — and carry on. Nothing is lost but the window. Ask
-once for the whole job, not once per piece.
+one at a time, in plan order, exactly as before this section existed. Say so in one line —
+`building in-session: agents not permitted` — and carry on. Nothing is lost but the
+window. Ask once for the whole job, not once per chain.
 
 Quick and Standard do not change. One piece, one session, straight through `build`.
 
@@ -449,8 +518,8 @@ Beyond that one line, do not discuss it and do not ask about it. Record it and c
 - Never ask a question whose premise another question in the same round decides.
 - Never write a term into `CONTEXT.md` that the human did not settle, and never write implementation detail there.
 - Never finish without calling `submit`, or saying in one line why you did not.
-- Never spawn two builders at once. One piece, one agent, in plan order.
-- Never skip a builder's report. Five lines, read before the next piece starts; fewer is `stuck`.
+- Never more than 4 chains at once, never two builders on one branch, never resolve a merge conflict yourself.
+- Never skip a builder's report. A `branch:` line and five lines per piece, read in full before that chain counts as done; fewer is `stuck`.
 - Never build a Deep piece in-session while agents are available. Only when the harness refused, and say so.
 - Never call `devflow:ship`. The open PR is where this loop ends; merging is the human's, and only they start it.
 - If the human overrules you, they are right. Record it and move on.
