@@ -113,6 +113,40 @@ committed on that branch, and a second builder at the same chain would build the
 `git branch --no-merged` names the ones still outstanding. A chain whose branch is gone
 and whose pieces are in the log finished and merged already; leave it alone.
 
+**But check its base first, before it goes anywhere near the merge step.** The loop tagged
+this branch's tip before the chains were cut, `devflow/<plan short-name>/base`, exactly so
+a resumed session can ask the same question the original one asked:
+
+```
+git merge-base --is-ancestor devflow/<plan short-name>/base <chain branch>
+```
+
+A non-zero exit means that chain was cut from the default branch — the run that started it
+stopped for this very reason and told the human to restart. **Do not merge it, and do not
+pick it up.** Say `chain <letter> on <branch> was cut from the default branch — not merged;
+rebuilding it, and leaving that branch for you`, then treat the chain as not started: it
+goes back into the spawn loop, and its old branch and worktree stay on disk for the human
+to delete. If the tag is missing, you cannot tell either way: say so, merge nothing, and
+ask the human which it is.
+
+**Then check it is whole.** A branch that descends from the tag can still be a chain that
+stopped early — its builder said `stuck` on piece 2 of 3, and its worktree, not this tree,
+holds the half-built piece. Read what the branch has:
+
+```
+git log devflow/<plan short-name>/base..<chain branch> --oneline
+```
+
+Every piece of that chain has a commit there, or the chain is not done. **All present** →
+the merge step, as above. **Fewer** → merge what is there first, `merge-tree` check and
+`--no-ff` as in the loop, because those pieces are finished commits; then send the chain
+back into the spawn loop, and say so: `chain <letter> stopped at piece <n>; merged pieces
+<list>, rebuilding from <n>`. The builder reads the log and skips the pieces already in
+it. If `git worktree list` still shows that chain's old worktree, the half-built piece is
+inside it: say that too, leave the worktree for the human, and let the new builder start
+that piece over. That is the one place resume loses work, and it says so rather than
+pretending the half-piece was carried across.
+
 **Then look at the `Status` line**, and at any worktree the list still shows. A dirty tree
 on a resumed plan is a piece that was started and not committed — the session died, you
 stopped it, or `build` gave up after three tries. It is not the next piece. It is that
@@ -127,6 +161,16 @@ builder takes, and it passes it through to `build` for the first piece it picks 
 keeps what is there and writes a test at the seam before touching it, its rule for code
 that arrived without one. Never start a chain from scratch beside a half-built one, and
 never clean the tree to make the resume simpler — that is the work, thrown away.
+
+**A dirty tree here means that chain runs first, alone, and without a worktree.** The
+uncommitted work is in *this* tree, and a worktree is cut from commits — it would not
+carry a single uncommitted line across, so a builder spawned with `isolation: "worktree"`
+and told `dirty` would find a clean checkout, rebuild the piece, and leave the real
+half-piece behind for `submit` to stage beside it. So spawn that one chain **without**
+`isolation` on the Agent call, on this branch, exactly as the sequential path does, and
+wait for its report. Only then do the other chains go out in parallel. A dirty tree on a
+resumed plan can only have come from the sequential path, so this is the one crossing
+between the two paths, and it is handled by staying on the sequential one for one chain.
 
 Only when no plan matches is this a new request. A plan whose subject is plainly something
 else does not match, and neither does one whose pieces are all in the log — that job is
@@ -411,29 +455,36 @@ branch anyway, and the check below would catch that only after four builders had
 chains next session: worktree.baseRef was just written
 ```
 
-Then build this job on the sequential path below — one builder per **piece**, in plan
-order, on this branch, with no merge step. That costs the job its wall-clock time, and it
-is far cheaper than the alternative, which is every chain rebuilt off the wrong base after
-a restart. The run that finds the setting already there is the run that spawns chains.
+Then build this job on the sequential path — the one under "Where the harness cannot give
+a builder its own worktree" below: one builder per **chain**, in plan order, one at a time,
+spawned **without** `isolation` on the Agent call, so it commits on this branch and there
+is no merge step. That costs the job its wall-clock time, and it is far cheaper than the
+alternative, which is every chain rebuilt off the wrong base after a restart. The run that
+finds the setting already there is the run that spawns chains.
 
 **The check below still runs on the runs that do spawn.** A settings file that says
 `"head"` is not proof the value reached this session either — one edited by hand a minute
 ago reads exactly like one loaded at start-up. So finding it does not excuse trusting it.
 
-**Then record this branch's SHA**, before the first spawn:
+**Then tag this branch's tip**, before the first spawn, so the base survives a `/clear`:
 
 ```
-git rev-parse HEAD
+git tag devflow/<plan short-name>/base HEAD
 ```
 
 Writing the setting is not proof it took: it may only be read when a session starts, and
 this session started before you wrote it. Step 2 below checks the result instead of
-trusting it, and that SHA is what it checks against.
+trusting it, and that tag is what it checks against — on this run, and on a resumed one
+that no longer remembers the SHA. A local tag, never pushed; step 6 deletes it. If the tag
+already exists, this is a resume: leave it, it is the base the started chains were cut from.
 
 The loop, from the plan's chains — right after the plan is written, or wherever step 0b
 said you are picking up:
 
-1. **Spawn one `devflow:builder` per chain, up to four at once.** Give each exactly three
+1. **Spawn one `devflow:builder` per chain, up to four at once, with `isolation:
+   "worktree"` on the Agent call.** The worktree is asked for here, per spawn, and not
+   pinned in the builder's frontmatter, so the sequential path below can spawn the same
+   builder without one. Give each exactly three
    things: the plan body **pasted in full**, never a path — the plan file is untracked in
    the tree you are standing in, so a worktree cannot resolve one — the chain letter, and
    `clean` or `dirty`. Nothing else: not this session's reasoning,
@@ -451,7 +502,7 @@ said you are picking up:
    counts as done:
 
    ```
-   git merge-base --is-ancestor <the SHA recorded above> <that chain branch>
+   git merge-base --is-ancestor devflow/<plan short-name>/base <that chain branch>
    ```
 
    A non-zero exit means the worktree was cut from the default branch after all: the
@@ -509,11 +560,13 @@ said you are picking up:
 
    A worktree the harness already removed is not an error — say nothing and carry on.
    `-d`, never `-D`: a branch git refuses to delete is a branch whose work is not in, and
-   that is worth stopping for rather than forcing past.
+   that is worth stopping for rather than forcing past. Once the last chain is merged,
+   delete the base tag too: `git tag -d devflow/<plan short-name>/base`.
 7. **Then `chain: final`, if the plan has one** — one builder, alone, after every other
    chain has merged, so it sees all of their work on this branch. That is why it exists:
    its pieces touch the files every other chain would otherwise have written into at once.
-   Same loop, steps 1 to 6, for that one chain.
+   Same loop, steps 1 to 6, for that one chain, with its own tag —
+   `devflow/<plan short-name>/final-base` — cut after the merges, because the base moved.
 8. **When the last chain is merged** → step 5, `submit`, as for every size.
 
 **Where the harness cannot give a builder its own worktree** — no `isolation` option on
@@ -523,10 +576,15 @@ the agent tool, or the first spawn using it fails — say so once:
 chains in-session: no worktree isolation
 ```
 
-Then run the old path: one builder per **piece**, in plan order, one at a time, on this
-branch, with no merge step and no cleanup, because there are no chain branches to merge.
-The `chain:` letters are only an ordering hint in that mode. Nothing is lost but the
-wall-clock time. Say it once for the whole job, not once per chain.
+Then run the sequential path: one builder per **chain**, in plan order, one at a time,
+spawned **without** `isolation` on the Agent call, so it works on this branch and commits
+here. Same three inputs, same report — its `branch:` line names this branch. No merge
+step, no cleanup and no tag, because there are no chain branches — and **no base check at
+step 2 either**: there is no tag to check against, and `git merge-base` against a missing
+tag exits non-zero for that reason alone, which would stop a healthy job with a false
+message. The `branch:` line naming this branch is the whole check on this path.
+`chain: final` is just the last chain. Nothing is lost but the wall-clock time. Say it
+once for the whole job, not once per chain.
 
 **Where the harness only starts agents when asked** — the same restriction `review` names,
 a plan one, not a web one, and you tell by looking at your own instructions — ask once,
