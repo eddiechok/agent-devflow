@@ -114,6 +114,14 @@ gh label create devflow:plan --description "A devflow Deep plan" --color 0E8A16
 
 An error that says the label already exists is fine. Any other error, stop and say so.
 
+Then make the second label the same way. `flow` parks extra features there, one feature per run, filing each one it does not build under `devflow:backlog`:
+
+```
+gh label create devflow:backlog --description "A devflow parked feature" --color 5319E7
+```
+
+Same error rule: "already exists" is fine, any other error means stop and say so.
+
 Write the block:
 
 ```markdown
@@ -132,7 +140,7 @@ Checks written to CLAUDE.md.
   Test:      pnpm test        pass (48 tests, 6s)
   Typecheck: pnpm typecheck   pass
   Lint:      pnpm lint        pass
-Plans: github (label devflow:plan exists)
+Plans: github (labels devflow:plan, devflow:backlog exist)
 
 No ## Deploy block written — that is ship's to add, the first time it
 deploys and can prove the command works.

@@ -522,6 +522,42 @@ for tool in FLOW_BACKLOG_TOOLS:
           f"flow's allowed-tools never lists {tool!r}")
 
 
+# --------------------------- setup creates devflow:backlog beside devflow:plan
+#
+# `flow` files a parked feature under the `devflow:backlog` label, and the
+# label has to exist before `flow` ever tries to use it -- `setup` is the one
+# place that runs once per project, so it is the place that makes the label.
+# The exact label command and the exact report line are pinned here for the
+# same reason the flow backlog lines above are: a resumed run and a human
+# both read them literally.
+
+SETUP_PATH = os.path.join(SKILLS_DIR, "setup", "SKILL.md")
+with open(SETUP_PATH, encoding="utf-8") as fh:
+    setup_text = fh.read()
+
+SETUP_BACKLOG_LABEL_CMD = (
+    'gh label create devflow:backlog --description "A devflow parked feature" '
+    "--color 5319E7"
+)
+
+check("setup: step 5 creates the devflow:backlog label beside devflow:plan",
+      "gh label create devflow:plan" in setup_text
+      and SETUP_BACKLOG_LABEL_CMD in setup_text,
+      f"{SETUP_PATH} never runs {SETUP_BACKLOG_LABEL_CMD!r} after "
+      f"'gh label create devflow:plan'")
+
+check("setup: step 5 report line names both labels",
+      "Plans: github (labels devflow:plan, devflow:backlog exist)"
+      in setup_text,
+      f"{SETUP_PATH} never prints the exact "
+      f"'Plans: github (labels devflow:plan, devflow:backlog exist)' line")
+
+check("setup: says flow parks extra features under the backlog label",
+      re.search(r"[Pp]arks[^\n]*one feature per run", setup_text) is not None,
+      f"{SETUP_PATH} never says flow parks extra features there, one "
+      f"feature per run")
+
+
 # ------------------------------------ ship refuses and protects stacked PRs
 #
 # On 22 Sep 2026 `gh pr merge 23 --rebase --delete-branch` closed #24, which
