@@ -1,6 +1,6 @@
 schema_version: "1.1"
 name: deep-coordinator
-description: A Deep request with a two-piece plan is built by one builder agent per piece, in order, and still ends in submit.
+description: A Deep request with two independent pieces becomes two chains, one builder agent per chain running in parallel, merged back into the feature branch, and still ends in submit.
 tags: [flow, build, submit, agents, regression]
 
 context:
@@ -32,8 +32,10 @@ graders:
     match: contains
     weight: 3
 
-  # The reason this case exists. flow's Deep path hands each piece to a fresh
-  # devflow:builder, so a two-piece plan is two Agent calls, not zero.
+  # The reason this case exists. flow's Deep path hands each chain to a fresh
+  # devflow:builder, so two independent pieces are two chains and two Agent
+  # calls, not zero. The name predates chains and is kept so a comparison
+  # against older runs still lines up.
   - type: tool_used
     name: one-builder-per-piece
     tool: Agent
@@ -73,8 +75,22 @@ graders:
       input_match: "devflow:submit"
     weight: 3
 
-  # flow prints the builder's commit line after each report. A trace without
-  # one means the reports were never read, or never came back as five lines.
+  # The chain loop's other half: the branches come back. flow merges each
+  # chain branch into the feature branch locally, --no-ff, one merge commit
+  # per chain. A run that built both chains and left them on their own
+  # branches has not finished the job, and submit would open a PR without
+  # them. Written out in full rather than as `git merge `, which full-loop
+  # already uses for the plain merge.
+  - type: tool_used
+    name: merges-the-chains
+    tool: Bash
+    input_match: "git merge --no-ff"
+    min: 1
+    weight: 2
+
+  # flow prints the builder's commit line for each piece it is told about. A
+  # trace without one means the reports were never read, or never came back as
+  # a branch line plus five lines per piece.
   - type: regex
     name: relays-the-builder-report
     target: trace
@@ -101,6 +117,8 @@ graders:
     weight: 3
 
 expected_outcome: >
-  A "Deep —" size line, then a plan file with two pieces, then two Agent
-  calls to devflow:builder in order, each followed by a relayed commit line,
-  then submit. No devflow:build call from the session itself, and no ship.
+  A "Deep —" size line, then a plan file whose two pieces are two chains,
+  then two Agent calls to devflow:builder, one per chain, run in parallel,
+  each followed by a relayed commit line. Then the chain branches merged back
+  into the feature branch with git merge --no-ff, then submit. No
+  devflow:build call from the session itself, and no ship.

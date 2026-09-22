@@ -30,7 +30,7 @@ python3 evals/run.py --case sizing-* --runs 1
 python3 evals/run.py --dry-run                # parse and print, run nothing
 ```
 
-It scores **37 of the 45 graders** — every `regex`, `tool_used`, `tool_order`
+It scores **38 of the 46 graders** — every `regex`, `tool_used`, `tool_order`
 and `file_exists`. The eight `llm` graders come back `skip`, stay out of the
 denominator, and are counted in the summary. **A skip is never a pass**, the
 same way `NOT RUN` is never `none`.
@@ -79,7 +79,7 @@ not write a case that greps the plugin source and then judges a size with a bare
 | `auto-trigger` | low | Work never reaches `flow` at all, so nothing ever ships |
 | `setup-writes-checks` | medium | Every downstream check runs a command nobody verified |
 | `full-loop` | high | The skills stop handing off to each other |
-| `deep-coordinator` | high | A Deep job builds every piece in one session again, and outgrows its window by piece 4 |
+| `deep-coordinator` | high | A Deep job builds every chain in one session again and outgrows its window, or the chains never merge back and the PR is missing a chain's work |
 | `plans-on-tracker` | high, **manual** | A project that keeps plans on GitHub gets a file instead, or a plan nobody can close |
 
 `plans-on-tracker` is **manual**. It needs a real GitHub repo with issues on and
