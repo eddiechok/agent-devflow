@@ -319,6 +319,7 @@ Short. What merged, whether it is live, what was tidied:
 
 ```
 Merged #2 (rebase), remote branch deleted.
+Retargeted: #4 onto main, still open — rebase is its author's. (omit if none)
 Deploy: Cloudflare, ready in 48s.
 Live: edxtech.com.my serves the new favicon.ico — confirmed.
 Cleaned: local branch, dev server on :4321, 3 screenshots in /tmp.

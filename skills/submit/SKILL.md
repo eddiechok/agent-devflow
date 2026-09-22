@@ -145,7 +145,24 @@ The bar is narrow: a doc that is now **wrong**, not a doc that could say more. D
 
 **If any file changed since step 2's run, run the checks again first.** Same rule as step 2: the checks must postdate the last edit. Bare, one per call, output on screen.
 
-**If any file changed since the last review that read it, one short look first.** Round 2 counts as a read of the lines it was scoped to. `devflow:reviewer` only, scoped to the lines that changed, a **200 word ceiling**, and no `hardcase`. If it finds something new, **stop editing** and put it under **Known issues** — a further fix would need a further look, and the loop has to end somewhere the human can see.
+**If any file changed since the last review that read it, one short look first.** Round 2 counts as a read of the lines it was scoped to. `devflow:reviewer` only, scoped to the lines that changed, a **200 word ceiling**, and no `hardcase`.
+
+**If the look finds something new, it gets at most one bounded fix.** Two conditions, and both have to hold:
+
+- **Small** — a few lines, the kind of fix that takes a minute.
+- **In a file already changed on this branch.**
+
+Both hold → fix it, run the `## Checks` block again — bare, one per call, as at step 2 — and stop. **No further look.** Either fails — a bigger fix, or a file the branch did not touch — → **stop editing** and put it under **Known issues**, as before. Say which of the two happened, in one line:
+
+```
+final look: fixed in place — skills/ship/SKILL.md, 2 lines
+```
+
+```
+final look: known issue — docs/pipeline.md, not on this branch
+```
+
+A fix made here is the one edit on the branch no agent has read. Name it in the PR body under **Evidence** — `Final look: fixed <file>, <what> — unread by an agent` — so the reader knows to read those lines themselves. The loop stays bounded: review, round 2, look, at most one small fix, done.
 
 Conventional commits, so `git log` doubles as a changelog:
 
@@ -215,6 +232,7 @@ I checked this locally before pushing. I stopped my own server; step 5 is for yo
 - Typecheck: clean
 - Live check: done, works
 - Review: both axes ran (or: built-right ran, right-thing NOT RUN — no spec; or: skipped, no behaviour)
+- Final look: fixed skills/ship/SKILL.md, 2 lines — unread by an agent (or: nothing new; or: omit if no look ran)
 
 ## Known issues
 - (only if the review left something unresolved)
