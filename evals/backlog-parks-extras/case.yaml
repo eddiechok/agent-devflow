@@ -12,7 +12,7 @@ execution:
   prompt: "/devflow:flow add a shout option to greet(), and also add a farewell() function that says goodbye. Nobody is here to answer: yes to all, do not wait."
   max_turns: 12
   timeout_seconds: 300
-  allowed_tools: [Bash, Read, Edit, Glob, Grep, Skill]
+  allowed_tools: [Bash, Read, Edit, Write, Glob, Grep, Skill]
 
 runs: 3
 

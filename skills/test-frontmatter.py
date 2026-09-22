@@ -415,6 +415,10 @@ check("flow: has a step 1b for splitting a multi-feature request",
       "## Step 1b" in flow_text,
       f"{FLOW_PATH} has no '## Step 1b' section")
 
+check("flow: step 1b leaves a request that names its own pieces as one feature",
+      "each as its own piece" in flow_text.lower() and "one feature with pieces" in flow_text,
+      "a request that already says how to build it must not be split")
+
 check("flow: prints the features-found line before asking",
       "features: N found — one per run" in flow_text,
       f"{FLOW_PATH} never prints 'features: N found — one per run'")
