@@ -111,7 +111,8 @@ There are two exceptions. `ship` is the one skill nothing else can call. `flow` 
                     │                     watch it fail      │
                     │                     make it pass       │
                     │                     Deep: one builder  │
-                    │                     agent per piece,   │
+                    │                     agent per chain,   │
+                    │                     chains in parallel,│
                     │                     each commits       │
                     │                       │                │
                     │                       ▼                │
@@ -144,13 +145,13 @@ Here is what the chart leaves out. All of it stops the flow rather than bending 
 - The **hook asks** before any commit that would land on the default branch.
 - **Three failed attempts** at the same problem and `build` stops. It says what each attempt ruled out. It does not try a fourth.
 - If the **live check fails** twice, `submit` stops and does not open a PR. An honest failure beats a green-looking PR over a broken feature.
-- A **builder that says `stuck`** stops a Deep job. `flow` says which piece, and what the builder ruled out, then hands it to you. It does not try that piece again.
+- A **builder that says `stuck`** stops a Deep job. `flow` stops spawning new chains, lets the running ones finish, then says which chain and which piece, and what the builder ruled out, before handing it to you. It does not try that piece again.
 
 | Size | For | What happens |
 |---|---|---|
 | **Quick** | Typos, chores, most bug fixes | Straight to building. No questions. |
 | **Standard** | Changing existing behaviour | Questions only if genuinely unclear. |
-| **Deep** | New features, wide refactors | One round of questions, two at most. Then a written plan, and one builder agent per piece. |
+| **Deep** | New features, wide refactors | One round of questions, two at most. Then a written plan, and one builder agent per chain of pieces, several chains at once in their own worktrees. |
 
 It announces the size in one line before doing anything. That way you can disagree straight away.
 
@@ -202,7 +203,7 @@ login and permissions · secrets and keys · payments · database migrations · 
 
 `submit` opens the PR. `ship` merges it. Only you can start `ship`. On a branch with no PR, `ship` stops and points you at `submit`. Where a PR exists, it merges.
 
-`review` runs two agents that never saw the session: `reviewer` asks *is it built right*, `spec-reviewer` asks *is it the right thing*. A third, `hardcase`, tries to break `reviewer`'s findings. The two reports are never blended. A fourth, `builder`, is not a reviewer: on a Deep job it builds one plan piece, commits it, and reports back in five lines. One builder per piece.
+`review` runs two agents that never saw the session: `reviewer` asks *is it built right*, `spec-reviewer` asks *is it the right thing*. A third, `hardcase`, tries to break `reviewer`'s findings. The two reports are never blended. A fourth, `builder`, is not a reviewer: on a Deep job it builds one chain of the plan's pieces in its own git worktree, commits each one, and reports back a branch line plus five lines per piece. One builder per chain, up to four chains at once, and `flow` merges their branches back before it submits.
 
 ## More
 
@@ -212,7 +213,7 @@ wrong.
 
 | Page | What it covers |
 |---|---|
-| [docs/flow.md](docs/flow.md) | Why `flow`'s steps are what they are. Follow-ups on an open PR. Where a Deep plan goes. One builder per piece. The `CONTEXT.md` glossary. Size overrides. |
+| [docs/flow.md](docs/flow.md) | Why `flow`'s steps are what they are. Follow-ups on an open PR. Where a Deep plan goes. One builder per chain, in parallel worktrees. The `CONTEXT.md` glossary. Size overrides. |
 | [docs/build.md](docs/build.md) | Why `build`'s gates are what they are. Running the checks bare. Where the expected value comes from. Watching it fail. When there is nothing a test could catch. |
 | [docs/submit.md](docs/submit.md) | Why `submit`'s steps are what they are. Checks that postdate the last edit. The live check. The commit and the PR body. |
 | [docs/review.md](docs/review.md) | Why `review`'s steps are what they are. The three agents. Why two axes. Why `hardcase` defaults to *falls*. The one change that gets no review. |
@@ -233,7 +234,7 @@ Phase 1 is the smallest useful thing. These stay out on purpose:
 - A standalone `plan` skill. You cannot revise a plan once written.
 - `debug`, a bug-fixing loop. Bugs go through `build` for now.
 - Model routing by size. A skill cannot change its own model.
-- Cleanup of worktrees and folder copies.
+- Cleanup of folder copies. The worktrees `flow` cuts for a Deep job's chains are removed when they merge.
 - Capturing lessons.
 
 Add each one when two weeks of real use shows you need it. Not before.
