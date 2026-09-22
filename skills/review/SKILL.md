@@ -9,6 +9,9 @@ allowed-tools: Bash(git rev-parse:*), Bash(git merge-base:*), Bash(git diff:*), 
 
 Two axes, two fresh agents, no blending.
 
+Why these rules are what they are: [docs/review.md](../../docs/review.md). Read it only if a
+rule looks wrong.
+
 ## Context
 
 - Branch: !`git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "no git"`
@@ -31,7 +34,7 @@ git diff --stat <fixed point>
 git status --short
 ```
 
-The ref has to resolve, and there has to be something to review — **tracked changes or untracked files, either counts**. A typo'd ref or an empty range fails here, in front of the human, rather than inside two agents that then review nothing and report nothing wrong.
+The ref has to resolve, and there has to be something to review — **tracked changes or untracked files, either counts**.
 
 If both come back empty, say so and stop. There is no review to run.
 
@@ -40,10 +43,10 @@ If both come back empty, say so and stop. There is no review to run.
 In this order, first hit wins:
 
 0. **A plan issue** — only if the project's `CLAUDE.md` has a `## Plans` block saying `github`. List them: `gh issue list --label devflow:plan --state open --json number,title`, or whatever GitHub access this environment has. Pick the one whose subject is this work and read its body; it has the shape of a plan file. If `gh` cannot answer, say so and go on to the file — the same job may have fallen back to one.
-1. **A plan file** — **list `.devflow/plans/`** and pick the one whose subject is this work. Deep work writes one. Do not match the filename against the branch name: a harness that names your branch for you, as Claude Code on the web does, makes that match fail on exactly the work that has a spec. If several are plausible, name them and ask.
-2. **An issue** — a reference in the branch name or the commits since the fixed point, like `Closes #45`. Read it with `gh issue view`, or whatever GitHub access this environment has. If you cannot open it, say so and go on to the next item. A spec you could not read is not a spec, but the request may still be one.
-3. **The request itself** — the text after `request:` in `$ARGUMENTS`, if any. Standard work has no plan file, so the words the human typed are the only spec there is. Pass it to `spec-reviewer` as pasted contents, and say in the report that the spec was the request. A request you were not handed is not a spec: after a `/clear` it is gone, and the answer is the one below, as it always was.
-4. **Nothing.** That is a normal answer for a Quick fix, or for a `review` you started yourself on a branch.
+1. **A plan file** — **list `.devflow/plans/`** and pick the one whose subject is this work. Deep work writes one. Do not match the filename against the branch name. If several are plausible, name them and ask.
+2. **An issue** — a reference in the branch name or the commits since the fixed point, like `Closes #45`. Read it with `gh issue view`, or whatever GitHub access this environment has. If you cannot open it, say so and go on to the next item.
+3. **The request itself** — the text after `request:` in `$ARGUMENTS`, if any. Pass it to `spec-reviewer` as pasted contents, and say in the report that the spec was the request.
+4. **Nothing.**
 
 **Never invent requirements.** No spec means the second axis does not run — not that you imagine what it would have said.
 
@@ -68,7 +71,7 @@ Both get the fixed point, the file list, and a **400 word ceiling**. Both run in
 - **`devflow:reviewer`** — always. Is it built right.
 - **`devflow:spec-reviewer`** — only when step 2 found a spec. Is it the right thing. Pass it the spec's path or contents.
 
-Fresh context is the whole point. Do not paste this session's reasoning, your plan, or your own account of what the change does into either prompt — that is the thing an independent reviewer would not have. Give them the range and let them read it.
+Do not paste this session's reasoning, your plan, or your own account of what the change does into either prompt — that is the thing an independent reviewer would not have. Give them the range and let them read it.
 
 ### Then challenge the first axis
 
@@ -77,23 +80,16 @@ needs something to argue with. Give it the fixed point and `reviewer`'s findings
 nothing else: not the spec, not `spec-reviewer`'s report, and not this session.
 
 **Only when `reviewer` reported something.** A clean first axis has nothing to refute, so
-say so in one line and skip it. This is the one place in the plugin where the expensive
-step is skipped by default, and it is safe because it is skipped exactly when there is no
-work for it.
+say so in one line and skip it.
 
-**It challenges the first axis only.** `spec-reviewer`'s findings each quote the line of
-the spec they rest on, so they are already anchored to something outside the reviewer's
-judgement. `reviewer`'s are not — its bar is naming a failing case, and a plausible case
-that cannot actually be reached passes that bar. That is the gap `hardcase` closes.
+**It challenges the first axis only.**
 
 It does not get a vote. It reports which findings stand, which fall and why, and `submit`
-decides. A challenge is one more thing on the table, not a verdict that removes one.
+decides.
 
 ### When the harness will not let you spawn an agent
 
-Some sessions forbid starting an agent unless the human asked for one, in the system prompt. **This is a plan restriction, not a web one** — it rides on Pro, and it fires locally exactly as it does on the web, so do not go looking for it by asking where you are running. Look at your own instructions: if something there says not to spawn an agent unless asked, this section applies, and otherwise it does not. Where it applies, neither axis can start on its own.
-
-Getting this backwards costs in both directions. Assume it is a web rule and a Pro session working locally hits the block with no warning and no `NOT RUN` line. Assume every web session has it and a Max or Team session on the web stops to ask a question nothing was blocking, then labels a review `NOT RUN` that would have run.
+Some sessions forbid starting an agent unless the human asked for one, in the system prompt. Look at your own instructions: if something there says not to spawn an agent unless asked, this section applies, and otherwise it does not. Where it applies, neither axis can start on its own.
 
 Do not skip it quietly, and do not review the code yourself instead — this session wrote it, which is the thing the two agents exist to avoid. Say it in one line and ask:
 
@@ -101,7 +97,7 @@ Do not skip it quietly, and do not review the code yourself instead — this ses
 This harness only starts agents when you ask. Say "run the review" and both axes go.
 ```
 
-If that answer does not come, the axis **did not run**. Report it as `NOT RUN` in step 4 with the reason, and let `submit` carry it into the PR. An axis that did not run is not a clean axis.
+If that answer does not come, the axis **did not run**. Report it as `NOT RUN` in step 4 with the reason, and let `submit` carry it into the PR.
 
 ## 4. Report both, blended into neither
 
@@ -125,14 +121,13 @@ If that answer does not come, the axis **did not run**. Report it as `NOT RUN` i
 **`Challenged` sits under `Built right` because it is about that axis, not beside it.**
 It is not a third axis and it never appears in `Worst of each` — there is no worst
 challenge. Print `hardcase`'s three sections as it wrote them, `Falls` first, and do not
-delete a finding from `Built right` because it fell. Both readings go to `submit`
-together; the point is that whoever decides can see the argument, not just its outcome.
+delete a finding from `Built right` because it fell.
 
-**Do not merge the two lists, and do not rank across them.** A change can follow every rule in the repo while building the wrong thing, or build exactly the right thing in a way the repo forbids. One blended verdict lets the passing axis hide the failing one, which is the whole reason the axes are separate.
+**Do not merge the two lists, and do not rank across them.**
 
 No single overall winner. One worst finding per axis, or none.
 
-**Carry a `Not reported:` line through.** An axis that ran out of room is not an axis that found nothing, and `submit` decides what to fix from what you print. If either agent says findings were dropped, say so beside that axis — the same reason `NOT RUN` is not `none`.
+**Carry a `Not reported:` line through.** If either agent says findings were dropped, say so beside that axis — the same reason `NOT RUN` is not `none`.
 
 ## 5. Hand back
 

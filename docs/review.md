@@ -40,4 +40,71 @@ It is a **third state**. `NOT RUN` is an axis that should have run and could not
 
 `review` never works it out for itself. It cannot: deciding would mean reading the change in order to judge whether the change is worth reading. Nor can file types stand in — in this repo a `.md` skill file is the behaviour, so a rule keyed on the extension would skip the review on exactly the changes that most need one.
 
+## The reasons, step by step
+
+Every paragraph below was moved here out of `skills/review/SKILL.md`, word for word. The
+skill holds the steps; this holds why they are what they are.
+
+### Step 1 — pinning the fixed point
+
+A typo'd ref or an empty range fails here, in front of the human, rather than inside two
+agents that then review nothing and report nothing wrong.
+
+### Step 2 — finding the spec
+
+Do not match the filename against the branch name: a harness that names your branch for
+you, as Claude Code on the web does, makes that match fail on exactly the work that has a
+spec.
+
+A spec you could not read is not a spec, but the request may still be one.
+
+Standard work has no plan file, so the words the human typed are the only spec there is.
+
+A request you were not handed is not a spec: after a `/clear` it is gone, and the answer
+is the one below, as it always was.
+
+That is a normal answer for a Quick fix, or for a `review` you started yourself on a
+branch.
+
+### Step 3 — spawning the axes
+
+Fresh context is the whole point.
+
+#### Then challenge the first axis
+
+This is the one place in the plugin where the expensive step is skipped by default, and it
+is safe because it is skipped exactly when there is no work for it.
+
+`spec-reviewer`'s findings each quote the line of the spec they rest on, so they are
+already anchored to something outside the reviewer's judgement. `reviewer`'s are not — its
+bar is naming a failing case, and a plausible case that cannot actually be reached passes
+that bar. That is the gap `hardcase` closes.
+
+A challenge is one more thing on the table, not a verdict that removes one.
+
+#### When the harness will not let you spawn an agent
+
+**This is a plan restriction, not a web one** — it rides on Pro, and it fires locally
+exactly as it does on the web, so do not go looking for it by asking where you are
+running.
+
+Getting this backwards costs in both directions. Assume it is a web rule and a Pro session
+working locally hits the block with no warning and no `NOT RUN` line. Assume every web
+session has it and a Max or Team session on the web stops to ask a question nothing was
+blocking, then labels a review `NOT RUN` that would have run.
+
+An axis that did not run is not a clean axis.
+
+### Step 4 — reporting both
+
+Both readings go to `submit` together; the point is that whoever decides can see the
+argument, not just its outcome.
+
+A change can follow every rule in the repo while building the wrong thing, or build
+exactly the right thing in a way the repo forbids. One blended verdict lets the passing
+axis hide the failing one, which is the whole reason the axes are separate.
+
+An axis that ran out of room is not an axis that found nothing, and `submit` decides what
+to fix from what you print.
+
 Where every step came from is in [docs/provenance.md](docs/provenance.md).
