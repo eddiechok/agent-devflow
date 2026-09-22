@@ -1,0 +1,52 @@
+schema_version: "1.1"
+name: backlog-parks-extras
+description: A multi-feature request keeps one and parks the rest to a backlog file.
+tags: [flow, backlog]
+
+context:
+  scaffold_script: ./scaffold.sh
+
+execution:
+  # No Plans block in the scaffold, so the fallback path is a file under
+  # .devflow/backlog/, not a GitHub issue.
+  prompt: "/devflow:flow add a shout option to greet(), and also add a farewell() function that says goodbye. Nobody is here to answer: yes to all, do not wait."
+  max_turns: 12
+  timeout_seconds: 300
+  allowed_tools: [Bash, Read, Edit, Glob, Grep, Skill]
+
+runs: 3
+
+graders:
+  - type: regex
+    name: counts-two-features
+    target: trace
+    pattern: "features: 2 found"
+    match: contains
+    weight: 3
+
+  - type: regex
+    name: parks-to-a-backlog-file
+    target: trace
+    pattern: "parked: \\.devflow/backlog/"
+    match: contains
+    weight: 3
+
+  - type: file_exists
+    name: backlog-file-written
+    path: .devflow/backlog
+    exists: true
+    weight: 2
+
+  - type: llm
+    name: asked-before-parking
+    focus: trace
+    criteria: >
+      PASS only if BOTH hold: (a) the assistant asked before parking the
+      extra feature, rather than parking it silently; and (b) that parking
+      question carried a recommended answer. FAIL if it parked without
+      asking, or asked without a recommendation.
+
+expected_outcome: >
+  Prints "features: 2 found — one per run", asks which feature to keep with
+  a recommendation, sizes only the kept feature, and parks the other to
+  .devflow/backlog/<name>.md with a "parked: .devflow/backlog/..." line.

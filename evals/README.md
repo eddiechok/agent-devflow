@@ -1,6 +1,6 @@
 # evals
 
-Nine cases. Run them before you push a change to a skill. One is manual, see below.
+Ten cases. Run them before you push a change to a skill. One is manual, see below.
 
 ## Which runner
 
@@ -30,8 +30,8 @@ python3 evals/run.py --case sizing-* --runs 1
 python3 evals/run.py --dry-run                # parse and print, run nothing
 ```
 
-It scores **38 of the 46 graders** — every `regex`, `tool_used`, `tool_order`
-and `file_exists`. The eight `llm` graders come back `skip`, stay out of the
+It scores **41 of the 50 graders** — every `regex`, `tool_used`, `tool_order`
+and `file_exists`. The nine `llm` graders come back `skip`, stay out of the
 denominator, and are counted in the summary. **A skip is never a pass**, the
 same way `NOT RUN` is never `none`.
 
@@ -81,6 +81,7 @@ not write a case that greps the plugin source and then judges a size with a bare
 | `full-loop` | high | The skills stop handing off to each other |
 | `deep-coordinator` | high | A Deep job builds every chain in one session again and outgrows its window, or the chains never merge back and the PR is missing a chain's work |
 | `plans-on-tracker` | high, **manual** | A project that keeps plans on GitHub gets a file instead, or a plan nobody can close |
+| `backlog-parks-extras` | low | A three-feature prompt ships as one PR or drops two features on the floor |
 
 `plans-on-tracker` is **manual**. It needs a real GitHub repo with issues on and
 a logged-in `gh`, which no scaffold can fake. `run.py` leaves it out unless you
@@ -132,7 +133,7 @@ auto-trigger   FAIL  0/5 weighted
   FAIL announces-a-size          w=2  not found in the trace
 ```
 
-Six of seven cases — seven was the count that day; there are nine now — pass every grader `run.py` scores. This one fails both of
+Six of seven cases — seven was the count that day; there are ten now — pass every grader `run.py` scores. This one fails both of
 its, on a plain-English request — *"the README description for this CLI is too
 dry, reword it to something friendlier"* — which is exactly the shape the case
 was written for. Nothing here has regressed; this is the original bug, still
