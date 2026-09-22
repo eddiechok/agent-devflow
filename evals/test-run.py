@@ -201,6 +201,34 @@ check(
     ["gh pr merge", "git merge "],
 )
 
+# `deep-coordinator` is the case that measures the Deep loop, and the loop is
+# now chains in parallel, merged back, then submit. The merge is the new
+# promise and the easiest one to skip silently, so the case carries a grader
+# for it -- and every grader that was already there stays.
+with open(os.path.join(HERE, "deep-coordinator", "case.yaml")) as fh:
+    deep = run.parse_yaml(fh.read())
+deep_graders = {g["name"]: g for g in deep["graders"]}
+
+check_true(
+    "deep-coordinator: every earlier grader is still there",
+    {"announces-deep", "does-not-build-in-session", "reaches-submit",
+     "builders-run-before-submit", "relays-the-builder-report",
+     "agents-were-not-refused", "never-reaches-ship"} <= set(deep_graders),
+)
+
+_merges = deep_graders.get("merges-the-chains", {})
+check(
+    "deep-coordinator: the merge grader watches Bash for a --no-ff merge",
+    [_merges.get("type"), _merges.get("tool"), _merges.get("input_match"),
+     _merges.get("min"), _merges.get("weight")],
+    ["tool_used", "Bash", "git merge --no-ff", 1, 2],
+)
+
+check_true(
+    "deep-coordinator: the case says chains, in both halves of its prose",
+    "chain" in deep["description"] and "chain" in deep["expected_outcome"],
+)
+
 # ------------------------------------------------------------------- the trace
 
 SKILL_BODY = "Announce it:\n\nQuick — single-file copy change.\n\nDeep — new subsystem."
@@ -432,6 +460,37 @@ for _text, _num in CITATIONS:
         squash(_line),
         squash(_text),
     )
+
+# The README's table says what breaks when a case fails. `deep-coordinator`
+# now measures the chain loop, so its row has to name what a failure costs
+# there, not the one-builder-per-piece loop it replaced.
+_deep_rows = [l for l in _readme.split("\n") if l.startswith("| `deep-coordinator`")]
+check("readme: the deep-coordinator row is there", len(_deep_rows), 1)
+check_true(
+    "readme: its row says what breaks in the chain loop",
+    "chain" in (_deep_rows[0].lower() if _deep_rows else ""),
+)
+
+# The grader counts in the prose rot the same silent way a line number does:
+# add a grader to any case and the sentence still reads fine.
+_scorable = 0
+_total = 0
+for _name in sorted(os.listdir(HERE)):
+    _case_path = os.path.join(HERE, _name, "case.yaml")
+    if not os.path.isfile(_case_path):
+        continue
+    with io.open(_case_path, encoding="utf-8") as f:
+        _gs = run.parse_yaml(f.read())["graders"]
+    _total += len(_gs)
+    _scorable += sum(1 for _g in _gs if _g.get("type") in run.GRADERS)
+
+_counted = re.search(r"scores \*\*(\d+) of the (\d+) graders\*\*", _readme)
+check_true("readme: the grader-count sentence is there", _counted is not None)
+check(
+    "readme: the grader counts match the case files",
+    [int(_counted.group(1)), int(_counted.group(2))] if _counted else None,
+    [_scorable, _total],
+)
 
 
 # --------------------------------------------------------------- the scoring
