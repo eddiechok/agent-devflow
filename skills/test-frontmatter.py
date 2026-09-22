@@ -401,6 +401,53 @@ check("flow: step 0b discounts the untracked backlog directory too",
       "?? .devflow/backlog/" in flow_text,
       f"{FLOW_PATH} never says a `?? .devflow/backlog/` line is not dirt")
 
+
+# ------------------------------- step 1b: one feature per run, not three in a PR
+#
+# A request that names three features either ends as one PR carrying all
+# three, or a plan that mixes them. Step 1b asks, before the size line,
+# because the size depends on which feature is kept -- and the round is
+# free, so it must not count against step 4's question budget. The
+# `features:` line is pinned so flow never opens the split with a bare
+# question, the same reason the size line always comes first.
+
+check("flow: has a step 1b for splitting a multi-feature request",
+      "## Step 1b" in flow_text,
+      f"{FLOW_PATH} has no '## Step 1b' section")
+
+check("flow: prints the features-found line before asking",
+      "features: N found — one per run" in flow_text,
+      f"{FLOW_PATH} never prints 'features: N found — one per run'")
+
+check("flow: asks whether to park the rest, with a recommendation",
+      "park the rest" in flow_text and "Recommend: yes" in flow_text,
+      f"{FLOW_PATH} step 1b never asks to park the rest with a recommendation")
+
+check("flow: asks which feature to keep first, with a recommendation",
+      "Which first" in flow_text,
+      f"{FLOW_PATH} step 1b never asks which feature to build first")
+
+check("flow: accepts 'yes to all' on the split round",
+      flow_text.count('"yes to all"') >= 2,
+      f"{FLOW_PATH} step 1b never accepts \"yes to all\" like step 4's round does")
+
+check("flow: says the split round does not count against step 4's rounds",
+      re.search(r"does not count against step 4", flow_text) is not None,
+      f"{FLOW_PATH} never says the step 1b round is free")
+
+check("flow: says --quick/--deep size only the kept feature",
+      re.search(r"size the kept feature", flow_text) is not None,
+      f"{FLOW_PATH} never says --quick/--deep size only the kept feature")
+
+check("flow: step 2 sizes the kept feature alone",
+      re.search(r"## Step 2.*?sizes? .* the kept feature alone",
+                 flow_text, re.S) is not None,
+      f"{FLOW_PATH} step 2 never says it sizes the kept feature alone")
+
+check("flow: the Rules list carries the one-feature-per-run rule",
+      re.search(r"## Rules.*one feature per run", flow_text, re.S) is not None,
+      f"{FLOW_PATH}'s Rules list never mentions one feature per run")
+
 flow_values = parsed.get("flow", (None, {}))[1]
 
 check("flow: description says it accepts a backlog file path",
