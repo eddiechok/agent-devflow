@@ -361,6 +361,56 @@ check("flow: that run does not spawn chains",
       "Writing it and spawning anyway cuts every worktree from the wrong base")
 
 
+# ------------------------ the untracked plan file is not a dirty tree
+#
+# In file mode the plan lives at `.devflow/plans/<name>.md` and is untracked
+# until `submit` commits it, so `git status --short` prints a `??` line for it
+# on every resume. Step 0b reads that line to decide whether a piece was left
+# half-built, and a half-built piece sends one chain down the sequential path
+# with `dirty` handed to the builder. Read the plan file as dirt and every
+# file-mode resume serialises a chain and tells `build` to preserve work that
+# does not exist. Found by the final look on 22 Sep 2026.
+
+check("flow: discounts the untracked plan file when reading the tree as dirty",
+      "?? .devflow/plans/" in flow_text,
+      f"{FLOW_PATH} never says a `?? .devflow/plans/` line is not dirt")
+
+
+# ------------------------------------ ship refuses and protects stacked PRs
+#
+# On 22 Sep 2026 `gh pr merge 23 --rebase --delete-branch` closed #24, which
+# was stacked on #23's branch. GitHub did not retarget it, and once the base
+# branch was gone it refused both `gh pr edit --base` and `gh pr reopen`; the
+# only way out was a fresh PR. Two rules follow, and both live only in the
+# prompt, so they are pinned here: a PR whose base is not the default branch
+# is not merged from `ship`, and a PR that other open PRs are based on is
+# merged without deleting its branch until those PRs point at the default
+# branch.
+
+SHIP_PATH = os.path.join(SKILLS_DIR, "ship", "SKILL.md")
+with open(SHIP_PATH, encoding="utf-8") as fh:
+    ship_text = fh.read()
+
+check("ship: reads the PR's base before merging",
+      "baseRefName" in ship_text,
+      f"{SHIP_PATH} never asks for baseRefName, so a stacked PR merges into "
+      f"its base branch instead of the default one")
+
+check("ship: stops on a PR whose base is not the default branch",
+      re.search(r"stacked", ship_text) is not None
+      and re.search(r"base PR\b.*first", ship_text) is not None,
+      f"{SHIP_PATH} never says a stacked PR's base PR must ship first")
+
+check("ship: finds the PRs stacked on the one it is merging",
+      "gh pr list --base" in ship_text,
+      f"{SHIP_PATH} never lists the open PRs based on this PR's head branch")
+
+check("ship: retargets stacked PRs before deleting the branch",
+      "gh pr edit" in ship_text and "--base" in ship_text,
+      f"{SHIP_PATH} never retargets a stacked PR with gh pr edit --base, so "
+      f"deleting the branch closes it for good")
+
+
 # ------------------------------------------- cross-check against a real parser
 
 try:

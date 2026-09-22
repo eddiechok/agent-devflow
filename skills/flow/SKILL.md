@@ -152,6 +152,9 @@ on a resumed plan is a piece that was started and not committed — the session 
 stopped it, or `build` gave up after three tries. It is not the next piece. It is that
 chain's first unbuilt piece, part done.
 
+**A `?? .devflow/plans/` line is not dirt:** the plan file is untracked until `submit`
+commits it, so only *other* changed or untracked files make the tree dirty.
+
 ```
 Deep — resuming email-alerts, chain A merged, chain B started and not committed
 ```
