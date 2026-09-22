@@ -411,6 +411,65 @@ check("ship: retargets stacked PRs before deleting the branch",
       f"deleting the branch closes it for good")
 
 
+# ------------------------------ the final look may fix one small thing
+#
+# `submit` step 7 gives the fixes made after the last review one short look,
+# and until 22 Sep 2026 anything that look found went straight under Known
+# issues, so the fix-then-look loop would end. It found something on almost
+# every PR -- #23, #25 and #26 each shipped with a one-line Known issue that
+# a minute would have fixed -- and each one became a follow-up for the human
+# to remember. So the look now gets one bounded fix: small, and in a file the
+# branch already changed. Both conditions, the "no further look" that keeps
+# the loop bounded, and the Evidence line that says the last edit went unread
+# live only in the prompt, so they are pinned here like the rules above.
+
+SUBMIT_PATH = os.path.join(SKILLS_DIR, "submit", "SKILL.md")
+with open(SUBMIT_PATH, encoding="utf-8") as fh:
+    submit_text = fh.read()
+
+check("submit: the final look's fix must be small",
+      "a few lines" in submit_text,
+      f"{SUBMIT_PATH} never bounds the final look's fix by size ('a few lines')")
+
+check("submit: the final look's fix must be in a file already on the branch",
+      "file already changed on this branch" in submit_text,
+      f"{SUBMIT_PATH} never says the fix has to land in a file already changed "
+      f"on this branch")
+
+check("submit: after the one fix there is no further look",
+      re.search(r"[Nn]o further look", submit_text) is not None,
+      f"{SUBMIT_PATH} never says 'no further look' -- without it the loop "
+      f"the bounded fix was meant to end is open again")
+
+check("submit: names the fix under Evidence as unread by an agent",
+      "unread by an agent" in submit_text
+      and "**Evidence**" in submit_text,
+      f"{SUBMIT_PATH} never tells the PR reader that the final look's fix went "
+      f"unread by an agent")
+
+DOCS_SUBMIT_PATH = os.path.join(REPO_ROOT, "docs", "submit.md")
+with open(DOCS_SUBMIT_PATH, encoding="utf-8") as fh:
+    docs_submit_text = fh.read()
+
+check("docs/submit: says why the look gets one fix, citing #23, #25 and #26",
+      all(f"#{n}" in docs_submit_text for n in (23, 25, 26)),
+      f"{DOCS_SUBMIT_PATH} does not cite the three PRs that shipped a "
+      f"one-line Known issue the look could have fixed")
+
+
+# ------------------------------------- ship's report names the retargeted PRs
+#
+# `ship` step 6 promises "step 7 names the PRs you retargeted", and step 7's
+# report template did not list them -- the final look on #26 found it, and it
+# went under Known issues because that was the rule. The template line is
+# pinned here so the promise and the report cannot drift apart again.
+
+check("ship: the report names the PRs it retargeted",
+      "Retargeted:" in ship_text,
+      f"{SHIP_PATH} step 7 has no 'Retargeted:' line, so step 6's promise "
+      f"that step 7 names them is not kept")
+
+
 # ------------------------------------------- cross-check against a real parser
 
 try:

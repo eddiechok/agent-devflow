@@ -4,8 +4,10 @@ Why `submit`'s steps are what they are. The steps themselves are in
 [the skill](../skills/submit/SKILL.md), and the short version is in the
 [README](../README.md).
 
-Every paragraph below was moved here out of `skills/submit/SKILL.md`, word for word. The
-skill holds the steps; this holds why they are what they are.
+Most paragraphs below were moved here out of `skills/submit/SKILL.md`, word for word;
+the subsections that cite a date or a pull request were written here, about a change
+that landed after the move. The skill holds the steps; this holds why they are what they
+are.
 
 ## Step 1 — the branch
 
@@ -105,9 +107,33 @@ This step exists because nothing before it reads the docs. `build` tests behavio
 
 A marker removed at 3, a live-check fix at 4, a review fix at 5, a doc at 6 — any of them means step 2's run no longer covers the tree you are about to commit.
 
-The checks and the look both postdate the last edit; that is the whole of the rule, stated at the last place an edit can land.
+The checks always postdate the last edit, and so does the look — except for the one small fix the look itself may make, which is named under **Evidence** for exactly that reason. That is the whole of the rule, stated at the last place an edit can land.
 
 `build` commits each plan piece as it lands, so the working tree can be clean by the time you reach this step — and the fixes from steps 5 and 6 may be all that is left.
+
+### Why the look gets one fix, and only one
+
+The look exists so the last review postdates the last edit, and the first version of the
+rule sent anything it found straight under **Known issues**, so the fix-then-look loop
+would end. It ended, and it also found something on almost every PR — it reads the fixes
+made after the review, and those are the least-read lines on the branch. Three PRs in a
+row shipped with a one-line Known issue that a minute would have fixed: #23, where line 7
+of this page claimed every paragraph below was moved verbatim and one subsection was
+fresh prose; #25, where the untracked plan file made a file-mode resume read the tree as
+dirty; and #26, where `ship` step 6 promised that step 7 names the retargeted PRs and
+step 7's template did not list them. Each one became a follow-up the human had to
+remember, which is worse than the minute.
+
+So the look now gets one fix, bounded twice over. **Small**, because a fix of a few lines
+is one a human can read in the PR without an agent's help. **In a file already changed on
+this branch**, because a file the branch did not touch is scope the request never asked
+for, and widening a PR at the last step is how a change stops being reviewable. Anything
+that fails either test goes under Known issues exactly as before.
+
+**No further look after that fix**, and that is the part that keeps the loop bounded:
+review, round 2, look, one small fix, done. The price is one edit on the branch that no
+agent has read, which is why it is named under **Evidence** — the reader is told which
+lines to read themselves rather than left to assume the review covered them.
 
 ## Step 8 — the pull request
 
