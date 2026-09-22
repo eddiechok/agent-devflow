@@ -401,6 +401,25 @@ that is not valid JSON — say why in one line and take the sequential path belo
 chains from the wrong base is the failure this whole step exists to avoid, so falling back
 is the safe answer, not a lesser one.
 
+**A setting written in this run is not in force in this run.** Settings are read when a
+session starts, and this session started before you wrote the file. So the run that writes
+it is the one run that cannot use it: every worktree it cut would come off the default
+branch anyway, and the check below would catch that only after four builders had finished.
+**Do not spawn chains on the run that wrote the setting.** Print exactly one line:
+
+```
+chains next session: worktree.baseRef was just written
+```
+
+Then build this job on the sequential path below — one builder per **piece**, in plan
+order, on this branch, with no merge step. That costs the job its wall-clock time, and it
+is far cheaper than the alternative, which is every chain rebuilt off the wrong base after
+a restart. The run that finds the setting already there is the run that spawns chains.
+
+**The check below still runs on the runs that do spawn.** A settings file that says
+`"head"` is not proof the value reached this session either — one edited by hand a minute
+ago reads exactly like one loaded at start-up. So finding it does not excuse trusting it.
+
 **Then record this branch's SHA**, before the first spawn:
 
 ```
