@@ -269,6 +269,7 @@ Split the work into pieces. Each piece must be:
 
 - **One reviewable change.** Size it by what makes a sensible diff, not by what fits in memory.
 - **Marked as depending on another piece, or not.**
+- **Given a chain letter**, which is what decides whether it runs beside another piece or after it.
 
 "Independent" is stricter than "different files". Two pieces are only independent if **neither depends on a design decision the other makes**. Two unrelated endpoints, independent. One defines a type the other consumes, **not** independent — both will finish, both will pass their own tests, and it will break when they are joined.
 
@@ -312,19 +313,44 @@ Issue: #123 (if there is one)
 - Took the recommendation on X because no answer was given
 
 ## Pieces
-1. [independent: no] Add the storage column and migration
+1. [independent: no] chain: A — Add the storage column and migration
    Verify: pnpm test src/db
    Done when: the column exists and the migration runs clean on an empty db
-2. [independent: no] Read it in the settings API
+2. [independent: no] chain: A — Read it in the settings API
    Verify: pnpm test src/api/settings
    Done when: GET /settings returns the stored value
+3. [independent: yes] chain: B — Rate-limit the public search endpoint
+   Verify: pnpm test src/api/search
+   Done when: a sixth request inside a minute comes back 429
+4. [independent: no] chain: final — List both routes in the API index
+   Verify: pnpm test src/api
+   Done when: GET /api lists settings and search
 ```
 
 **Every piece carries a `Done when:` line.** `Verify:` is the command that goes green;
 `Done when:` is the observable state that means the piece is finished and the next one
 may start. One line, stated as something you can check, not as intent.
 
-Build one piece at a time, in order. **`build` commits each piece as it goes green**, which is what makes a long plan survivable: you may `/clear` between pieces and pick up from the plan plus `git log <default branch ref>..HEAD`. The plan says what the pieces are; the log says which of them exist.
+**Every piece also carries a `chain:` letter**, and the letters are the plan's real
+structure: one builder takes one chain, and the chains run at the same time, in separate
+worktrees, on separate branches that get merged back. Four rules decide the letters:
+
+- **A chain is pieces that depend on each other, built in order.** An independent piece is
+  a chain of one. Number the pieces as a single list, and within a chain write them in the
+  order they must be built — a builder works down its own letter, top to bottom, and never
+  touches another's.
+- **At most 4 pieces in a chain.** A chain is one builder's whole session, and a fifth
+  piece is a window it cannot finish in. Split the work into more chains, or move the tail
+  into one that runs after.
+- **Two chains never edit the same file.** Not rarely — never. Chains are branches, and
+  two branches editing one file is the merge conflict `flow` stops the job on. Two pieces
+  that want the same file belong in one chain.
+- **A piece that must touch a shared file is `chain: final`.** That chain runs alone, after
+  every other chain has merged, so it sees all of their work. It is where the index, the
+  router, the docs page or the changelog entry goes — the file every chain would otherwise
+  have written into at once.
+
+**`build` commits each piece as it goes green**, which is what makes a long plan survivable: you may `/clear` between pieces and pick up from the plan plus `git log <default branch ref>..HEAD`. The plan says what the pieces are; the log says which of them exist.
 
 The plan itself is still not a progress tracker — nothing writes back to it, file or issue. It is the spec `review`'s second axis reads.
 
