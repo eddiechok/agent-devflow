@@ -803,6 +803,32 @@ check("flow: still has build cut the branch from the default ref in the worktree
       f"this work has nothing to do with, so build must still be told to cut "
       f"from the default branch ref")
 
+# `EnterWorktree` opens its worktree on a branch of its own, named after the
+# worktree and cut from `HEAD` -- which in this step is always somebody else's
+# branch. A session that reads that branch as its feature branch stops there,
+# because `build`'s own rule is "already on a branch, keep it, whatever it is
+# called". The first eval run of this case cut a proper branch in 2 of 4
+# sessions, so the instruction to re-cut was landing about half the time. The
+# trap gets named, and the line below is what names it: a step that prints
+# something has done something, where a step that merely implies it has not.
+
+WORKTREE_NOT_THE_BRANCH_LINE = (
+    "worktree: on <the branch EnterWorktree made> — build cuts the feature "
+    "branch from <default branch ref>"
+)
+
+check("flow: says the worktree's own branch is not the feature branch",
+      "is not your feature branch" in flat(flow_text),
+      f"{FLOW_PATH} never says the branch EnterWorktree opens is not the "
+      f"feature branch. build's rule is to keep the branch it finds, so an "
+      f"unnamed trap is one the session walks into")
+
+check("flow: prints what is still owed after entering the worktree",
+      WORKTREE_NOT_THE_BRANCH_LINE in flat(flow_text),
+      f"no line {WORKTREE_NOT_THE_BRANCH_LINE!r} in {FLOW_PATH}. Without it "
+      f"the re-cut is implied rather than done, and the branch stays cut from "
+      f"HEAD — which is the parked branch")
+
 check("flow: step 0c leaves a follow-up and a resume where they are",
       re.search(r"## Step 0c.*?[Oo]nly for new work", flow_text, re.S)
       is not None,

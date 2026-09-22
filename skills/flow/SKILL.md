@@ -235,6 +235,19 @@ has nothing to do with. So the base is still `build`'s to fix: tell it in as man
 that **this is new work and needs a fresh branch cut from the default branch ref**, exactly
 as step 0 does. Inside the worktree that `checkout -b` reaches nobody.
 
+**The branch `EnterWorktree` opens is not your feature branch, and it is the easy mistake
+here.** It is named after the worktree, it is cut from `HEAD` — `<branch>` — and it looks
+deliberate, so a session that reads it as the feature branch stops and builds on it. That
+is not a small difference: `build`'s own rule is *already on a branch, keep it, whatever it
+is called*, so nothing downstream will catch it, and the pull request ends up carrying
+`<branch>`'s commits. Step 0 refuses that on a stale branch, and this step refuses it here.
+
+So say what is still owed, in the same breath as arriving:
+
+```
+worktree: on <the branch EnterWorktree made> — build cuts the feature branch from <default branch ref>
+```
+
 **If the worktree never happens** — no EnterWorktree tool in this harness, or the call
 fails, or it is refused — **stop. Do not carry on in this folder.** Branching anyway is
 the one outcome this whole step exists to prevent, and a fallback that does it is not a

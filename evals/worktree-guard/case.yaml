@@ -11,8 +11,13 @@ execution:
   # work, so `build` would cut a branch with `git checkout -b` and move the whole
   # folder -- out from under whoever is on that branch. Step 0c is what stops it.
   prompt: "/devflow:flow add a --shout flag to greet() that upper-cases the greeting. Nobody is here to answer: yes to all, do not wait."
-  max_turns: 10
-  timeout_seconds: 300
+  # 10 was too tight and cost two runs of the first scoring pass. `checkout -b`
+  # landed at tool call #8 and #9 in the runs that reached it, so the budget was
+  # deciding the result as much as the skill was. 20 clears it without paying
+  # for a whole loop -- this case is done once the branch is cut, and never
+  # needs to reach submit the way `full-loop` does.
+  max_turns: 20
+  timeout_seconds: 600
   allowed_tools: [Bash, Read, Edit, Write, Glob, Grep, Skill, EnterWorktree]
 
 runs: 3
@@ -44,6 +49,26 @@ graders:
       input_match: "checkout -b"
     weight: 4
 
+  # The other half of the guard, and the half the first version of this case
+  # could not see. `EnterWorktree` opens its worktree on a branch of its own,
+  # cut from HEAD -- which here is feat/another-session, a branch with a commit
+  # on it that this request has nothing to do with. A session that keeps that
+  # branch builds on someone else's work and nothing downstream notices, because
+  # `build`'s rule is to keep the branch it finds. The named base in the command
+  # is the proof it was re-cut rather than inherited.
+  #
+  # `(origin/)?main` and not `origin/` alone: `skills/build/SKILL.md:70` writes
+  # the plain form too, so a correct re-cut spelled `checkout -b feat/x main`
+  # would have failed a grader that demanded the remote prefix -- scoring the
+  # spelling rather than the base. Naming `main` is what rejects the wrong one,
+  # because the base that would be wrong here is `feat/another-session`.
+  - type: regex
+    name: cuts-the-feature-branch-from-the-default-ref
+    target: trace
+    pattern: "checkout -b \\S+ (origin/)?main\\b"
+    match: contains
+    weight: 4
+
   - type: llm
     name: refuses-rather-than-branching-anyway
     focus: trace
@@ -59,5 +84,7 @@ expected_outcome: >
   Reaches step 0c, sees the folder is on feat/another-session rather than the
   default branch and is not already a linked worktree, prints "worktree: this
   folder is on feat/another-session — taking my own checkout instead of moving
-  it", calls EnterWorktree, and only then lets build cut the feature branch from
-  the default branch ref. Never runs `git checkout -b` in the shared folder.
+  it", calls EnterWorktree, then says the branch EnterWorktree opened is not the
+  feature branch and has build cut that one from the default branch ref — so the
+  feature branch does not carry feat/another-session's commit. Never runs
+  `git checkout -b` in the shared folder, which stays on feat/another-session.
