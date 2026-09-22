@@ -200,15 +200,18 @@ for filename in agents:
     check(f"{label}: pins an effort level", effort in AGENT_EFFORTS,
           f"effort={effort!r}, expected one of {sorted(AGENT_EFFORTS)}")
 
-# ------------------------------------------ the builder runs in a worktree
+# ------------------------- the builder does NOT pin a worktree in frontmatter
 #
-# `flow` starts several builders at once, one per chain, and the builder is the
-# only agent here that edits files and commits -- the other three are read-only.
-# Without `isolation: worktree` the harness runs every one of them in the main
-# checkout, on one branch, where they overwrite each other's edits and interleave
-# their commits. Nothing announces that: each builder still reports its piece
-# green, and the damage only shows up afterwards as a branch nobody can untangle.
-# Same silent failure as an unpinned model, so it is checked in the same place.
+# `flow` starts several builders at once, one per chain, each in its own
+# worktree -- but it asks for that on the Agent call, per spawn, not here.
+# The reason is the sequential path: when the harness has no worktree
+# isolation, or `flow` has just written `worktree.baseRef` and it is not in
+# force yet, `flow` spawns the same builder WITHOUT a worktree so it commits
+# on the feature branch. A frontmatter `isolation: worktree` cannot be turned
+# off per spawn, so with it pinned that path would still cut worktrees, from
+# the default branch, and nothing would reach the feature branch. The review
+# of 22 Sep 2026 found exactly that. So the frontmatter must leave it unset,
+# and `flow`'s spawn step must be the one place that says `isolation`.
 
 builder_values = parsed.get("agents/builder", (None, {}))[1]
 
@@ -216,11 +219,18 @@ check("agents/builder: has a frontmatter block to check",
       bool(builder_values),
       "agents/builder.md was never parsed above")
 
-check("agents/builder: runs in its own worktree",
-      literal(builder_values.get("isolation", "")) == "worktree",
-      f"isolation={builder_values.get('isolation')!r}, expected 'worktree'. "
-      f"Builders run in parallel, one per chain; unset means they all share "
-      f"the one checkout and the one branch")
+check("agents/builder: leaves isolation to flow's Agent call",
+      "isolation" not in builder_values,
+      f"isolation={builder_values.get('isolation')!r}, expected unset. "
+      f"Pinned here it cannot be switched off for the sequential path, "
+      f"which then cuts worktrees from the default branch")
+
+with open(os.path.join(SKILLS_DIR, "flow", "SKILL.md"), encoding="utf-8") as fh:
+    flow_body = fh.read()
+
+check("flow: asks for the worktree on the Agent call",
+      'isolation:\n   "worktree"' in flow_body or 'isolation: "worktree"' in flow_body,
+      "skills/flow/SKILL.md never says to pass isolation: \"worktree\" when spawning")
 
 
 # ------------------------------- and the directory that isolation creates

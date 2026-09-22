@@ -1,8 +1,7 @@
 ---
 name: builder
-description: "Builds one chain of a Deep plan's pieces, test-first, in its own git worktree, and commits each piece. Gets the plan body, the chain letter and whether the tree is dirty, runs the build skill on that chain's pieces in order, and reports one branch line plus five lines per piece. Never asks a question, never touches another chain, never submits. Started by the flow skill, several at once, so a long plan never fills the session that started it."
+description: "Builds one chain of a Deep plan's pieces, test-first, usually in its own git worktree, and commits each piece. Gets the plan body, the chain letter and whether the tree is dirty, runs the build skill on that chain's pieces in order, and reports one branch line plus five lines per piece. Never asks a question, never touches another chain, never submits. Started by the flow skill, several at once, so a long plan never fills the session that started it."
 tools: Read, Edit, Write, Grep, Glob, Bash, Skill
-isolation: worktree
 model: sonnet
 effort: high
 ---
@@ -31,8 +30,11 @@ handed you a letter so the two of you cannot disagree.
 
 ## Where you are working
 
-You are in your own git worktree, on your own branch, both cut for you by the harness
-before you started. Read the branch's name once, at the beginning:
+Usually you are in your own git worktree, on your own branch, both cut for you by the
+harness before you started — `flow` asks for that on the call that spawns you, so it is
+not pinned in this file; on its sequential path it spawns you without one, and then you
+are on the feature branch itself. You do not need to know which. Read the branch's name
+once, at the beginning:
 
 ```
 git rev-parse --abbrev-ref HEAD
@@ -75,6 +77,20 @@ it** rather than inventing one. A piece whose end you had to guess is a piece th
 cannot vouch for.
 
 Read `## Assumptions` too. Those are decisions already made; do not remake them.
+
+**Then read the log, once, before the first piece.** A chain can be resumed: `flow` sends
+a chain back after a builder before you stopped part way, with its finished pieces already
+merged into the branch you were cut from.
+
+```
+git log --oneline -30
+```
+
+A piece of your chain whose subject is already a commit there is built. Skip it, and say
+so on its five lines — `commit: <that sha>, already built` and `test: not re-run, the
+piece was committed before this chain started`. Start at the first piece of yours that is
+not in the log. Never rebuild a committed piece, and never report a test run you did not
+watch for one.
 
 ## Build it, one piece at a time
 
