@@ -9,8 +9,10 @@ parser that reads a case file as something other than what it says.
 Run: python3 evals/test-run.py
 """
 
+import io
 import json
 import os
+import re
 import sys
 import tempfile
 
@@ -397,6 +399,40 @@ check("grader: an llm grader is skipped, never passed",
 check("grader: an unknown grader type is skipped, not passed",
       verdict({"type": "invented-later", "name": "x"}),
       "skip")
+
+# ------------------------------------------- the README's line-number citations
+
+# `evals/README.md` cites two lines of `skills/flow/SKILL.md` by number, to say
+# why a rendered skill body is not trace. A line number is the one kind of
+# citation that rots silently: the prose still reads correctly after the skill
+# it points into has moved under it.
+
+_FLOW_SKILL = os.path.join(os.path.dirname(HERE), "skills", "flow", "SKILL.md")
+
+
+def squash(s):
+    """One line, single-spaced -- a citation may wrap in the markdown source."""
+    return " ".join(s.split())
+
+
+with io.open(os.path.join(HERE, "README.md"), encoding="utf-8") as f:
+    _readme = f.read()
+with io.open(_FLOW_SKILL, encoding="utf-8") as f:
+    _flow_lines = f.read().split("\n")
+
+CITATIONS = re.findall(r"`([^`]+)`\s+at (?:line )?(\d+)", _readme)
+
+check("readme: both worked-example citations are found", len(CITATIONS), 2)
+
+for _text, _num in CITATIONS:
+    _n = int(_num)
+    _line = _flow_lines[_n - 1] if 0 < _n <= len(_flow_lines) else ""
+    check(
+        "readme: skills/flow/SKILL.md line %s is the cited example" % _num,
+        squash(_line),
+        squash(_text),
+    )
+
 
 # --------------------------------------------------------------- the scoring
 

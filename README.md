@@ -206,12 +206,19 @@ login and permissions · secrets and keys · payments · database migrations · 
 
 ## More
 
-One page each. Read them when you need them.
+One page each. Read them when you need them. A skill holds its steps; the page named
+after it holds why those steps are what they are, and you only need it if a rule looks
+wrong.
 
 | Page | What it covers |
 |---|---|
-| [docs/flow.md](docs/flow.md) | Follow-ups on an open PR. Where a Deep plan goes. One builder per piece. The `CONTEXT.md` glossary. Size overrides. |
-| [docs/review.md](docs/review.md) | The three agents. Why two axes. Why `hardcase` defaults to *falls*. |
+| [docs/flow.md](docs/flow.md) | Why `flow`'s steps are what they are. Follow-ups on an open PR. Where a Deep plan goes. One builder per piece. The `CONTEXT.md` glossary. Size overrides. |
+| [docs/build.md](docs/build.md) | Why `build`'s gates are what they are. Running the checks bare. Where the expected value comes from. Watching it fail. When there is nothing a test could catch. |
+| [docs/submit.md](docs/submit.md) | Why `submit`'s steps are what they are. Checks that postdate the last edit. The live check. The commit and the PR body. |
+| [docs/review.md](docs/review.md) | Why `review`'s steps are what they are. The three agents. Why two axes. Why `hardcase` defaults to *falls*. The one change that gets no review. |
+| [docs/ship.md](docs/ship.md) | Why `ship`'s steps are what they are. The boundary only a human crosses. The two real merge-error runs. The deploy block. |
+| [docs/tend.md](docs/tend.md) | Why `tend`'s steps are what they are. Getting on the PR's branch first. Triage before anything is changed. |
+| [docs/setup.md](docs/setup.md) | Why `setup`'s steps are what they are. Everything downstream trusts the `## Checks` block. Running each command before writing it down. |
 | [docs/pipeline.md](docs/pipeline.md) | Where work can sit, and what moves it. |
 | [docs/web.md](docs/web.md) | Claude Code on the web. Start with "use the devflow flow skill". On Pro, say "run the review". `ship` is local only. |
 | [docs/hook.md](docs/hook.md) | The bash hook. It trims check output, allows the bare check commands, and asks before a commit to the default branch. It stops mistakes, not attackers. |
