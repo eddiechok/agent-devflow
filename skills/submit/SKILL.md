@@ -9,6 +9,9 @@ allowed-tools: Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git b
 
 Prove it works. Then open the PR. Never merge.
 
+Why these rules are what they are: [docs/submit.md](../../docs/submit.md). Read it only if a
+rule looks wrong.
+
 ## Context
 
 - Branch: !`git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "no git"`
@@ -23,9 +26,7 @@ If you are on the default branch, **stop**. Create a branch first:
 git checkout -b <type>/<short-name>
 ```
 
-`build` should have done this before its first edit, so normally you are already on one. This is the safety net for when `build` did not run — you were called directly, or the work arrived some other way.
-
-**A branch you were handed counts.** Some harnesses create the branch and forbid pushing anywhere else; Claude Code on the web does both. Off the default branch is the whole requirement — never rename one to fit `<type>/<short-name>`.
+**A branch you were handed counts.** Off the default branch is the whole requirement — never rename one to fit `<type>/<short-name>`.
 
 Never commit directly to the default branch.
 
@@ -33,31 +34,22 @@ Never commit directly to the default branch.
 
 Run the project's test, typecheck and lint commands from the `## Checks` block in `CLAUDE.md`.
 
-**The checks must postdate the last edit.** Not "they passed earlier" — earlier is before the edit that broke them.
+**The checks must postdate the last edit.**
 
-**One exception, and it is narrow.** If `build` ran **every command in the `## Checks` block**, in this session, so that its output is already on this screen, and no file has changed since — then that output is this step's output. Say so in one line — `checks: build's run stands, no edit since` — and go on. Running the same suite twice on the same tree prints the same result and proves nothing new; it only fills the window. It does not apply on a Deep job: the builders ran the checks inside their own agents, and five lines came back, not output. Nor when `build` ran the suite but not the lint; `build`'s handback rule only promises the suite. Any edit since, including one you made a moment ago, means run them again.
+**One exception, and it is narrow.** If `build` ran **every command in the `## Checks` block**, in this session, so that its output is already on this screen, and no file has changed since — then that output is this step's output. Say so in one line — `checks: build's run stands, no edit since` — and go on. It does not apply on a Deep job: the builders ran the checks inside their own agents, and five lines came back, not output. Nor when `build` ran the suite but not the lint; `build`'s handback rule only promises the suite. Any edit since, including one you made a moment ago, means run them again.
 
 **Run each one bare** — exactly as the Checks block writes it, one command per
 call. No pipes, no redirects, no `&&`, no `; echo $?`.
 
-The real output **and the exit code** both have to reach the screen: the exit
-code is what proves the run happened, and an outer loop watching this session
-can only see what you actually printed.
+The real output **and the exit code** both have to reach the screen.
 
-Running bare is what lets the hook help. Shape the command yourself and it
-steps aside by design, taking the trimming and the exit line with it.
-`${PIPESTATUS[0]}` after a `;` silently printed nothing in a real run, because
-the shell was not the one that syntax assumes.
+Running bare is what lets the hook help.
 
 **But the hook only knows the runners on its own list** — `npm test`, `pytest`,
-`cargo test`, `tsc` and friends. A project whose `## Checks` block names
-something else gets no rewrap and therefore **no `exit=N` line**, however bare
-the command was. This plugin is such a project: `python3 skills/test-frontmatter.py`
-matches nothing on that list. So run it bare, read the result, and **say the
+`cargo test`, `tsc` and friends. So run it bare, read the result, and **say the
 outcome in words** — "exit 0", "failed, 2 cases" — rather than waiting for a
 line that is not coming. Never write `exit=0` yourself as though the hook
-printed it; a fabricated exit line is worse than none, because that line is
-what an outer loop trusts.
+printed it.
 
 If anything fails, fix it and run again. Do not continue with a red check.
 
@@ -69,27 +61,23 @@ grep -rn "\[DBG-" . --exclude-dir=node_modules --exclude-dir=.git --exclude='*.m
 
 Must return nothing.
 
-**Keep the quotes around `*.md`.** Unquoted, zsh tries to expand it before grep ever runs and fails the whole command with `no matches found` — bash passes it through, so this breaks for some people and not others.
+**Keep the quotes around `*.md`.**
 
-**Markdown is excluded on purpose.** A marker in a `.md` file is prose — a code sample, a note about the convention, or this plugin's own description of it. Without that exclusion the check fails forever in any repo that documents the convention, this one included, on hits that are all documentation. Markers matter in code, because code runs.
-
-**A hit in a file this branch did not touch is not yours.** Say so in one line and leave it. Cleaning up someone else's debugging inside your PR buries your change in noise.
+**A hit in a file this branch did not touch is not yours.** Say so in one line and leave it.
 
 ## 4. Run the app — the live check
-
-Tests only check what someone thought to test. A passing suite and a clean diff can both sit on top of a feature that is visibly broken: wrong label, broken layout, right data in the wrong place.
 
 Pick whichever of these the project actually is:
 
 - **Something that has to be launched** — a web app, a server, a desktop app. **Use the built-in `run` skill if this environment has it.** If it does not, launch the app the way the project's own README or scripts say to, under the rules below. Do not invent a launcher when the project already documents one.
-- **Something you just execute** — a CLI, a script, a one-shot command. **Run it directly**, with the arguments the change affects, and show the output. `node src/cli.js --loud` *is* the live check for a CLI; reaching for a launcher here adds nothing.
+- **Something you just execute** — a CLI, a script, a one-shot command. **Run it directly**, with the arguments the change affects, and show the output.
 
 Either way the rule is the same: exercise the change the way a user would, and put the output on screen.
 
 ### What counts as proof
 
 **The test is one question: would this have been true before the change?** If yes, it
-proves nothing — it is evidence that something answered, not that the change works.
+proves nothing.
 
 - **First-hand** — the thing you are claiming, observed. The response body with the new
   field in it. The page text showing the new label. The CLI's actual stdout for the flag
@@ -98,19 +86,14 @@ proves nothing — it is evidence that something answered, not that the change w
   code. "Tests passed" — step 2 already ran those, and a suite that never covered this
   change passes just as loudly.
 
-**Only first-hand ends this step.** A server that boots is second-hand about a broken
-page, and it is the most common way this step gets faked: the launch worked, so the
-change must have. Go and look at the thing itself.
-
-This is the same rule `ship` step 5 applies to a deploy, and it has to stay the same rule —
-a green deploy is second-hand about a live site for exactly the same reason.
+**Only first-hand ends this step.** Go and look at the thing itself.
 
 Rules, when you launched something:
 - **Put a time limit on it.** If the app never becomes ready, that is a finding to report, not something to sit through.
 - **Stop the server when you are done.** Stop only the process you started. Never kill "whatever is on port 3000" — that may be something the human is running.
 - **Screenshots and artifacts go to a temp directory**, never into the repo.
 
-**If it does not work**, either way: fix it and try again, **at most twice**. If it still does not work, say so plainly and **do not open a PR that looks fine**. An honest failure is useful. A green-looking PR over a broken feature is harmful.
+**If it does not work**, either way: fix it and try again, **at most twice**. If it still does not work, say so plainly and **do not open a PR that looks fine**.
 
 Only skip when there is genuinely nothing to exercise — a library with no entry point, a pure refactor with no observable change. Say so in one line. Do not invent a fake check, and do not call a passing test suite a live check; step 2 already ran that.
 
@@ -122,9 +105,7 @@ Invoke `devflow:review` with the branch point:
 git merge-base HEAD <default branch ref>
 ```
 
-It pins the range, finds the plan or issue if there is one, and runs both axes in fresh agents.
-
-**Pass it the request text too, if you were given one.** `flow` hands it over at its step 5 as `request: <text>`, word for word; hand it to `review` in the same form, after the fixed point. On work with no plan and no issue, that text is the spec the second axis reads, and without it that axis does not run. If you were invoked directly and have no request, say so in one line and let the axis skip — do not write one from memory of the diff.
+**Pass it the request text too, if you were given one.** `flow` hands it over at its step 5 as `request: <text>`, word for word; hand it to `review` in the same form, after the fixed point. If you were invoked directly and have no request, say so in one line and let the axis skip — do not write one from memory of the diff.
 
 **Pass `no-behaviour: <reason>` too, when `build` said there was nothing to test.** `build` has one gate for that, and it prints `No behaviour to test — <reason>`. Hand that reason on, after the fixed point and the request. `review` then starts no agent and reports all three sections as `skipped — no behaviour`, which you read as **nothing to fix**: no findings, no rounds, nothing for **Known issues**, and `Review: skipped, no behaviour` under **Evidence** at step 8.
 
@@ -135,18 +116,18 @@ Do not do the review here — a session reviewing the code it just wrote carries
 Then act on what comes back:
 
 - **Blocking**, **Missing** and **Built wrong** — fix, then review again. At most **2 rounds**.
-- **Round 2 is scoped, not a fresh review.** It goes to the axis agent directly — `devflow:reviewer`, or `devflow:spec-reviewer` for its own findings — with the fixed point, round 1's findings in the agent's own words, and the files changed since. That is a range and another agent's report, not this session's reasoning, so `review`'s rule holds. A full re-read of the branch finds the same clean files again at the same price, and the cost of a review should go where the change went.
+- **Round 2 is scoped, not a fresh review.** It goes to the axis agent directly — `devflow:reviewer`, or `devflow:spec-reviewer` for its own findings — with the fixed point, round 1's findings in the agent's own words, and the files changed since.
 - **Nobody asked for this** — either take it out, or keep it and say why in the PR under **Assumptions**. Silently keeping it is not an option.
 - Anything still standing after 2 rounds goes in the PR under **Known issues**, not hidden and not looped on forever.
 - **The last review must postdate the last edit.** A fix you make after the last round is an edit nobody has read, and so is a doc fix at step 6. Both get one short look at step 7, before the commit. It is a look, not a round.
 - **`NOT RUN`** — an axis that could not start is not a passing axis. Name it under **Known issues**, and say in **Evidence** which axes ran. Never write "reviewed" over a review that did not happen.
-- **`Not reported: N further findings`** — the axis ran out of room. Those findings exist and you have not seen them. **Run that axis again, scoped to what it did not reach**, and if the second run is also truncated, say so under **Known issues** with the count. A truncated review prints exactly like a clean one, which is the whole reason the line is there; dropping it here is the same failure as dropping `NOT RUN`.
+- **`Not reported: N further findings`** — the axis ran out of room. Those findings exist and you have not seen them. **Run that axis again, scoped to what it did not reach**, and if the second run is also truncated, say so under **Known issues** with the count.
 
 **A finding can be wrong, and you are allowed to say so.** Check it against the code first, then reject it in one line with the technical reason, and put the rejection in the PR under **Known issues** so the call is visible to whoever merges. Never reject a finding you have not checked, and never reject one silently — an unread finding quietly dropped is worse than a false positive fixed.
 
 **The `Challenged` section is help with exactly that call, not a decision already made.**
 
-- **Falls** — `hardcase` found the line that refutes it. **Check that line yourself**, then reject the finding with its reason. Two agents disagreeing is not a majority vote; it is one of them having read something the other did not, and you are the one who can go and look.
+- **Falls** — `hardcase` found the line that refutes it. **Check that line yourself**, then reject the finding with its reason.
 - **Stands** — a finding that survived an agent whose whole job was to break it. Fix it. Rejecting one of these takes more than a one-line reason, and you had better be able to say what both of them missed.
 - **Could not check** — the challenge did not happen for that finding. Treat it exactly as if there had been no challenge at all. It is not a `Falls`.
 
@@ -154,21 +135,17 @@ Never write "challenged" over a `hardcase` that did not run, and never let a `Fa
 
 The review reports; it never edits. The fixes are yours.
 
-The built-in `/code-review` is a better review than this one, and it still does not belong here: it works on an **open pull request** and comments back on it, and there is no PR yet. It goes to the human at step 9, where one exists.
-
 ## 6. Update the docs the change made stale
 
 Find the docs that describe what changed: the README, anything under `docs/`, `CLAUDE.md`, and the description of any skill or agent the change touched. Read the parts that talk about this behaviour. If a doc now says something the code no longer does, fix it here, on this branch, so the doc lands in the same pull request as the code that dated it.
 
 The bar is narrow: a doc that is now **wrong**, not a doc that could say more. Do not write new pages, and do not touch a doc the change did not date. A line beside the code that dated it is the whole step; anything bigger goes back through `flow` as its own request.
 
-This step exists because nothing before it reads the docs. `build` tests behaviour and `review` judges the code, so a diagram that stops matching the skill it draws goes stale with no red anywhere. `docs/pipeline.md` did exactly that after the builder-per-piece change, and a human found it later. One read here is cheaper than the drift.
-
 ## 7. Commit
 
-**If any file changed since step 2's run, run the checks again first.** A marker removed at 3, a live-check fix at 4, a review fix at 5, a doc at 6 — any of them means step 2's run no longer covers the tree you are about to commit. Same rule as step 2: the checks must postdate the last edit. Bare, one per call, output on screen.
+**If any file changed since step 2's run, run the checks again first.** Same rule as step 2: the checks must postdate the last edit. Bare, one per call, output on screen.
 
-**If any file changed since the last review that read it, one short look first.** Round 2 counts as a read of the lines it was scoped to. `devflow:reviewer` only, scoped to the lines that changed, a **200 word ceiling**, and no `hardcase`. If it finds something new, **stop editing** and put it under **Known issues** — a further fix would need a further look, and the loop has to end somewhere the human can see. The checks and the look both postdate the last edit; that is the whole of the rule, stated at the last place an edit can land.
+**If any file changed since the last review that read it, one short look first.** Round 2 counts as a read of the lines it was scoped to. `devflow:reviewer` only, scoped to the lines that changed, a **200 word ceiling**, and no `hardcase`. If it finds something new, **stop editing** and put it under **Known issues** — a further fix would need a further look, and the loop has to end somewhere the human can see.
 
 Conventional commits, so `git log` doubles as a changelog:
 
@@ -180,11 +157,11 @@ Conventional commits, so `git log` doubles as a changelog:
 
 Types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `perf`, `build`, `ci`. `build` uses this same list for plan pieces; the two have to stay in step.
 
-**A Deep branch may already be committed.** `build` commits each plan piece as it lands, so the working tree can be clean by the time you reach this step — and the fixes from steps 5 and 6 may be all that is left. If there is nothing to commit, say so in one line and go on. Never make an empty commit to have something to show for the step.
+**A Deep branch may already be committed.** If there is nothing to commit, say so in one line and go on. Never make an empty commit to have something to show for the step.
 
 ## 8. Open the PR — or update the one already there
 
-**First, does this branch already have an open pull request?** Ask through whatever GitHub access this environment has. The answer decides what this step does, and getting it wrong opens a second pull request for one change.
+**First, does this branch already have an open pull request?** Ask through whatever GitHub access this environment has.
 
 **No PR** — push, then open one against the default branch.
 
@@ -193,7 +170,7 @@ Types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `perf`, `build`, `ci`
 - **Evidence** — rewritten. It describes the checks *this* run made, not the ones the first run made.
 - **Known issues** — worked out again from this run's review. Anything fixed since comes out.
 - **What** and **Why** — extended if the change grew. Do not rewrite the original reason to match a follow-up.
-- **Assumptions** — appended to, never replaced. The first round's assumptions were true when they were taken, and the human may already have read them.
+- **Assumptions** — appended to, never replaced.
 
 Then one line on what moved:
 
@@ -201,7 +178,7 @@ Then one line on what moved:
 updated #12 — 2 commits, evidence refreshed, 1 known issue cleared
 ```
 
-**Opening it is what you were asked for.** Some harnesses expect the human to press **Create PR** themselves, and a session there can read that as a rule against opening one. Invoking this skill *is* the request; it says so in its own description, and so does `flow`. Do not stop here to ask again.
+**Opening it is what you were asked for.** Invoking this skill *is* the request; it says so in its own description, and so does `flow`. Do not stop here to ask again.
 
 If the environment blocks it anyway, push the branch and then give the human the compare link and the command for whatever access they have — `gh pr create`, or the equivalent — in two lines. Never end silently on a pushed branch with no PR — work that is finished, green and invisible is the state this skill exists to prevent.
 
@@ -243,7 +220,7 @@ I checked this locally before pushing. I stopped my own server; step 5 is for yo
 - (only if the review left something unresolved)
 ```
 
-**A plan issue closes with the PR.** Only if the project's `## Plans` block says `github` and this work has a `devflow:plan` issue. Then name it under **What** — `Plan: #45` — and add `Closes #45` under **Why**, beside the request issue if there is one. The plan is finished when the work is merged, and the issue closing is what says so on the tracker. Find the number on the `plan: #N` line `flow` printed, or by listing open `devflow:plan` issues and matching the subject. Do not guess a number, and write nothing about a plan issue on a project that keeps plans in files.
+**A plan issue closes with the PR.** Only if the project's `## Plans` block says `github` and this work has a `devflow:plan` issue. Then name it under **What** — `Plan: #45` — and add `Closes #45` under **Why**, beside the request issue if there is one. Find the number on the `plan: #N` line `flow` printed, or by listing open `devflow:plan` issues and matching the subject. Do not guess a number, and write nothing about a plan issue on a project that keeps plans in files.
 
 **A Deep branch carries assumptions in its commits too.** Each `builder` writes any doubt
 it had about a finished piece as a `Concern:` line in that piece's commit body, because
@@ -254,13 +231,11 @@ git log <default branch ref>..HEAD --format='%h %s%n%b'
 ```
 
 Every `Concern:` line goes under **Assumptions**, one bullet each, with the subject of the
-commit it sits under — the format prints the subject before each body on purpose, because
-`%B` alone gives no boundary between one body and the next subject. That is where the human decides whether the doubt was warranted; leaving it in a
-commit body nobody reads is the same as never raising it.
+commit it sits under.
 
 **An empty Assumptions section is a claim.** It reads as "nothing was assumed". If it is empty because the context holding the answers is gone rather than because there were none, say that in one line instead of omitting the section.
 
-**Check whether a preview link appeared** on the PR. If one did, put it first — a preview is a real build with real environment variables on a clean machine, and it catches things your laptop cannot. If none appeared, give the local steps and do not mention a link that is not coming.
+**Check whether a preview link appeared** on the PR. If one did, put it first. If none appeared, give the local steps and do not mention a link that is not coming.
 
 **The steps must be steps you actually ran.** Instructions you never followed will be wrong.
 
@@ -276,7 +251,7 @@ Second opinion, if you have them installed:
   /security-review    (this change touched database migrations)
 ```
 
-**Work the danger list out from the diff, not from memory.** `flow` decided it before any code was written, and that decision does not always survive to here — a compaction, a long Deep job, or a `submit` you were invoked into directly all lose it. Losing it is silent, and what it drops is the only security gate in the loop. Read the diff against the list in `flow` and decide again. Deciding twice costs a moment; missing it costs the gate.
+**Work the danger list out from the diff, not from memory.** Read the diff against the list in `flow` and decide again.
 
 Name `/security-review` only when the change actually touched the danger list. Never report either as run, and never write their findings into the PR body — you have not seen any.
 
