@@ -126,6 +126,10 @@ It pins the range, finds the plan or issue if there is one, and runs both axes i
 
 **Pass it the request text too, if you were given one.** `flow` hands it over at its step 5 as `request: <text>`, word for word; hand it to `review` in the same form, after the fixed point. On work with no plan and no issue, that text is the spec the second axis reads, and without it that axis does not run. If you were invoked directly and have no request, say so in one line and let the axis skip — do not write one from memory of the diff.
 
+**Pass `no-behaviour: <reason>` too, when `build` said there was nothing to test.** `build` has one gate for that, and it prints `No behaviour to test — <reason>`. Hand that reason on, after the fixed point and the request. `review` then starts no agent and reports all three sections as `skipped — no behaviour`, which you read as **nothing to fix**: no findings, no rounds, nothing for **Known issues**, and `Review: skipped, no behaviour` under **Evidence** at step 8.
+
+Only `build` decides this, and only for the change in front of it. If `build` ran the gates, the axes run — never reach for the exit yourself because the diff looks small or because it is all markdown.
+
 Do not do the review here — a session reviewing the code it just wrote carries every assumption that produced it.
 
 Then act on what comes back:
@@ -233,7 +237,7 @@ I checked this locally before pushing. I stopped my own server; step 5 is for yo
 - Tests: 48 passed, exit 0
 - Typecheck: clean
 - Live check: done, works
-- Review: both axes ran (or: built-right ran, right-thing NOT RUN — no spec)
+- Review: both axes ran (or: built-right ran, right-thing NOT RUN — no spec; or: skipped, no behaviour)
 
 ## Known issues
 - (only if the review left something unresolved)

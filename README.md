@@ -195,7 +195,7 @@ login and permissions · secrets and keys · payments · database migrations · 
 | `setup` | Once per project. Finds and verifies the check commands. You invoke it yourself, so it costs nothing at runtime |
 | `flow` | Sizes the request. Routes it. Asks any questions in one batch |
 | `build` | Test first. Watch it fail for the right reason. Then make it pass |
-| `review` | Two axes in fresh agents: is it built right, is it the right thing. Reported side by side, never blended |
+| `review` | Two axes in fresh agents: is it built right, is it the right thing. Reported side by side, never blended. Skipped only when `submit` passes down that `build` found no behaviour to test |
 | `submit` | Runs the checks fresh. Runs the app. Calls `review`. Commits. Opens the PR, or updates the one already open. **Never merges** |
 | `tend` | After the PR is open. Works out what a red check or a review comment is really saying. Checks whether this branch caused it. Then fixes it and re-submits |
 | `ship` | Merges it. Watches the deploy. Checks it is really live. Cleans up. **Only you can start it** |
