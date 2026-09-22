@@ -196,9 +196,9 @@ stuck: no
 - `commit:` — the short SHA of that piece's commit, after any amend, or `none` if you
   stopped before it. `none` only ever goes with `stuck: yes`; a piece without its commit is
   not finished, whatever the tests said.
-- `seam:` — where you put that piece's test, and why in a few words. `none — no behaviour
-  to test` is a real answer for a docs or config piece, and it should say what the checks
-  did instead.
+- `seam:` — where you put that piece's test, and why in a few words. A seam is a boundary
+  other code calls through. `none — no behaviour to test` is a real answer for a docs or
+  config piece, and it should say what the checks did instead.
 - `stuck:` — `no`, or `yes` followed by what you ruled out and what you would look at next.
   If the tree is dirty when you stop, say `tree dirty` on this line as well. A piece that
   is done but leaves you in doubt is `no — concern: <one line>`: the commit is in, the

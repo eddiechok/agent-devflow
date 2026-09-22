@@ -231,8 +231,8 @@ I checked this locally before pushing. I stopped my own server; step 5 is for yo
 - Tests: 48 passed, exit 0
 - Typecheck: clean
 - Live check: done, works
-- Review: both axes ran (or: built-right ran, right-thing NOT RUN — no spec; or: skipped, no behaviour)
-- Final look: fixed skills/ship/SKILL.md, 2 lines — unread by an agent (or: nothing new; or: omit if no look ran)
+- Review: both axes ran — is it built right, and is it the right thing (or: built right ran, right thing NOT RUN — no spec; or: skipped, no behaviour)
+- Final look: fixed skills/ship/SKILL.md, 2 lines — unread by an agent, so read those lines yourself (or: nothing new; or: omit if no look ran)
 
 ## Known issues
 - (only if the review left something unresolved)
