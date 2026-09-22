@@ -99,6 +99,18 @@ Two costs, and `setup` says both out loud. The web sandbox has no `gh`, so a run
 
 Local and GitHub only. A Linear or Jira ticket is still pasted in as the request.
 
+## One feature per run
+
+One flow run ends as one PR. A request that names three features would end as one PR carrying three things, or as a plan that mixes them, so `flow` splits before it sizes anything.
+
+**Default is do not split.** A feature is something that could ship alone and that a user would ask for in its own sentence. Parts that depend on each other are one feature, not several — splitting those would hand `build` a piece that cannot pass on its own.
+
+The question comes before the size line, not after, because sizing needs to know which feature it is sizing. Ask first, size the one kept feature second, and the size line means what it says.
+
+The rest are parked, never dropped. A project whose `## Plans` block says `github` gets one issue per parked feature, labelled `devflow:backlog` — `setup` makes that label alongside `devflow:plan`, and `flow` makes it too if a project set up before this existed. Everything else — no block, `local`, or `gh` failing on the day — writes one file per parked feature at `.devflow/backlog/<short-name>.md` instead.
+
+A later run given `.devflow/backlog/<name>.md` as its request reads the file as the request and deletes it in the same branch, so the deletion ships with the PR that finally builds it. Nothing lingers to be parked twice.
+
 ## The project's words
 
 Some things outlive one job. What this project means by *session*. Or *account*.
@@ -187,6 +199,15 @@ Anyone can open an issue, and you cannot tell from here who did.
 
 A number you could not open is not a request, and sizing one you guessed at is worse than
 asking.
+
+### Step 1b — one feature per run
+
+A request that names more than one feature is split before it is sized, because sizing
+needs to already know which feature it is sizing. Default is do not split — a feature is
+whatever a user would ask for in its own sentence, and parts that depend on each other are
+one feature, not several. The parked ones go to a GitHub issue labelled `devflow:backlog`
+when the project keeps its plans there, or a file under `.devflow/backlog/` otherwise, so
+nothing named in the request is silently dropped.
 
 ### Step 4 — the project's words
 

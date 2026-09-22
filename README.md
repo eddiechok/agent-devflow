@@ -62,7 +62,7 @@ A line may repeat. Two `Test:` lines run in order. This repo's own [CLAUDE.md](C
 
 A second block, `## Deploy`, is optional. You never write it by hand. `ship` offers to add it after its first verified deploy.
 
-It also asks where Deep plans live. Local is the default: a file in `.devflow/plans/`. Pick `github` and each Deep plan becomes an issue, labelled `devflow:plan`, closed when the work merges. It writes a `## Plans` block only after `gh` has answered.
+It also asks where Deep plans live. Local is the default: a file in `.devflow/plans/`. Pick `github` and each Deep plan becomes an issue, labelled `devflow:plan`, closed when the work merges. It writes a `## Plans` block only after `gh` has answered. Picking `github` also makes a second label, `devflow:backlog`, for the features `flow` parks rather than builds.
 
 Run it again if the commands change. It will not overwrite a block you wrote without asking.
 
@@ -82,6 +82,8 @@ Then, once you have looked at the PR and want it finished:
 ```
 
 `flow` sizes the work and routes it. You should not normally need to call the others directly.
+
+A request that names more than one feature keeps one and parks the rest — as a GitHub issue labelled `devflow:backlog`, or a file under `.devflow/backlog/` — so one run still ends as one PR and nothing named gets lost.
 
 There are two exceptions. `ship` is the one skill nothing else can call. `flow` does route to `tend`. But you will usually start `tend` yourself, when you see a red check.
 
@@ -213,7 +215,7 @@ wrong.
 
 | Page | What it covers |
 |---|---|
-| [docs/flow.md](docs/flow.md) | Why `flow`'s steps are what they are. Follow-ups on an open PR. Where a Deep plan goes. One builder per chain, in parallel worktrees. The `CONTEXT.md` glossary. Size overrides. |
+| [docs/flow.md](docs/flow.md) | Why `flow`'s steps are what they are. Follow-ups on an open PR. Where a Deep plan goes. One feature per run, parking the rest to `devflow:backlog` or `.devflow/backlog/`. One builder per chain, in parallel worktrees. The `CONTEXT.md` glossary. Size overrides. |
 | [docs/build.md](docs/build.md) | Why `build`'s gates are what they are. Running the checks bare. Where the expected value comes from. Watching it fail. When there is nothing a test could catch. |
 | [docs/submit.md](docs/submit.md) | Why `submit`'s steps are what they are. Checks that postdate the last edit. The live check. The commit and the PR body. |
 | [docs/review.md](docs/review.md) | Why `review`'s steps are what they are. The three agents. Why two axes. Why `hardcase` defaults to *falls*. The one change that gets no review. |
