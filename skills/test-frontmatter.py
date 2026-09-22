@@ -376,6 +376,54 @@ check("flow: discounts the untracked plan file when reading the tree as dirty",
       f"{FLOW_PATH} never says a `?? .devflow/plans/` line is not dirt")
 
 
+# ------------------------------- step 1 takes a backlog file as the request
+#
+# `flow` parks the features it does not build to `.devflow/backlog/<name>.md`
+# (or a GitHub issue). A later run given that path has to read it as the
+# request rather than as a literal string to size, and it has to delete the
+# file so the deletion ships in that run's own PR -- otherwise the same
+# backlog entry gets read, and parked, forever. The exact printed line is
+# pinned here so it cannot silently drift from what a resumed run expects to
+# see, the same reason the settings and stop lines above are pinned.
+
+BACKLOG_TAKEN_LINE = (
+    "backlog: took .devflow/backlog/<name>.md — the file is deleted "
+    "in this branch"
+)
+
+check("flow: step 1 reads a backlog path as the request and deletes it",
+      BACKLOG_TAKEN_LINE in flow_text,
+      f"no line {BACKLOG_TAKEN_LINE!r} in {FLOW_PATH}. A request under "
+      f".devflow/backlog/ has to be read as the request, and the file "
+      f"deleted, with this exact line printed")
+
+check("flow: step 0b discounts the untracked backlog directory too",
+      "?? .devflow/backlog/" in flow_text,
+      f"{FLOW_PATH} never says a `?? .devflow/backlog/` line is not dirt")
+
+flow_values = parsed.get("flow", (None, {}))[1]
+
+check("flow: description says it accepts a backlog file path",
+      "backlog" in flow_values.get("description", "").lower(),
+      "flow's description never mentions accepting a backlog file path")
+
+check("flow: argument-hint mentions the backlog path",
+      "backlog" in flow_values.get("argument-hint", "").lower(),
+      "flow's argument-hint never mentions a backlog file path")
+
+FLOW_BACKLOG_TOOLS = [
+    "Bash(gh issue list:*)",
+    "Bash(gh issue create:*)",
+    "Bash(gh label create:*)",
+    "Bash(rm .devflow/backlog/*)",
+]
+
+for tool in FLOW_BACKLOG_TOOLS:
+    check(f"flow: allowed-tools includes {tool}",
+          tool in flow_values.get("allowed-tools", ""),
+          f"flow's allowed-tools never lists {tool!r}")
+
+
 # ------------------------------------ ship refuses and protects stacked PRs
 #
 # On 22 Sep 2026 `gh pr merge 23 --rebase --delete-branch` closed #24, which
