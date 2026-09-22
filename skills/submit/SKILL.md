@@ -162,7 +162,7 @@ final look: fixed in place — skills/ship/SKILL.md, 2 lines
 final look: known issue — docs/pipeline.md, not on this branch
 ```
 
-A fix made here is the one edit on the branch no agent has read. Name it in the PR body under **Evidence** — `Final look: fixed <file>, <what> — unread by an agent` — so the reader knows to read those lines themselves. The loop stays bounded: review, round 2, look, at most one small fix, done.
+A fix made here is the one edit on the branch no agent has read. Name it in the PR body under **Evidence**, in these words — `Final look: fixed <file>, <what> — unread by an agent, so read those lines yourself` — because the reader is the only one who can read them now. The loop stays bounded: review, round 2, look, at most one small fix, done.
 
 Conventional commits, so `git log` doubles as a changelog:
 
@@ -231,8 +231,8 @@ I checked this locally before pushing. I stopped my own server; step 5 is for yo
 - Tests: 48 passed, exit 0
 - Typecheck: clean
 - Live check: done, works
-- Review: both axes ran (or: built-right ran, right-thing NOT RUN — no spec; or: skipped, no behaviour)
-- Final look: fixed skills/ship/SKILL.md, 2 lines — unread by an agent (or: nothing new; or: omit if no look ran)
+- Review: both axes ran — is it built right, and is it the right thing (or: built right ran, right thing NOT RUN — no spec; or: skipped, no behaviour)
+- Final look: fixed skills/ship/SKILL.md, 2 lines — unread by an agent, so read those lines yourself (or: nothing new; or: omit if no look ran)
 
 ## Known issues
 - (only if the review left something unresolved)

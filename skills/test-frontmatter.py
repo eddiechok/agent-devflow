@@ -652,6 +652,62 @@ check("ship: the report names the PRs it retargeted",
       f"that step 7 names them is not kept")
 
 
+# --------------------------------- what is printed uses the reader's words
+#
+# `seam` and "both axes" are devflow's words, and they stay that way in the
+# skills, which only the model reads. What reaches a human does not get to keep
+# them. Two places print to someone who never read the skill that owns the
+# word: `flow`'s chain report, where a piece's seam is labelled `tested at:`,
+# and the PR body, where Evidence names both review axes and says what the
+# final look asks of the reader.
+#
+# Glossing the word where the model reads it is the other fix, and it is the
+# wrong one: it pays for every model read to help one human read. The label is
+# pinned here instead, because a label in the reader's words is exactly what a
+# later tidy-up folds back into the internal one.
+
+def flat(text):
+    """One line, single-spaced. These files wrap their prose at about 95
+    columns, so a pinned phrase long enough to be worth pinning is a phrase
+    long enough to wrap. Pinning the wrap as well would fail the next time a
+    word ahead of it changed, which is a test that punishes editing."""
+    return " ".join(text.split())
+
+
+evidence_review = [line for line in submit_text.split("\n")
+                   if line.startswith("- Review:")]
+
+check("submit: the Evidence Review line names both axes in plain words",
+      any("built right" in line and "right thing" in line
+          for line in evidence_review),
+      f"{SUBMIT_PATH}: no '- Review:' line naming both 'built right' and "
+      f"'right thing'. 'both axes ran' does not say which two, and the PR "
+      f"reader never read the review skill")
+
+check("submit: the Evidence Final look line says to read those lines yourself",
+      "read those lines yourself" in flat(submit_text),
+      f"{SUBMIT_PATH}: the 'Final look' line says 'unread by an agent' without "
+      f"saying what that asks of the reader")
+
+SEAM_LABEL = "`tested at:`"
+
+check("flow: prints a piece's seam under a label the reader knows",
+      SEAM_LABEL in flat(flow_text),
+      f"{FLOW_PATH}: the chain loop never says to print the seam as "
+      f"{SEAM_LABEL}. `seam` is this plugin's word, and step 3 is where it "
+      f"would otherwise reach someone who never read this skill")
+
+# Same rule as the lint self-test at the end of this file. `flat` widens what
+# counts as a match, and a widened match that cannot miss is not a check.
+check("flat self-test: finds a phrase the source wrapped",
+      "read those lines yourself" in flat("unread by an agent, so read those\n"
+                                          "  lines yourself (or: nothing new)"))
+
+check("flat self-test: still misses a phrase that is not there",
+      "read those lines yourself" not in flat("— unread by an agent (or: "
+                                              "nothing new)"))
+
+
 # ------------------------------------------- cross-check against a real parser
 
 try:
