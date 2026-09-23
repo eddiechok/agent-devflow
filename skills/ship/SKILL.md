@@ -100,11 +100,11 @@ through `submit`. **One of them you hand over yourself. Three of them you stop o
 
 ### The conflict is yours to hand over
 
-**`mergeable` is `CONFLICTING`, and that is the only thing this PR is reporting** — say so,
-then run `devflow:tend` for this PR:
+**`mergeable` is `CONFLICTING`, and that is the only thing this PR is reporting** — print
+this, then run `devflow:tend` for this PR:
 
 ```
-conflict: handing #32 to tend, then re-reading the state
+✗ **conflict** handing #32 to tend, then re-reading the state
 ```
 
 **A PR reporting two things at once is not a conflict to hand over.** Conflicting *and* a
@@ -152,7 +152,7 @@ a handoff rather than a dead end, and let the human start it.
 **Do not widen this to all four.** The conflict is handed over because its fix is
 mechanical and reviewed on the way back. Nothing else here is.
 
-**A repo with no CI reports no checks at all.** That is not a pending check. Do not stop for it — say "no checks configured" and carry on.
+**A repo with no CI reports no checks at all.** That is not a pending check. Do not stop for it — print `– **checks** none configured` and carry on.
 
 **Be sure that is what an empty list means.** A repo whose workflows have not been created
 yet — the push landed seconds ago, or the run is queued — also reports nothing, and reads
@@ -162,12 +162,16 @@ open PR is **checks that have not started**, which is the case this step already
 to guess at. Look before you say "no checks configured", and say which of the two you
 found.
 
-Otherwise print one line and go:
+Otherwise print the status, one shaped line each, and go:
 
 ```
-PR #2  fix(flow): trigger on any repo change
-checks: 3 passed   reviews: none pending
--> merging (rebase), then watching the deploy
+✓ **pr** #2 fix(flow): trigger on any repo change
+
+✓ **checks** 3 passed
+
+✓ **review** none pending
+
+✓ **merge** rebase — then watching the deploy
 ```
 
 ## 3. Merge
@@ -432,16 +436,22 @@ If the merge errored halfway, reconcile against the remote rather than assuming 
 
 ## 7. Report
 
-Short. What merged, whether it is live, what was tidied:
+Short, one shaped line per fact. What merged, whether it is live, what was tidied:
 
 ```
-Merged #2 (rebase), remote branch deleted.
-Tended: #2 conflicted with main — tend resolved it and re-submitted before the merge. (omit if none)
-Retargeted: #4 onto main, still open — rebase is its author's. (omit if none)
-Deploy: Cloudflare, ready in 48s.
-Live: edxtech.com.my serves the new favicon.ico — confirmed.
-Cleaned: local branch, dev server on :4321, 3 screenshots in /tmp.
-Session: want it archived?
+✓ **merged** #2 (rebase), remote branch deleted
+
+✓ **tended** #2 conflicted with main — tend resolved it and re-submitted before the merge (omit if none)
+
+✓ **retargeted** #4 onto main, still open — rebase is its author's (omit if none)
+
+✓ **deploy** Cloudflare, ready in 48s
+
+✓ **live** edxtech.com.my serves the new favicon.ico — confirmed
+
+✓ **cleaned** local branch, dev server on :4321, 3 screenshots in /tmp
+
+– **session** want it archived?
 ```
 
 ## Output

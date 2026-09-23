@@ -699,10 +699,10 @@ check("setup: step 5 creates the devflow:backlog label beside devflow:plan",
       f"'gh label create devflow:plan'")
 
 check("setup: step 5 report line names both labels",
-      "Plans: github (labels devflow:plan, devflow:backlog exist)"
+      "✓ **plans** github (labels devflow:plan, devflow:backlog exist)"
       in setup_text,
       f"{SETUP_PATH} never prints the exact "
-      f"'Plans: github (labels devflow:plan, devflow:backlog exist)' line")
+      f"'✓ **plans** github (labels devflow:plan, devflow:backlog exist)' line")
 
 check("setup: says flow parks extra features under the backlog label",
       re.search(r"[Pp]arks[^\n]*one feature per run", setup_text) is not None,
@@ -814,8 +814,8 @@ check("docs/submit: says why the look gets one fix, citing #23, #25 and #26",
 # pinned here so the promise and the report cannot drift apart again.
 
 check("ship: the report names the PRs it retargeted",
-      "Retargeted:" in ship_text,
-      f"{SHIP_PATH} step 7 has no 'Retargeted:' line, so step 6's promise "
+      "**retargeted**" in ship_text,
+      f"{SHIP_PATH} step 7 has no 'retargeted' line, so step 6's promise "
       f"that step 7 names them is not kept")
 
 
@@ -958,7 +958,7 @@ check("docs/submit: records why step 6 prints, citing #31",
 # already named both, four lines apart, while refusing to run it. That pattern
 # passed against the text it was meant to reject. The printed line is the thing
 # only the new behaviour has.
-SHIP_CONFLICT_LINE = "conflict: handing #"
+SHIP_CONFLICT_LINE = "**conflict** handing #"
 
 check("ship: hands a conflicting PR to tend rather than stopping",
       SHIP_CONFLICT_LINE in ship_text,
@@ -1011,7 +1011,7 @@ check("ship: hands over only when the conflict is the only thing reported",
       f"else. Conflicting and changes-requested together means tend answers "
       f"the reviewer too, which is not what a merge command was started for")
 
-SHIP_TENDED_LINE = "Tended:"
+SHIP_TENDED_LINE = "**tended**"
 
 check("ship: the report names a conflict it resolved on the way",
       SHIP_TENDED_LINE in ship_text,

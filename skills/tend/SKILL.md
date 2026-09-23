@@ -46,14 +46,18 @@ PR from another branch, and do not stash someone's work to get there.
 gh pr view <n> --json state,mergeable,statusCheckRollup,reviewDecision,url
 ```
 
-Then the detail behind each red check, and each open review thread. List what you found before doing anything:
+Then the detail behind each red check, and each open review thread. List what you found before doing anything, one shaped line per check and one for the reviews:
 
 ```
-#12  three checks, one red
-  - lint       pass
-  - test       FAIL  src/settings.test.ts, 2 cases
-  - deploy     pass
-  reviews: 1 changes-requested (2 threads open)
+#12 three checks, one red
+
+✓ **checks** lint — pass
+
+✗ **checks** test — FAIL, src/settings.test.ts, 2 cases
+
+✓ **checks** deploy — pass
+
+✗ **review** 1 changes-requested — 2 threads open
 ```
 
 ## 3. Triage before you touch anything
@@ -129,7 +133,17 @@ A reviewer who asked a question is owed an answer, not just a commit.
 - **Not doing it** — say why, in one line, on the thread. A silent refusal reads as a miss.
 - **A finding you think is wrong** — check it against the code first, then say so with the technical reason. Never reject one you have not checked.
 
-Then report, short: what was yours, what was not, what you pushed, what is still open.
+Then print the final report, short, one shaped line per fact:
+
+```
+✓ **yours** test — fixed, src/settings.test.ts
+
+– **not-yours** deploy — red on main too, left alone
+
+✓ **pushed** 2 commits
+
+– **open** 1 thread — asked to rename, replied "not doing it"
+```
 
 ## Output
 
