@@ -30,8 +30,8 @@ python3 evals/run.py --case sizing-* --runs 1
 python3 evals/run.py --dry-run                # parse and print, run nothing
 ```
 
-It scores **41 of the 50 graders** — every `regex`, `tool_used`, `tool_order`
-and `file_exists`. The nine `llm` graders come back `skip`, stay out of the
+It scores **45 of the 55 graders** — every `regex`, `tool_used`, `tool_order`
+and `file_exists`. The ten `llm` graders come back `skip`, stay out of the
 denominator, and are counted in the summary. **A skip is never a pass**, the
 same way `NOT RUN` is never `none`.
 
@@ -49,8 +49,8 @@ it spends money.
 
 **A rendered `SKILL.md` is not part of the trace.** The `Skill` tool returns the
 whole skill body as a tool result, and `skills/flow/SKILL.md` contains its own
-worked examples — `Quick — single-file copy change.` at line 340 and `Deep — new
-subsystem, touches auth (danger list).` at 344. Count those as trace and three
+worked examples — `Quick — single-file copy change.` at line 416 and `Deep — new
+subsystem, touches auth (danger list).` at 420. Count those as trace and three
 weight-3 graders stop measuring anything:
 
 | Grader | What it would do |
@@ -82,6 +82,7 @@ not write a case that greps the plugin source and then judges a size with a bare
 | `deep-coordinator` | high | A Deep job builds every chain in one session again and outgrows its window, or the chains never merge back and the PR is missing a chain's work |
 | `plans-on-tracker` | high, **manual** | A project that keeps plans on GitHub gets a file instead, or a plan nobody can close |
 | `backlog-parks-extras` | low | A three-feature prompt ships as one PR or drops two features on the floor |
+| `worktree-guard` | medium | A second session cuts its branch in the shared checkout and moves the folder out from under a session already working in it |
 
 `plans-on-tracker` is **manual**. It needs a real GitHub repo with issues on and
 a logged-in `gh`, which no scaffold can fake. `run.py` leaves it out unless you
@@ -133,7 +134,7 @@ auto-trigger   FAIL  0/5 weighted
   FAIL announces-a-size          w=2  not found in the trace
 ```
 
-Six of seven cases — seven was the count that day; there are ten now — pass every grader `run.py` scores. This one fails both of
+Six of seven cases — seven was the count that day; there are eleven now — pass every grader `run.py` scores. This one fails both of
 its, on a plain-English request — *"the README description for this CLI is too
 dry, reword it to something friendlier"* — which is exactly the shape the case
 was written for. Nothing here has regressed; this is the original bug, still
@@ -232,6 +233,28 @@ failed the first paid run on the two builders' own calls to `build`, which were
 the correct behaviour. When a `tool_used` grader means the session and not its
 agents, set `session_only: true`; the default counts both, so no older case
 changed.
+
+A fourth, from `worktree-guard`: **`max_turns` is a grader you did not write.**
+That case scored 1 of 3 on its first paid run, and the failing grader was the
+last step in the sequence. It read as the skill being unreliable, and a cause
+was proposed for it. It was the budget: `max_turns: 10`, against a step whose
+final `checkout -b` lands anywhere from tool call #8 to #13 — so the runs that
+passed under it were the ones that happened to get there early. Raised to 20,
+the same skill scored 3 of 3. Nothing in the report says "ran out of turns" — a truncated run
+and a run that chose not to act look identical in the output, and the graders
+that already passed keep passing, so the failure looks specific rather than
+positional.
+
+Two habits come out of it. **Budget from the trace, not from taste**: run the
+case once with `--keep-temp`, find the last call a grader depends on, and leave
+real room above it. And **suspect the budget first when the graders that fail
+are the late ones** — a case where the early graders pass and the last one does
+not is the shape truncation makes.
+
+The wider rule: this repo's reviewer flagged the budget on this very case and
+`hardcase` argued it away, on reasoning that was sound and wrong. Neither agent
+could run the thing. When a review and a measurement disagree, the measurement
+is the one that has met the model.
 
 Check a new grader both ways before trusting it. Point it at a transcript
 where the skill did the right thing **and** one where it did not; a grader

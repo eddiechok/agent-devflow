@@ -44,6 +44,7 @@ stateDiagram-v2
     Submitted --> Sized: you want something different
     Merged --> Sized: the branch is finished, so the next request is new work
     Submitted --> Merged: ship
+    Submitted --> Reporting: ship, when the only thing reported is a conflict
     Merged --> Live: deploy watched, URL fetched
     Live --> [*]
 

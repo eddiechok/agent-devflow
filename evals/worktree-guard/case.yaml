@@ -1,0 +1,91 @@
+schema_version: "1.1"
+name: worktree-guard
+description: New work in a folder parked on another branch takes a worktree, not the folder.
+tags: [flow, worktree]
+
+context:
+  scaffold_script: ./scaffold.sh
+
+execution:
+  # The scaffold parks the checkout on feat/another-session. This request is new
+  # work, so `build` would cut a branch with `git checkout -b` and move the whole
+  # folder -- out from under whoever is on that branch. Step 0c is what stops it.
+  prompt: "/devflow:flow add a --shout flag to greet() that upper-cases the greeting. Nobody is here to answer: yes to all, do not wait."
+  # 10 was too tight and cost two runs of the first scoring pass. Under it, the
+  # only runs that reached `checkout -b` at all were the ones that got there by
+  # tool call #8 or #9; given room, the same step takes until #12 or #13. So the
+  # budget was deciding the result as much as the skill was. 20 clears it
+  # without paying for a whole loop -- this case is done once the branch is cut,
+  # and never needs to reach submit the way `full-loop` does.
+  max_turns: 20
+  timeout_seconds: 600
+  allowed_tools: [Bash, Read, Edit, Write, Glob, Grep, Skill, EnterWorktree]
+
+runs: 3
+
+graders:
+  - type: regex
+    name: names-the-folder-it-will-not-take
+    target: trace
+    pattern: "worktree: this folder is on"
+    match: contains
+    weight: 3
+
+  - type: tool_used
+    name: moves-into-a-worktree
+    tool: EnterWorktree
+    min: 1
+    weight: 3
+
+  # The contract itself, and the only grader that would catch a run which moved
+  # into a worktree *after* already branching in the shared folder. A `checkout
+  # -b` is still expected -- it is how the feature branch gets cut from the
+  # default ref -- so what is graded is the order, never the absence.
+  - type: tool_order
+    name: takes-the-worktree-before-cutting-a-branch
+    before:
+      tool: EnterWorktree
+    after:
+      tool: Bash
+      input_match: "checkout -b"
+    weight: 4
+
+  # The other half of the guard, and the half the first version of this case
+  # could not see. `EnterWorktree` opens its worktree on a branch of its own,
+  # cut from HEAD -- which here is feat/another-session, a branch with a commit
+  # on it that this request has nothing to do with. A session that keeps that
+  # branch builds on someone else's work and nothing downstream notices, because
+  # `build`'s rule is to keep the branch it finds. The named base in the command
+  # is the proof it was re-cut rather than inherited.
+  #
+  # `(origin/)?main` and not `origin/` alone: `skills/build/SKILL.md:70` writes
+  # the plain form too, so a correct re-cut spelled `checkout -b feat/x main`
+  # would have failed a grader that demanded the remote prefix -- scoring the
+  # spelling rather than the base. Naming `main` is what rejects the wrong one,
+  # because the base that would be wrong here is `feat/another-session`.
+  - type: regex
+    name: cuts-the-feature-branch-from-the-default-ref
+    target: trace
+    pattern: "checkout -b \\S+ (origin/)?main\\b"
+    match: contains
+    weight: 4
+
+  - type: llm
+    name: refuses-rather-than-branching-anyway
+    focus: trace
+    criteria: >
+      PASS if the assistant either moved this session into its own worktree
+      before cutting any branch, or stopped and told the human to start again
+      with `claude --worktree`. FAIL if it ran `git checkout -b` in the shared
+      folder that was parked on feat/another-session, whatever it said while
+      doing so, and FAIL if it left feat/another-session checked out in that
+      folder while building on a different branch.
+
+expected_outcome: >
+  Reaches step 0c, sees the folder is on feat/another-session rather than the
+  default branch and is not already a linked worktree, prints "worktree: this
+  folder is on feat/another-session — taking my own checkout instead of moving
+  it", calls EnterWorktree, then says the branch EnterWorktree opened is not the
+  feature branch and has build cut that one from the default branch ref — so the
+  feature branch does not carry feat/another-session's commit. Never runs
+  `git checkout -b` in the shared folder, which stays on feat/another-session.

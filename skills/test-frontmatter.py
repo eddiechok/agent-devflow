@@ -774,6 +774,264 @@ check("docs/submit: records why step 6 prints, citing #31",
       f"skipped step 6, so the reasoning lives only in the skill it constrains")
 
 
+# ------------------------------ ship tends a conflict instead of stopping on it
+#
+# Step 2 refuses four things, and only one of them is ordinary: a conflict is
+# what happens when another pull request merges first. `tend` already resolves
+# one -- it merges the default branch in and reads both sides -- and it goes out
+# through `build` and `submit`, so `review`'s two fresh agents read the
+# resolution before it comes back. So `ship` hands that one over itself rather
+# than making the human type the command, which is what they hit shipping #31
+# and #32 on 23 Sep 2026: two branches cut from one commit, the second
+# conflicting the moment the first landed.
+#
+# The other three stay stops, and that is the part most easily lost in a later
+# tidy-up: a red check and a reviewer asking for changes are judgement calls,
+# and a PR that is not OPEN is not shippable at all. Widening this to all four
+# would turn `/devflow:ship` into something that answers reviewers.
+#
+# Three things are load-bearing and live only in the prompt: that it is the
+# conflict case alone, that it runs once and never loops, and that the report
+# says it happened. A resolution nobody announced, on a branch the human asked
+# to have merged and not to have rewritten, is what these pins keep out.
+
+# Not `CONFLICTING.*devflow:tend` with re.S, which was the first draft: step 2
+# already named both, four lines apart, while refusing to run it. That pattern
+# passed against the text it was meant to reject. The printed line is the thing
+# only the new behaviour has.
+SHIP_CONFLICT_LINE = "conflict: handing #"
+
+check("ship: hands a conflicting PR to tend rather than stopping",
+      SHIP_CONFLICT_LINE in ship_text,
+      f"{SHIP_PATH} step 2 never prints a '{SHIP_CONFLICT_LINE}...' line, so "
+      f"nothing says it sends a CONFLICTING pull request to `devflow:tend` "
+      f"itself rather than naming tend and stopping")
+
+check("ship: still stops on the three that are not conflicts",
+      "judgement call" in flat(ship_text),
+      f"{SHIP_PATH} never says why a red check and a reviewer asking for "
+      f"changes stay stops. Without the reason, the next edit widens the "
+      f"handoff to all four and ship starts answering reviewers")
+
+check("ship: tends a conflict once, and never loops",
+      "one attempt" in flat(ship_text).lower(),
+      f"{SHIP_PATH} never bounds the tend handoff to a single attempt. A "
+      f"conflict tend could not fix is a conflict a second tend cannot either")
+
+# The three below are the return path, and all three came out of the review of
+# 23 Sep 2026, which found that coming back from `tend` branched on `mergeable`
+# alone. `tend` pushes, and a push changes two things the first read cannot tell
+# you: CI restarts, and GitHub recomputes mergeability asynchronously, answering
+# `UNKNOWN` for the seconds right after -- which is exactly when this read lands.
+# A return path reading one field would merge a PR with checks running, on the
+# one step that cannot be undone.
+#
+# `hardcase` argued all three fell, on the grounds that the Rules list already
+# forbids merging something red. It does. But the step says "carry on to step 3
+# and merge", and this repo has already paid to learn that an implied step is
+# the step that gets skipped -- that is what the `docs:` line in `submit` exists
+# for, and what the worktree-guard eval measured. A backstop in the Rules is not
+# a substitute for the local line saying it.
+
+check("ship: re-reads every condition after tend, not just mergeable",
+      "all four conditions, not just `mergeable`" in flat(ship_text),
+      f"{SHIP_PATH}'s return path from tend must re-run all four of step 2's "
+      f"conditions. tend pushed, so CI restarted — branching on mergeability "
+      f"alone merges a pull request whose checks are still running")
+
+check("ship: does not read UNKNOWN mergeability as a yes",
+      "It is not a yes" in flat(ship_text)
+      and "UNKNOWN" in ship_text,
+      f"{SHIP_PATH} never says an UNKNOWN mergeability is not clearance. "
+      f"GitHub answers UNKNOWN for the first seconds after any push, and the "
+      f"handoff guarantees a push immediately before this read")
+
+check("ship: hands over only when the conflict is the only thing reported",
+      "is not a conflict to hand over" in flat(ship_text),
+      f"{SHIP_PATH} hands a PR to tend without checking it reports nothing "
+      f"else. Conflicting and changes-requested together means tend answers "
+      f"the reviewer too, which is not what a merge command was started for")
+
+SHIP_TENDED_LINE = "Tended:"
+
+check("ship: the report names a conflict it resolved on the way",
+      SHIP_TENDED_LINE in ship_text,
+      f"{SHIP_PATH} step 7 has no '{SHIP_TENDED_LINE}' line. The branch "
+      f"changed between the human starting ship and the merge landing, and "
+      f"the report is the only place that says so")
+
+check("ship: keeps the boundary that nothing may call it",
+      "disable-model-invocation: true" in ship_text
+      and re.search(r"opposite direction", ship_text) is not None,
+      f"{SHIP_PATH} must keep disable-model-invocation and say why calling "
+      f"out to tend does not weaken it — a skill that reaches outward is not "
+      f"a skill anything can reach into")
+
+check("flow: still refuses to resolve a chain conflict itself",
+      re.search(r"[Nn]ever resolve a merge conflict yourself", flow_text)
+      is not None,
+      f"{FLOW_PATH} lost its chain-conflict rule. A chain conflict means the "
+      f"plan was wrong, so resolving it hides a planning bug — that reason is "
+      f"untouched by ship tending a conflict against a moved default branch")
+
+DOCS_SHIP_PATH = os.path.join(REPO_ROOT, "docs", "ship.md")
+with open(DOCS_SHIP_PATH, encoding="utf-8") as fh:
+    docs_ship_text = fh.read()
+
+check("docs/ship: records why the conflict case alone is handed over",
+      "devflow:tend" in docs_ship_text
+      and re.search(r"CONFLICTING|conflict", docs_ship_text) is not None
+      and "judgement" in flat(docs_ship_text),
+      f"{DOCS_SHIP_PATH} never explains why the conflict is handed to tend "
+      f"while the other three stay stops, so the reasoning lives only in the "
+      f"skill it constrains")
+
+
+# ------------------- and the folder the session itself is standing in
+#
+# The worktrees checked earlier are the builders'. This one is the session's
+# own, and it exists because `build` cuts the feature branch with
+# `git checkout -b`, which moves the *whole folder*. Two sessions open on one
+# checkout share that folder, so the second one to start new work takes it, and
+# the first finds its branch changed underneath it mid-build. Nothing announces
+# that either. Size has nothing to do with it: a Quick typo fix moves the folder
+# exactly as a Deep job does.
+#
+# So step 0c asks whether the folder is this session's to branch in, and moves
+# into a worktree of its own when it is not. Several things live only in the
+# prompt and are pinned here for the same reason the baseRef lines are: the two
+# printed lines a human reads, the command that tells a linked worktree from the
+# main checkout, the sentence that stops the model refusing EnterWorktree at the
+# moment it fires, and the refusal to fall through into branching anyway.
+
+WORKTREE_TAKEN_LINE = (
+    "worktree: this folder is on <branch> — taking my own checkout "
+    "instead of moving it"
+)
+
+WORKTREE_REFUSED_LINE = (
+    "worktree refused — this folder belongs to <branch>. "
+    "Start again with: claude --worktree"
+)
+
+check("flow: has a step 0c for the folder the session is standing in",
+      "## Step 0c" in flow_text,
+      f"{FLOW_PATH} has no '## Step 0c' section. New work runs "
+      f"`git checkout -b`, which moves the whole folder out from under any "
+      f"other session open on the same checkout")
+
+check("flow: prints the worktree line word for word",
+      WORKTREE_TAKEN_LINE in flat(flow_text),
+      f"no line {WORKTREE_TAKEN_LINE!r} in {FLOW_PATH}. Moving a session into "
+      f"its own checkout without saying so is the quiet kind of surprise this "
+      f"whole step exists to stop")
+
+check("flow: says what to do when the worktree is refused",
+      WORKTREE_REFUSED_LINE in flat(flow_text),
+      f"no line {WORKTREE_REFUSED_LINE!r} in {FLOW_PATH}. Without it the "
+      f"refusal path falls through into branching in the shared folder, which "
+      f"is the exact outcome step 0c exists to prevent")
+
+check("flow: tells a linked worktree apart from the main checkout",
+      "git rev-parse --path-format=absolute --git-dir --git-common-dir"
+      in flow_text,
+      f"{FLOW_PATH} never runs 'git rev-parse --path-format=absolute "
+      f"--git-dir --git-common-dir'. A session already in a worktree owns its "
+      f"folder, and must not be sent into a second one")
+
+# The bare form is not a lesser version of the line above, it is the bug. Asked
+# for without `--path-format=absolute`, git answers `--git-common-dir` relative
+# to the current directory: from `docs/` in a plain checkout it prints `../.git`
+# against an absolute `--git-dir`, which step 0c reads as "already in a
+# worktree" and waves through. The whole guard then does nothing for any session
+# started below the repo root, and says nothing while not doing it. Reproduced
+# on git 2.49 and found by the review of 22 Sep 2026, which is why the absence
+# of the broken form is pinned beside the presence of the working one.
+
+check("flow: does not compare the two git dirs in their bare form",
+      not re.search(r"git rev-parse --git-(dir|common-dir)\s*$",
+                    flow_text, re.M),
+      f"{FLOW_PATH} runs 'git rev-parse --git-dir' or '--git-common-dir' "
+      f"bare. Those disagree in a plain checkout entered from a subdirectory, "
+      f"so the guard skips exactly the folder it exists to protect")
+
+check("flow: names EnterWorktree as the tool that moves the session",
+      "EnterWorktree" in flow_text,
+      f"{FLOW_PATH} never names the EnterWorktree tool")
+
+check("flow: is itself the project instruction EnterWorktree asks for",
+      "project instruction that tool asks for" in flat(flow_text),
+      f"{FLOW_PATH} never says it is the instruction EnterWorktree requires. "
+      f"That tool's own description says to use it only when the user or "
+      f"project instructions asked for a worktree, so without this line it "
+      f"gets refused at the moment it fires")
+
+check("flow: never falls through to branching in a folder it does not own",
+      re.search(r"[Dd]o not carry on in this folder", flow_text) is not None,
+      f"{FLOW_PATH} never refuses to carry on in a folder that belongs to "
+      f"another branch. A fallback that branches anyway is not a fallback")
+
+check("flow: still has build cut the branch from the default ref in the worktree",
+      "The worktree is a folder, not a base" in flat(flow_text),
+      f"{FLOW_PATH} never says the worktree does not settle the base. With "
+      f"worktree.baseRef = head the new checkout is cut from the very branch "
+      f"this work has nothing to do with, so build must still be told to cut "
+      f"from the default branch ref")
+
+# `EnterWorktree` opens its worktree on a branch of its own, named after the
+# worktree and cut from `HEAD` -- which in this step is always somebody else's
+# branch. A session that reads that branch as its feature branch stops there,
+# because `build`'s own rule is "already on a branch, keep it, whatever it is
+# called". The first eval run of this case cut a proper branch in 2 of 4
+# sessions, so the instruction to re-cut was landing about half the time. The
+# trap gets named, and the line below is what names it: a step that prints
+# something has done something, where a step that merely implies it has not.
+
+WORKTREE_NOT_THE_BRANCH_LINE = (
+    "worktree: on <the branch EnterWorktree made> — build cuts the feature "
+    "branch from <default branch ref>"
+)
+
+check("flow: says the worktree's own branch is not the feature branch",
+      "is not your feature branch" in flat(flow_text),
+      f"{FLOW_PATH} never says the branch EnterWorktree opens is not the "
+      f"feature branch. build's rule is to keep the branch it finds, so an "
+      f"unnamed trap is one the session walks into")
+
+check("flow: prints what is still owed after entering the worktree",
+      WORKTREE_NOT_THE_BRANCH_LINE in flat(flow_text),
+      f"no line {WORKTREE_NOT_THE_BRANCH_LINE!r} in {FLOW_PATH}. Without it "
+      f"the re-cut is implied rather than done, and the branch stays cut from "
+      f"HEAD — which is the parked branch")
+
+check("flow: step 0c leaves a follow-up and a resume where they are",
+      re.search(r"## Step 0c.*?[Oo]nly for new work", flow_text, re.S)
+      is not None,
+      f"{FLOW_PATH} step 0c never says it is for new work only. A follow-up "
+      f"from step 0 and a resume from step 0b both belong on the branch this "
+      f"folder is already on")
+
+check("flow: the Rules list carries the shared-folder rule",
+      re.search(r"## Rules.*folder that belongs to another", flow_text, re.S)
+      is not None,
+      f"{FLOW_PATH}'s Rules list never mentions branching in a folder that "
+      f"belongs to another session")
+
+check("flow: allowed-tools includes EnterWorktree",
+      "EnterWorktree" in flow_values.get("allowed-tools", ""),
+      "flow's allowed-tools never lists EnterWorktree")
+
+DOCS_FLOW_PATH = os.path.join(REPO_ROOT, "docs", "flow.md")
+with open(DOCS_FLOW_PATH, encoding="utf-8") as fh:
+    docs_flow_text = fh.read()
+
+check("docs/flow: records why the session takes a worktree of its own",
+      "claude --worktree" in docs_flow_text
+      and re.search(r"[Ss]tep 0c", docs_flow_text) is not None,
+      f"{DOCS_FLOW_PATH} never explains step 0c next to the other worktree "
+      f"rules, so the reasoning lives only in the skill it constrains")
+
+
 # ------------------------------------------- cross-check against a real parser
 
 try:
