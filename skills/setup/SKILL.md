@@ -158,7 +158,8 @@ Keep it short, one shaped line per fact:
 
 ✓ **plans** github (labels devflow:plan, devflow:backlog exist)
 
-– **deploy** not written — that is ship's to add, the first time it deploys and can prove the command works
+– **deploy** not written — that is ship's to add
+the first time it deploys and can prove the command works
 ```
 
 The `checks` line says `written` only when step 4 wrote the block. Otherwise it is
@@ -177,6 +178,7 @@ the result — for example `✓ **checks** 3 of 3 pass, exit 0`.
 
 - `✓` done. `✗` failed or stopped. `–` (en dash) skipped, or nothing to do.
 - One line per step, each standing alone with a blank line before and after it.
+- Keep each line to 80 characters — detail goes on the next line, or in the PR.
 
 ## Rules
 

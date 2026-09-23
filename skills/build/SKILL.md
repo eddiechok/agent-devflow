@@ -129,7 +129,7 @@ Run the test. **Show the output.**
 Then check the failure is the *right* failure. A test that fails because of a typo in the import, or because the file does not exist, has proven nothing. Once it is, print:
 
 ```
-✗ **test** red — fails for the right reason
+✓ **red** fails for the right reason
 ```
 
 If it passes immediately, the test is wrong. Fix the test before writing any code.
@@ -143,7 +143,7 @@ Write the smallest code that makes the test pass. Not the general version. Not t
 Run the test again. **Show the output.** Then run typecheck, and print:
 
 ```
-✓ **test** green — 1 passed, exit 0
+✓ **green** 1 passed, exit 0
 ```
 
 ### 5. Refactor — only now
@@ -216,6 +216,7 @@ the result — for example `✓ **checks** 3 of 3 pass, exit 0`.
 
 - `✓` done. `✗` failed or stopped. `–` (en dash) skipped, or nothing to do.
 - One line per step, each standing alone with a blank line before and after it.
+- Keep each line to 80 characters — detail goes on the next line, or in the PR.
 
 ## Rules
 

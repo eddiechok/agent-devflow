@@ -315,16 +315,22 @@ with open(FLOW_PATH, encoding="utf-8") as fh:
 
 SETTINGS_LINE = (
     "\u2713 **settings** wrote worktree.baseRef = head to .claude/settings.local.json "
-    "\u2014 chain worktrees branch from here, and so will your own --worktree sessions"
+    "chain worktrees branch from here, and so will your own --worktree sessions"
 )
 
 STOP_LINE = (
-    "\u2717 **chains** chain <letter> branched from the default branch \u2014 the "
+    "\u2717 **chains** chain <letter> branched from the default branch the "
     "setting did not take; restart the session and run flow again to resume"
 )
 
+# Both lines are pinned against `flat(flow_text)`, not `flow_text` -- each now
+# prints as two physical lines, the shaped one and a detail line straight
+# after it, to keep the shaped line itself at or under 80 visible columns.
+# `flat` is what already lets every other multi-line pin in this file survive
+# a rewrap; these are no different.
+
 check("flow: prints the worktree.baseRef line word for word",
-      SETTINGS_LINE in flow_text,
+      SETTINGS_LINE in flat(flow_text),
       f"no line {SETTINGS_LINE!r} in {FLOW_PATH}. The human reads that line and "
       f"nothing else says their own --worktree sessions changed too")
 
@@ -340,7 +346,7 @@ check("flow: checks the chain branch descends from this one",
       "not proof it took -- it may only be read at session start")
 
 check("flow: says what to do when the setting did not take",
-      STOP_LINE in flow_text,
+      STOP_LINE in flat(flow_text),
       f"no line {STOP_LINE!r} in {FLOW_PATH}. A chain off the wrong base must "
       f"stop the loop, not get merged")
 
@@ -504,8 +510,8 @@ check("flow: step 1b prints the parked: line for the file case",
       f"{FLOW_PATH} never prints the exact file-case 'parked' example")
 
 BACKLOG_FALLBACK_LINE = (
-    "✗ **parked** github asked for, wrote .devflow/backlog/<name>.md instead "
-    "— gh answered <the error>"
+    "✗ **parked** github asked, wrote .devflow/backlog/<name>.md — gh said "
+    "<the error>"
 )
 
 check("flow: step 1b falls back to the file on a gh failure",
@@ -577,12 +583,15 @@ check("flow: a chip run no longer leans on Known issues for a missing file",
       f"Known issues, which submit can drop")
 
 BACKLOG_ABSENT_LINE = (
-    "– **backlog** .devflow/backlog/<name>.md is not in this checkout — the "
+    "– **backlog** .devflow/backlog/<name>.md is not in this checkout the "
     "commit names it, so a later run skips it"
 )
 
+# Pinned against `flat(flow_text)`: the shaped line and its detail print as
+# two physical lines, to keep the shaped line at or under 80 visible columns.
+
 check("flow: a chip run says when its backlog file is not in its checkout",
-      BACKLOG_ABSENT_LINE in flow_text,
+      BACKLOG_ABSENT_LINE in flat(flow_text),
       f"no line {BACKLOG_ABSENT_LINE!r} in {FLOW_PATH}")
 
 BACKLOG_BUILT_LOG = (
@@ -610,7 +619,7 @@ check("flow: step 1 asks the merged PRs too, for a body-only Backlog line",
       f"no command {BACKLOG_BUILT_PRS!r} in {FLOW_PATH}")
 
 BACKLOG_BUILT_LINE = (
-    "– **backlog** .devflow/backlog/<name>.md already built in <sha or #n> — "
+    "– **backlog** .devflow/backlog/<name>.md already built in <sha or #n> "
     "deleting it, nothing else to build"
 )
 
@@ -641,7 +650,7 @@ check("flow: step 1b checks a name with both of step 1's lookups",
       f"uses to call it built, so a PR-body-only line slips through")
 
 check("flow: step 1 deletes a backlog file whose feature already shipped",
-      BACKLOG_BUILT_LINE in flow_text,
+      BACKLOG_BUILT_LINE in flat(flow_text),
       f"no line {BACKLOG_BUILT_LINE!r} in {FLOW_PATH}")
 
 check("flow: step 1b offers chips on top of parking, never instead of it",
@@ -804,6 +813,31 @@ check("docs/submit: says why the look gets one fix, citing #23, #25 and #26",
       all(f"#{n}" in docs_submit_text for n in (23, 25, 26)),
       f"{DOCS_SUBMIT_PATH} does not cite the three PRs that shipped a "
       f"one-line Known issue the look could have fixed")
+
+
+# ----------------------------- submit ends with a recap of the run's own lines
+#
+# The step lines a run prints are scattered between whatever tool output sits
+# between them, so a run is hard to read back once it is finished -- the
+# reader has to scroll past every command's output to find the eight or nine
+# lines that actually say what happened. The recap fixes that by repeating
+# them, once, in one block, at the very end, right before the PR's link.
+
+SUBMIT_RECAP_LINE = (
+    "Before the PR link, repeat every shaped line this run printed, step 1 "
+    "through this one, in the order they were printed"
+)
+
+check("submit: step 9 prints a recap of the run's step lines before the PR link",
+      SUBMIT_RECAP_LINE in flat(submit_text),
+      f"no line {SUBMIT_RECAP_LINE!r} in {SUBMIT_PATH}. Without it the step "
+      f"lines stay scattered between tool output, and a finished run is hard "
+      f"to read back")
+
+check("submit: the recap adds nothing new",
+      "Add nothing to it" in submit_text,
+      f"{SUBMIT_PATH} never says the recap adds no new text -- without that "
+      f"rule it drifts into a second, competing summary of the run")
 
 
 # ------------------------------------- ship's report names the retargeted PRs
@@ -1064,14 +1098,19 @@ check("docs/ship: records why the conflict case alone is handed over",
 # moment it fires, and the refusal to fall through into branching anyway.
 
 WORKTREE_TAKEN_LINE = (
-    "✓ **worktree** this folder is on <branch> — taking my own checkout "
-    "instead of moving it"
+    "✓ **worktree** this folder is on <branch> — keeping my own checkout, "
+    "not moving it"
 )
 
 WORKTREE_REFUSED_LINE = (
     "✗ **worktree** refused — this folder belongs to <branch>. "
     "Start again with: claude --worktree"
 )
+
+# Both pinned against `flat(flow_text)`, which already tolerates the wrap --
+# WORKTREE_REFUSED_LINE prints as two physical lines so the shaped line stays
+# at or under 80 visible columns, and flat() is what lets the period between
+# them stand in for the line break.
 
 check("flow: has a step 0c for the folder the session is standing in",
       "## Step 0c" in flow_text,
@@ -1147,8 +1186,8 @@ check("flow: still has build cut the branch from the default ref in the worktree
 # something has done something, where a step that merely implies it has not.
 
 WORKTREE_NOT_THE_BRANCH_LINE = (
-    "✓ **worktree** on <the branch EnterWorktree made> — build cuts the "
-    "feature branch from <default branch ref>"
+    "✓ **worktree** on <its own branch> — build cuts fresh from "
+    "<default branch ref>"
 )
 
 check("flow: says the worktree's own branch is not the feature branch",
@@ -1180,8 +1219,8 @@ check("flow: prints what is still owed after entering the worktree",
 # of that check is pinned beside the presence of the re-cut.
 
 WORKTREE_CARRIES_LINE = (
-    "✓ **worktree** <branch> already carries commits — build cuts the "
-    "feature branch from <default branch ref>"
+    "✓ **worktree** <branch> carries commits — build re-cuts from "
+    "<default branch ref>"
 )
 
 check("flow: re-cuts a worktree that already carries commits",
@@ -1363,7 +1402,8 @@ Every line a human reads takes one shape: a mark, a bold one-word lowercase labe
 the result — for example `✓ **checks** 3 of 3 pass, exit 0`.
 
 - `✓` done. `✗` failed or stopped. `–` (en dash) skipped, or nothing to do.
-- One line per step, each standing alone with a blank line before and after it."""
+- One line per step, each standing alone with a blank line before and after it.
+- Keep each line to 80 characters — detail goes on the next line, or in the PR."""
 
 HUMAN_FACING_SKILLS = ["flow", "build", "submit", "review", "tend", "ship", "setup"]
 
@@ -1377,6 +1417,138 @@ for slug, text in human_facing_text.items():
           OUTPUT_SECTION in text,
           f"{slug}/SKILL.md is missing the exact '## Output' section shared, "
           f"word for word, by all seven human-facing skills")
+
+
+# ------------------------------ build prints red and green as their own labels
+
+# The gate lines used to read `✗ **test** red -- fails for the right reason`
+# and `✓ **test** green -- 1 passed, exit 0`. The first puts a fail mark on a
+# gate that is supposed to fail, so a session skimming for `✗` cannot tell
+# "RED failed the way it's meant to" from a real failure. Splitting red and
+# green into their own labels removes that ambiguity.
+
+BUILD_PATH = os.path.join(SKILLS_DIR, "build", "SKILL.md")
+build_text = human_facing_text["build"]
+
+check("build: verify-RED prints its own red label",
+      "✓ **red** fails for the right reason" in build_text,
+      f"{BUILD_PATH} never prints '✓ **red** fails for the right reason' "
+      f"after verify-RED")
+
+check("build: verify-GREEN prints its own green label",
+      "✓ **green** 1 passed, exit 0" in build_text,
+      f"{BUILD_PATH} never prints '✓ **green** 1 passed, exit 0' after "
+      f"verify-GREEN")
+
+check("build: no longer marks the expected-to-fail RED gate as a failure",
+      "✗ **test** red" not in build_text,
+      f"{BUILD_PATH} still prints '✗ **test** red', which reads as a real "
+      f"failure for a gate that is supposed to fail")
+
+check("build: no longer uses the bare test label for the green gate",
+      "✓ **test** green" not in build_text,
+      f"{BUILD_PATH} still prints '✓ **test** green' instead of the "
+      f"red/green label split")
+
+
+# -------------------------------- one fixed label list for every shaped line
+
+# `flow`'s chain report already glosses a word for the human it reaches --
+# `seam:` where every skill's own text says "tested at". A printed label is
+# the same risk running the other way: nothing stopped two skills from
+# picking two different words for the same idea, or one skill's label
+# drifting a piece at a time with nobody able to see the other six at once.
+# The list lives here, once, read by this test and nowhere else -- never in
+# a skill body, which a model rereads on every single run.
+#
+# Every label already on this list is a lowercase run of letters with no
+# internal space; a hyphen inside one, like `no-behaviour`, still reads and
+# matches as a single token. `no-behaviour` keeps its hyphen because it is
+# also the hand-off argument name `submit` passes `review`, word for word --
+# renaming the label without renaming the argument would split one idea into
+# two spellings, which is the exact drift this list exists to catch.
+
+SHAPED_LABELS = {
+    "backlog", "branch", "chains", "checks", "chips", "cleaned", "commit",
+    "conflict", "debug", "deploy", "docs", "features", "glossary", "green",
+    "handback", "lint", "live", "look", "merge", "merged", "no-behaviour",
+    "not-yours", "open", "opinion", "override", "parked", "piece", "plan",
+    "plans", "pr", "pushed", "red", "retargeted", "review", "session",
+    "settings", "tended", "test", "typecheck", "worktree", "yours",
+}
+
+SHAPED_LINE_LABEL = re.compile(r"[✓✗–] \*\*([a-z][a-z-]*)\*\*")
+
+
+def shaped_labels_in(text):
+    return set(SHAPED_LINE_LABEL.findall(text))
+
+
+check("label scanner: finds a listed label",
+      "checks" in shaped_labels_in("✓ **checks** 3 of 3 pass, exit 0"))
+
+check("label scanner: finds a label that is not on the list",
+      "madeup" in shaped_labels_in("✓ **madeup** something")
+      and "madeup" not in SHAPED_LABELS)
+
+for slug, text in human_facing_text.items():
+    unlisted = sorted(shaped_labels_in(text) - SHAPED_LABELS)
+    check(f"{slug}: every shaped line uses a label from the fixed list",
+          not unlisted,
+          f"{slug}/SKILL.md prints a shaped line whose label is not in "
+          f"SHAPED_LABELS: {unlisted}")
+
+
+# --------------------------- no shaped example line is longer than 80 columns
+
+# A line a human reads wraps in a narrow terminal or a chat pane past 80
+# columns, and the wrap lands wherever the window happens to be, not wherever
+# reads well. Two shapes carry a shaped example in these files: its own line,
+# usually fenced, and a line citing it inline mid-sentence -- "print `✓
+# **label** ...`, then ...". Both are text a human will see printed verbatim,
+# so both are checked. `**` is markdown, invisible once rendered, and does
+# not count; a `<placeholder>` counts exactly as written, because that is
+# what a reader sees before the run fills it in.
+
+SHAPED_STANDALONE_LINE = re.compile(
+    r"^[ \t]*([✓✗–] \*\*[a-z][a-z-]*\*\*.*)$", re.M)
+SHAPED_INLINE_CITATION = re.compile(
+    r"`([✓✗–] \*\*[a-z][a-z-]*\*\*[^`]*)`")
+
+
+def shaped_example_lines(text):
+    found = set()
+    found.update(SHAPED_STANDALONE_LINE.findall(text))
+    found.update(SHAPED_INLINE_CITATION.findall(text))
+    return found
+
+
+def visible_length(example):
+    # A citation pulled from running prose can carry the paragraph's own
+    # soft-wrap -- a literal newline where the rendered line only ever had a
+    # space. Collapse whitespace the way a reader would before measuring.
+    return len(re.sub(r"\s+", " ", example.strip()).replace("**", ""))
+
+
+check("line-length scanner: counts a listed label's line, ** not counted",
+      visible_length("✓ **checks** 3 of 3 pass, exit 0") == 28)
+
+check("line-length scanner: a <placeholder> counts as written",
+      visible_length("✓ **branch** <name>") == len("✓ branch <name>"))
+
+check("line-length scanner: finds a line over 80 columns",
+      visible_length("✓ **label** " + ("x" * 80)) > 80)
+
+for slug, text in human_facing_text.items():
+    too_long = sorted(
+        (visible_length(example), example)
+        for example in shaped_example_lines(text)
+        if visible_length(example) > 80
+    )
+    check(f"{slug}: every shaped example line is 80 visible characters or fewer",
+          not too_long,
+          f"{slug}/SKILL.md has shaped example line(s) over 80 visible "
+          f"characters: {too_long}")
 
 
 # ------------------------------------------- cross-check against a real parser
