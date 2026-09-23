@@ -2,7 +2,7 @@
 name: flow
 description: "Use when a request will change anything tracked in the repo - a feature, a bug fix, a refactor, a chore or a dependency bump, and equally copy, content, docs, config, styles, images or other assets. Editing a tracked file is the test, not whether the work sounds like coding. Enter here mid-task too, the moment an investigation turns into an edit. Sizes the work as Quick, Standard or Deep, then routes it through build and submit, so the work ends as a pull request rather than uncommitted changes. Accepts free text, a GitHub issue number like #123, an issue URL, or a backlog file path under .devflow/backlog/. This is the entry point, start here."
 argument-hint: "[--quick|--deep] what you want, #123, or .devflow/backlog/<name>.md"
-allowed-tools: Bash(git status:*), Bash(git branch:*), Bash(git rev-parse:*), Bash(git symbolic-ref:*), Bash(git rev-list:*), Bash(ls:*), Bash(gh issue view:*), Bash(gh pr view:*), Bash(gh issue list:*), Bash(gh issue create:*), Bash(gh label create:*), Bash(rm .devflow/backlog/*), EnterWorktree, mcp__ccd_session__spawn_task
+allowed-tools: Bash(git status:*), Bash(git branch:*), Bash(git rev-parse:*), Bash(git symbolic-ref:*), Bash(git rev-list:*), Bash(ls:*), Bash(gh issue view:*), Bash(gh pr view:*), Bash(gh issue list:*), Bash(gh issue create:*), Bash(gh label create:*), Bash(rm .devflow/backlog/*), Bash(git log:*), Bash(gh pr list:*), EnterWorktree, mcp__ccd_session__spawn_task
 ---
 
 # flow
@@ -262,9 +262,32 @@ worktree refused — this folder belongs to <branch>. Start again with: claude -
 `$ARGUMENTS` is the request.
 
 **A path under `.devflow/backlog/` is not free text — it is a feature this project already
-decided to build later.** Read the file; its contents are the request, exactly as an
-issue body is. Then remove the file and say so, so the deletion ships in this run's own
-PR rather than lingering as a stale entry the next run reads and parks all over again:
+decided to build later.** First ask whether it was built already. A chip run started
+before this file reached the default branch could not see it, so its commit and its PR
+body name the file instead, on a `Backlog:` line. Look on the default branch, then, if
+that finds nothing and `gh` answers, in the merged pull requests:
+
+```
+git log <default branch ref> --fixed-strings --grep="Backlog: .devflow/backlog/<name>.md" --format=%h -1
+```
+
+```
+gh pr list --state merged --search '"Backlog: .devflow/backlog/<name>.md" in:body' --json number,body --jq '.[] | select(.body | contains("Backlog: .devflow/backlog/<name>.md")) | .number'
+```
+
+Keep the `--jq` filter. GitHub's phrase search is loose and matches bodies without the
+line; only a number the filter prints is a hit.
+
+**A hit means the feature shipped.** Remove the file, say so, and build nothing else: the
+deletion is the whole change, so size it Quick and carry on to `build` and `submit`.
+
+```
+backlog: .devflow/backlog/<name>.md already built in <sha or #n> — deleting it, nothing else to build
+```
+
+**No hit** — read the file; its contents are the request, exactly as an issue body is.
+Then remove the file and say so, so the deletion ships in this run's own PR rather than
+lingering as a stale entry the next run reads and parks all over again:
 
 ```
 rm .devflow/backlog/<name>.md
@@ -272,6 +295,17 @@ rm .devflow/backlog/<name>.md
 
 ```
 backlog: took .devflow/backlog/<name>.md — the file is deleted in this branch
+```
+
+**A request that ends `Also parked as .devflow/backlog/<name>.md`** came from a step 1b
+chip. The text above that line is what to build, but keep that line in the request you
+hand `submit` at step 5 — it is how `submit` knows to write the `Backlog:` line. If the
+file is in this checkout, remove it and print the `took` line. If it is not, the kept run
+has not merged yet; print this, and `submit` writes the `Backlog:` line a later run looks
+for:
+
+```
+backlog: .devflow/backlog/<name>.md is not in this checkout — the commit names it, so a later run skips it
 ```
 
 If it starts with `#` or is a GitHub issue URL, read the issue first — `gh issue view NUMBER`, or whatever GitHub access this environment has. The issue body is the request. Remember the number so `submit` can close it.
@@ -350,7 +384,10 @@ line `Parked from: <the feature this run built>`, never the whole original reque
 remove it after each issue is filed.
 
 **No block, `local`, or a `gh` failure:** write a file instead, one per parked feature, at
-`.devflow/backlog/<short-name>.md`:
+`.devflow/backlog/<short-name>.md`. Never park under a name a `Backlog:` line already holds
+— step 1 would read that entry as built and delete it. Run both of step 1's lookups for
+the name first, and on a hit from either pick another. If `gh` cannot answer, the name is
+unchecked; use `<short-name>-<YYYY-MM-DD>` instead:
 
 ```markdown
 # <feature>
@@ -387,8 +424,8 @@ worktree, and a fresh worktree has only committed files, so the prompt must stan
 - **Parked as a file** — the prompt is `/devflow:flow ` followed by the feature's own
   text, never the backlog path: the file is untracked here and not in that worktree. End
   it with one line, `Also parked as .devflow/backlog/<short-name>.md — delete it in this
-  branch if it is there; if it is not, say so under Known issues.`, so an entry the chip
-  could not see is named in its PR rather than built twice.
+  branch if it is there.` Step 1 reads that line, and `submit` turns it into a
+  `Backlog:` line, so an entry the chip could not see is skipped later, not built twice.
 - **This run's request was an issue or a backlog file** — offer no file-case chip. That
   text was not typed by the human, and a chip hands it to the next run as if it were,
   past step 1's guard. The file alone is the record; an issue-case chip is still fine,

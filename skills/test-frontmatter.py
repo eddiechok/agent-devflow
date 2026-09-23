@@ -51,6 +51,14 @@ def check(name, cond, detail=""):
         failed += 1
 
 
+def flat(text):
+    """One line, single-spaced. These files wrap their prose at about 95
+    columns, so a pinned phrase long enough to be worth pinning is a phrase
+    long enough to wrap. Pinning the wrap as well would fail the next time a
+    word ahead of it changed, which is a test that punishes editing."""
+    return " ".join(text.split())
+
+
 def frontmatter(text):
     m = re.match(r"\A---\n(.*?)\n---\n", text, re.S)
     return m.group(1) if m else None
@@ -537,19 +545,103 @@ check("flow: step 1b prints the chips: line",
 
 # A file-case chip hands the parked text to the next run as free text, which
 # step 1 treats as the human's own words. Text that came from an issue or a
-# backlog file was never that, so it gets no file-case chip. And a chip clicked
-# before the kept PR merges cannot see the backlog file to delete it, so the
-# run it starts has to say so rather than leave the entry to be built twice.
+# backlog file was never that, so it gets no file-case chip.
 
 check("flow: step 1b offers no file-case chip for text the human did not type",
       "offer no file-case chip" in flow_text,
       f"{FLOW_PATH} never refuses a file-case chip for text from an issue "
       f"or a backlog file")
 
-check("flow: a file-case chip that cannot see its backlog file says so",
-      "say so under Known issues" in flow_text,
-      f"{FLOW_PATH} never has a file-case chip name a backlog file it "
-      f"could not delete under Known issues")
+# A chip clicked before the kept PR merges cannot see the backlog file, and
+# the kept PR commits it to the default branch afterwards: an entry for a
+# feature that already shipped. Until 23 Sep 2026 the chip run named it under
+# Known issues, which `submit` rebuilds from review and could drop. Now the
+# chip run's commit and PR body carry a `Backlog:` line whether the file was
+# there or not, and step 1 looks for that line before it builds a backlog
+# file. The line, both lookups and both printed lines are pinned: the writer
+# and the reader live in two skills, and one word of drift breaks the match.
+
+CHIP_FILE_LINE = (
+    "Also parked as .devflow/backlog/<short-name>.md — delete it in this "
+    "branch if it is there."
+)
+
+check("flow: a file-case chip ends with the Also parked as line",
+      CHIP_FILE_LINE in flat(flow_text),
+      f"no line {CHIP_FILE_LINE!r} in {FLOW_PATH}")
+
+check("flow: a chip run no longer leans on Known issues for a missing file",
+      "say so under Known issues" not in flat(flow_text),
+      f"{FLOW_PATH} still has a chip run name a missing backlog file under "
+      f"Known issues, which submit can drop")
+
+BACKLOG_ABSENT_LINE = (
+    "backlog: .devflow/backlog/<name>.md is not in this checkout — the "
+    "commit names it, so a later run skips it"
+)
+
+check("flow: a chip run says when its backlog file is not in its checkout",
+      BACKLOG_ABSENT_LINE in flow_text,
+      f"no line {BACKLOG_ABSENT_LINE!r} in {FLOW_PATH}")
+
+BACKLOG_BUILT_LOG = (
+    'git log <default branch ref> --fixed-strings '
+    '--grep="Backlog: .devflow/backlog/<name>.md" --format=%h -1'
+)
+BACKLOG_BUILT_PRS = (
+    "gh pr list --state merged --search "
+    "'\"Backlog: .devflow/backlog/<name>.md\" in:body' --json number,body "
+    "--jq '.[] | select(.body | contains(\"Backlog: .devflow/backlog/<name>.md\")) "
+    "| .number'"
+)
+
+check("flow: step 1 asks the default branch's log before taking a backlog file",
+      BACKLOG_BUILT_LOG in flow_text,
+      f"no command {BACKLOG_BUILT_LOG!r} in {FLOW_PATH}")
+
+# GitHub's phrase search is loose: on 23 Sep 2026 a quoted phrase from #34's
+# body also matched four merged PRs that do not contain it. A loose hit here
+# deletes a real backlog entry and builds nothing, so the --jq filter checks
+# the exact line again, and the search only narrows what gets fetched.
+
+check("flow: step 1 asks the merged PRs too, for a body-only Backlog line",
+      BACKLOG_BUILT_PRS in flow_text,
+      f"no command {BACKLOG_BUILT_PRS!r} in {FLOW_PATH}")
+
+BACKLOG_BUILT_LINE = (
+    "backlog: .devflow/backlog/<name>.md already built in <sha or #n> — "
+    "deleting it, nothing else to build"
+)
+
+# Two holes the first review found. The request step 1 hands on to `submit`
+# has to keep the `Also parked as` line, or `submit` never writes the
+# `Backlog:` line and the fix does nothing. And a hit is keyed on the path
+# alone, so a later feature parked under a name an old `Backlog:` line
+# already holds would read as built and be deleted -- step 1b has to refuse
+# that name when it parks.
+
+check("flow: step 1 keeps the Also parked line in the request for submit",
+      "keep that line in the request" in flat(flow_text),
+      f"{FLOW_PATH} never says the `Also parked as` line stays in the "
+      f"request step 5 hands to submit")
+
+check("flow: step 1b never parks under a name a Backlog: line already holds",
+      "a name a `Backlog:` line already holds" in flat(flow_text),
+      f"{FLOW_PATH} step 1b never refuses a short name an old Backlog: "
+      f"line would match")
+
+check("flow: step 1b dates the name when gh cannot answer the PR lookup",
+      "<short-name>-<YYYY-MM-DD>" in flow_text,
+      f"{FLOW_PATH} step 1b trusts a name the PR lookup could not check")
+
+check("flow: step 1b checks a name with both of step 1's lookups",
+      "both of step 1's lookups" in flat(flow_text),
+      f"{FLOW_PATH} step 1b checks a name with fewer lookups than step 1 "
+      f"uses to call it built, so a PR-body-only line slips through")
+
+check("flow: step 1 deletes a backlog file whose feature already shipped",
+      BACKLOG_BUILT_LINE in flow_text,
+      f"no line {BACKLOG_BUILT_LINE!r} in {FLOW_PATH}")
 
 check("flow: step 1b offers chips on top of parking, never instead of it",
       "never instead of parking" in flow_text,
@@ -570,6 +662,8 @@ FLOW_BACKLOG_TOOLS = [
     "Bash(gh issue create:*)",
     "Bash(gh label create:*)",
     "Bash(rm .devflow/backlog/*)",
+    "Bash(git log:*)",
+    "Bash(gh pr list:*)",
     "mcp__ccd_session__spawn_task",
 ]
 
@@ -666,6 +760,21 @@ SUBMIT_PATH = os.path.join(SKILLS_DIR, "submit", "SKILL.md")
 with open(SUBMIT_PATH, encoding="utf-8") as fh:
     submit_text = fh.read()
 
+# The writer half of the Backlog: line -- see step 1b's chip checks above.
+
+SUBMIT_BACKLOG_LINE = "Backlog: .devflow/backlog/<name>.md"
+
+check("submit: a request that names a parked file gets a Backlog: line",
+      "Also parked as" in submit_text and SUBMIT_BACKLOG_LINE in submit_text,
+      f"{SUBMIT_PATH} never turns an 'Also parked as' request line into "
+      f"{SUBMIT_BACKLOG_LINE!r} in the commit and the PR body")
+
+check("submit: the Backlog: line goes in the commit and under What",
+      re.search(r"Backlog:.*commit.*What|Backlog:.*What.*commit",
+                flat(submit_text)) is not None,
+      f"{SUBMIT_PATH} never says the Backlog: line goes in both the commit "
+      f"body and the PR body's What")
+
 check("submit: the final look's fix must be small",
       "a few lines" in submit_text,
       f"{SUBMIT_PATH} never bounds the final look's fix by size ('a few lines')")
@@ -723,12 +832,6 @@ check("ship: the report names the PRs it retargeted",
 # pinned here instead, because a label in the reader's words is exactly what a
 # later tidy-up folds back into the internal one.
 
-def flat(text):
-    """One line, single-spaced. These files wrap their prose at about 95
-    columns, so a pinned phrase long enough to be worth pinning is a phrase
-    long enough to wrap. Pinning the wrap as well would fail the next time a
-    word ahead of it changed, which is a test that punishes editing."""
-    return " ".join(text.split())
 
 
 evidence_review = [line for line in submit_text.split("\n")
