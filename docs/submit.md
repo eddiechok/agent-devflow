@@ -166,3 +166,7 @@ first — a preview is a real build with real environment variables on a clean m
 ## Step 9 — handing off
 
 `flow` decided it before any code was written, and that decision does not always survive to here — a compaction, a long Deep job, or a `submit` you were invoked into directly all lose it. Losing it is silent, and what it drops is the only security gate in the loop. Deciding twice costs a moment; missing it costs the gate.
+
+### The recap
+
+Nine steps each print one shaped line, but they print it between whatever tool output that step produced, so a finished run is a needle-in-haystack read for anyone who was not watching live. The recap repeats those lines, once, in one block, at the end — the run's whole shape in the last screenful, right before the link the human actually came for.

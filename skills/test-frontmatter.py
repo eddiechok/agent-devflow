@@ -806,6 +806,31 @@ check("docs/submit: says why the look gets one fix, citing #23, #25 and #26",
       f"one-line Known issue the look could have fixed")
 
 
+# ----------------------------- submit ends with a recap of the run's own lines
+#
+# The step lines a run prints are scattered between whatever tool output sits
+# between them, so a run is hard to read back once it is finished -- the
+# reader has to scroll past every command's output to find the eight or nine
+# lines that actually say what happened. The recap fixes that by repeating
+# them, once, in one block, at the very end, right before the PR's link.
+
+SUBMIT_RECAP_LINE = (
+    "Before the PR link, repeat every shaped line this run printed, step 1 "
+    "through this one, in the order they were printed"
+)
+
+check("submit: step 9 prints a recap of the run's step lines before the PR link",
+      SUBMIT_RECAP_LINE in flat(submit_text),
+      f"no line {SUBMIT_RECAP_LINE!r} in {SUBMIT_PATH}. Without it the step "
+      f"lines stay scattered between tool output, and a finished run is hard "
+      f"to read back")
+
+check("submit: the recap adds nothing new",
+      "Add nothing to it" in submit_text,
+      f"{SUBMIT_PATH} never says the recap adds no new text -- without that "
+      f"rule it drifts into a second, competing summary of the run")
+
+
 # ------------------------------------- ship's report names the retargeted PRs
 #
 # `ship` step 6 promises "step 7 names the PRs you retargeted", and step 7's

@@ -342,6 +342,14 @@ If a check goes red on the PR after this, or a reviewer asks for something, that
 
 Never suggest throwing work away. If discarding a branch or force-pushing genuinely comes up, the human must type the word `discard` — "sure", "ok" and "go ahead" do not count.
 
+**Then the recap.** Before the PR link, repeat every shaped line this run printed, step 1 through this one, in the order they were printed, in one block. Add nothing to it — no summary, no new line, nothing this run has not already said once. It is the one place a human can read the whole run without scrolling back through the tool output sitting between the steps.
+
+Then, as the last thing this skill prints, the PR's link:
+
+```
+https://github.com/<owner>/<repo>/pull/14
+```
+
 ## Output
 
 Every line a human reads takes one shape: a mark, a bold one-word lowercase label, then
