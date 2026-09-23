@@ -234,6 +234,28 @@ the correct behaviour. When a `tool_used` grader means the session and not its
 agents, set `session_only: true`; the default counts both, so no older case
 changed.
 
+A fourth, from `worktree-guard`: **`max_turns` is a grader you did not write.**
+That case scored 1 of 3 on its first paid run, and the failing grader was the
+last step in the sequence. It read as the skill being unreliable, and a cause
+was proposed for it. It was the budget: `max_turns: 10`, against a step whose
+final `checkout -b` lands anywhere from tool call #8 to #13 — so the runs that
+passed under it were the ones that happened to get there early. Raised to 20,
+the same skill scored 3 of 3. Nothing in the report says "ran out of turns" — a truncated run
+and a run that chose not to act look identical in the output, and the graders
+that already passed keep passing, so the failure looks specific rather than
+positional.
+
+Two habits come out of it. **Budget from the trace, not from taste**: run the
+case once with `--keep-temp`, find the last call a grader depends on, and leave
+real room above it. And **suspect the budget first when the graders that fail
+are the late ones** — a case where the early graders pass and the last one does
+not is the shape truncation makes.
+
+The wider rule: this repo's reviewer flagged the budget on this very case and
+`hardcase` argued it away, on reasoning that was sound and wrong. Neither agent
+could run the thing. When a review and a measurement disagree, the measurement
+is the one that has met the model.
+
 Check a new grader both ways before trusting it. Point it at a transcript
 where the skill did the right thing **and** one where it did not; a grader
 that cannot fail is worse than no grader, because it reads as coverage.
