@@ -1160,6 +1160,39 @@ check("flow: prints what is still owed after entering the worktree",
       f"the re-cut is implied rather than done, and the branch stays cut from "
       f"HEAD — which is the parked branch")
 
+# Being in a linked worktree settles the folder, not the branch. With
+# `worktree.baseRef` = "head", a worktree -- a chip's, or one the human opened
+# with `claude --worktree` -- is cut from whatever the main checkout was on,
+# and that can be a feature branch. Its branch is then ahead of the default
+# branch ref with no PR, `build` keeps it, and the new PR carries the old
+# feature's commits. So for new work, a worktree whose `Commits ahead` is not
+# 0 has `build` re-cut from the default ref.
+#
+# The first version asked `git branch --contains HEAD` whether another branch
+# held those commits, and kept the branch when none did. The review caught it:
+# `git branch` lists local branches only, and `ship` deletes the local branch
+# after a squash or rebase merge, so the borrowed commits then read as the
+# worktree's own and ship twice. Where they came from never mattered -- step 0c
+# only runs for new work, so they predate the request either way. The absence
+# of that check is pinned beside the presence of the re-cut.
+
+WORKTREE_CARRIES_LINE = (
+    "worktree: <branch> already carries commits — build cuts the feature "
+    "branch from <default branch ref>"
+)
+
+check("flow: re-cuts a worktree that already carries commits",
+      WORKTREE_CARRIES_LINE in flat(flow_text),
+      f"no line {WORKTREE_CARRIES_LINE!r} in {FLOW_PATH}. A worktree cut "
+      f"from a feature branch looks like a clean start, build keeps it, and "
+      f"the new PR carries the other branch's commits")
+
+check("flow: does not ask which branches hold a worktree's commits",
+      "git branch --contains" not in flow_text,
+      f"{FLOW_PATH} runs `git branch --contains`. It sees local branches "
+      f"only, so a source branch that was merged and deleted makes borrowed "
+      f"commits look like the worktree's own")
+
 check("flow: step 0c leaves a follow-up and a resume where they are",
       re.search(r"## Step 0c.*?[Oo]nly for new work", flow_text, re.S)
       is not None,
