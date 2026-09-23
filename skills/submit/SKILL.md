@@ -343,6 +343,15 @@ If a check goes red on the PR after this, or a reviewer asks for something, that
 
 Never suggest throwing work away. If discarding a branch or force-pushing genuinely comes up, the human must type the word `discard` — "sure", "ok" and "go ahead" do not count.
 
+**Then what changed**, in one to three `done` lines — what this branch now does, in
+words a user of it would know, not the file list:
+
+```
+✓ **done** build prints red and green as their own lines
+```
+
+It goes right above the recap, and the recap leaves it out.
+
 **Then the recap.** Before the PR link, repeat every shaped line this run printed, step 1 through this one, in the order they were printed, in one block. Add nothing to it — no summary, no new line, nothing this run has not already said once. It is the one place a human can read the whole run without scrolling back through the tool output sitting between the steps.
 
 Then, as the last thing this skill prints, the PR's link:

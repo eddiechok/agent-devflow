@@ -840,6 +840,65 @@ check("submit: the recap adds nothing new",
       f"rule it drifts into a second, competing summary of the run")
 
 
+# ------------------------- a summary before the build, and one after the submit
+#
+# The size line says how big the work is, not what it will touch, so on Quick
+# and Standard the human saw nothing of the change until it was built. flow now
+# prints a short `todo` block right after the size line. Deep, where a wrong
+# plan costs the most, puts that block in its one round of questions and waits,
+# so a single "yes to all" answers the questions and approves the plan -- one
+# stop, not two. At the other end the recap says how each step went but not
+# what changed, which only the PR body said; submit prints a `done` block
+# right above the recap.
+
+FLOW_TODO_LINE = "✓ **todo**"
+FLOW_TODO_CARRY_ON = "Quick and Standard print it and carry on without waiting"
+FLOW_TODO_DEEP_WAITS = (
+    "Deep puts it in the same message as its round of questions, and waits"
+)
+FLOW_TODO_REDO = "show the new block and wait once more"
+SUBMIT_DONE_LINE = "✓ **done**"
+SUBMIT_DONE_ABOVE_RECAP = "right above the recap, and the recap leaves it out"
+
+check("flow: prints a todo block after the size line",
+      FLOW_TODO_LINE in flow_text,
+      f"no {FLOW_TODO_LINE!r} line in {FLOW_PATH}. The size line alone never "
+      f"says what the change will touch")
+
+check("flow: Quick and Standard show the todo block without stopping",
+      FLOW_TODO_CARRY_ON in flat(flow_text),
+      f"{FLOW_PATH} never says Quick and Standard carry on past the todo block")
+
+check("flow: Deep shows the todo block with its questions and waits",
+      FLOW_TODO_DEEP_WAITS in flat(flow_text),
+      f"{FLOW_PATH} never puts Deep's todo block in its question round -- "
+      f"without it Deep either builds unchecked or stops twice")
+
+check("flow: a changed answer shows the todo block again",
+      FLOW_TODO_REDO in flat(flow_text),
+      f"{FLOW_PATH} never re-shows the todo block when an answer changes the plan")
+
+FLOW_DEEP_REPLY_LINE = (
+    'Reply "yes to all" to take every recommendation and approve the todo '
+    'block.'
+)
+
+check("flow: Deep's reply line tells the human it approves the plan too",
+      FLOW_DEEP_REPLY_LINE in flow_text,
+      f"no line {FLOW_DEEP_REPLY_LINE!r} in {FLOW_PATH}. The model knows one "
+      f"reply approves the plan; the human replying would not")
+
+check("submit: prints a done block of what changed",
+      SUBMIT_DONE_LINE in submit_text,
+      f"no {SUBMIT_DONE_LINE!r} line in {SUBMIT_PATH}. The recap says how the "
+      f"steps went, not what changed")
+
+check("submit: the done block sits above the recap, not inside it",
+      SUBMIT_DONE_ABOVE_RECAP in flat(submit_text),
+      f"{SUBMIT_PATH} never places the done block above the recap -- the recap "
+      f"would repeat it, or the reader would find it after the link")
+
+
 # ------------------------------------- ship's report names the retargeted PRs
 #
 # `ship` step 6 promises "step 7 names the PRs you retargeted", and step 7's
@@ -1469,11 +1528,12 @@ check("build: no longer uses the bare test label for the green gate",
 
 SHAPED_LABELS = {
     "backlog", "branch", "chains", "checks", "chips", "cleaned", "commit",
-    "conflict", "debug", "deploy", "docs", "features", "glossary", "green",
-    "handback", "lint", "live", "look", "merge", "merged", "no-behaviour",
-    "theirs", "open", "opinion", "override", "parked", "piece", "plan",
-    "plans", "pr", "pushed", "red", "retargeted", "review", "session",
-    "settings", "tended", "test", "typecheck", "worktree", "yours",
+    "conflict", "debug", "deploy", "docs", "done", "features", "glossary",
+    "green", "handback", "lint", "live", "look", "merge", "merged",
+    "no-behaviour", "open", "opinion", "override", "parked", "piece",
+    "plan", "plans", "pr", "pushed", "red", "retargeted", "review",
+    "session", "settings", "tended", "test", "theirs", "todo", "typecheck",
+    "worktree", "yours",
 }
 
 SHAPED_LINE_LABEL = re.compile(r"[✓✗–] \*\*([^*\n]+)\*\*")

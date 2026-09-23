@@ -18,9 +18,10 @@ rule looks wrong.
 Read the project's `CLAUDE.md` and look for a `## Checks` block.
 
 If one exists, **do not overwrite it.** Run each command in it and print one shaped line per
-command, the same shape step 3 uses below, then go to step 5 if there is no `## Plans`
-block yet. One that fails or is missing → print it `✗`, suggest a fix, and ask before
-changing anything.
+command, the same shape step 3 uses below. Then:
+
+- all pass → go to step 5 if there is no `## Plans` block yet
+- one fails or is missing → print it `✗`, suggest a fix, and ask before changing anything
 
 A block someone wrote deliberately is not yours to replace. The same goes for `## Plans`: if it is there, leave it, and only say what it says.
 

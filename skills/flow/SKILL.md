@@ -518,6 +518,20 @@ Deep — new subsystem, touches auth (danger list).
 
 Eight words of reason or fewer. Then continue without waiting.
 
+**Then say what you will change**, before the first edit: one `todo` line per thing, and
+one plain line under them naming the files or areas it touches.
+
+```
+✓ **todo** build prints red and green as their own lines
+
+skills/build/SKILL.md, and its pins in the test
+```
+
+Quick and Standard print it and carry on without waiting. Deep puts it in the same
+message as its round of questions, and waits: one reply answers the questions and
+approves the plan. If an answer changes what the plan will do, show the new block and
+wait once more.
+
 If you arrived here mid-turn, because a question or an investigation turned into a change, announce it **before the first edit** instead. Same rule, measured from the work rather than from the conversation: nothing gets edited before a size is on screen.
 
 ## Step 4 — route it
@@ -592,6 +606,12 @@ Hold it back. On Quick and Standard it takes its recommendation and goes into **
    -> Recommend: per-user. Checked: notifications already store per-user.
 
 Reply "yes to all" to take every recommendation.
+```
+
+On Deep the `todo` block sits above the questions, so the last line says so:
+
+```
+Reply "yes to all" to take every recommendation and approve the todo block.
 ```
 
 Anything the human does not answer takes the recommendation, and **goes into the PR body under "Assumptions"** so it can be checked at merge time instead of blocking now.
