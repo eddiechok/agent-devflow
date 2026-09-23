@@ -61,9 +61,25 @@ A conflict is not. It is what happens when another pull request merges first —
 
 `flow`'s chain loop keeps its hard stop on a merge conflict, and that is not an inconsistency. There, a conflict means two chains edited one file, which the plan promised they would not — so the conflict is a planning bug, and resolving the merge would bury it. Different cause, different answer.
 
-## Step 3 — the two real merge-error runs
+## Step 3 — choosing a method the branch can actually take
+
+**`tend`'s merge is what rules out a rebase, and the two halves were written a day apart.** `tend` merges the default branch in rather than rebasing it, deliberately: the branch is pushed and a reviewer may already be reading it, so rewriting its history underneath them is the worse of the two evils. That leaves a merge commit. GitHub then refuses outright to rebase a branch carrying one — `This branch can't be rebased` — while step 3's ladder says "linear history and rebase allowed → `--rebase`", which is true of every repo that keeps a linear history.
+
+So the handoff added at step 2 *creates* the shape that *guarantees* the refusal at step 3. It is not intermittent and it is not a race: every pull request that goes through the handoff hits it. Found on 23 Sep 2026 by shipping #32 through the handoff on the day the handoff merged — the first real run of it, and it broke on the step after the one it changed.
+
+The fix is a question, not a reordering: ask whether the branch has a merge commit **before** consulting the ladder, and when it does, take `--rebase` out rather than rank it lower. On a linear repo that lands on `--squash`, which keeps the shape a rebase would have kept.
+
+**The fetch in front of it is part of the guard, not housekeeping.** `git log --merges` reads a remote-tracking ref, and nothing else in steps 1 or 3 updates one. Without a fetch the guard has two ways to fail, and neither announces itself: a ref last updated before `tend` pushed answers "empty" and waves the refusal straight through, and a branch this clone has never seen is not a ref at all — git exits 128 with `unknown revision`, which is a guard that did not run rather than a guard that said no. The second is the ordinary case, not an exotic one: step 1 says the pull request need not be checked out to merge it, so shipping a branch this checkout never touched is a supported path. Both were reproduced in a throwaway repo on 23 Sep 2026, from a clone taken before the branch existed.
+
+This was rejected once before it was accepted, and the rejection is worth recording because it was the right shape of argument about the wrong scope. The first review raised it; the reasoning against was that `tend` runs `git fetch origin` in this same clone before merging, so the handoff path reads a current ref. That much is true, and `hardcase` confirmed it. But the guard does not serve only the handoff path — it runs on every merge, including the plain one where no `tend` has fetched anything. Defending the common path is not the same as defending the step.
+
+**The branch to ask about is the PR's, not `HEAD`.** Step 1 says in as many words that the pull request need not be checked out to merge, so `HEAD` is whichever branch the session is standing on — usually the default one, which has no merge commits ahead of itself and answers "empty" every single time. A guard that reads the wrong branch is worse than no guard, because it still looks like it ran. This is the same failure as the bare `git rev-parse --git-dir` in `flow` step 0c, and it is pinned the same way: the working form required, the broken one refused.
+
+### The three real merge-error runs
 
 **Find out whether it worked before you react.** GitHub can fail *after* the merge has already landed, and the error looks exactly like one from before it. A blind retry is the wrong move about half the time.
+
+**And a refusal is neither.** It was two states until #32 hit a third: a deterministic `no` from the forge, which leaves the default branch unmoved exactly as a transient failure does. So the SHA — the oracle below, and the right answer to the first two states — cannot separate them, and the instruction it hands you is "retry", which for a refusal is the one move certain to fail. What tells them apart is the error's own words: `500` and `503` are the transport falling over, where `can't be rebased` is the forge answering the question. Retrying a refusal spends the cap and ends with the pull request still open, which is what makes it worth a row of its own rather than a sentence.
 
 ### Ask git, not the API
 

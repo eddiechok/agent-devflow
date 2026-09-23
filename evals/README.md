@@ -1,6 +1,6 @@
 # evals
 
-Ten cases. Run them before you push a change to a skill. One is manual, see below.
+Twelve cases. Run them before you push a change to a skill. Two are manual, see below.
 
 ## Which runner
 
@@ -30,8 +30,8 @@ python3 evals/run.py --case sizing-* --runs 1
 python3 evals/run.py --dry-run                # parse and print, run nothing
 ```
 
-It scores **46 of the 56 graders** — every `regex`, `tool_used`, `tool_order`
-and `file_exists`. The ten `llm` graders come back `skip`, stay out of the
+It scores **52 of the 63 graders** — every `regex`, `tool_used`, `tool_order`
+and `file_exists`. The eleven `llm` graders come back `skip`, stay out of the
 denominator, and are counted in the summary. **A skip is never a pass**, the
 same way `NOT RUN` is never `none`.
 
@@ -83,6 +83,7 @@ not write a case that greps the plugin source and then judges a size with a bare
 | `plans-on-tracker` | high, **manual** | A project that keeps plans on GitHub gets a file instead, or a plan nobody can close |
 | `backlog-parks-extras` | low | A three-feature prompt ships as one PR or drops two features on the floor |
 | `worktree-guard` | medium | A second session cuts its branch in the shared checkout and moves the folder out from under a session already working in it |
+| `ship-tends-conflict` | high, **manual** | A conflicting pull request gets merged, or `ship` goes back to stopping on a conflict and making the human type `tend` themselves |
 
 `plans-on-tracker` is **manual**. It needs a real GitHub repo with issues on and
 a logged-in `gh`, which no scaffold can fake. `run.py` leaves it out unless you
@@ -91,6 +92,35 @@ name it: set `DEVFLOW_EVAL_REPO=owner/name` to a throwaway repo you own, then
 by an earlier run first, or the new run resumes it instead of planning. Its second half, the resume after
 a `/clear`, has no grader at all, because it needs a second session. Do that
 part by hand and read the size line.
+
+`ship-tends-conflict` is **manual** for a narrower reason, and the difference is
+worth keeping straight: `plans-on-tracker` needs a real tracker, this one needs
+a real **merge base**. `mergeable: CONFLICTING` is the forge's verdict on a
+branch and a default branch that have both moved, so it cannot be written into a
+fixture — a bare repo answers nothing and `ship` stops at step 1. Same setup:
+`DEVFLOW_EVAL_REPO=owner/name`, then
+`python3 evals/run.py --case ship-tends-conflict`. The scaffold opens a pull
+request on that repo and lands a conflicting commit underneath it, so point it
+at a repo you do not mind being written to; it closes and deletes its own
+branch from the previous run before starting.
+
+**It merges, and that is the point rather than a side effect.** Most of what it
+measures lives on the *return* path from `tend` — re-read all four conditions,
+tend once and never twice — so a case
+budgeted to stop at the handoff would grade one rule and claim several. Letting the
+loop finish is what reaches them, and a finished loop on a conflict-only pull
+request ends in a merge, because that is what `ship` is for. The first draft
+asserted `gh pr merge` was never called at all, which scored the single fully
+correct run as the worst possible result; the grader is now an *order* —
+`tend` before any merge — which is the thing that actually matters.
+
+One rule it does **not** measure, stated plainly rather than implied: *never read
+`UNKNOWN` as a yes*. `UNKNOWN` is what the forge answers for a few seconds after
+a push, and no scaffold can make it appear on demand — the fixture has to wait
+for a settled `CONFLICTING` or the run would open by measuring the
+wait-and-re-read path instead of the handoff. The `llm` grader judges it if the
+trace happens to show it, which it may well do after `tend` pushes. That is
+opportunistic coverage, not measurement.
 
 The first four are the classifier, which is the part of `flow` most likely to
 drift and the only part with correction data behind it

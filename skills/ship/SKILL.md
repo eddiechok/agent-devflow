@@ -178,20 +178,65 @@ Match the shape the repo already has, rather than always reaching for the same m
 gh repo view --json mergeCommitAllowed,squashMergeAllowed,rebaseMergeAllowed
 ```
 
+**Then ask the branch, because one shape rules a method out rather than ranking it.**
+GitHub refuses outright to rebase a branch that carries a merge commit — and step 2's
+handoff puts one there every time, since `tend` merges the default branch in rather than
+rebasing it. So the common case after a handoff is the one case `--rebase` cannot serve:
+
+```
+git fetch origin
+git log --merges <default branch ref>..origin/<head branch>
+```
+
+**The fetch is not decoration, and it is the line most likely to be tidied away.** This
+reads a remote-tracking ref, and nothing else in step 1 or 3 updates one. Skip it and the
+guard has two ways to be useless, both silent-ish: a ref last updated before `tend` pushed
+answers "empty" and waves the refusal straight through, and a branch this clone has never
+seen at all is not a ref — `git log` exits 128 with `unknown revision`, which is a guard
+that did not run rather than a guard that said no. Both are ordinary: step 1 says the PR
+need not be checked out, so shipping a branch this checkout never touched is a supported
+path, not an exotic one.
+
+**`origin/<head branch>`, never `..HEAD`.** Step 1 said you do not need to check the PR
+out to merge it, so `HEAD` is whichever branch this session happens to stand on — usually
+the default one, which has no merge commits ahead of itself and answers "empty" every
+time. That is the worst kind of wrong: a guard that reads the wrong branch still looks
+like it ran. The name step 1 wrote down is the one to ask about.
+
+**If either command errors rather than answering, stop.** Both, not just the second, and
+the fetch is the one that matters more — because a failed `git log` is loud where a failed
+fetch is silent. Offline, a hosted sandbox, a credential prompt on a private remote: the
+fetch exits non-zero, and the `git log` after it answers perfectly calmly against the ref
+it already had. Stale, that is "empty", which is "no merge commit", which puts `--rebase`
+back on the ladder — the original bug, restored by the thing meant to prevent it.
+
+So read the fetch's exit code before trusting anything downstream of it. Say what git
+printed and hand it over; a merge method chosen on a guard that did not run is a guess,
+whichever of the two failed. **A shallow or `--single-branch` clone lands here too** and is
+a stop for the same reason rather than a different one: the branch is where step 1 said,
+this checkout is simply not configured to fetch it.
+
+**Not empty → `--rebase` is off the table.** Not ranked lower, out: take it away and
+choose from what is left. Then the ladder, with whatever is still standing:
+
 - Linear history and rebase allowed → `--rebase`, which keeps it linear and preserves each conventional commit
 - A branch full of WIP commits → `--squash`
 - Otherwise → `--merge`
 
-Delete the remote branch as part of it:
+On a repo with linear history that has just been tended, this lands on `--squash`, which
+keeps the shape a rebase would have kept.
+
+Delete the remote branch as part of it. `<method>` is what the ladder just chose, not a
+fourth option — and on a tended branch it is not `--rebase`:
 
 ```
-gh pr merge <n> --rebase --delete-branch
+gh pr merge <n> <method> --delete-branch
 ```
 
 **Unless step 1 found PRs stacked on this one.** Then merge without the flag:
 
 ```
-gh pr merge <n> --rebase
+gh pr merge <n> <method>
 ```
 
 The branch stays until step 6 has pointed every stacked PR at the default branch.
@@ -200,12 +245,25 @@ The branch stays until step 6 has pointed every stacked PR at the default branch
 
 **Find out whether it worked before you react.** The error looks the same before and after the merge lands.
 
-Two real runs, one skill, opposite meanings:
+Three states, one skill, and the last two look identical from the outside:
 
 | | Error | Default branch | Branch on remote | Right move |
 |---|---|---|---|---|
 | Failed **after** the merge | `500` | **moved** | deleted | reconcile locally |
 | Failed **before** the merge | `503` | unchanged | still there | retry |
+| **Refused** | `This branch can't be rebased` | unchanged | still there | **change the method, never retry** |
+
+**The third row is the one the SHA cannot find for you.** A refusal and a transient
+failure both leave the default branch exactly where it was, so the oracle below says "did
+not land" for both and stops being able to help. What separates them is the error's own
+words: `500` and `503` are the transport falling over, where `can't be rebased`, `not
+mergeable` or a required check is the forge answering the question you asked.
+
+**A refusal is deterministic, so retrying is the one move guaranteed to fail.** The same
+call refused once is refused forever; "retry, with a wait" spends the cap and ends with the
+pull request still open. Read what the refusal names, fix that, and go again **once** with
+the fix — a different method is a different call, not a retry. Nothing to fix, or the
+second call is refused too, is a stop: say what the forge said and hand it over.
 
 ### Ask git, not the API
 
@@ -236,7 +294,12 @@ git push origin --delete <branch>
 
 If **that** is refused, see Cleanup below. A branch you could not delete is not a merge that did not land.
 
-**Merge did not land** — retry, with a wait. Cap it.
+**Merge did not land, and the error was transient** — retry, with a wait. Cap it.
+
+**Merge did not land, and the error was a refusal** — do not retry. Change what it named
+and call once more, or stop. A `can't be rebased` on a branch step 3 should have caught
+means the merge-commit check above was skipped or asked the wrong branch; go back and read
+it properly rather than merging blind.
 
 ## 4. Deploy
 
@@ -394,6 +457,8 @@ Session: want it archived?
 - Never merge a PR `tend` touched without saying so in step 7's report. The human asked for
   a merge, not for a branch to be rewritten first.
 - Never merge again on an error before checking whether the merge already landed — the default branch's SHA, read with `git ls-remote`. Not the API, which may be the thing that is broken, and not the branch's absence, which is a separate call that fails separately.
+- Never choose `--rebase` without asking `origin/<head branch>` for a merge commit first. A tended branch always has one, and GitHub refuses to rebase it.
+- Never retry a refusal. It is deterministic, so the retry is the one move certain to fail — change what the refusal named, or stop. The SHA cannot tell a refusal from a transient failure; only the error's words can.
 - Never invent a deploy command the project did not give you.
 - Never write a `## Deploy` block for a deploy you did not just run and verify in this turn.
 - Never call a green pipeline a live check. Fetch the URL.
