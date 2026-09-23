@@ -1436,6 +1436,54 @@ check("build: no longer uses the bare test label for the green gate",
       f"red/green label split")
 
 
+# -------------------------------- one fixed label list for every shaped line
+
+# `flow`'s chain report already glosses a word for the human it reaches --
+# `seam:` where every skill's own text says "tested at". A printed label is
+# the same risk running the other way: nothing stopped two skills from
+# picking two different words for the same idea, or one skill's label
+# drifting a piece at a time with nobody able to see the other six at once.
+# The list lives here, once, read by this test and nowhere else -- never in
+# a skill body, which a model rereads on every single run.
+#
+# Every label already on this list is a lowercase run of letters with no
+# internal space; a hyphen inside one, like `no-behaviour`, still reads and
+# matches as a single token. `no-behaviour` keeps its hyphen because it is
+# also the hand-off argument name `submit` passes `review`, word for word --
+# renaming the label without renaming the argument would split one idea into
+# two spellings, which is the exact drift this list exists to catch.
+
+SHAPED_LABELS = {
+    "backlog", "branch", "chains", "checks", "chips", "cleaned", "commit",
+    "conflict", "debug", "deploy", "docs", "features", "glossary", "green",
+    "handback", "lint", "live", "look", "merge", "merged", "no-behaviour",
+    "not-yours", "open", "opinion", "override", "parked", "piece", "plan",
+    "plans", "pr", "pushed", "red", "retargeted", "review", "session",
+    "settings", "tended", "test", "typecheck", "worktree", "yours",
+}
+
+SHAPED_LINE_LABEL = re.compile(r"[✓✗–] \*\*([a-z][a-z-]*)\*\*")
+
+
+def shaped_labels_in(text):
+    return set(SHAPED_LINE_LABEL.findall(text))
+
+
+check("label scanner: finds a listed label",
+      "checks" in shaped_labels_in("✓ **checks** 3 of 3 pass, exit 0"))
+
+check("label scanner: finds a label that is not on the list",
+      "madeup" in shaped_labels_in("✓ **madeup** something")
+      and "madeup" not in SHAPED_LABELS)
+
+for slug, text in human_facing_text.items():
+    unlisted = sorted(shaped_labels_in(text) - SHAPED_LABELS)
+    check(f"{slug}: every shaped line uses a label from the fixed list",
+          not unlisted,
+          f"{slug}/SKILL.md prints a shaped line whose label is not in "
+          f"SHAPED_LABELS: {unlisted}")
+
+
 # ------------------------------------------- cross-check against a real parser
 
 try:
