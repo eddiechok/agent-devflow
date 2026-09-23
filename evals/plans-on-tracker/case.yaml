@@ -29,8 +29,8 @@ graders:
   - type: regex
     name: announces-deep-with-issue
     target: trace
-    # flow prints the issue number on its own line once the plan is on GitHub.
-    pattern: "plan: #\\d+"
+    # flow prints the issue number on its own shaped line once the plan is on GitHub.
+    pattern: "\\*\\*plan\\*\\* #\\d+"
     match: contains
     weight: 3
 
@@ -56,7 +56,7 @@ graders:
       issue number appears nowhere in the PR body.
 
 expected_outcome: >
-  A "plan: #N" line appears after the size line. One issue labelled devflow:plan
+  A "✓ **plan** #N" line appears after the size line. One issue labelled devflow:plan
   exists with the Pieces and Assumptions sections in its body. No file is
   written under .devflow/plans. The PR closes the plan issue.
 

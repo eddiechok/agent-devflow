@@ -57,7 +57,7 @@ A conflict is not. It is what happens when another pull request merges first —
 
 **One attempt, never two.** A conflict `tend` could not settle is one a second `tend` will not settle either, and a loop here rewrites a branch repeatedly with nothing to show for it.
 
-**The direction is what keeps the boundary intact.** `disable-model-invocation: true` and the rule in `flow` and `submit` never to call `ship` are both about nothing *reaching* this skill without you. Reaching outward is the other direction, and `tend` never calls back — its own Rules forbid it. What genuinely changed is the description: merging is no longer all this skill does, and step 7's report has a `Tended:` line because you asked for a merge and should not find a rewritten branch afterwards without being told.
+**The direction is what keeps the boundary intact.** `disable-model-invocation: true` and the rule in `flow` and `submit` never to call `ship` are both about nothing *reaching* this skill without you. Reaching outward is the other direction, and `tend` never calls back — its own Rules forbid it. What genuinely changed is the description: merging is no longer all this skill does, and step 7's report has a `tended` line because you asked for a merge and should not find a rewritten branch afterwards without being told.
 
 `flow`'s chain loop keeps its hard stop on a merge conflict, and that is not an inconsistency. There, a conflict means two chains edited one file, which the plan promised they would not — so the conflict is a planning bug, and resolving the merge would bury it. Different cause, different answer.
 

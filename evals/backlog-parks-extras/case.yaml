@@ -20,14 +20,14 @@ graders:
   - type: regex
     name: counts-two-features
     target: trace
-    pattern: "features: 2 found"
+    pattern: "\\*\\*features\\*\\* 2 found"
     match: contains
     weight: 3
 
   - type: regex
     name: parks-to-a-backlog-file
     target: trace
-    pattern: "parked: \\.devflow/backlog/"
+    pattern: "\\*\\*parked\\*\\* \\.devflow/backlog/"
     match: contains
     weight: 3
 
@@ -36,7 +36,7 @@ graders:
   - type: regex
     name: no-chips-without-the-tool
     target: trace
-    pattern: "chips: "
+    pattern: "\\*\\*chips\\*\\*"
     match: not_contains
     weight: 1
 
@@ -56,6 +56,6 @@ graders:
       asking, or asked without a recommendation.
 
 expected_outcome: >
-  Prints "features: 2 found — one per run", asks which feature to keep with
-  a recommendation, sizes only the kept feature, and parks the other to
-  .devflow/backlog/<name>.md with a "parked: .devflow/backlog/..." line.
+  Prints "✓ **features** 2 found — one per run", asks which feature to keep
+  with a recommendation, sizes only the kept feature, and parks the other to
+  .devflow/backlog/<name>.md with a "✓ **parked** .devflow/backlog/..." line.

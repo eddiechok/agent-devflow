@@ -103,11 +103,11 @@ The built-in `/code-review` is a better review than this one, and it still does 
 
 This step exists because nothing before it reads the docs. `build` tests behaviour and `review` judges the code, so a diagram that stops matching the skill it draws goes stale with no red anywhere. `docs/pipeline.md` did exactly that after the builder-per-piece change, and a human found it later. One read here is cheaper than the drift.
 
-**It prints a `docs:` line because for a while it printed nothing, and that turned out to be the difference between a step and a suggestion.** Every step in `submit` with something to report leaves it on screen — `checks:`, `final look:`, `updated #12`, the review report. Step 6 was the one that had something to report and reported nothing. Step 1 is silent as well, and that is a different case: a branch which is already correct has nothing to say, where step 6 always has either a list of files or a look that found none. Silence here is ambiguous in the worst way: a run where nothing was stale and a run that never looked produce identical output, in the transcript, in the commit and in the pull request. Nothing downstream can tell them apart, and neither can the session itself on a second pass.
+**It prints a shaped `docs` line because for a while it printed nothing, and that turned out to be the difference between a step and a suggestion.** Every step in `submit` now leaves one shaped line on screen — `✓ **checks** ...`, `✓ **look** ...`, `✓ **pr** updated #12`, the `✓ **review** ...` summary. Step 6 was the one that had something to report and reported nothing. Step 1 used to be silent as well; that was a different case, a branch which is already correct has nothing to say, where step 6 always has either a list of files or a look that found none — but step 1 now prints its `branch` line regardless, for the same reason. Silence here is ambiguous in the worst way: a run where nothing was stale and a run that never looked produce identical output, in the transcript, in the commit and in the pull request. Nothing downstream can tell them apart, and neither can the session itself on a second pass.
 
 That is how PR #31 went wrong on 22 Sep 2026. The first pass through `submit` updated `docs/flow.md`, `docs/provenance.md` and `README.md` properly. The follow-up pass changed how `flow`'s step 0c behaves, updated none of them, and nothing objected — the reasoning for a live rule survived only in a commit message, where the next person to revise that rule would never look. The human caught it.
 
-So the line is required in both directions, and `docs: nothing stale` is as much of an answer as naming three files. The step it makes honest is the one most easily lost on a follow-up, precisely because the docs were already right the first time round.
+So the line is required in both directions, and `– **docs** nothing stale` is as much of an answer as naming three files. The step it makes honest is the one most easily lost on a follow-up, precisely because the docs were already right the first time round.
 
 ## Step 7 — the commit
 
@@ -166,3 +166,7 @@ first — a preview is a real build with real environment variables on a clean m
 ## Step 9 — handing off
 
 `flow` decided it before any code was written, and that decision does not always survive to here — a compaction, a long Deep job, or a `submit` you were invoked into directly all lose it. Losing it is silent, and what it drops is the only security gate in the loop. Deciding twice costs a moment; missing it costs the gate.
+
+### The recap
+
+Nine steps each print one shaped line, but they print it between whatever tool output that step produced, so a finished run is a needle-in-haystack read for anyone who was not watching live. The recap repeats those lines, once, in one block, at the end — the run's whole shape in the last screenful, right before the link the human actually came for.

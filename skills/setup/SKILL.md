@@ -17,10 +17,11 @@ rule looks wrong.
 
 Read the project's `CLAUDE.md` and look for a `## Checks` block.
 
-If one exists, **do not overwrite it.** Run each command in it and report:
+If one exists, **do not overwrite it.** Run each command in it and print one shaped line per
+command, the same shape step 3 uses below. Then:
 
-- all pass → say so in one line, then go to step 5 if there is no `## Plans` block yet
-- one fails or is missing → say which, suggest a fix, and ask before changing anything
+- all pass → go to step 5 if there is no `## Plans` block yet
+- one fails or is missing → print it `✗`, suggest a fix, and ask before changing anything
 
 A block someone wrote deliberately is not yours to replace. The same goes for `## Plans`: if it is there, leave it, and only say what it says.
 
@@ -50,7 +51,19 @@ Notes that matter:
 Run each one **bare**, exactly as you would write it into the block, one command
 per call. No pipes, no redirects, no `&&`, no `; echo $?`.
 
-For each: report `pass`, `fail`, or `not found`.
+For each, print one shaped line, labelled by its row:
+
+```
+✓ **test** pnpm test — pass (48 tests, 6s)
+```
+
+```
+✗ **typecheck** pnpm typecheck — fail
+```
+
+```
+– **lint** not found
+```
 
 - **Fails because the code is broken** → still a valid command. Record it, and say the project is currently red.
 - **Fails because the command does not exist** → wrong command. Find the right one.
@@ -133,24 +146,40 @@ Or `local`. One line, one value. Nothing else goes in this block.
 
 ## 6. Report
 
-Keep it short:
+Keep it short, one shaped line per fact:
 
 ```
-Checks written to CLAUDE.md.
-  Test:      pnpm test        pass (48 tests, 6s)
-  Typecheck: pnpm typecheck   pass
-  Lint:      pnpm lint        pass
-Plans: github (labels devflow:plan, devflow:backlog exist)
+✓ **checks** written to CLAUDE.md
 
-No ## Deploy block written — that is ship's to add, the first time it
-deploys and can prove the command works.
+✓ **test** pnpm test — pass (48 tests, 6s)
+
+✓ **typecheck** pnpm typecheck — pass
+
+✓ **lint** pnpm lint — pass
+
+✓ **plans** github (labels devflow:plan, devflow:backlog exist)
+
+– **deploy** not written — that is ship's to add
+the first time it deploys and can prove the command works
 ```
+
+The `checks` line says `written` only when step 4 wrote the block. Otherwise it is
+`– **checks** kept — already in CLAUDE.md`, or `✗ **checks** not written — <why>`.
 
 Then mention, once, only if relevant:
 
 - the project has no tests at all — worth knowing before trusting the flow
 - a check took a long time
 - the project is currently red
+
+## Output
+
+Every line a human reads takes one shape: a mark, a bold one-word lowercase label, then
+the result — for example `✓ **checks** 3 of 3 pass, exit 0`.
+
+- `✓` done. `✗` failed or stopped. `–` (en dash) skipped, or nothing to do.
+- One line per step, each standing alone with a blank line before and after it.
+- Keep each line to 80 characters — detail goes on the next line, or in the PR.
 
 ## Rules
 

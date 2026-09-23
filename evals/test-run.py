@@ -513,7 +513,7 @@ if os.path.isfile(_SHIP_CASE):
         for _g in _ship_case.get("graders") or []
     )
     check_true("ship-tends-conflict: grades the handoff line, not just the outcome",
-               "conflict: handing #" in _ship_graders)
+               "conflict\\*\\* handing #" in _ship_graders)
 
 _ship_rows = [l for l in _readme.split("\n")
               if l.startswith("| `ship-tends-conflict`")]
