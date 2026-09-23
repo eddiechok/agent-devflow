@@ -824,8 +824,9 @@ check("docs/submit: says why the look gets one fix, citing #23, #25 and #26",
 # them, once, in one block, at the very end, right before the PR's link.
 
 SUBMIT_RECAP_LINE = (
-    "Before the PR link, repeat every shaped line this run printed, step 1 "
-    "through this one, in the order they were printed"
+    "Before the PR link, repeat every shaped line this run printed — from "
+    "the first, `flow`'s or `build`'s when they ran before you, through this "
+    "one — in the order they were printed"
 )
 
 check("submit: step 9 prints a recap of the run's step lines before the PR link",
@@ -851,7 +852,7 @@ check("submit: the recap adds nothing new",
 # what changed, which only the PR body said; submit prints a `done` block
 # right above the recap.
 
-FLOW_TODO_LINE = "✓ **todo**"
+FLOW_TODO_LINE = "→ **todo**"
 FLOW_TODO_CARRY_ON = "Quick and Standard print it and carry on without waiting"
 FLOW_TODO_DEEP_WAITS = (
     "Deep puts it in the same message as its round of questions, and waits"
@@ -897,6 +898,64 @@ check("submit: the done block sits above the recap, not inside it",
       SUBMIT_DONE_ABOVE_RECAP in flat(submit_text),
       f"{SUBMIT_PATH} never places the done block above the recap -- the recap "
       f"would repeat it, or the reader would find it after the link")
+
+
+# ------------------------------- a line that is not a result takes the `→` mark
+#
+# `✓ **todo**` put the done mark on work that had not started, and
+# `– **session** want it archived?` put the skipped mark on a question. Both
+# read as results to a human skimming the marks. `→` is for a line that is
+# not a result yet: work planned, or a call waiting on the human.
+
+check("flow: the todo line is not marked done",
+      "✓ **todo**" not in flow_text,
+      f"{FLOW_PATH} still prints '✓ **todo**' -- the work has not started")
+
+with open(os.path.join(SKILLS_DIR, "ship", "SKILL.md"), encoding="utf-8") as fh:
+    SHIP_TEXT_FOR_MARKS = fh.read()
+
+check("ship: the archive question takes the waiting mark",
+      "→ **session** want it archived?" in SHIP_TEXT_FOR_MARKS
+      and "– **session**" not in SHIP_TEXT_FOR_MARKS,
+      "ship/SKILL.md marks the archive question as skipped, not waiting")
+
+check("submit: the opinion offer takes the waiting mark",
+      "→ **opinion**" in submit_text and "– **opinion**" not in submit_text,
+      f"{SUBMIT_PATH} marks the /code-review offer as skipped, not waiting")
+
+
+# ------------------------------------------ a stop prints a shaped line too
+#
+# PR #38 shaped the lines a run prints when it goes well. The stops still
+# said "say so in one line" with no mark and no label, so the line a human
+# most needs to see -- the one that says the run did not finish -- was the
+# one line with no shape to skim for.
+
+STOP_LINES = {
+    "build": ["✗ **stuck** 3 tries at <layer> — handing it back"],
+    "tend": [
+        "✗ **branch** <head branch> not checked out — <tree dirty, or why>",
+        "✗ **pr** none open — devflow:submit comes first",
+        "✗ **pr** no GitHub access — cannot read the PR",
+        "✗ **stuck** <check> — 2 rounds, handing it back",
+    ],
+    "ship": [
+        "✗ **pr** none open — devflow:submit comes first",
+        "✗ **pr** no GitHub access — cannot read the PR",
+        "✗ **live** <what you saw instead>",
+        "✗ **branch** remote delete refused — <head branch> is yours to delete",
+    ],
+    "review": ["– **review** nothing to review since <fixed point>"],
+    "setup": ["✗ **plans** label not made — gh said <the error>"],
+}
+
+for slug, lines in STOP_LINES.items():
+    with open(os.path.join(SKILLS_DIR, slug, "SKILL.md"), encoding="utf-8") as fh:
+        stop_text = fh.read()
+    for line in lines:
+        check(f"{slug}: prints the stop line {line!r}",
+              line in stop_text,
+              f"{slug}/SKILL.md never prints {line!r} where it stops")
 
 
 # ------------------------------------- ship's report names the retargeted PRs
@@ -1460,6 +1519,7 @@ Every line a human reads takes one shape: a mark, a bold one-word lowercase labe
 the result — for example `✓ **checks** 3 of 3 pass, exit 0`.
 
 - `✓` done. `✗` failed or stopped. `–` (en dash) skipped, or nothing to do.
+- `→` next: planned, or waiting on you.
 - One line per step, each standing alone with a blank line before and after it.
 - Keep each line to 80 characters — detail goes on the next line, or in the PR."""
 
@@ -1532,11 +1592,16 @@ SHAPED_LABELS = {
     "green", "handback", "lint", "live", "look", "merge", "merged",
     "no-behaviour", "open", "opinion", "override", "parked", "piece",
     "plan", "plans", "pr", "pushed", "red", "retargeted", "review",
-    "session", "settings", "tended", "test", "theirs", "todo", "typecheck",
+    "session", "settings", "stuck", "tended", "test", "theirs", "todo",
+    "typecheck",
     "worktree", "yours",
 }
 
-SHAPED_LINE_LABEL = re.compile(r"[✓✗–] \*\*([^*\n]+)\*\*")
+# `→` also runs mid-sentence in prose -- "Either fails → **stop editing**" --
+# and that is not a printed line, so `→` counts only where it opens a line or a
+# backtick citation. The other three marks still count anywhere.
+SHAPED_LINE_LABEL = re.compile(
+    r"(?:[✓✗–]|(?:^|`)[ \t]*→) \*\*([^*\n]+)\*\*", re.M)
 
 
 def shaped_labels_in(text):
@@ -1549,6 +1614,17 @@ check("label scanner: finds a listed label",
 check("label scanner: finds a label that is not on the list",
       "madeup" in shaped_labels_in("✓ **madeup** something")
       and "madeup" not in SHAPED_LABELS)
+
+check("label scanner: a list item or quote with an old mark is still scanned",
+      {"madeup", "other"} <= shaped_labels_in(
+          "- ✓ **madeup** x\n> ✗ **other** y"))
+
+check("label scanner: a prose arrow before bold text is not a label",
+      not shaped_labels_in("Either fails → **stop editing** and say so"))
+
+check("label scanner: finds an indented or cited waiting line",
+      {"todo", "session"} <= shaped_labels_in(
+          "   → **todo** a thing\nthen print `→ **session** want it archived?`"))
 
 check("label scanner: finds a label that is not lowercase letters",
       {"Merged", "pr2", "final look"} <= shaped_labels_in(
@@ -1574,9 +1650,9 @@ for slug, text in human_facing_text.items():
 # what a reader sees before the run fills it in.
 
 SHAPED_STANDALONE_LINE = re.compile(
-    r"^[ \t]*([✓✗–] \*\*[^*\n]+\*\*.*)$", re.M)
+    r"^[ \t]*([✓✗–→] \*\*[^*\n]+\*\*.*)$", re.M)
 SHAPED_INLINE_CITATION = re.compile(
-    r"`([✓✗–] \*\*[^*\n]+\*\*[^`]*)`")
+    r"`([✓✗–→] \*\*[^*\n]+\*\*[^`]*)`")
 
 
 def shaped_example_lines(text):

@@ -331,7 +331,7 @@ commit it sits under.
 The PR now exists, so the two built-in reviews finally have something to run against. Both are slash commands — **only the human can type one**, which is exactly why they sit here and not inside the automatic path. Offer them in one line, with the real PR number:
 
 ```
-– **opinion** /code-review 12, /security-review — yours to type, if installed
+→ **opinion** /code-review 12, /security-review — yours to type, if installed
 /security-review: this change touched database migrations
 ```
 
@@ -352,7 +352,7 @@ words a user of it would know, not the file list:
 
 It goes right above the recap, and the recap leaves it out.
 
-**Then the recap.** Before the PR link, repeat every shaped line this run printed, step 1 through this one, in the order they were printed, in one block. Add nothing to it — no summary, no new line, nothing this run has not already said once. It is the one place a human can read the whole run without scrolling back through the tool output sitting between the steps.
+**Then the recap.** Before the PR link, repeat every shaped line this run printed — from the first, `flow`'s or `build`'s when they ran before you, through this one — in the order they were printed, in one block. Add nothing to it — no summary, no new line, nothing this run has not already said once. It is the one place a human can read the whole run without scrolling back through the tool output sitting between the steps.
 
 Then, as the last thing this skill prints, the PR's link:
 
@@ -366,6 +366,7 @@ Every line a human reads takes one shape: a mark, a bold one-word lowercase labe
 the result — for example `✓ **checks** 3 of 3 pass, exit 0`.
 
 - `✓` done. `✗` failed or stopped. `–` (en dash) skipped, or nothing to do.
+- `→` next: planned, or waiting on you.
 - One line per step, each standing alone with a blank line before and after it.
 - Keep each line to 80 characters — detail goes on the next line, or in the PR.
 

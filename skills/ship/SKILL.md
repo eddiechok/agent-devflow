@@ -19,7 +19,7 @@ rule looks wrong.
 - Default branch ref: !`git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null || echo origin/main`
 - PR: !`gh pr view --json number,title,state,headRefName --jq '"#\(.number) \(.title) [\(.state)] on \(.headRefName)"' 2>/dev/null || echo "no answer"`
 
-**`gh` is the example, not the requirement.** Use whatever GitHub access this environment has — the CLI, an MCP server, the API. If it has none, say so in one line and stop. Never guess at a PR's state.
+**`gh` is the example, not the requirement.** Use whatever GitHub access this environment has — the CLI, an MCP server, the API. If it has none, stop, and print `✗ **pr** no GitHub access — cannot read the PR`. Never guess at a PR's state.
 
 **`no answer` is two different answers, and you have to tell them apart.** It means the
 CLI is missing **or** the PR is. Only the second sends someone to `submit`; the first
@@ -57,7 +57,11 @@ You do not need to check it out to merge; the merge happens on the remote. You *
 the name before step 6, and you need it before the fast-forward in step 3, which must land
 on the default branch rather than on wherever you started.
 
-**If there is no PR, stop.** Say in one line that the work has not been submitted yet and that `devflow:submit` comes first.
+**If there is no PR, stop.** The work has not been submitted yet:
+
+```
+✗ **pr** none open — devflow:submit comes first
+```
 
 Be sure that is what you are looking at. A missing `gh` is not a missing PR.
 
@@ -373,7 +377,11 @@ before the change?**
 
 **Only first-hand ends this step.**
 
-If it is not live, **say so plainly**, with what you saw. Do not report a successful deploy.
+If it is not live, **say so plainly**, with what you saw. Do not report a successful deploy:
+
+```
+✗ **live** <what you saw instead>
+```
 
 ### If there was no `## Deploy` block, offer to write one now
 
@@ -420,7 +428,7 @@ author's to do, not yours, and step 7 names the PRs you retargeted so they know.
 git push origin --delete <head branch>
 ```
 
-**A refused delete is not a failed merge.** Some environments let you push a ref and refuse to delete one: Claude Code on the web answers `HTTP 403` to the delete while ordinary pushes work all day. Say so in one line, hand the branch to the human, and **do not retry it or look for another way round** — a policy denial is something to report, not something to defeat.
+**A refused delete is not a failed merge.** Some environments let you push a ref and refuse to delete one: Claude Code on the web answers `HTTP 403` to the delete while ordinary pushes work all day. Print `✗ **branch** remote delete refused — <head branch> is yours to delete`, and **do not retry it or look for another way round** — a policy denial is something to report, not something to defeat.
 
 Then the local one: switch to the default branch and fast-forward it first, then delete **the PR's head branch, by the name you wrote down in step 1** — not whichever branch you were standing on when you started.
 
@@ -452,7 +460,7 @@ re-submitted before merge
 
 ✓ **cleaned** local branch, dev server on :4321, 3 screenshots in /tmp
 
-– **session** want it archived?
+→ **session** want it archived?
 ```
 
 ## Output
@@ -461,6 +469,7 @@ Every line a human reads takes one shape: a mark, a bold one-word lowercase labe
 the result — for example `✓ **checks** 3 of 3 pass, exit 0`.
 
 - `✓` done. `✗` failed or stopped. `–` (en dash) skipped, or nothing to do.
+- `→` next: planned, or waiting on you.
 - One line per step, each standing alone with a blank line before and after it.
 - Keep each line to 80 characters — detail goes on the next line, or in the PR.
 

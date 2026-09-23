@@ -164,10 +164,12 @@ Count your attempts at the same problem.
 
 **After 3**, stop and report. Do not try a fourth patch at the same layer — three failures at one layer usually means the problem is somewhere else.
 
-State plainly:
-- what you tried
-- what each attempt proved is *not* the cause
-- what you would look at next
+Print it, with what each attempt ruled out and where you would look next under it:
+
+```
+✗ **stuck** 3 tries at <layer> — handing it back
+ruled out: <what each attempt proved is not the cause>; next: <where to look>
+```
 
 ## Debug markers
 
@@ -215,6 +217,7 @@ Every line a human reads takes one shape: a mark, a bold one-word lowercase labe
 the result — for example `✓ **checks** 3 of 3 pass, exit 0`.
 
 - `✓` done. `✗` failed or stopped. `–` (en dash) skipped, or nothing to do.
+- `→` next: planned, or waiting on you.
 - One line per step, each standing alone with a blank line before and after it.
 - Keep each line to 80 characters — detail goes on the next line, or in the PR.
 

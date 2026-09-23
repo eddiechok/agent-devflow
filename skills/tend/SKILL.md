@@ -36,9 +36,21 @@ gh pr checkout <n>
 If the working tree is dirty, or the checkout is refused, **stop and say so**. Do not tend a
 PR from another branch, and do not stash someone's work to get there.
 
-**No PR → stop.** Say in one line that there is nothing to tend yet and that `devflow:submit` comes first. Check that is really what you are looking at: a missing CLI is not a missing pull request.
+```
+✗ **branch** <head branch> not checked out — <tree dirty, or why>
+```
 
-**No GitHub access at all → stop.** Say so plainly.
+**No PR → stop.** Nothing to tend yet. Check that is really what you are looking at: a missing CLI is not a missing pull request.
+
+```
+✗ **pr** none open — devflow:submit comes first
+```
+
+**No GitHub access at all → stop.**
+
+```
+✗ **pr** no GitHub access — cannot read the PR
+```
 
 ## 2. Read what it is reporting
 
@@ -107,7 +119,12 @@ it is what happens when two branches move. Say so, resolve it, and carry on.
 
 Through `devflow:build`, which means the same five gates as any other change: the failing case becomes a test, you watch it fail for the right reason, then you make it pass.
 
-**Two rounds on the same failure, then stop.** Say what each attempt ruled out and hand it back.
+**Two rounds on the same failure, then stop.** Say what each attempt ruled out and hand it back:
+
+```
+✗ **stuck** <check> — 2 rounds, handing it back
+ruled out: <what each round proved is not the cause>
+```
 
 **Count across runs, not within one.** Before the first fix, read what is already there:
 
@@ -151,6 +168,7 @@ Every line a human reads takes one shape: a mark, a bold one-word lowercase labe
 the result — for example `✓ **checks** 3 of 3 pass, exit 0`.
 
 - `✓` done. `✗` failed or stopped. `–` (en dash) skipped, or nothing to do.
+- `→` next: planned, or waiting on you.
 - One line per step, each standing alone with a blank line before and after it.
 - Keep each line to 80 characters — detail goes on the next line, or in the PR.
 
