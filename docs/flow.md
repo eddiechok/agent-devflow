@@ -133,6 +133,12 @@ The rest are parked, never dropped. A project whose `## Plans` block says `githu
 
 A later run given `.devflow/backlog/<name>.md` as its request reads the file as the request and deletes it in the same branch, so the deletion ships with the PR that finally builds it. Nothing lingers to be parked twice.
 
+**In the desktop app, each parked feature also gets a chip.** Parking alone left the human to type `/devflow:flow .devflow/backlog/x.md` by hand for each one. The app's `spawn_task` tool puts a chip in front of them instead, and one click starts that feature in its own session. A chip is a shortcut to the record, never the record: it exists only in the app, and it is gone once dismissed, so parking runs first and runs everywhere. Where the tool does not exist, nothing is offered and nothing is printed.
+
+**The chip never points at the backlog file.** A chip session starts in a fresh worktree, and a worktree is cut from commits. The backlog file stays untracked until the kept feature's PR commits it, so a chip that said "run `.devflow/backlog/x.md`" would start a run with no request. So an issue gets `/devflow:flow #<n>`, and a file gets the feature's own text, plus one line asking the new run to delete the file if its checkout has it. A chip clicked before the kept PR merges finds no file, so the same line has it name the file under **Known issues** instead — the one case where an entry can outlive its build, said out loud rather than left to be built twice.
+
+**Only text the human typed goes into a file-case chip.** A chip prompt reaches the next run as free text, which step 1 reads as the human's own words. Text parked from an issue body or a backlog file was never that, and step 1 guards it for a reason. So that text gets no file-case chip; the file stays the record, and a later run reads it through the guard.
+
 ## The project's words
 
 Some things outlive one job. What this project means by *session*. Or *account*.
