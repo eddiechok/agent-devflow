@@ -1379,6 +1379,38 @@ for slug, text in human_facing_text.items():
           f"word for word, by all seven human-facing skills")
 
 
+# ------------------------------ build prints red and green as their own labels
+
+# The gate lines used to read `✗ **test** red -- fails for the right reason`
+# and `✓ **test** green -- 1 passed, exit 0`. The first puts a fail mark on a
+# gate that is supposed to fail, so a session skimming for `✗` cannot tell
+# "RED failed the way it's meant to" from a real failure. Splitting red and
+# green into their own labels removes that ambiguity.
+
+BUILD_PATH = os.path.join(SKILLS_DIR, "build", "SKILL.md")
+build_text = human_facing_text["build"]
+
+check("build: verify-RED prints its own red label",
+      "✓ **red** fails for the right reason" in build_text,
+      f"{BUILD_PATH} never prints '✓ **red** fails for the right reason' "
+      f"after verify-RED")
+
+check("build: verify-GREEN prints its own green label",
+      "✓ **green** 1 passed, exit 0" in build_text,
+      f"{BUILD_PATH} never prints '✓ **green** 1 passed, exit 0' after "
+      f"verify-GREEN")
+
+check("build: no longer marks the expected-to-fail RED gate as a failure",
+      "✗ **test** red" not in build_text,
+      f"{BUILD_PATH} still prints '✗ **test** red', which reads as a real "
+      f"failure for a gate that is supposed to fail")
+
+check("build: no longer uses the bare test label for the green gate",
+      "✓ **test** green" not in build_text,
+      f"{BUILD_PATH} still prints '✓ **test** green' instead of the "
+      f"red/green label split")
+
+
 # ------------------------------------------- cross-check against a real parser
 
 try:
