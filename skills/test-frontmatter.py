@@ -314,13 +314,13 @@ with open(FLOW_PATH, encoding="utf-8") as fh:
     flow_text = fh.read()
 
 SETTINGS_LINE = (
-    "settings: wrote worktree.baseRef = head to .claude/settings.local.json "
+    "\u2713 **settings** wrote worktree.baseRef = head to .claude/settings.local.json "
     "\u2014 chain worktrees branch from here, and so will your own --worktree sessions"
 )
 
 STOP_LINE = (
-    "chain <letter> branched from the default branch \u2014 the setting did not "
-    "take; restart the session and run flow again to resume"
+    "\u2717 **chains** chain <letter> branched from the default branch \u2014 the "
+    "setting did not take; restart the session and run flow again to resume"
 )
 
 check("flow: prints the worktree.baseRef line word for word",
@@ -355,7 +355,8 @@ check("flow: says what to do when the setting did not take",
 # are: a prompt is the only place either of them lives.
 
 WROTE_NOW_LINE = (
-    "chains next session: worktree.baseRef was just written"
+    "– **chains** worktree.baseRef was just written — this run does "
+    "not spawn chains"
 )
 
 check("flow: names the run that just wrote the setting",
@@ -395,7 +396,7 @@ check("flow: discounts the untracked plan file when reading the tree as dirty",
 # see, the same reason the settings and stop lines above are pinned.
 
 BACKLOG_TAKEN_LINE = (
-    "backlog: took .devflow/backlog/<name>.md — the file is deleted "
+    "✓ **backlog** took .devflow/backlog/<name>.md — the file is deleted "
     "in this branch"
 )
 
@@ -428,8 +429,8 @@ check("flow: step 1b leaves a request that names its own pieces as one feature",
       "a request that already says how to build it must not be split")
 
 check("flow: prints the features-found line before asking",
-      "features: N found — one per run" in flow_text,
-      f"{FLOW_PATH} never prints 'features: N found — one per run'")
+      "✓ **features** N found — one per run" in flow_text,
+      f"{FLOW_PATH} never prints '✓ **features** N found — one per run'")
 
 check("flow: asks whether to park the rest, with a recommendation",
       "park the rest" in flow_text and "Recommend: yes" in flow_text,
@@ -493,17 +494,17 @@ check("flow: step 1b writes a backlog file with the parked-from line",
       f"'Parked from:' line")
 
 check("flow: step 1b prints the parked: line for the issue case",
-      "parked: #46 add export, #47 fix login" in flow_text,
-      f"{FLOW_PATH} never prints the exact 'parked: #46 add export, "
+      "✓ **parked** #46 add export, #47 fix login" in flow_text,
+      f"{FLOW_PATH} never prints the exact '✓ **parked** #46 add export, "
       f"#47 fix login' example")
 
 check("flow: step 1b prints the parked: line for the file case",
-      "parked: .devflow/backlog/add-export.md, .devflow/backlog/fix-login.md"
+      "✓ **parked** .devflow/backlog/add-export.md, .devflow/backlog/fix-login.md"
       in flow_text,
-      f"{FLOW_PATH} never prints the exact file-case 'parked:' example")
+      f"{FLOW_PATH} never prints the exact file-case 'parked' example")
 
 BACKLOG_FALLBACK_LINE = (
-    "Plans: github asked for, parked to .devflow/backlog/<name>.md instead "
+    "✗ **parked** github asked for, wrote .devflow/backlog/<name>.md instead "
     "— gh answered <the error>"
 )
 
@@ -537,7 +538,7 @@ check("flow: step 1b's chip for a parked file carries the text, not the path",
       f"{FLOW_PATH} never says a file-case chip carries the feature's text "
       f"and never the backlog path")
 
-CHIP_LINE = "chips: 2 offered — each starts its own flow run in a fresh worktree"
+CHIP_LINE = "✓ **chips** 2 offered — each starts its own flow run in a fresh worktree"
 
 check("flow: step 1b prints the chips: line",
       CHIP_LINE in flow_text,
@@ -576,7 +577,7 @@ check("flow: a chip run no longer leans on Known issues for a missing file",
       f"Known issues, which submit can drop")
 
 BACKLOG_ABSENT_LINE = (
-    "backlog: .devflow/backlog/<name>.md is not in this checkout — the "
+    "– **backlog** .devflow/backlog/<name>.md is not in this checkout — the "
     "commit names it, so a later run skips it"
 )
 
@@ -609,7 +610,7 @@ check("flow: step 1 asks the merged PRs too, for a body-only Backlog line",
       f"no command {BACKLOG_BUILT_PRS!r} in {FLOW_PATH}")
 
 BACKLOG_BUILT_LINE = (
-    "backlog: .devflow/backlog/<name>.md already built in <sha or #n> — "
+    "– **backlog** .devflow/backlog/<name>.md already built in <sha or #n> — "
     "deleting it, nothing else to build"
 )
 
@@ -698,10 +699,10 @@ check("setup: step 5 creates the devflow:backlog label beside devflow:plan",
       f"'gh label create devflow:plan'")
 
 check("setup: step 5 report line names both labels",
-      "Plans: github (labels devflow:plan, devflow:backlog exist)"
+      "✓ **plans** github (labels devflow:plan, devflow:backlog exist)"
       in setup_text,
       f"{SETUP_PATH} never prints the exact "
-      f"'Plans: github (labels devflow:plan, devflow:backlog exist)' line")
+      f"'✓ **plans** github (labels devflow:plan, devflow:backlog exist)' line")
 
 check("setup: says flow parks extra features under the backlog label",
       re.search(r"[Pp]arks[^\n]*one feature per run", setup_text) is not None,
@@ -813,8 +814,8 @@ check("docs/submit: says why the look gets one fix, citing #23, #25 and #26",
 # pinned here so the promise and the report cannot drift apart again.
 
 check("ship: the report names the PRs it retargeted",
-      "Retargeted:" in ship_text,
-      f"{SHIP_PATH} step 7 has no 'Retargeted:' line, so step 6's promise "
+      "**retargeted**" in ship_text,
+      f"{SHIP_PATH} step 7 has no 'retargeted' line, so step 6's promise "
       f"that step 7 names them is not kept")
 
 
@@ -870,14 +871,15 @@ check("flat self-test: still misses a phrase that is not there",
 
 # ------------------------------ submit's step 6 has to leave a trace
 #
-# Every step of `submit` that has something to report prints it: step 2
-# `checks:`, steps 3, 4 and 5 "say so in one line", step 7 `final look:`, step 8
-# `updated #12`, step 9 the handoff. Step 6, the docs one, printed nothing --
+# Every step of `submit` now prints one shaped line: step 1 `branch`, step 2
+# `checks`, step 3 `debug`, step 4 `live`, step 5 `review`, step 7 `final
+# look` and `commit`, step 8 `pr`. Step 6, the docs one, printed nothing --
 # so a run that skipped it and a run where nothing was stale produced identical
 # output, in the transcript, in the commit and in the PR. Nobody could tell the
-# two apart, the session itself included on a second pass. (Step 1 is silent
-# too, and is not the same case: a branch that is already correct has nothing
-# to report, where step 6 always has either files or a clean look.)
+# two apart, the session itself included on a second pass. (Step 1 used to be
+# silent too, before this piece, and was not the same case: a branch that is
+# already correct has nothing to report, where step 6 always has either files
+# or a clean look. Step 1 now prints regardless, for the same reason.)
 #
 # It went wrong exactly that way on 22 Sep 2026: a follow-up pass on PR #31
 # changed how `flow`'s step 0c behaves and updated none of `docs/flow.md`,
@@ -887,13 +889,14 @@ check("flat self-test: still misses a phrase that is not there",
 # a prompt is the only place either of them lives.
 
 # The shape, not the example. Which file the worked example names is the step's
-# to change; `docs: <a file> — <what was stale>` is the part a run reproduces.
-# Pinning `README.md` here would fail the day someone picked a better example,
-# with a message saying the line was missing when it was merely different --
-# the "test that punishes editing" this file's own `flat` docstring warns about.
-DOCS_LINE_STALE = re.compile(r"docs: \S+\.md — \S")
+# to change; `**docs** <a file> — <what was stale>` is the part a run
+# reproduces. Pinning `README.md` here would fail the day someone picked a
+# better example, with a message saying the line was missing when it was
+# merely different -- the "test that punishes editing" this file's own `flat`
+# docstring warns about.
+DOCS_LINE_STALE = re.compile(r"\*\*docs\*\* \S+\.md — \S")
 
-DOCS_LINE_CLEAN = "docs: nothing stale"
+DOCS_LINE_CLEAN = "– **docs** nothing stale"
 
 check("submit: step 6 prints what it changed",
       DOCS_LINE_STALE.search(flat(submit_text)) is not None,
@@ -919,13 +922,13 @@ check("submit: step 6 says why it prints at all",
       f"step rather than a decoration, so it is pinned with the line")
 
 check("submit: the Rules list carries the step 6 line",
-      re.search(r"## Rules.*`docs:`", submit_text, re.S) is not None,
-      f"{SUBMIT_PATH}'s Rules list never mentions the `docs:` line, so the one "
+      re.search(r"## Rules.*`docs`", submit_text, re.S) is not None,
+      f"{SUBMIT_PATH}'s Rules list never mentions the `docs` line, so the one "
       f"step that had no output stays the one step with no rule either")
 
 check("docs/submit: records why step 6 prints, citing #31",
       "#31" in docs_submit_text
-      and "docs:" in docs_submit_text,
+      and "`docs`" in docs_submit_text,
       f"{DOCS_SUBMIT_PATH} does not cite the pull request whose follow-up pass "
       f"skipped step 6, so the reasoning lives only in the skill it constrains")
 
@@ -955,7 +958,7 @@ check("docs/submit: records why step 6 prints, citing #31",
 # already named both, four lines apart, while refusing to run it. That pattern
 # passed against the text it was meant to reject. The printed line is the thing
 # only the new behaviour has.
-SHIP_CONFLICT_LINE = "conflict: handing #"
+SHIP_CONFLICT_LINE = "**conflict** handing #"
 
 check("ship: hands a conflicting PR to tend rather than stopping",
       SHIP_CONFLICT_LINE in ship_text,
@@ -985,7 +988,7 @@ check("ship: tends a conflict once, and never loops",
 # `hardcase` argued all three fell, on the grounds that the Rules list already
 # forbids merging something red. It does. But the step says "carry on to step 3
 # and merge", and this repo has already paid to learn that an implied step is
-# the step that gets skipped -- that is what the `docs:` line in `submit` exists
+# the step that gets skipped -- that is what the `docs` line in `submit` exists
 # for, and what the worktree-guard eval measured. A backstop in the Rules is not
 # a substitute for the local line saying it.
 
@@ -1008,7 +1011,7 @@ check("ship: hands over only when the conflict is the only thing reported",
       f"else. Conflicting and changes-requested together means tend answers "
       f"the reviewer too, which is not what a merge command was started for")
 
-SHIP_TENDED_LINE = "Tended:"
+SHIP_TENDED_LINE = "**tended**"
 
 check("ship: the report names a conflict it resolved on the way",
       SHIP_TENDED_LINE in ship_text,
@@ -1061,12 +1064,12 @@ check("docs/ship: records why the conflict case alone is handed over",
 # moment it fires, and the refusal to fall through into branching anyway.
 
 WORKTREE_TAKEN_LINE = (
-    "worktree: this folder is on <branch> — taking my own checkout "
+    "✓ **worktree** this folder is on <branch> — taking my own checkout "
     "instead of moving it"
 )
 
 WORKTREE_REFUSED_LINE = (
-    "worktree refused — this folder belongs to <branch>. "
+    "✗ **worktree** refused — this folder belongs to <branch>. "
     "Start again with: claude --worktree"
 )
 
@@ -1144,8 +1147,8 @@ check("flow: still has build cut the branch from the default ref in the worktree
 # something has done something, where a step that merely implies it has not.
 
 WORKTREE_NOT_THE_BRANCH_LINE = (
-    "worktree: on <the branch EnterWorktree made> — build cuts the feature "
-    "branch from <default branch ref>"
+    "✓ **worktree** on <the branch EnterWorktree made> — build cuts the "
+    "feature branch from <default branch ref>"
 )
 
 check("flow: says the worktree's own branch is not the feature branch",
@@ -1177,8 +1180,8 @@ check("flow: prints what is still owed after entering the worktree",
 # of that check is pinned beside the presence of the re-cut.
 
 WORKTREE_CARRIES_LINE = (
-    "worktree: <branch> already carries commits — build cuts the feature "
-    "branch from <default branch ref>"
+    "✓ **worktree** <branch> already carries commits — build cuts the "
+    "feature branch from <default branch ref>"
 )
 
 check("flow: re-cuts a worktree that already carries commits",
@@ -1340,6 +1343,40 @@ check("docs/ship: records why a tended branch cannot be rebased",
       f"{DOCS_SHIP_PATH} never explains that tend's merge is what rules out a "
       f"rebase, so the next person to tidy step 3's ladder puts --rebase back "
       f"at the top with nothing to tell them why it was moved")
+
+
+# ------------------------------------------- one shape for every printed line
+#
+# Before this piece a step's output had no common shape: some printed
+# `label: text`, some printed prose, and some main-path steps printed nothing
+# at all, so a skipped step read exactly like a clean one. Every human-facing
+# skill now carries the same `## Output` section, word for word, so the shape
+# is one fact stated once rather than seven separate promises that drift
+# apart the first time one of them is edited. Pinned here for the same reason
+# every other cross-file promise in this suite is: a phrase that is only in
+# the prompt is a phrase a later edit can quietly break in one of the seven
+# and never in the other six.
+
+OUTPUT_SECTION = """## Output
+
+Every line a human reads takes one shape: a mark, a bold one-word lowercase label, then
+the result — for example `✓ **checks** 3 of 3 pass, exit 0`.
+
+- `✓` done. `✗` failed or stopped. `–` (en dash) skipped, or nothing to do.
+- One line per step, each standing alone with a blank line before and after it."""
+
+HUMAN_FACING_SKILLS = ["flow", "build", "submit", "review", "tend", "ship", "setup"]
+
+human_facing_text = {}
+for slug in HUMAN_FACING_SKILLS:
+    with open(os.path.join(SKILLS_DIR, slug, "SKILL.md"), encoding="utf-8") as fh:
+        human_facing_text[slug] = fh.read()
+
+for slug, text in human_facing_text.items():
+    check(f"{slug}: carries the ## Output section word for word",
+          OUTPUT_SECTION in text,
+          f"{slug}/SKILL.md is missing the exact '## Output' section shared, "
+          f"word for word, by all seven human-facing skills")
 
 
 # ------------------------------------------- cross-check against a real parser

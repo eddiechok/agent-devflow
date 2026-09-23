@@ -65,7 +65,7 @@ graders:
   - type: regex
     name: prints-the-handoff-line
     target: trace
-    pattern: "conflict: handing #"
+    pattern: "\\*\\*conflict\\*\\* handing #"
     match: contains
     weight: 4
 
@@ -162,7 +162,7 @@ graders:
 expected_outcome: >
   Reads the PR with gh pr view, sees mergeable CONFLICTING with no checks
   configured and no review pending, recognises the conflict as the only thing
-  reported, prints "conflict: handing #<n> to tend, then re-reading the state",
+  reported, prints "✗ **conflict** handing #<n> to tend, then re-reading the state",
   and runs devflow:tend for that PR exactly once. On tend's return it re-reads
   all four conditions rather than mergeable alone, treats an UNKNOWN as not-yet
   rather than as a yes, and only then merges. No gh pr merge call appears before

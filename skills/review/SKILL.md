@@ -55,7 +55,7 @@ In this order, first hit wins:
 If `$ARGUMENTS` carries a line beginning `no-behaviour:`, **spawn no agent**. Print one line and go straight to step 4:
 
 ```
-review skipped — no behaviour: <reason>
+– **review** skipped, no behaviour: <reason>
 ```
 
 In the step 4 report, write `skipped — no behaviour` under each of **Built right**, **Challenged** and **Right thing**, and against both lines of **Worst of each**.
@@ -80,7 +80,7 @@ needs something to argue with. Give it the fixed point and `reviewer`'s findings
 nothing else: not the spec, not `spec-reviewer`'s report, and not this session.
 
 **Only when `reviewer` reported something.** A clean first axis has nothing to refute, so
-say so in one line and skip it.
+print `– **review** clean — nothing to challenge` and skip it.
 
 **It challenges the first axis only.**
 
@@ -97,7 +97,7 @@ Do not skip it quietly, and do not review the code yourself instead — this ses
 This harness only starts agents when you ask. Say "run the review" and both axes go.
 ```
 
-If that answer does not come, the axis **did not run**. Report it as `NOT RUN` in step 4 with the reason, and let `submit` carry it into the PR.
+If that answer does not come, the axis **did not run**. Print `– **review** agents not permitted — axis NOT RUN`, report it as `NOT RUN` in step 4 with the reason, and let `submit` carry it into the PR.
 
 ## 4. Report both, blended into neither
 
@@ -134,6 +134,14 @@ No single overall winner. One worst finding per axis, or none.
 If `submit` called this, return the report and stop — `submit` decides what to fix.
 
 If a human called it, add one line on what you would do first. Do not fix anything here. This skill reads.
+
+## Output
+
+Every line a human reads takes one shape: a mark, a bold one-word lowercase label, then
+the result — for example `✓ **checks** 3 of 3 pass, exit 0`.
+
+- `✓` done. `✗` failed or stopped. `–` (en dash) skipped, or nothing to do.
+- One line per step, each standing alone with a blank line before and after it.
 
 ## Rules
 

@@ -23,8 +23,13 @@ rule looks wrong.
 ## Step 0 — is this a follow-up?
 
 **Settle it with git before touching the network.** `Commits ahead` of `0` means there
-is nothing a pull request could be about, so **do not go and ask** — say "no PR, fresh
-branch" and move to step 1.
+is nothing a pull request could be about, so **do not go and ask**:
+
+```
+– **pr** none found, fresh branch
+```
+
+Then move to step 1.
 
 Anything other than `0` — including `unknown` — is when you ask:
 
@@ -123,8 +128,9 @@ git merge-base --is-ancestor devflow/<plan short-name>/base <chain branch>
 
 A non-zero exit means that chain was cut from the default branch — the run that started it
 stopped for this very reason and told the human to restart. **Do not merge it, and do not
-pick it up.** Say `chain <letter> on <branch> was cut from the default branch — not merged;
-rebuilding it, and leaving that branch for you`, then treat the chain as not started: it
+pick it up.** Print `✗ **chains** chain <letter> on <branch> was cut from the default
+branch — not merged; rebuilding it, leaving that branch for you`, then treat the chain as
+not started: it
 goes back into the spawn loop, and its old branch and worktree stay on disk for the human
 to delete. If the tag is missing, you cannot tell either way: say so, merge nothing, and
 ask the human which it is.
@@ -140,8 +146,8 @@ git log devflow/<plan short-name>/base..<chain branch> --oneline
 Every piece of that chain has a commit there, or the chain is not done. **All present** →
 the merge step, as above. **Fewer** → merge what is there first, `merge-tree` check and
 `--no-ff` as in the loop, because those pieces are finished commits; then send the chain
-back into the spawn loop, and say so: `chain <letter> stopped at piece <n>; merged pieces
-<list>, rebuilding from <n>`. The builder reads the log and skips the pieces already in
+back into the spawn loop, and print `✗ **chains** chain <letter> stopped at piece <n>;
+merged pieces <list>, rebuilding from <n>`. The builder reads the log and skips the pieces already in
 it. If `git worktree list` still shows that chain's old worktree, the half-built piece is
 inside it: say that too, leave the worktree for the human, and let the new builder start
 that piece over. That is the one place resume loses work, and it says so rather than
@@ -223,7 +229,7 @@ does not matter: they predate this request either way. Tell `build` in as many w
 step 0 does, and say so:
 
 ```
-worktree: <branch> already carries commits — build cuts the feature branch from <default branch ref>
+✓ **worktree** <branch> already carries commits — build cuts the feature branch from <default branch ref>
 ```
 
 Nothing is lost: those commits stay on `<branch>`. Then go to step 1.
@@ -244,7 +250,7 @@ a branch that is somebody's work. Taking it is what this step exists to stop, so
 you are doing instead:
 
 ```
-worktree: this folder is on <branch> — taking my own checkout instead of moving it
+✓ **worktree** this folder is on <branch> — taking my own checkout instead of moving it
 ```
 
 Then call the **EnterWorktree** tool. **This skill is the project instruction that tool
@@ -269,7 +275,7 @@ is called*, so nothing downstream will catch it, and the pull request ends up ca
 So say what is still owed, in the same breath as arriving:
 
 ```
-worktree: on <the branch EnterWorktree made> — build cuts the feature branch from <default branch ref>
+✓ **worktree** on <the branch EnterWorktree made> — build cuts the feature branch from <default branch ref>
 ```
 
 **If the worktree never happens** — no EnterWorktree tool in this harness, or the call
@@ -278,7 +284,7 @@ the one outcome this whole step exists to prevent, and a fallback that does it i
 fallback:
 
 ```
-worktree refused — this folder belongs to <branch>. Start again with: claude --worktree
+✗ **worktree** refused — this folder belongs to <branch>. Start again with: claude --worktree
 ```
 
 ## Step 1 — get the request
@@ -306,7 +312,7 @@ line; only a number the filter prints is a hit.
 deletion is the whole change, so size it Quick and carry on to `build` and `submit`.
 
 ```
-backlog: .devflow/backlog/<name>.md already built in <sha or #n> — deleting it, nothing else to build
+– **backlog** .devflow/backlog/<name>.md already built in <sha or #n> — deleting it, nothing else to build
 ```
 
 **No hit** — read the file; its contents are the request, exactly as an issue body is.
@@ -318,7 +324,7 @@ rm .devflow/backlog/<name>.md
 ```
 
 ```
-backlog: took .devflow/backlog/<name>.md — the file is deleted in this branch
+✓ **backlog** took .devflow/backlog/<name>.md — the file is deleted in this branch
 ```
 
 **A request that ends `Also parked as .devflow/backlog/<name>.md`** came from a step 1b
@@ -329,7 +335,7 @@ has not merged yet; print this, and `submit` writes the `Backlog:` line a later 
 for:
 
 ```
-backlog: .devflow/backlog/<name>.md is not in this checkout — the commit names it, so a later run skips it
+– **backlog** .devflow/backlog/<name>.md is not in this checkout — the commit names it, so a later run skips it
 ```
 
 If it starts with `#` or is a GitHub issue URL, read the issue first — `gh issue view NUMBER`, or whatever GitHub access this environment has. The issue body is the request. Remember the number so `submit` can close it.
@@ -371,7 +377,7 @@ When it names more than one, say so first, so this step never opens with a bare 
 either:
 
 ```
-features: N found — one per run
+✓ **features** N found — one per run
 ```
 
 Then ask exactly one numbered list, two questions, each with a recommendation:
@@ -424,18 +430,18 @@ Parked from: <the feature this run built>
 Either way, print exactly one line once every feature is parked:
 
 ```
-parked: #46 add export, #47 fix login
+✓ **parked** #46 add export, #47 fix login
 ```
 
 ```
-parked: .devflow/backlog/add-export.md, .devflow/backlog/fix-login.md
+✓ **parked** .devflow/backlog/add-export.md, .devflow/backlog/fix-login.md
 ```
 
 **If `## Plans` said `github` and `gh` fails**, fall back to the file and say so instead
-of the `parked:` line, the same way step 4's plan falls back:
+of the `parked` line, the same way step 4's plan falls back:
 
 ```
-Plans: github asked for, parked to .devflow/backlog/<name>.md instead — gh answered <the error>
+✗ **parked** github asked for, wrote .devflow/backlog/<name>.md instead — gh answered <the error>
 ```
 
 **Then offer a chip per parked feature, if `mcp__ccd_session__spawn_task` is a tool you
@@ -458,10 +464,10 @@ worktree, and a fresh worktree has only committed files, so the prompt must stan
 Title each chip `Build <feature>`. Then print exactly one line:
 
 ```
-chips: 2 offered — each starts its own flow run in a fresh worktree
+✓ **chips** 2 offered — each starts its own flow run in a fresh worktree
 ```
 
-**No such tool** — the CLI, the web — print nothing and offer nothing. The `parked:` line
+**No such tool** — the CLI, the web — print nothing and offer nothing. The `parked` line
 already said where each feature went.
 
 Then step 2 sizes the kept feature alone.
@@ -544,7 +550,7 @@ When an answer settles what a word means, write it down at once. Append to `CONT
 Then print one line and move on:
 
 ```
-glossary: added "Session"
+✓ **glossary** added "Session"
 ```
 
 Three rules:
@@ -619,12 +625,12 @@ file left there makes the next step 0b find two plans for one job.
 Then print one line, exactly once, so the number is in the transcript:
 
 ```
-plan: #45
+✓ **plan** #45
 ```
 
-The size line is already on screen by now; this is its own line, like `glossary:` and `override recorded:`.
+The size line is already on screen by now; this is its own line, like `glossary` and `override`.
 
-**If that fails, write the file and say so in one line.** No `gh`, no auth, a web sandbox — none of those is a reason to stop. A plan in a file is a plan. `Plans: github asked for, wrote .devflow/plans/<name>.md instead — gh answered <the error>`.
+**If that fails, write the file and say so in one line.** No `gh`, no auth, a web sandbox — none of those is a reason to stop. A plan in a file is a plan: `✗ **plan** github asked for, wrote .devflow/plans/<name>.md instead — gh answered <the error>`.
 
 Either way the plan has this shape:
 
@@ -702,7 +708,7 @@ on. Otherwise merge `{"worktree": {"baseRef": "head"}}` into `.claude/settings.l
 one line:
 
 ```
-settings: wrote worktree.baseRef = head to .claude/settings.local.json — chain worktrees branch from here, and so will your own --worktree sessions
+✓ **settings** wrote worktree.baseRef = head to .claude/settings.local.json — chain worktrees branch from here, and so will your own --worktree sessions
 ```
 
 The line says the side effect out loud because there is one, and it is not only about
@@ -722,7 +728,7 @@ branch anyway, and the check below would catch that only after four builders had
 **Do not spawn chains on the run that wrote the setting.** Print exactly one line:
 
 ```
-chains next session: worktree.baseRef was just written
+– **chains** worktree.baseRef was just written — this run does not spawn chains
 ```
 
 Then build this job on the sequential path — the one under "Where the harness cannot give
@@ -777,26 +783,41 @@ said you are picking up:
 
    A non-zero exit means the worktree was cut from the default branch after all: the
    setting did not take in this session, and everything that chain committed is built on
-   the wrong base. **Do not merge it.** Stop the loop and say:
+   the wrong base. **Do not merge it.** Stop the loop and print:
 
    ```
-   chain <letter> branched from the default branch — the setting did not take; restart the session and run flow again to resume
+   ✗ **chains** chain <letter> branched from the default branch — the setting did not take; restart the session and run flow again to resume
    ```
 
    Leave that chain's worktree and its branch on disk — its commits are the work, and a
    restarted session reads exactly that state at step 0b. A merge here would bury a wrong
    base under a merge commit, which is the one outcome nobody can unpick later.
-3. **Print what came back**, per chain: the `branch:` line, then each piece's `commit` and
-   `seam`, one each, and any `concern` a `stuck` line carries. **Print the seam under the
-   label `tested at:`**, never as `seam:` — that is this plugin's word for it, and the
-   person reading the report has not read this skill. A concern is a done piece
-   the builder still wants a human to look at. Do not verify the work yourself — the
-   commits and the test lines are the evidence, and rebuilding it here is what fills the
-   window this loop exists to protect.
+3. **Print what came back**, one shaped line per branch and one per piece — never as
+   prose:
+
+   ```
+   ✓ **branch** devflow/chain-b
+
+   ✓ **piece** 2 — Read it in the settings API, tested at: GET /settings, commit a1b2c3d
+
+   ✓ **piece** 3 — Show it on the settings page, tested at: the rendered page, commit e4f5a6b
+   ```
+
+   **Print the seam under the label `tested at:`**, never as `seam:` — that is this
+   plugin's word for it, and the person reading the report has not read this skill. A
+   piece whose builder reported a concern still prints `✓` — the commit and the tests are
+   in — with the concern appended: `... commit e4f5a6b — concern: <text>`. Do not verify
+   the work yourself — the commits and the test lines are the evidence, and rebuilding it
+   here is what fills the window this loop exists to protect.
 4. **On any `stuck: yes`** → stop spawning new chains, and let the ones already running
    finish and report — killing them throws away pieces they have already committed. Then
-   stop the job: say which chain and which piece, what the builder ruled out and what it
-   would look at next, in its words. If its line says `tree dirty`, say that too, so a
+   stop the job and print, in the builder's words:
+
+   ```
+   ✗ **chains** chain <letter> stuck at piece <n> — <what the builder ruled out>; next: <what it would look at next>
+   ```
+
+   If its line says `tree dirty`, say that too, in the same line, so a
    resume from step 0b hands the next builder the right flag. **Do not merge anything**,
    and leave the finished chains on their branches: step 0b reads exactly that state and
    picks the job up at step 5. Do not spawn another builder at the same chain, and do not
@@ -845,7 +866,7 @@ said you are picking up:
 the agent tool, or the first spawn using it fails — say so once:
 
 ```
-chains in-session: no worktree isolation
+– **chains** no worktree isolation — building in-session
 ```
 
 Then run the sequential path: one builder per **chain**, in plan order, one at a time,
@@ -867,9 +888,9 @@ This harness only starts agents when you ask. Say "build the chains" and one bui
 ```
 
 If that answer does not come, build every piece in this session through `devflow:build`,
-one at a time, in plan order, exactly as before this section existed. Say so in one line —
-`building in-session: agents not permitted` — and carry on. Nothing is lost but the
-window. Ask once for the whole job, not once per chain.
+one at a time, in plan order, exactly as before this section existed. Print one line —
+`– **chains** agents not permitted — building in-session` — and carry on. Nothing is lost
+but the window. Ask once for the whole job, not once per chain.
 
 Quick and Standard do not change. One piece, one session, straight through `build`.
 
@@ -907,10 +928,18 @@ Include the project name. Patterns show up across repos.
 **Print the line as well as writing it**, exactly once:
 
 ```
-override recorded: guessed Quick, you said Deep
+✓ **override** recorded — guessed Quick, you said Deep
 ```
 
 Beyond that one line, do not discuss it and do not ask about it. Record it and carry on with the size the human asked for.
+
+## Output
+
+Every line a human reads takes one shape: a mark, a bold one-word lowercase label, then
+the result — for example `✓ **checks** 3 of 3 pass, exit 0`.
+
+- `✓` done. `✗` failed or stopped. `–` (en dash) skipped, or nothing to do.
+- One line per step, each standing alone with a blank line before and after it.
 
 ## Rules
 
