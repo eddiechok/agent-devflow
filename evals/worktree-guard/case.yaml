@@ -11,11 +11,12 @@ execution:
   # work, so `build` would cut a branch with `git checkout -b` and move the whole
   # folder -- out from under whoever is on that branch. Step 0c is what stops it.
   prompt: "/devflow:flow add a --shout flag to greet() that upper-cases the greeting. Nobody is here to answer: yes to all, do not wait."
-  # 10 was too tight and cost two runs of the first scoring pass. `checkout -b`
-  # landed at tool call #8 and #9 in the runs that reached it, so the budget was
-  # deciding the result as much as the skill was. 20 clears it without paying
-  # for a whole loop -- this case is done once the branch is cut, and never
-  # needs to reach submit the way `full-loop` does.
+  # 10 was too tight and cost two runs of the first scoring pass. Under it, the
+  # only runs that reached `checkout -b` at all were the ones that got there by
+  # tool call #8 or #9; given room, the same step takes until #12 or #13. So the
+  # budget was deciding the result as much as the skill was. 20 clears it
+  # without paying for a whole loop -- this case is done once the branch is cut,
+  # and never needs to reach submit the way `full-loop` does.
   max_turns: 20
   timeout_seconds: 600
   allowed_tools: [Bash, Read, Edit, Write, Glob, Grep, Skill, EnterWorktree]
