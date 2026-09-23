@@ -441,7 +441,8 @@ Short, one shaped line per fact. What merged, whether it is live, what was tidie
 ```
 ✓ **merged** #2 (rebase), remote branch deleted
 
-✓ **tended** #2 conflicted — tend resolved, re-submitted before merge (omit if none)
+✓ **tended** #2 conflicted with main — tend resolved it (omit if none)
+re-submitted before merge
 
 ✓ **retargeted** #4 onto main, still open — rebase is its author's (omit if none)
 

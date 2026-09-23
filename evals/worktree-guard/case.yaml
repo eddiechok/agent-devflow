@@ -84,8 +84,8 @@ graders:
 expected_outcome: >
   Reaches step 0c, sees the folder is on feat/another-session rather than the
   default branch and is not already a linked worktree, prints "✓ **worktree**
-  this folder is on feat/another-session — keeping my own checkout, not
-  moving it", calls EnterWorktree, then says the branch EnterWorktree opened is not the
+  this folder is on feat/another-session — taking a checkout of my
+  own", calls EnterWorktree, then says the branch EnterWorktree opened is not the
   feature branch and has build cut that one from the default branch ref — so the
   feature branch does not carry feat/another-session's commit. Never runs
   `git checkout -b` in the shared folder, which stays on feat/another-session.

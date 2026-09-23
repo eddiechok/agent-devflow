@@ -250,7 +250,7 @@ a branch that is somebody's work. Taking it is what this step exists to stop, so
 you are doing instead:
 
 ```
-✓ **worktree** this folder is on <branch> — keeping my own checkout, not moving it
+✓ **worktree** this folder is on <branch> — taking a checkout of my own
 ```
 
 Then call the **EnterWorktree** tool. **This skill is the project instruction that tool

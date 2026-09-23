@@ -1098,8 +1098,7 @@ check("docs/ship: records why the conflict case alone is handed over",
 # moment it fires, and the refusal to fall through into branching anyway.
 
 WORKTREE_TAKEN_LINE = (
-    "✓ **worktree** this folder is on <branch> — keeping my own checkout, "
-    "not moving it"
+    "✓ **worktree** this folder is on <branch> — taking a checkout of my own"
 )
 
 WORKTREE_REFUSED_LINE = (
@@ -1472,12 +1471,12 @@ SHAPED_LABELS = {
     "backlog", "branch", "chains", "checks", "chips", "cleaned", "commit",
     "conflict", "debug", "deploy", "docs", "features", "glossary", "green",
     "handback", "lint", "live", "look", "merge", "merged", "no-behaviour",
-    "not-yours", "open", "opinion", "override", "parked", "piece", "plan",
+    "theirs", "open", "opinion", "override", "parked", "piece", "plan",
     "plans", "pr", "pushed", "red", "retargeted", "review", "session",
     "settings", "tended", "test", "typecheck", "worktree", "yours",
 }
 
-SHAPED_LINE_LABEL = re.compile(r"[✓✗–] \*\*([a-z][a-z-]*)\*\*")
+SHAPED_LINE_LABEL = re.compile(r"[✓✗–] \*\*([^*\n]+)\*\*")
 
 
 def shaped_labels_in(text):
@@ -1490,6 +1489,10 @@ check("label scanner: finds a listed label",
 check("label scanner: finds a label that is not on the list",
       "madeup" in shaped_labels_in("✓ **madeup** something")
       and "madeup" not in SHAPED_LABELS)
+
+check("label scanner: finds a label that is not lowercase letters",
+      {"Merged", "pr2", "final look"} <= shaped_labels_in(
+          "✓ **Merged** #2\n✓ **pr2** #3\n– **final look** nothing new"))
 
 for slug, text in human_facing_text.items():
     unlisted = sorted(shaped_labels_in(text) - SHAPED_LABELS)
@@ -1511,9 +1514,9 @@ for slug, text in human_facing_text.items():
 # what a reader sees before the run fills it in.
 
 SHAPED_STANDALONE_LINE = re.compile(
-    r"^[ \t]*([✓✗–] \*\*[a-z][a-z-]*\*\*.*)$", re.M)
+    r"^[ \t]*([✓✗–] \*\*[^*\n]+\*\*.*)$", re.M)
 SHAPED_INLINE_CITATION = re.compile(
-    r"`([✓✗–] \*\*[a-z][a-z-]*\*\*[^`]*)`")
+    r"`([✓✗–] \*\*[^*\n]+\*\*[^`]*)`")
 
 
 def shaped_example_lines(text):

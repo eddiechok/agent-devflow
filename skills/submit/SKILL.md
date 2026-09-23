@@ -332,6 +332,7 @@ The PR now exists, so the two built-in reviews finally have something to run aga
 
 ```
 – **opinion** /code-review 12, /security-review — yours to type, if installed
+/security-review: this change touched database migrations
 ```
 
 **Work the danger list out from the diff, not from memory.** Read the diff against the list in `flow` and decide again.

@@ -138,7 +138,7 @@ Then print the final report, short, one shaped line per fact:
 ```
 ✓ **yours** test — fixed, src/settings.test.ts
 
-– **not-yours** deploy — red on main too, left alone
+– **theirs** deploy — red on main too, left alone
 
 ✓ **pushed** 2 commits
 

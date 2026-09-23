@@ -94,7 +94,7 @@ graders:
   - type: regex
     name: relays-the-builder-report
     target: trace
-    pattern: "\\*\\*piece\\*\\*.*commit [0-9a-f]{7}"
+    pattern: "\\*\\*piece\\*\\*[^\\n]*\\n[^\\n]*commit [0-9a-f]{7}"
     match: contains
     weight: 2
 
