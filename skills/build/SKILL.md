@@ -82,13 +82,19 @@ git checkout -b <type>/<short-name> <default branch ref>
 
 Branching is not committing. Committing happens in one case only — a finished plan piece, below. Everything else is `submit`'s.
 
+Then print the branch, once, before the first edit:
+
+```
+✓ **branch** <name>
+```
+
 ## First: is there anything a test could catch?
 
-The gates below assume behaviour. When there is none, **say so in one line and skip to the
+The gates below assume behaviour. When there is none, **print one line and skip to the
 checks** — run the project's `## Checks` block, show the output, and go on to handing back:
 
 ```
-No behaviour to test — README wording. Running the checks instead.
+– **no-behaviour** README wording — running the checks instead
 ```
 
 **The bar is narrow, and default to testing.** "I cannot see the seam" is not the same as
@@ -120,7 +126,11 @@ expect(add(a, b)).toBe(a + b);
 
 Run the test. **Show the output.**
 
-Then check the failure is the *right* failure. A test that fails because of a typo in the import, or because the file does not exist, has proven nothing.
+Then check the failure is the *right* failure. A test that fails because of a typo in the import, or because the file does not exist, has proven nothing. Once it is, print:
+
+```
+✗ **test** red — fails for the right reason
+```
 
 If it passes immediately, the test is wrong. Fix the test before writing any code.
 
@@ -130,7 +140,11 @@ Write the smallest code that makes the test pass. Not the general version. Not t
 
 ### 4. Verify GREEN — watch it pass
 
-Run the test again. **Show the output.** Then run typecheck.
+Run the test again. **Show the output.** Then run typecheck, and print:
+
+```
+✓ **test** green — 1 passed, exit 0
+```
 
 ### 5. Refactor — only now
 
@@ -181,15 +195,19 @@ If `flow` handed you a piece from `.devflow/plans/<name>.md`, commit it once it 
 
 Types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `perf`, `build`, `ci` — the same list `submit` step 7 uses, and it has to stay the same list.
 
-Commit the piece and nothing else. Not a half-finished next piece, and not unrelated tidying that came along with it.
+Commit the piece and nothing else. Not a half-finished next piece, and not unrelated tidying that came along with it. Then print:
+
+```
+✓ **commit** feat(settings): read the flag in the API (a1b2c3d)
+```
 
 ## Handing back
 
 Say what you built and the output that proves it. Then stop — do not open a PR.
 
-If a skill called you — `flow`, or `tend` fixing what a pull request reported — it takes over from here and submits. Say what you built and stop; do not tell it to run `submit`, it already knows.
+If a skill called you — `flow`, or `tend` fixing what a pull request reported — it takes over from here and submits. Print `✓ **handback** <what you built>` and stop; do not tell it to run `submit`, it already knows.
 
-If a **human** called you directly, say in one line that the work is ready for `devflow:submit`, and leave that call to them.
+If a **human** called you directly, print `✓ **handback** <what you built> — ready for devflow:submit`, and leave that call to them.
 
 ## Output
 
