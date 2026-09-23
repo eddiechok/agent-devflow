@@ -444,6 +444,14 @@ Cleaned: local branch, dev server on :4321, 3 screenshots in /tmp.
 Session: want it archived?
 ```
 
+## Output
+
+Every line a human reads takes one shape: a mark, a bold one-word lowercase label, then
+the result — for example `✓ **checks** 3 of 3 pass, exit 0`.
+
+- `✓` done. `✗` failed or stopped. `–` (en dash) skipped, or nothing to do.
+- One line per step, each standing alone with a blank line before and after it.
+
 ## Rules
 
 - Never run without a human starting it. `disable-model-invocation: true` stays, and so does the rule in `flow` and `submit` not to call this.

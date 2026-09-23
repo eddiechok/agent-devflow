@@ -152,6 +152,14 @@ Then mention, once, only if relevant:
 - a check took a long time
 - the project is currently red
 
+## Output
+
+Every line a human reads takes one shape: a mark, a bold one-word lowercase label, then
+the result — for example `✓ **checks** 3 of 3 pass, exit 0`.
+
+- `✓` done. `✗` failed or stopped. `–` (en dash) skipped, or nothing to do.
+- One line per step, each standing alone with a blank line before and after it.
+
 ## Rules
 
 - Never write a command you have not run.

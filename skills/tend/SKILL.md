@@ -131,6 +131,14 @@ A reviewer who asked a question is owed an answer, not just a commit.
 
 Then report, short: what was yours, what was not, what you pushed, what is still open.
 
+## Output
+
+Every line a human reads takes one shape: a mark, a bold one-word lowercase label, then
+the result — for example `✓ **checks** 3 of 3 pass, exit 0`.
+
+- `✓` done. `✗` failed or stopped. `–` (en dash) skipped, or nothing to do.
+- One line per step, each standing alone with a blank line before and after it.
+
 ## Rules
 
 - Never merge, and never call `devflow:ship`. Merging is the human's.

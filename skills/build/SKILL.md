@@ -191,6 +191,14 @@ If a skill called you — `flow`, or `tend` fixing what a pull request reported 
 
 If a **human** called you directly, say in one line that the work is ready for `devflow:submit`, and leave that call to them.
 
+## Output
+
+Every line a human reads takes one shape: a mark, a bold one-word lowercase label, then
+the result — for example `✓ **checks** 3 of 3 pass, exit 0`.
+
+- `✓` done. `✗` failed or stopped. `–` (en dash) skipped, or nothing to do.
+- One line per step, each standing alone with a blank line before and after it.
+
 ## Rules
 
 - Never claim a test passes without showing the output.

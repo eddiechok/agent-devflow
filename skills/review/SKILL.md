@@ -135,6 +135,14 @@ If `submit` called this, return the report and stop — `submit` decides what to
 
 If a human called it, add one line on what you would do first. Do not fix anything here. This skill reads.
 
+## Output
+
+Every line a human reads takes one shape: a mark, a bold one-word lowercase label, then
+the result — for example `✓ **checks** 3 of 3 pass, exit 0`.
+
+- `✓` done. `✗` failed or stopped. `–` (en dash) skipped, or nothing to do.
+- One line per step, each standing alone with a blank line before and after it.
+
 ## Rules
 
 - Never edit, stage, commit or push. `review` reads and reports.

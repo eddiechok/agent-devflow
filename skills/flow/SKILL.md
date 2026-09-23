@@ -912,6 +912,14 @@ override recorded: guessed Quick, you said Deep
 
 Beyond that one line, do not discuss it and do not ask about it. Record it and carry on with the size the human asked for.
 
+## Output
+
+Every line a human reads takes one shape: a mark, a bold one-word lowercase label, then
+the result — for example `✓ **checks** 3 of 3 pass, exit 0`.
+
+- `✓` done. `✗` failed or stopped. `–` (en dash) skipped, or nothing to do.
+- One line per step, each standing alone with a blank line before and after it.
+
 ## Rules
 
 - Never build more than one feature per run. A request naming several keeps one and parks

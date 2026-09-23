@@ -1342,6 +1342,40 @@ check("docs/ship: records why a tended branch cannot be rebased",
       f"at the top with nothing to tell them why it was moved")
 
 
+# ------------------------------------------- one shape for every printed line
+#
+# Before this piece a step's output had no common shape: some printed
+# `label: text`, some printed prose, and some main-path steps printed nothing
+# at all, so a skipped step read exactly like a clean one. Every human-facing
+# skill now carries the same `## Output` section, word for word, so the shape
+# is one fact stated once rather than seven separate promises that drift
+# apart the first time one of them is edited. Pinned here for the same reason
+# every other cross-file promise in this suite is: a phrase that is only in
+# the prompt is a phrase a later edit can quietly break in one of the seven
+# and never in the other six.
+
+OUTPUT_SECTION = """## Output
+
+Every line a human reads takes one shape: a mark, a bold one-word lowercase label, then
+the result — for example `✓ **checks** 3 of 3 pass, exit 0`.
+
+- `✓` done. `✗` failed or stopped. `–` (en dash) skipped, or nothing to do.
+- One line per step, each standing alone with a blank line before and after it."""
+
+HUMAN_FACING_SKILLS = ["flow", "build", "submit", "review", "tend", "ship", "setup"]
+
+human_facing_text = {}
+for slug in HUMAN_FACING_SKILLS:
+    with open(os.path.join(SKILLS_DIR, slug, "SKILL.md"), encoding="utf-8") as fh:
+        human_facing_text[slug] = fh.read()
+
+for slug, text in human_facing_text.items():
+    check(f"{slug}: carries the ## Output section word for word",
+          OUTPUT_SECTION in text,
+          f"{slug}/SKILL.md is missing the exact '## Output' section shared, "
+          f"word for word, by all seven human-facing skills")
+
+
 # ------------------------------------------- cross-check against a real parser
 
 try:
