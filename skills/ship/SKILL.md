@@ -184,14 +184,37 @@ handoff puts one there every time, since `tend` merges the default branch in rat
 rebasing it. So the common case after a handoff is the one case `--rebase` cannot serve:
 
 ```
+git fetch origin
 git log --merges <default branch ref>..origin/<head branch>
 ```
+
+**The fetch is not decoration, and it is the line most likely to be tidied away.** This
+reads a remote-tracking ref, and nothing else in step 1 or 3 updates one. Skip it and the
+guard has two ways to be useless, both silent-ish: a ref last updated before `tend` pushed
+answers "empty" and waves the refusal straight through, and a branch this clone has never
+seen at all is not a ref — `git log` exits 128 with `unknown revision`, which is a guard
+that did not run rather than a guard that said no. Both are ordinary: step 1 says the PR
+need not be checked out, so shipping a branch this checkout never touched is a supported
+path, not an exotic one.
 
 **`origin/<head branch>`, never `..HEAD`.** Step 1 said you do not need to check the PR
 out to merge it, so `HEAD` is whichever branch this session happens to stand on — usually
 the default one, which has no merge commits ahead of itself and answers "empty" every
 time. That is the worst kind of wrong: a guard that reads the wrong branch still looks
 like it ran. The name step 1 wrote down is the one to ask about.
+
+**If either command errors rather than answering, stop.** Both, not just the second, and
+the fetch is the one that matters more — because a failed `git log` is loud where a failed
+fetch is silent. Offline, a hosted sandbox, a credential prompt on a private remote: the
+fetch exits non-zero, and the `git log` after it answers perfectly calmly against the ref
+it already had. Stale, that is "empty", which is "no merge commit", which puts `--rebase`
+back on the ladder — the original bug, restored by the thing meant to prevent it.
+
+So read the fetch's exit code before trusting anything downstream of it. Say what git
+printed and hand it over; a merge method chosen on a guard that did not run is a guess,
+whichever of the two failed. **A shallow or `--single-branch` clone lands here too** and is
+a stop for the same reason rather than a different one: the branch is where step 1 said,
+this checkout is simply not configured to fetch it.
 
 **Not empty → `--rebase` is off the table.** Not ranked lower, out: take it away and
 choose from what is left. Then the ladder, with whatever is still standing:

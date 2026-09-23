@@ -1107,6 +1107,32 @@ check("docs/flow: records why the session takes a worktree of its own",
 # instruction is "retry, with a wait", which here burns the cap and ends with
 # the pull request unmerged.
 
+# The fetch is load-bearing and reads as decoration, which is the combination
+# that gets deleted. `git log --merges` reads a remote-tracking ref and nothing
+# else in steps 1 or 3 updates one, so without it the guard has two silent
+# failures rather than one. A ref last updated before `tend` pushed answers
+# "empty" and waves the refusal through. A branch this clone has never seen is
+# not a ref at all: git exits 128 with `unknown revision`, which is a guard that
+# did not run. Both were reproduced on 23 Sep 2026 in a throwaway repo -- a clone
+# taken before the branch existed, which is the ordinary case, since step 1 says
+# the pull request need not be checked out to merge it.
+#
+# Pinned as adjacency rather than presence: `git fetch origin --prune` already
+# appears further down, in the post-merge reconcile, so bare `git fetch origin`
+# is a match that cannot miss.
+#
+# `[^\n]*` and not `\s*`, so the line may carry flags. The first draft demanded
+# the bare form exactly, which would have failed `git fetch origin --prune` in
+# front of the guard -- an equally correct fix, rejected for its spelling. That
+# is the "test that punishes editing" this file's own `flat` docstring warns
+# about, and it is worth naming twice because the fix looks like tightening.
+check("ship: fetches before reading the branch's shape",
+      re.search(r"git fetch origin[^\n]*\n\s*git log --merges", ship_text)
+      is not None,
+      f"{SHIP_PATH} step 3 reads origin/<head branch> without a `git fetch "
+      f"origin` immediately before it. A stale ref answers 'empty' and a branch "
+      f"this clone never fetched exits 128 — neither is the guard working")
+
 check("ship: asks the branch's shape before choosing a merge method",
       "git log --merges" in ship_text,
       f"{SHIP_PATH} step 3 never runs 'git log --merges', so nothing notices a "
