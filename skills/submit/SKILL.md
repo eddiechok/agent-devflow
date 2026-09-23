@@ -141,6 +141,20 @@ Find the docs that describe what changed: the README, anything under `docs/`, `C
 
 The bar is narrow: a doc that is now **wrong**, not a doc that could say more. Do not write new pages, and do not touch a doc the change did not date. A line beside the code that dated it is the whole step; anything bigger goes back through `flow` as its own request.
 
+**Then say what you did, in one line.** Name each file and what was stale in it:
+
+```
+docs: README.md — the worktree cleanup bullet claimed flow removes every worktree
+```
+
+And say so when nothing was, in those words, rather than going quiet:
+
+```
+docs: nothing stale
+```
+
+**A step that prints nothing cannot be told from a step that was skipped** — not in the transcript, not in the commit, not by whoever reads the pull request, and not by you on a second pass through this skill. Every other step here leaves a line for that reason. This one is the step most easily lost on a follow-up, because the docs were already right the first time round.
+
 ## 7. Commit
 
 **If any file changed since step 2's run, run the checks again first.** Same rule as step 2: the checks must postdate the last edit. Bare, one per call, output on screen.
@@ -280,6 +294,8 @@ Never suggest throwing work away. If discarding a branch or force-pushing genuin
 ## Rules
 
 - Never say "done", "fixed" or "passing" without output on screen proving it.
+- Never leave step 6 silent. The `docs:` line goes on screen either way, because
+  "nothing was stale" and "I skipped it" look identical without it.
 - Never claim a review ran when it did not. A slash command you cannot type has not run.
 - Never assert that a skill, command or CLI exists. Check, then fall back, then say which you used. `/code-review` was asserted once and could not run; `run` and `gh` are the same shape.
 - Never add pipes or redirects to a check command. Bare, one per call.
