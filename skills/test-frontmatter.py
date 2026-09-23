@@ -315,16 +315,22 @@ with open(FLOW_PATH, encoding="utf-8") as fh:
 
 SETTINGS_LINE = (
     "\u2713 **settings** wrote worktree.baseRef = head to .claude/settings.local.json "
-    "\u2014 chain worktrees branch from here, and so will your own --worktree sessions"
+    "chain worktrees branch from here, and so will your own --worktree sessions"
 )
 
 STOP_LINE = (
-    "\u2717 **chains** chain <letter> branched from the default branch \u2014 the "
+    "\u2717 **chains** chain <letter> branched from the default branch the "
     "setting did not take; restart the session and run flow again to resume"
 )
 
+# Both lines are pinned against `flat(flow_text)`, not `flow_text` -- each now
+# prints as two physical lines, the shaped one and a detail line straight
+# after it, to keep the shaped line itself at or under 80 visible columns.
+# `flat` is what already lets every other multi-line pin in this file survive
+# a rewrap; these are no different.
+
 check("flow: prints the worktree.baseRef line word for word",
-      SETTINGS_LINE in flow_text,
+      SETTINGS_LINE in flat(flow_text),
       f"no line {SETTINGS_LINE!r} in {FLOW_PATH}. The human reads that line and "
       f"nothing else says their own --worktree sessions changed too")
 
@@ -340,7 +346,7 @@ check("flow: checks the chain branch descends from this one",
       "not proof it took -- it may only be read at session start")
 
 check("flow: says what to do when the setting did not take",
-      STOP_LINE in flow_text,
+      STOP_LINE in flat(flow_text),
       f"no line {STOP_LINE!r} in {FLOW_PATH}. A chain off the wrong base must "
       f"stop the loop, not get merged")
 
@@ -504,8 +510,8 @@ check("flow: step 1b prints the parked: line for the file case",
       f"{FLOW_PATH} never prints the exact file-case 'parked' example")
 
 BACKLOG_FALLBACK_LINE = (
-    "✗ **parked** github asked for, wrote .devflow/backlog/<name>.md instead "
-    "— gh answered <the error>"
+    "✗ **parked** github asked, wrote .devflow/backlog/<name>.md — gh said "
+    "<the error>"
 )
 
 check("flow: step 1b falls back to the file on a gh failure",
@@ -577,12 +583,15 @@ check("flow: a chip run no longer leans on Known issues for a missing file",
       f"Known issues, which submit can drop")
 
 BACKLOG_ABSENT_LINE = (
-    "– **backlog** .devflow/backlog/<name>.md is not in this checkout — the "
+    "– **backlog** .devflow/backlog/<name>.md is not in this checkout the "
     "commit names it, so a later run skips it"
 )
 
+# Pinned against `flat(flow_text)`: the shaped line and its detail print as
+# two physical lines, to keep the shaped line at or under 80 visible columns.
+
 check("flow: a chip run says when its backlog file is not in its checkout",
-      BACKLOG_ABSENT_LINE in flow_text,
+      BACKLOG_ABSENT_LINE in flat(flow_text),
       f"no line {BACKLOG_ABSENT_LINE!r} in {FLOW_PATH}")
 
 BACKLOG_BUILT_LOG = (
@@ -610,7 +619,7 @@ check("flow: step 1 asks the merged PRs too, for a body-only Backlog line",
       f"no command {BACKLOG_BUILT_PRS!r} in {FLOW_PATH}")
 
 BACKLOG_BUILT_LINE = (
-    "– **backlog** .devflow/backlog/<name>.md already built in <sha or #n> — "
+    "– **backlog** .devflow/backlog/<name>.md already built in <sha or #n> "
     "deleting it, nothing else to build"
 )
 
@@ -641,7 +650,7 @@ check("flow: step 1b checks a name with both of step 1's lookups",
       f"uses to call it built, so a PR-body-only line slips through")
 
 check("flow: step 1 deletes a backlog file whose feature already shipped",
-      BACKLOG_BUILT_LINE in flow_text,
+      BACKLOG_BUILT_LINE in flat(flow_text),
       f"no line {BACKLOG_BUILT_LINE!r} in {FLOW_PATH}")
 
 check("flow: step 1b offers chips on top of parking, never instead of it",
@@ -1089,14 +1098,19 @@ check("docs/ship: records why the conflict case alone is handed over",
 # moment it fires, and the refusal to fall through into branching anyway.
 
 WORKTREE_TAKEN_LINE = (
-    "✓ **worktree** this folder is on <branch> — taking my own checkout "
-    "instead of moving it"
+    "✓ **worktree** this folder is on <branch> — keeping my own checkout, "
+    "not moving it"
 )
 
 WORKTREE_REFUSED_LINE = (
     "✗ **worktree** refused — this folder belongs to <branch>. "
     "Start again with: claude --worktree"
 )
+
+# Both pinned against `flat(flow_text)`, which already tolerates the wrap --
+# WORKTREE_REFUSED_LINE prints as two physical lines so the shaped line stays
+# at or under 80 visible columns, and flat() is what lets the period between
+# them stand in for the line break.
 
 check("flow: has a step 0c for the folder the session is standing in",
       "## Step 0c" in flow_text,
@@ -1172,8 +1186,8 @@ check("flow: still has build cut the branch from the default ref in the worktree
 # something has done something, where a step that merely implies it has not.
 
 WORKTREE_NOT_THE_BRANCH_LINE = (
-    "✓ **worktree** on <the branch EnterWorktree made> — build cuts the "
-    "feature branch from <default branch ref>"
+    "✓ **worktree** on <its own branch> — build cuts fresh from "
+    "<default branch ref>"
 )
 
 check("flow: says the worktree's own branch is not the feature branch",
@@ -1205,8 +1219,8 @@ check("flow: prints what is still owed after entering the worktree",
 # of that check is pinned beside the presence of the re-cut.
 
 WORKTREE_CARRIES_LINE = (
-    "✓ **worktree** <branch> already carries commits — build cuts the "
-    "feature branch from <default branch ref>"
+    "✓ **worktree** <branch> carries commits — build re-cuts from "
+    "<default branch ref>"
 )
 
 check("flow: re-cuts a worktree that already carries commits",
@@ -1388,7 +1402,8 @@ Every line a human reads takes one shape: a mark, a bold one-word lowercase labe
 the result — for example `✓ **checks** 3 of 3 pass, exit 0`.
 
 - `✓` done. `✗` failed or stopped. `–` (en dash) skipped, or nothing to do.
-- One line per step, each standing alone with a blank line before and after it."""
+- One line per step, each standing alone with a blank line before and after it.
+- Keep each line to 80 characters — detail goes on the next line, or in the PR."""
 
 HUMAN_FACING_SKILLS = ["flow", "build", "submit", "review", "tend", "ship", "setup"]
 
@@ -1482,6 +1497,58 @@ for slug, text in human_facing_text.items():
           not unlisted,
           f"{slug}/SKILL.md prints a shaped line whose label is not in "
           f"SHAPED_LABELS: {unlisted}")
+
+
+# --------------------------- no shaped example line is longer than 80 columns
+
+# A line a human reads wraps in a narrow terminal or a chat pane past 80
+# columns, and the wrap lands wherever the window happens to be, not wherever
+# reads well. Two shapes carry a shaped example in these files: its own line,
+# usually fenced, and a line citing it inline mid-sentence -- "print `✓
+# **label** ...`, then ...". Both are text a human will see printed verbatim,
+# so both are checked. `**` is markdown, invisible once rendered, and does
+# not count; a `<placeholder>` counts exactly as written, because that is
+# what a reader sees before the run fills it in.
+
+SHAPED_STANDALONE_LINE = re.compile(
+    r"^[ \t]*([✓✗–] \*\*[a-z][a-z-]*\*\*.*)$", re.M)
+SHAPED_INLINE_CITATION = re.compile(
+    r"`([✓✗–] \*\*[a-z][a-z-]*\*\*[^`]*)`")
+
+
+def shaped_example_lines(text):
+    found = set()
+    found.update(SHAPED_STANDALONE_LINE.findall(text))
+    found.update(SHAPED_INLINE_CITATION.findall(text))
+    return found
+
+
+def visible_length(example):
+    # A citation pulled from running prose can carry the paragraph's own
+    # soft-wrap -- a literal newline where the rendered line only ever had a
+    # space. Collapse whitespace the way a reader would before measuring.
+    return len(re.sub(r"\s+", " ", example.strip()).replace("**", ""))
+
+
+check("line-length scanner: counts a listed label's line, ** not counted",
+      visible_length("✓ **checks** 3 of 3 pass, exit 0") == 28)
+
+check("line-length scanner: a <placeholder> counts as written",
+      visible_length("✓ **branch** <name>") == len("✓ branch <name>"))
+
+check("line-length scanner: finds a line over 80 columns",
+      visible_length("✓ **label** " + ("x" * 80)) > 80)
+
+for slug, text in human_facing_text.items():
+    too_long = sorted(
+        (visible_length(example), example)
+        for example in shaped_example_lines(text)
+        if visible_length(example) > 80
+    )
+    check(f"{slug}: every shaped example line is 80 visible characters or fewer",
+          not too_long,
+          f"{slug}/SKILL.md has shaped example line(s) over 80 visible "
+          f"characters: {too_long}")
 
 
 # ------------------------------------------- cross-check against a real parser

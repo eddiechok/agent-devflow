@@ -175,7 +175,7 @@ The bar is narrow: a doc that is now **wrong**, not a doc that could say more. D
 **Then say what you did, in one line.** Name each file and what was stale in it:
 
 ```
-✓ **docs** README.md — the worktree cleanup bullet claimed flow removes every worktree
+✓ **docs** README.md — the cleanup bullet claimed flow removes every worktree
 ```
 
 And say so when nothing was, in those words, rather than going quiet:
@@ -331,7 +331,7 @@ commit it sits under.
 The PR now exists, so the two built-in reviews finally have something to run against. Both are slash commands — **only the human can type one**, which is exactly why they sit here and not inside the automatic path. Offer them in one line, with the real PR number:
 
 ```
-– **opinion** /code-review 12, /security-review (this change touched database migrations) — yours to type, if installed
+– **opinion** /code-review 12, /security-review — yours to type, if installed
 ```
 
 **Work the danger list out from the diff, not from memory.** Read the diff against the list in `flow` and decide again.
@@ -357,6 +357,7 @@ the result — for example `✓ **checks** 3 of 3 pass, exit 0`.
 
 - `✓` done. `✗` failed or stopped. `–` (en dash) skipped, or nothing to do.
 - One line per step, each standing alone with a blank line before and after it.
+- Keep each line to 80 characters — detail goes on the next line, or in the PR.
 
 ## Rules
 

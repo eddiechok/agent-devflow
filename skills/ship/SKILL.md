@@ -441,7 +441,7 @@ Short, one shaped line per fact. What merged, whether it is live, what was tidie
 ```
 ✓ **merged** #2 (rebase), remote branch deleted
 
-✓ **tended** #2 conflicted with main — tend resolved it and re-submitted before the merge (omit if none)
+✓ **tended** #2 conflicted — tend resolved, re-submitted before merge (omit if none)
 
 ✓ **retargeted** #4 onto main, still open — rebase is its author's (omit if none)
 
@@ -461,6 +461,7 @@ the result — for example `✓ **checks** 3 of 3 pass, exit 0`.
 
 - `✓` done. `✗` failed or stopped. `–` (en dash) skipped, or nothing to do.
 - One line per step, each standing alone with a blank line before and after it.
+- Keep each line to 80 characters — detail goes on the next line, or in the PR.
 
 ## Rules
 
