@@ -522,7 +522,7 @@ Eight words of reason or fewer. Then continue without waiting.
 one plain line under them naming the files or areas it touches.
 
 ```
-✓ **todo** build prints red and green as their own lines
+→ **todo** build prints red and green as their own lines
 
 skills/build/SKILL.md, and its pins in the test
 ```
@@ -968,6 +968,7 @@ Every line a human reads takes one shape: a mark, a bold one-word lowercase labe
 the result — for example `✓ **checks** 3 of 3 pass, exit 0`.
 
 - `✓` done. `✗` failed or stopped. `–` (en dash) skipped, or nothing to do.
+- `→` next: planned, or waiting on you.
 - One line per step, each standing alone with a blank line before and after it.
 - Keep each line to 80 characters — detail goes on the next line, or in the PR.
 

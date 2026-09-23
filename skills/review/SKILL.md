@@ -36,7 +36,11 @@ git status --short
 
 The ref has to resolve, and there has to be something to review — **tracked changes or untracked files, either counts**.
 
-If both come back empty, say so and stop. There is no review to run.
+If both come back empty, stop. There is no review to run:
+
+```
+– **review** nothing to review since <fixed point>
+```
 
 ## 2. Find the spec
 
@@ -141,6 +145,7 @@ Every line a human reads takes one shape: a mark, a bold one-word lowercase labe
 the result — for example `✓ **checks** 3 of 3 pass, exit 0`.
 
 - `✓` done. `✗` failed or stopped. `–` (en dash) skipped, or nothing to do.
+- `→` next: planned, or waiting on you.
 - One line per step, each standing alone with a blank line before and after it.
 - Keep each line to 80 characters — detail goes on the next line, or in the PR.
 
