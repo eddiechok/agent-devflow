@@ -188,6 +188,12 @@ Conventional commits, so `git log` doubles as a changelog:
 
 Types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `perf`, `build`, `ci`. `build` uses this same list for plan pieces; the two have to stay in step.
 
+**A request with an `Also parked as .devflow/backlog/<name>.md` line** came from a `flow`
+chip. End the commit body with `Backlog: .devflow/backlog/<name>.md`, and put the same line
+under **What** in the PR body — whether or not the file was in this checkout. With nothing
+to commit, the PR body alone carries it. It is what a later `flow` run looks for before
+building that file, so a feature ships once.
+
 **A Deep branch may already be committed.** If there is nothing to commit, say so in one line and go on. Never make an empty commit to have something to show for the step.
 
 ## 8. Open the PR — or update the one already there
