@@ -129,8 +129,9 @@ There are two exceptions. `ship` is the one skill nothing else can call. `flow` 
                     │                       ▼                │
                   tend ◄── red check ──── [YOU] ── changes ──┘
                   whose    or comments     review
-                  failure?                 the PR
-                  then fix                  │
+                  failure?     ▲           the PR
+                  then fix     │            │
+                               └─ conflict only, from ship below
                                             ▼
                                 [YOU] /devflow:ship
                                       merge. Watch the deploy.

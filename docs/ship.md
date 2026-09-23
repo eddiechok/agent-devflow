@@ -49,6 +49,18 @@ Two rules follow. A PR whose base is not the default branch is not `ship`'s to m
 
 Running this skill is your consent to merge. It is not consent to merge something red, and it is not consent to guess at a check that is still running.
 
+**It is also your consent to have a conflict resolved on the way**, which is the one of step 2's four refusals that `ship` now hands to `devflow:tend` itself rather than stopping on.
+
+The four are not alike, and treating them alike is what made this worth changing. A red check may be this branch's fault or somebody else's. A reviewer asking for changes wants an answer, not a patch. A PR that is not `OPEN` is not shippable at all. Every one of those is a **judgement call**, and a judgement call belongs to you.
+
+A conflict is not. It is what happens when another pull request merges first — which is to say it is a fact about the clock, not about the branch. `tend` already knew how to fix it: merge the default branch in, read both sides, re-submit. And re-submitting means `review`'s two agents, which never saw the session that wrote the resolution, read it before it comes back. So the fix is mechanical and it arrives reviewed, and making you type `/devflow:tend 32` bought nothing but the typing. That is exactly what shipping #31 and #32 looked like on 23 Sep 2026: two branches cut from the same commit, the second conflicting the moment the first landed.
+
+**One attempt, never two.** A conflict `tend` could not settle is one a second `tend` will not settle either, and a loop here rewrites a branch repeatedly with nothing to show for it.
+
+**The direction is what keeps the boundary intact.** `disable-model-invocation: true` and the rule in `flow` and `submit` never to call `ship` are both about nothing *reaching* this skill without you. Reaching outward is the other direction, and `tend` never calls back — its own Rules forbid it. What genuinely changed is the description: merging is no longer all this skill does, and step 7's report has a `Tended:` line because you asked for a merge and should not find a rewritten branch afterwards without being told.
+
+`flow`'s chain loop keeps its hard stop on a merge conflict, and that is not an inconsistency. There, a conflict means two chains edited one file, which the plan promised they would not — so the conflict is a planning bug, and resolving the merge would bury it. Different cause, different answer.
+
 ## Step 3 — the two real merge-error runs
 
 **Find out whether it worked before you react.** GitHub can fail *after* the merge has already landed, and the error looks exactly like one from before it. A blind retry is the wrong move about half the time.

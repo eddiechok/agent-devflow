@@ -269,7 +269,7 @@ The three states are left visible here on purpose. The promise was wrong for lon
 | 5. Re-submit rather than push | **Ours** | Pushing from here would skip the fresh checks and the review. Those are what make a push worth trusting |
 | 6. Answer the thread, do not just push | **Copied** — superpowers `receiving-code-review` treats feedback as something to answer | A silent refusal reads as a miss |
 | 1. Check out the PR's branch first | **Real bug** — the audit of 19 Aug | Every later step reads the current branch. Triage asks what "this branch" changed. The round counter runs `git log ..HEAD`. `build` keeps what it finds. `submit` updates the PR *that branch* has. So `/devflow:tend 12` from another branch fixed #12's failure onto a different pull request, and left #12 red |
-| 3. A conflict or a stale base is yours | **Real bug** — the audit of 19 Aug | `ship` refuses to merge `CONFLICTING` and stops. `flow` sends it here. This skill only knew about checks and comments, so the state had no owner. Merge rather than rebase, because the branch is pushed and a reviewer may be reading it |
+| 3. A conflict or a stale base is yours | **Real bug** — the audit of 19 Aug | `ship` finds `CONFLICTING` and hands it straight here, since 23 Sep 2026 — before that it stopped and made the human type the command. `flow` sends it here too. This skill only knew about checks and comments, so the state had no owner. Merge rather than rebase, because the branch is pushed and a reviewer may be reading it |
 | 3. A review comment is a request to size | **Ours** | The skill reads text off a web page and acts on it. "A reviewer asked" is not an override. The danger list does not care who typed the words |
 
 ## `setup`
