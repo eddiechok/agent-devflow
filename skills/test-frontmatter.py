@@ -314,13 +314,13 @@ with open(FLOW_PATH, encoding="utf-8") as fh:
     flow_text = fh.read()
 
 SETTINGS_LINE = (
-    "settings: wrote worktree.baseRef = head to .claude/settings.local.json "
+    "\u2713 **settings** wrote worktree.baseRef = head to .claude/settings.local.json "
     "\u2014 chain worktrees branch from here, and so will your own --worktree sessions"
 )
 
 STOP_LINE = (
-    "chain <letter> branched from the default branch \u2014 the setting did not "
-    "take; restart the session and run flow again to resume"
+    "\u2717 **chains** chain <letter> branched from the default branch \u2014 the "
+    "setting did not take; restart the session and run flow again to resume"
 )
 
 check("flow: prints the worktree.baseRef line word for word",
@@ -355,7 +355,8 @@ check("flow: says what to do when the setting did not take",
 # are: a prompt is the only place either of them lives.
 
 WROTE_NOW_LINE = (
-    "chains next session: worktree.baseRef was just written"
+    "– **chains** worktree.baseRef was just written — this run does "
+    "not spawn chains"
 )
 
 check("flow: names the run that just wrote the setting",
@@ -395,7 +396,7 @@ check("flow: discounts the untracked plan file when reading the tree as dirty",
 # see, the same reason the settings and stop lines above are pinned.
 
 BACKLOG_TAKEN_LINE = (
-    "backlog: took .devflow/backlog/<name>.md — the file is deleted "
+    "✓ **backlog** took .devflow/backlog/<name>.md — the file is deleted "
     "in this branch"
 )
 
@@ -428,8 +429,8 @@ check("flow: step 1b leaves a request that names its own pieces as one feature",
       "a request that already says how to build it must not be split")
 
 check("flow: prints the features-found line before asking",
-      "features: N found — one per run" in flow_text,
-      f"{FLOW_PATH} never prints 'features: N found — one per run'")
+      "✓ **features** N found — one per run" in flow_text,
+      f"{FLOW_PATH} never prints '✓ **features** N found — one per run'")
 
 check("flow: asks whether to park the rest, with a recommendation",
       "park the rest" in flow_text and "Recommend: yes" in flow_text,
@@ -493,17 +494,17 @@ check("flow: step 1b writes a backlog file with the parked-from line",
       f"'Parked from:' line")
 
 check("flow: step 1b prints the parked: line for the issue case",
-      "parked: #46 add export, #47 fix login" in flow_text,
-      f"{FLOW_PATH} never prints the exact 'parked: #46 add export, "
+      "✓ **parked** #46 add export, #47 fix login" in flow_text,
+      f"{FLOW_PATH} never prints the exact '✓ **parked** #46 add export, "
       f"#47 fix login' example")
 
 check("flow: step 1b prints the parked: line for the file case",
-      "parked: .devflow/backlog/add-export.md, .devflow/backlog/fix-login.md"
+      "✓ **parked** .devflow/backlog/add-export.md, .devflow/backlog/fix-login.md"
       in flow_text,
-      f"{FLOW_PATH} never prints the exact file-case 'parked:' example")
+      f"{FLOW_PATH} never prints the exact file-case 'parked' example")
 
 BACKLOG_FALLBACK_LINE = (
-    "Plans: github asked for, parked to .devflow/backlog/<name>.md instead "
+    "✗ **parked** github asked for, wrote .devflow/backlog/<name>.md instead "
     "— gh answered <the error>"
 )
 
@@ -537,7 +538,7 @@ check("flow: step 1b's chip for a parked file carries the text, not the path",
       f"{FLOW_PATH} never says a file-case chip carries the feature's text "
       f"and never the backlog path")
 
-CHIP_LINE = "chips: 2 offered — each starts its own flow run in a fresh worktree"
+CHIP_LINE = "✓ **chips** 2 offered — each starts its own flow run in a fresh worktree"
 
 check("flow: step 1b prints the chips: line",
       CHIP_LINE in flow_text,
@@ -576,7 +577,7 @@ check("flow: a chip run no longer leans on Known issues for a missing file",
       f"Known issues, which submit can drop")
 
 BACKLOG_ABSENT_LINE = (
-    "backlog: .devflow/backlog/<name>.md is not in this checkout — the "
+    "– **backlog** .devflow/backlog/<name>.md is not in this checkout — the "
     "commit names it, so a later run skips it"
 )
 
@@ -609,7 +610,7 @@ check("flow: step 1 asks the merged PRs too, for a body-only Backlog line",
       f"no command {BACKLOG_BUILT_PRS!r} in {FLOW_PATH}")
 
 BACKLOG_BUILT_LINE = (
-    "backlog: .devflow/backlog/<name>.md already built in <sha or #n> — "
+    "– **backlog** .devflow/backlog/<name>.md already built in <sha or #n> — "
     "deleting it, nothing else to build"
 )
 
@@ -1061,12 +1062,12 @@ check("docs/ship: records why the conflict case alone is handed over",
 # moment it fires, and the refusal to fall through into branching anyway.
 
 WORKTREE_TAKEN_LINE = (
-    "worktree: this folder is on <branch> — taking my own checkout "
+    "✓ **worktree** this folder is on <branch> — taking my own checkout "
     "instead of moving it"
 )
 
 WORKTREE_REFUSED_LINE = (
-    "worktree refused — this folder belongs to <branch>. "
+    "✗ **worktree** refused — this folder belongs to <branch>. "
     "Start again with: claude --worktree"
 )
 
@@ -1144,8 +1145,8 @@ check("flow: still has build cut the branch from the default ref in the worktree
 # something has done something, where a step that merely implies it has not.
 
 WORKTREE_NOT_THE_BRANCH_LINE = (
-    "worktree: on <the branch EnterWorktree made> — build cuts the feature "
-    "branch from <default branch ref>"
+    "✓ **worktree** on <the branch EnterWorktree made> — build cuts the "
+    "feature branch from <default branch ref>"
 )
 
 check("flow: says the worktree's own branch is not the feature branch",
@@ -1177,8 +1178,8 @@ check("flow: prints what is still owed after entering the worktree",
 # of that check is pinned beside the presence of the re-cut.
 
 WORKTREE_CARRIES_LINE = (
-    "worktree: <branch> already carries commits — build cuts the feature "
-    "branch from <default branch ref>"
+    "✓ **worktree** <branch> already carries commits — build cuts the "
+    "feature branch from <default branch ref>"
 )
 
 check("flow: re-cuts a worktree that already carries commits",

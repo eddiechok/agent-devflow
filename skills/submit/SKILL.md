@@ -258,7 +258,7 @@ I checked this locally before pushing. I stopped my own server; step 5 is for yo
 - (only if the review left something unresolved)
 ```
 
-**A plan issue closes with the PR.** Only if the project's `## Plans` block says `github` and this work has a `devflow:plan` issue. Then name it under **What** — `Plan: #45` — and add `Closes #45` under **Why**, beside the request issue if there is one. Find the number on the `plan: #N` line `flow` printed, or by listing open `devflow:plan` issues and matching the subject. Do not guess a number, and write nothing about a plan issue on a project that keeps plans in files.
+**A plan issue closes with the PR.** Only if the project's `## Plans` block says `github` and this work has a `devflow:plan` issue. Then name it under **What** — `Plan: #45` — and add `Closes #45` under **Why**, beside the request issue if there is one. Find the number on the `✓ **plan** #N` line `flow` printed, or by listing open `devflow:plan` issues and matching the subject. Do not guess a number, and write nothing about a plan issue on a project that keeps plans in files.
 
 **A Deep branch carries assumptions in its commits too.** Each `builder` writes any doubt
 it had about a finished piece as a `Concern:` line in that piece's commit body, because
