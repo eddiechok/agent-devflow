@@ -2,7 +2,7 @@
 name: flow
 description: "Use when a request will change anything tracked in the repo - a feature, a bug fix, a refactor, a chore or a dependency bump, and equally copy, content, docs, config, styles, images or other assets. Editing a tracked file is the test, not whether the work sounds like coding. Enter here mid-task too, the moment an investigation turns into an edit. Sizes the work as Quick, Standard or Deep, then routes it through build and submit, so the work ends as a pull request rather than uncommitted changes. Accepts free text, a GitHub issue number like #123, an issue URL, or a backlog file path under .devflow/backlog/. This is the entry point, start here."
 argument-hint: "[--quick|--deep] what you want, #123, or .devflow/backlog/<name>.md"
-allowed-tools: Bash(git status:*), Bash(git branch:*), Bash(git rev-parse:*), Bash(git symbolic-ref:*), Bash(git rev-list:*), Bash(ls:*), Bash(gh issue view:*), Bash(gh pr view:*), Bash(gh issue list:*), Bash(gh issue create:*), Bash(gh label create:*), Bash(rm .devflow/backlog/*), Bash(git log:*), Bash(gh pr list:*), EnterWorktree, mcp__ccd_session__spawn_task
+allowed-tools: Bash(git status:*), Bash(git branch:*), Bash(git rev-parse:*), Bash(git symbolic-ref:*), Bash(git rev-list:*), Bash(git remote show:*), Bash(ls:*), Bash(gh issue view:*), Bash(gh pr view:*), Bash(gh issue list:*), Bash(gh issue create:*), Bash(gh label create:*), Bash(rm .devflow/backlog/*), Bash(git log:*), Bash(gh pr list:*), EnterWorktree, mcp__ccd_session__spawn_task
 ---
 
 # flow
@@ -202,7 +202,31 @@ git rev-parse --path-format=absolute --git-dir --git-common-dir
 ```
 
 Two different answers mean yes. A worktree holds one session by construction, so this
-folder is nobody else's and **nothing changes** — go to step 1, and print nothing.
+folder is nobody else's. **Its branch may still be.** With `worktree.baseRef` = `head`, a
+worktree — a chip's, or one the human opened with `claude --worktree` — is cut from
+whatever the main checkout was on, and that can be a feature branch. Then this branch is
+ahead of the default branch ref with no pull request, `build` keeps it, and the new PR
+carries the other branch's commits.
+
+So read `Commits ahead`. **`0` means nothing changes** — go to step 1, and print nothing.
+**`unknown` is not a count**: it only means `origin/HEAD` is not set. Find the real default
+the way `build` does — `git remote show origin` names it — and count
+`git rev-list --count origin/<default>..HEAD` yourself. With no `origin` to ask there is no
+default branch to cut from, so nothing changes; go to step 1 and print nothing.
+
+A count above `0` means this branch already carries commits, and step 0 has already said
+none of them are this request's: this step only runs for new work. Do not
+try to work out where they came from — a branch the worktree was cut from may since have
+been merged and deleted, or rebased, and then its commits look like the worktree's own. It
+does not matter: they predate this request either way. Tell `build` in as many words that
+**this is new work and needs a fresh branch cut from the default branch ref**, exactly as
+step 0 does, and say so:
+
+```
+worktree: <branch> already carries commits — build cuts the feature branch from <default branch ref>
+```
+
+Nothing is lost: those commits stay on `<branch>`. Then go to step 1.
 
 **`--path-format=absolute` is the whole command, not decoration.** Ask for those two
 without it and git answers one of them relative to the current directory, so in a plain
