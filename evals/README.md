@@ -30,7 +30,7 @@ python3 evals/run.py --case sizing-* --runs 1
 python3 evals/run.py --dry-run                # parse and print, run nothing
 ```
 
-It scores **45 of the 55 graders** — every `regex`, `tool_used`, `tool_order`
+It scores **46 of the 56 graders** — every `regex`, `tool_used`, `tool_order`
 and `file_exists`. The ten `llm` graders come back `skip`, stay out of the
 denominator, and are counted in the summary. **A skip is never a pass**, the
 same way `NOT RUN` is never `none`.
@@ -49,8 +49,8 @@ it spends money.
 
 **A rendered `SKILL.md` is not part of the trace.** The `Skill` tool returns the
 whole skill body as a tool result, and `skills/flow/SKILL.md` contains its own
-worked examples — `Quick — single-file copy change.` at line 416 and `Deep — new
-subsystem, touches auth (danger list).` at 420. Count those as trace and three
+worked examples — `Quick — single-file copy change.` at line 442 and `Deep — new
+subsystem, touches auth (danger list).` at 446. Count those as trace and three
 weight-3 graders stop measuring anything:
 
 | Grader | What it would do |

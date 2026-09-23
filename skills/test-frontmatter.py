@@ -503,6 +503,58 @@ check("flow: step 1b falls back to the file on a gh failure",
       BACKLOG_FALLBACK_LINE in flow_text,
       f"no line {BACKLOG_FALLBACK_LINE!r} in {FLOW_PATH}")
 
+# --------------------------- step 1b offers a chip per parked feature, too
+#
+# In the desktop app a parked feature can be one click from its own flow run:
+# `spawn_task` puts a chip in front of the human, and the chip starts a new
+# session in a fresh worktree. That worktree is cut from commits, so it cannot
+# see a backlog file this run has not committed yet -- a chip pointing at the
+# path would start a run with no request. So the issue case hands over the
+# number, and the file case hands over the feature's own text. Where the tool
+# does not exist -- the CLI, the web -- nothing changes: parking is the record,
+# and a chip is only ever a shortcut to it.
+
+CHIP_ISSUE_PROMPT = "/devflow:flow #<n>"
+
+check("flow: step 1b offers a chip per parked feature through spawn_task",
+      "mcp__ccd_session__spawn_task" in flow_text,
+      f"{FLOW_PATH} never names mcp__ccd_session__spawn_task")
+
+check("flow: step 1b's chip for a parked issue runs flow on the number",
+      CHIP_ISSUE_PROMPT in flow_text,
+      f"no chip prompt {CHIP_ISSUE_PROMPT!r} in {FLOW_PATH}")
+
+check("flow: step 1b's chip for a parked file carries the text, not the path",
+      "never the backlog path" in flow_text,
+      f"{FLOW_PATH} never says a file-case chip carries the feature's text "
+      f"and never the backlog path")
+
+CHIP_LINE = "chips: 2 offered — each starts its own flow run in a fresh worktree"
+
+check("flow: step 1b prints the chips: line",
+      CHIP_LINE in flow_text,
+      f"no line {CHIP_LINE!r} in {FLOW_PATH}")
+
+# A file-case chip hands the parked text to the next run as free text, which
+# step 1 treats as the human's own words. Text that came from an issue or a
+# backlog file was never that, so it gets no file-case chip. And a chip clicked
+# before the kept PR merges cannot see the backlog file to delete it, so the
+# run it starts has to say so rather than leave the entry to be built twice.
+
+check("flow: step 1b offers no file-case chip for text the human did not type",
+      "offer no file-case chip" in flow_text,
+      f"{FLOW_PATH} never refuses a file-case chip for text from an issue "
+      f"or a backlog file")
+
+check("flow: a file-case chip that cannot see its backlog file says so",
+      "say so under Known issues" in flow_text,
+      f"{FLOW_PATH} never has a file-case chip name a backlog file it "
+      f"could not delete under Known issues")
+
+check("flow: step 1b offers chips on top of parking, never instead of it",
+      "never instead of parking" in flow_text,
+      f"{FLOW_PATH} never says chips come on top of parking, never instead")
+
 flow_values = parsed.get("flow", (None, {}))[1]
 
 check("flow: description says it accepts a backlog file path",
@@ -518,6 +570,7 @@ FLOW_BACKLOG_TOOLS = [
     "Bash(gh issue create:*)",
     "Bash(gh label create:*)",
     "Bash(rm .devflow/backlog/*)",
+    "mcp__ccd_session__spawn_task",
 ]
 
 for tool in FLOW_BACKLOG_TOOLS:

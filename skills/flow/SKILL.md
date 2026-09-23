@@ -2,7 +2,7 @@
 name: flow
 description: "Use when a request will change anything tracked in the repo - a feature, a bug fix, a refactor, a chore or a dependency bump, and equally copy, content, docs, config, styles, images or other assets. Editing a tracked file is the test, not whether the work sounds like coding. Enter here mid-task too, the moment an investigation turns into an edit. Sizes the work as Quick, Standard or Deep, then routes it through build and submit, so the work ends as a pull request rather than uncommitted changes. Accepts free text, a GitHub issue number like #123, an issue URL, or a backlog file path under .devflow/backlog/. This is the entry point, start here."
 argument-hint: "[--quick|--deep] what you want, #123, or .devflow/backlog/<name>.md"
-allowed-tools: Bash(git status:*), Bash(git branch:*), Bash(git rev-parse:*), Bash(git symbolic-ref:*), Bash(git rev-list:*), Bash(ls:*), Bash(gh issue view:*), Bash(gh pr view:*), Bash(gh issue list:*), Bash(gh issue create:*), Bash(gh label create:*), Bash(rm .devflow/backlog/*), EnterWorktree
+allowed-tools: Bash(git status:*), Bash(git branch:*), Bash(git rev-parse:*), Bash(git symbolic-ref:*), Bash(git rev-list:*), Bash(ls:*), Bash(gh issue view:*), Bash(gh pr view:*), Bash(gh issue list:*), Bash(gh issue create:*), Bash(gh label create:*), Bash(rm .devflow/backlog/*), EnterWorktree, mcp__ccd_session__spawn_task
 ---
 
 # flow
@@ -376,6 +376,32 @@ of the `parked:` line, the same way step 4's plan falls back:
 ```
 Plans: github asked for, parked to .devflow/backlog/<name>.md instead — gh answered <the error>
 ```
+
+**Then offer a chip per parked feature, if `mcp__ccd_session__spawn_task` is a tool you
+have.** Chips come on top of parking, never instead of parking: the issue or the file is
+the record, and a chip is one click to start it. A chip starts a new session in a fresh
+worktree, and a fresh worktree has only committed files, so the prompt must stand alone:
+
+- **Parked as an issue** — the prompt is `/devflow:flow #<n>`. The issue carries the text,
+  and `submit` closes it.
+- **Parked as a file** — the prompt is `/devflow:flow ` followed by the feature's own
+  text, never the backlog path: the file is untracked here and not in that worktree. End
+  it with one line, `Also parked as .devflow/backlog/<short-name>.md — delete it in this
+  branch if it is there; if it is not, say so under Known issues.`, so an entry the chip
+  could not see is named in its PR rather than built twice.
+- **This run's request was an issue or a backlog file** — offer no file-case chip. That
+  text was not typed by the human, and a chip hands it to the next run as if it were,
+  past step 1's guard. The file alone is the record; an issue-case chip is still fine,
+  because the next run reads the issue through that guard.
+
+Title each chip `Build <feature>`. Then print exactly one line:
+
+```
+chips: 2 offered — each starts its own flow run in a fresh worktree
+```
+
+**No such tool** — the CLI, the web — print nothing and offer nothing. The `parked:` line
+already said where each feature went.
 
 Then step 2 sizes the kept feature alone.
 

@@ -31,6 +31,15 @@ graders:
     match: contains
     weight: 3
 
+  # The CLI has no spawn_task, so step 1b must offer no chips and print
+  # nothing about them -- parking alone is the record here.
+  - type: regex
+    name: no-chips-without-the-tool
+    target: trace
+    pattern: "chips: "
+    match: not_contains
+    weight: 1
+
   - type: file_exists
     name: backlog-file-written
     path: .devflow/backlog
