@@ -712,6 +712,68 @@ check("flat self-test: still misses a phrase that is not there",
                                               "nothing new)"))
 
 
+# ------------------------------ submit's step 6 has to leave a trace
+#
+# Every step of `submit` that has something to report prints it: step 2
+# `checks:`, steps 3, 4 and 5 "say so in one line", step 7 `final look:`, step 8
+# `updated #12`, step 9 the handoff. Step 6, the docs one, printed nothing --
+# so a run that skipped it and a run where nothing was stale produced identical
+# output, in the transcript, in the commit and in the PR. Nobody could tell the
+# two apart, the session itself included on a second pass. (Step 1 is silent
+# too, and is not the same case: a branch that is already correct has nothing
+# to report, where step 6 always has either files or a clean look.)
+#
+# It went wrong exactly that way on 22 Sep 2026: a follow-up pass on PR #31
+# changed how `flow`'s step 0c behaves and updated none of `docs/flow.md`,
+# `docs/provenance.md` or `README.md`. The reasoning survived only in a commit
+# message, and the human caught it rather than the skill. Both forms of the line
+# are pinned here for the same reason every other printed line in this file is:
+# a prompt is the only place either of them lives.
+
+# The shape, not the example. Which file the worked example names is the step's
+# to change; `docs: <a file> — <what was stale>` is the part a run reproduces.
+# Pinning `README.md` here would fail the day someone picked a better example,
+# with a message saying the line was missing when it was merely different --
+# the "test that punishes editing" this file's own `flat` docstring warns about.
+DOCS_LINE_STALE = re.compile(r"docs: \S+\.md — \S")
+
+DOCS_LINE_CLEAN = "docs: nothing stale"
+
+check("submit: step 6 prints what it changed",
+      DOCS_LINE_STALE.search(flat(submit_text)) is not None,
+      f"{SUBMIT_PATH} step 6 never shows a `docs:` line naming the file it "
+      f"fixed and what was stale in it")
+
+# This one is pinned verbatim, and the difference is not an inconsistency: it is
+# the literal text a run prints when nothing was stale, so its wording is the
+# rule. The line above is an example of a line whose content varies per run.
+check("submit: step 6 prints even when nothing was stale",
+      DOCS_LINE_CLEAN in flat(submit_text),
+      f"no line {DOCS_LINE_CLEAN!r} in {SUBMIT_PATH}. Silence cannot mean both "
+      f"'nothing was stale' and 'this step did not run'")
+
+# One phrase, not two conjuncts. The first draft also asked for the word
+# "skipped" anywhere in the file, which appears twice already at step 5 and in
+# the PR template -- so that half could never fail, and a match that cannot miss
+# is not a check. The file says so about `flat` a few lines up; it applies here.
+check("submit: step 6 says why it prints at all",
+      "cannot be told from a step that was skipped" in flat(submit_text),
+      f"{SUBMIT_PATH} step 6 never says a step that prints nothing cannot be "
+      f"told from one that was skipped — the reason is what makes the line a "
+      f"step rather than a decoration, so it is pinned with the line")
+
+check("submit: the Rules list carries the step 6 line",
+      re.search(r"## Rules.*`docs:`", submit_text, re.S) is not None,
+      f"{SUBMIT_PATH}'s Rules list never mentions the `docs:` line, so the one "
+      f"step that had no output stays the one step with no rule either")
+
+check("docs/submit: records why step 6 prints, citing #31",
+      "#31" in docs_submit_text
+      and "docs:" in docs_submit_text,
+      f"{DOCS_SUBMIT_PATH} does not cite the pull request whose follow-up pass "
+      f"skipped step 6, so the reasoning lives only in the skill it constrains")
+
+
 # ------------------------------------------- cross-check against a real parser
 
 try:
