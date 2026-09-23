@@ -471,6 +471,54 @@ check_true(
     "chain" in (_deep_rows[0].lower() if _deep_rows else ""),
 )
 
+# ---------------------------------------- ship's conflict handoff has a case
+#
+# The handoff added to `ship` step 2 on 23 Sep 2026 branches four ways and
+# every branch is load-bearing: hand over a lone conflict, once and never in a
+# loop, re-read all four conditions on the way back, and never read an UNKNOWN
+# mergeability as clearance. `skills/test-frontmatter.py` pins that the words
+# are in the file. It cannot pin that a model follows them, and this repo has
+# already paid to learn those are different things -- `worktree-guard` measured
+# a correct instruction landing in 2 runs of 4.
+#
+# It is `manual: true`, and unavoidably so. `evals/fixtures/greeter.sh` builds a
+# bare repo with no host, so `gh` errors there and `ship` stops at step 1 with
+# nothing measured. A CONFLICTING pull request needs a real forge: a real
+# branch, a real PR, and a real commit landing on the default branch underneath
+# it. `plans-on-tracker` is the precedent and the shape is copied from it.
+_SHIP_CASE = os.path.join(HERE, "ship-tends-conflict", "case.yaml")
+
+check_true("ship-tends-conflict: the case exists", os.path.isfile(_SHIP_CASE))
+
+if os.path.isfile(_SHIP_CASE):
+    with io.open(_SHIP_CASE, encoding="utf-8") as f:
+        _ship_case = run.parse_yaml(f.read())
+
+    # Not a preference. Without it the case joins the default run, where it
+    # fails for every user who has no DEVFLOW_EVAL_REPO set -- a red suite that
+    # reports nothing about the skill, which is worse than no case at all.
+    check("ship-tends-conflict: is manual, because no scaffold can fake a forge",
+          _ship_case.get("manual"), True)
+
+    # The prompt has to start the skill the case is about. A case that reaches
+    # `ship` by some other route measures whatever that route does instead.
+    check_true("ship-tends-conflict: starts ship, not another skill",
+               "/devflow:ship" in (_ship_case.get("execution") or {}).get("prompt", ""))
+
+    # The handoff is the whole point, so the printed line is what separates a
+    # run that handed over from one that stopped on the conflict the way step 2
+    # did before this. Both are plausible model behaviour; only one is the rule.
+    _ship_graders = " ".join(
+        str(_g.get("pattern", "")) + " " + str(_g.get("criteria", ""))
+        for _g in _ship_case.get("graders") or []
+    )
+    check_true("ship-tends-conflict: grades the handoff line, not just the outcome",
+               "conflict: handing #" in _ship_graders)
+
+_ship_rows = [l for l in _readme.split("\n")
+              if l.startswith("| `ship-tends-conflict`")]
+check("readme: the ship-tends-conflict row is there", len(_ship_rows), 1)
+
 # The grader counts in the prose rot the same silent way a line number does:
 # add a grader to any case and the sentence still reads fine.
 _scorable = 0

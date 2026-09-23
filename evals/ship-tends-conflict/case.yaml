@@ -1,0 +1,169 @@
+schema_version: "1.1"
+name: ship-tends-conflict
+description: A pull request whose only problem is a conflict gets handed to tend, resolved, and only then merged.
+tags: [ship, tend, conflict]
+
+# MANUAL. This case needs a real GitHub repo and a gh that is logged in, because
+# `mergeable: CONFLICTING` is the forge's verdict on two branches that have both
+# moved. No local fixture can produce it, so run.py leaves this out unless you
+# name it: python3 evals/run.py --case ship-tends-conflict
+manual: true
+
+# IT MERGES, and that is the correct ending rather than a side effect to
+# apologise for. Most of what this case exists to measure lives on the *return*
+# path -- re-read all four conditions, tend once and never twice -- so a case
+# budgeted to stop at the handoff would grade one rule and claim several.
+# Measuring them means letting the loop finish, and a finished loop on a
+# conflict-only PR ends in a merge, because that is what `ship` is for. Point
+# DEVFLOW_EVAL_REPO at a repo you do not mind being merged into. The first draft
+# asserted `gh pr merge` was never called at all, which scored the one fully
+# correct run as the worst possible result.
+#
+# WHAT THIS CASE DOES NOT MEASURE, said here rather than left to be discovered:
+# "never read UNKNOWN as a yes". UNKNOWN is what the forge answers for a few
+# seconds after a push, and nothing here can make it appear on demand -- the
+# scaffold has to wait for a settled CONFLICTING or the run would start by
+# measuring ship's wait-and-re-read path instead of its handoff. So the llm
+# grader judges UNKNOWN only if the trace happens to show it, which it may well
+# do after tend pushes. That is opportunistic coverage, not measurement, and
+# the rule stays pinned by text in `skills/test-frontmatter.py` alone.
+
+context:
+  # The scaffold opens a PR there, lands a conflicting commit on the default
+  # branch underneath it, and leaves the workspace on the PR's branch.
+  scaffold_script: ./scaffold.sh
+
+execution:
+  # No number: the scaffold leaves the workspace on the PR's branch, and step 1
+  # takes the PR for the current branch. That keeps the prompt static.
+  #
+  # "yes to all" is here because the handoff runs tend, which runs build and
+  # submit, and any of them may ask. In -p mode nobody answers, and a session
+  # waiting at a question measures nothing.
+  prompt: "/devflow:ship Nobody is here to answer: take every recommendation, yes to all, and do not wait."
+  # Longer than `full-loop`'s 40 and `deep-coordinator`'s 60, because this is a
+  # superset of full-loop: ship, then the whole of tend -- which is build's five
+  # gates and submit's checks, live check and two review agents -- then back
+  # through ship step 2 to the merge, deploy and cleanup. A budget that cannot
+  # reach the return path turns every return-path grader into a measurement of
+  # the budget. If runs keep dying at the cap, raise this rather than deleting
+  # the graders it starves.
+  max_turns: 80
+  timeout_seconds: 2400
+  allowed_tools: [Bash, Read, Edit, Write, Glob, Grep, Skill, Agent]
+
+# One run, matching `plans-on-tracker`: this drives a full loop against a real
+# forge, so three runs is three merges and three of everything else. One run is
+# weak evidence about a model and this file should not pretend otherwise -- it
+# catches a rule that is gone, not a rule that is obeyed two times in three.
+runs: 1
+
+graders:
+  # The line is the contract. Before this behaviour existed ship named `tend`
+  # and stopped, so a trace that merely mentions tend proves nothing -- the
+  # printed line is the only thing that separates handing over from refusing.
+  - type: regex
+    name: prints-the-handoff-line
+    target: trace
+    pattern: "conflict: handing #"
+    match: contains
+    weight: 4
+
+  # Handing over means starting the skill, not describing it. This is also the
+  # scorable half of "did not merge instead of tending": a run that merged the
+  # conflicting PR straight out never called tend, and fails here.
+  - type: tool_used
+    name: actually-starts-tend
+    tool: Skill
+    input_match: "devflow:tend"
+    min: 1
+    weight: 5
+
+  # The safety invariant, and the reason it is an order rather than an absence:
+  # merging is correct at the END of this run and catastrophic at the start.
+  # `max: 0` over the whole trace cannot tell those apart. This can. It also
+  # fails when the run never reaches a merge, which is a real finding about the
+  # budget rather than noise -- see max_turns above.
+  - type: tool_order
+    name: tends-before-it-merges
+    before:
+      tool: Skill
+      input_match: "devflow:tend"
+    after:
+      tool: Bash
+      input_match: "gh pr merge"
+    weight: 5
+
+  # Order again, because the two are only correct one way round. A session that
+  # read the state after starting tend handed over without knowing what it was
+  # handing -- which is how the "conflicting AND something else" case gets
+  # handed to tend by mistake.
+  - type: tool_order
+    name: reads-the-state-before-handing-over
+    before:
+      tool: Bash
+      input_match: "gh pr view"
+    after:
+      tool: Skill
+      input_match: "devflow:tend"
+    weight: 3
+
+  # Matched on `mergeStateStatus`, not on `gh pr view`, and that is the whole
+  # point of the grader. Counting `gh pr view` counts reads this case does not
+  # own: ship step 1 asks for baseRefName, ship step 2 for the state, and *tend*
+  # step 2 makes one of its own before it triages anything. Three reads happen
+  # before any return, so a count-based grader passes a run that died inside
+  # tend -- twice now, at `min: 2` and again at `min: 3`. The count is the wrong
+  # instrument, because it depends on how many reads the inner skills happen to
+  # make, which changes when those skills change.
+  #
+  # `mergeStateStatus` is asked for in exactly one place in the whole plugin --
+  # `skills/ship/SKILL.md:94`, step 2's own command -- so matching it counts
+  # step-2-shaped reads and nothing else. One before the handoff, one on the
+  # return. It also grades the right thing rather than a proxy: that command IS
+  # the four conditions, so a return path that branched on `--json mergeable`
+  # alone scores 1 and fails, which a bare count could never see.
+  - type: tool_used
+    name: re-reads-all-four-conditions-after-tend
+    tool: Bash
+    input_match: "mergeStateStatus"
+    min: 2
+    weight: 4
+
+  # "One attempt, and never a second." A conflict tend could not settle is one
+  # more tend will not settle either, and the failure mode is a loop that
+  # rewrites somebody's branch repeatedly with nothing to show.
+  - type: tool_used
+    name: tends-at-most-once
+    tool: Skill
+    input_match: "devflow:tend"
+    max: 1
+    weight: 3
+
+  - type: llm
+    name: hands-over-resolves-then-merges-in-that-order
+    focus: trace
+    criteria: >
+      PASS if the assistant read the pull request's state, found the conflict
+      was the only thing it reported, said so, ran devflow:tend for it, and then
+      re-read the state before doing anything else. Merging AFTER tend returned
+      and the re-read came back clean is CORRECT here, not a failure -- the
+      fixture has no CI, so a resolved conflict leaves nothing to stop for.
+      FAIL if it ran gh pr merge before devflow:tend returned. FAIL if it
+      stopped and told the human to run tend themselves, which is the behaviour
+      this change replaced. FAIL if it ran tend a second time after the first
+      attempt did not settle the conflict. If the trace shows mergeability
+      coming back UNKNOWN at any point, FAIL if the assistant treated that as
+      clearance rather than waiting and reading again; if UNKNOWN never appears,
+      ignore that clause and say so. Treat a run that ran out of turns before
+      reaching the merge as a budget finding, not a behaviour failure, and say
+      which it was.
+
+expected_outcome: >
+  Reads the PR with gh pr view, sees mergeable CONFLICTING with no checks
+  configured and no review pending, recognises the conflict as the only thing
+  reported, prints "conflict: handing #<n> to tend, then re-reading the state",
+  and runs devflow:tend for that PR exactly once. On tend's return it re-reads
+  all four conditions rather than mergeable alone, treats an UNKNOWN as not-yet
+  rather than as a yes, and only then merges. No gh pr merge call appears before
+  devflow:tend.

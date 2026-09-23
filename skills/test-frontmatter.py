@@ -1032,6 +1032,101 @@ check("docs/flow: records why the session takes a worktree of its own",
       f"rules, so the reasoning lives only in the skill it constrains")
 
 
+# ------------------- a tended branch cannot be rebased, and ship has to know
+#
+# The two halves of the handoff fight each other, and both are right on their
+# own. `tend` merges rather than rebases, because the branch is pushed and a
+# reviewer may be reading it. That leaves a merge commit. Step 3 then reads
+# "linear history and rebase allowed -> --rebase", which is true of any repo
+# that keeps a linear history, so it picks the one method GitHub will refuse:
+#
+#     GraphQL: This branch can't be rebased (mergePullRequest)
+#
+# Not intermittent. The handoff *creates* the merge commit that *guarantees* the
+# refusal, so every PR that goes through step 2 hits it. Found on 23 Sep 2026 by
+# shipping #32 through the handoff on the day it merged -- the first real run of
+# it, and it failed on the step after the one it changed.
+#
+# Three things are load-bearing and live only in the prompt: that the branch is
+# asked about its shape before a method is chosen, that the question goes to the
+# PR's branch rather than whichever one HEAD is on, and that a refusal is told
+# apart from a failure worth retrying. Without the third, step 3's own
+# instruction is "retry, with a wait", which here burns the cap and ends with
+# the pull request unmerged.
+
+check("ship: asks the branch's shape before choosing a merge method",
+      "git log --merges" in ship_text,
+      f"{SHIP_PATH} step 3 never runs 'git log --merges', so nothing notices a "
+      f"merge commit before picking --rebase. tend puts one there every time it "
+      f"resolves a conflict, and GitHub refuses to rebase a branch that has one")
+
+# The remote ref is the correctness half, not a style preference. Step 1 says in
+# as many words that the PR need not be checked out to merge, so `HEAD` is
+# whatever branch this session happens to stand on -- `main`, most often, which
+# has no merge commits ahead of itself and answers "empty" every time. A guard
+# that reads the wrong branch and always says "no merge commit" is worse than no
+# guard: it is silent, and it looks like it ran. Same shape as the bare
+# `git rev-parse --git-dir` pin above, and pinned the same way, with the working
+# form required and the broken one refused.
+check("ship: asks about the PR's branch, not whichever one HEAD is on",
+      re.search(r"git log --merges[^\n]*\.\.origin/", ship_text) is not None,
+      f"{SHIP_PATH} does not run 'git log --merges' against origin/<head "
+      f"branch>. Step 1 says the PR need not be checked out, so the branch to "
+      f"ask about is the one step 1 wrote down, by name")
+
+check("ship: does not ask HEAD whether the PR's branch has a merge commit",
+      re.search(r"git log --merges[^\n]*\.\.HEAD", ship_text) is None,
+      f"{SHIP_PATH} runs 'git log --merges ..HEAD'. HEAD is not the PR's "
+      f"branch unless something checked it out, so that form answers 'empty' "
+      f"from the default branch and waves the refusal straight through")
+
+check("ship: drops rebase when the branch carries a merge commit",
+      "off the table" in flat(ship_text),
+      f"{SHIP_PATH} never says --rebase is off the table for a branch with a "
+      f"merge commit. Finding the commit and choosing --rebase anyway is the "
+      f"same bug with an extra command in front of it")
+
+# The literal string GitHub answers with, because the table is only useful if it
+# names the thing the reader will actually see on their screen. A paraphrase
+# would be a row nobody matches against.
+SHIP_REBASE_REFUSAL = "can't be rebased"
+
+check("ship: names the refusal it will actually be shown",
+      SHIP_REBASE_REFUSAL in ship_text,
+      f"{SHIP_PATH}'s error table never quotes {SHIP_REBASE_REFUSAL!r}, the "
+      f"text GitHub answers with. A table that does not name the error is one "
+      f"nobody can match their own output against")
+
+# Not "never retry" on its own, which would be a match that cannot miss: the
+# Rules list has said "never retry a policy denial" since the retargeting work,
+# four hundred lines away and about deleting a branch. The pair below is what
+# only the new state has -- a refusal is deterministic where 500 and 503 are
+# transient, and that distinction is the whole reason the third row exists.
+check("ship: tells a refusal apart from a failure worth retrying",
+      "deterministic" in flat(ship_text)
+      and "transient" in flat(ship_text),
+      f"{SHIP_PATH} never separates a deterministic refusal from a transient "
+      f"failure. Both leave the default branch unmoved, so the SHA cannot tell "
+      f"them apart and 'retry, with a wait' runs the cap out for nothing")
+
+check("ship: the Rules list carries the refusal rule",
+      re.search(r"## Rules.*refusal", ship_text, re.S) is not None,
+      f"{SHIP_PATH}'s Rules list never mentions a refusal, so the one error "
+      f"state that must not be retried is the one with no rule against it")
+
+# Both conjuncts have to be able to miss, and the first draft's second one could
+# not: bare `rebase` was already in docs/ship.md twice before this change, in the
+# step 6 section about a local `git branch -d`. It would have passed against text
+# that said nothing about any of this. `can't be rebased` is the forge's own
+# words and arrived with this change, so it fails when the explanation goes.
+check("docs/ship: records why a tended branch cannot be rebased",
+      "merge commit" in docs_ship_text
+      and "can't be rebased" in docs_ship_text,
+      f"{DOCS_SHIP_PATH} never explains that tend's merge is what rules out a "
+      f"rebase, so the next person to tidy step 3's ladder puts --rebase back "
+      f"at the top with nothing to tell them why it was moved")
+
+
 # ------------------------------------------- cross-check against a real parser
 
 try:
