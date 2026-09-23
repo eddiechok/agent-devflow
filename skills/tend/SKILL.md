@@ -49,7 +49,7 @@ gh pr view <n> --json state,mergeable,statusCheckRollup,reviewDecision,url
 Then the detail behind each red check, and each open review thread. List what you found before doing anything, one shaped line per check and one for the reviews:
 
 ```
-#12 three checks, one red
+✗ **pr** #12 — three checks, one red
 
 ✓ **checks** lint — pass
 

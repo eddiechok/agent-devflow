@@ -94,7 +94,7 @@ graders:
   - type: regex
     name: relays-the-builder-report
     target: trace
-    pattern: "commit: [0-9a-f]{7}"
+    pattern: "\\*\\*piece\\*\\*.*commit [0-9a-f]{7}"
     match: contains
     weight: 2
 
@@ -105,7 +105,7 @@ graders:
   - type: regex
     name: agents-were-not-refused
     target: trace
-    pattern: "building in-session"
+    pattern: "\\*\\*chains\\*\\* agents not permitted"
     match: not_contains
     weight: 1
 

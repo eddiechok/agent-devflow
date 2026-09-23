@@ -100,7 +100,7 @@ A Deep run of eight pieces took 43 minutes. Six of them did not depend on each o
 
 **The builder runs on Sonnet.** That was your call, taken against this plugin's own "a cheaper model needs evidence first" line. Four builders at once multiplies the model choice by four, and the builder's job is the narrowest in the plugin: it is handed a written plan, one chain and a `Done when:` line, and `build`'s gates decide whether it was done. Effort stays `high`. It is recorded as a decision rather than a finding, so if plan quality drops this is the first thing to put back.
 
-**If the harness cannot give a builder a worktree** — no `isolation` option, or the first spawn with it fails — `flow` says `– **chains** no worktree isolation — building in-session` once, then builds one chain at a time on your branch, spawning each builder without `isolation`, with no merge step and no cleanup. The builder's inputs and report do not change; its `branch:` line just names your branch. You lose the wall-clock time and nothing else.
+**If the harness cannot give a builder a worktree** — no `isolation` option, or the first spawn with it fails — `flow` says `– **chains** no worktree isolation — one builder at a time on this branch` once, then builds one chain at a time on your branch, spawning each builder without `isolation`, with no merge step and no cleanup. The builder's inputs and report do not change; its `branch:` line just names your branch. You lose the wall-clock time and nothing else.
 
 ## Plans on GitHub
 

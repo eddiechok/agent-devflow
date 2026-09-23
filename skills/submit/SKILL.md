@@ -200,17 +200,17 @@ And say so when nothing was, in those words, rather than going quiet:
 Both hold → fix it, run the `## Checks` block again — bare, one per call, as at step 2 — and stop. **No further look.** Either fails — a bigger fix, or a file the branch did not touch — → **stop editing** and put it under **Known issues**, as before. Print which of the two happened, in one line:
 
 ```
-✓ **final look** fixed in place — skills/ship/SKILL.md, 2 lines
+✓ **look** fixed in place — skills/ship/SKILL.md, 2 lines
 ```
 
 ```
-– **final look** known issue — docs/pipeline.md, not on this branch
+– **look** known issue — docs/pipeline.md, not on this branch
 ```
 
 When nothing changed since the last review, there is no look to run:
 
 ```
-– **final look** nothing changed since the last review
+– **look** nothing changed since the last review
 ```
 
 A fix made here is the one edit on the branch no agent has read. Name it in the PR body under **Evidence**, in these words — `Final look: fixed <file>, <what> — unread by an agent, so read those lines yourself` — because the reader is the only one who can read them now. The loop stays bounded: review, round 2, look, at most one small fix, done.
@@ -328,12 +328,10 @@ commit it sits under.
 
 **Never merge.** Opening the PR is where this skill ends.
 
-The PR now exists, so the two built-in reviews finally have something to run against. Both are slash commands — **only the human can type one**, which is exactly why they sit here and not inside the automatic path. Offer them in one line each, with the real PR number:
+The PR now exists, so the two built-in reviews finally have something to run against. Both are slash commands — **only the human can type one**, which is exactly why they sit here and not inside the automatic path. Offer them in one line, with the real PR number:
 
 ```
-Second opinion, if you have them installed:
-  /code-review 12
-  /security-review    (this change touched database migrations)
+– **opinion** /code-review 12, /security-review (this change touched database migrations) — yours to type, if installed
 ```
 
 **Work the danger list out from the diff, not from memory.** Read the diff against the list in `flow` and decide again.

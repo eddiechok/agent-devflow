@@ -148,6 +148,8 @@ Or `local`. One line, one value. Nothing else goes in this block.
 Keep it short, one shaped line per fact:
 
 ```
+✓ **checks** written to CLAUDE.md
+
 ✓ **test** pnpm test — pass (48 tests, 6s)
 
 ✓ **typecheck** pnpm typecheck — pass
@@ -158,6 +160,9 @@ Keep it short, one shaped line per fact:
 
 – **deploy** not written — that is ship's to add, the first time it deploys and can prove the command works
 ```
+
+The `checks` line says `written` only when step 4 wrote the block. Otherwise it is
+`– **checks** kept — already in CLAUDE.md`, or `✗ **checks** not written — <why>`.
 
 Then mention, once, only if relevant:
 

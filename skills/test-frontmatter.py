@@ -872,8 +872,8 @@ check("flat self-test: still misses a phrase that is not there",
 # ------------------------------ submit's step 6 has to leave a trace
 #
 # Every step of `submit` now prints one shaped line: step 1 `branch`, step 2
-# `checks`, step 3 `debug`, step 4 `live`, step 5 `review`, step 7 `final
-# look` and `commit`, step 8 `pr`. Step 6, the docs one, printed nothing --
+# `checks`, step 3 `debug`, step 4 `live`, step 5 `review`, step 7 `look`
+# and `commit`, step 8 `pr`. Step 6, the docs one, printed nothing --
 # so a run that skipped it and a run where nothing was stale produced identical
 # output, in the transcript, in the commit and in the PR. Nobody could tell the
 # two apart, the session itself included on a second pass. (Step 1 used to be

@@ -93,9 +93,9 @@ gh issue list --label devflow:plan --state open --json number,title
 Match by subject, exactly as you would a filename. Read the body of the one that matches;
 it has the same shape as a plan file. **If both a file and an issue match, the issue wins**
 — the file is either stale or a fallback from a run that could not reach GitHub. Say which
-one you resumed from. If `gh` cannot answer, say so in one line and use the
-files alone — a plan issue you cannot read is a job you cannot resume from here, and the
-honest line is "could not check GitHub for a plan".
+one you resumed from. If `gh` cannot answer, use the files alone — a plan issue you
+cannot read is a job you cannot resume from here — and print
+`– **plan** could not check GitHub for a plan — using the files alone`.
 
 Read the plan, then read what exists — three things, not one:
 
@@ -132,8 +132,9 @@ pick it up.** Print `✗ **chains** chain <letter> on <branch> was cut from the 
 branch — not merged; rebuilding it, leaving that branch for you`, then treat the chain as
 not started: it
 goes back into the spawn loop, and its old branch and worktree stay on disk for the human
-to delete. If the tag is missing, you cannot tell either way: say so, merge nothing, and
-ask the human which it is.
+to delete. If the tag is missing, you cannot tell either way: print
+`✗ **chains** base tag missing — cannot tell where chain <letter> was cut; merged nothing`,
+and ask the human which it is.
 
 **Then check it is whole.** A branch that descends from the tag can still be a chain that
 stopped early — its builder said `stuck` on piece 2 of 3, and its worktree, not this tree,
@@ -717,7 +718,8 @@ Changing a machine's settings quietly is worse than the sentence it costs to say
 
 **Never write `.claude/settings.json`.** That one is committed, and this is a preference
 about this machine, not a change to the project. If the write fails — no permission, a file
-that is not valid JSON — say why in one line and take the sequential path below. Spawning
+that is not valid JSON — print `✗ **settings** <why> — building the chains one at a time`
+and take the sequential path below. Spawning
 chains from the wrong base is the failure this whole step exists to avoid, so falling back
 is the safe answer, not a lesser one.
 
@@ -866,7 +868,7 @@ said you are picking up:
 the agent tool, or the first spawn using it fails — say so once:
 
 ```
-– **chains** no worktree isolation — building in-session
+– **chains** no worktree isolation — one builder at a time on this branch
 ```
 
 Then run the sequential path: one builder per **chain**, in plan order, one at a time,
