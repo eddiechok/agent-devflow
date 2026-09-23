@@ -712,6 +712,119 @@ check("flat self-test: still misses a phrase that is not there",
                                               "nothing new)"))
 
 
+# ------------------------------ ship tends a conflict instead of stopping on it
+#
+# Step 2 refuses four things, and only one of them is ordinary: a conflict is
+# what happens when another pull request merges first. `tend` already resolves
+# one -- it merges the default branch in and reads both sides -- and it goes out
+# through `build` and `submit`, so `review`'s two fresh agents read the
+# resolution before it comes back. So `ship` hands that one over itself rather
+# than making the human type the command, which is what they hit shipping #31
+# and #32 on 23 Sep 2026: two branches cut from one commit, the second
+# conflicting the moment the first landed.
+#
+# The other three stay stops, and that is the part most easily lost in a later
+# tidy-up: a red check and a reviewer asking for changes are judgement calls,
+# and a PR that is not OPEN is not shippable at all. Widening this to all four
+# would turn `/devflow:ship` into something that answers reviewers.
+#
+# Three things are load-bearing and live only in the prompt: that it is the
+# conflict case alone, that it runs once and never loops, and that the report
+# says it happened. A resolution nobody announced, on a branch the human asked
+# to have merged and not to have rewritten, is what these pins keep out.
+
+# Not `CONFLICTING.*devflow:tend` with re.S, which was the first draft: step 2
+# already named both, four lines apart, while refusing to run it. That pattern
+# passed against the text it was meant to reject. The printed line is the thing
+# only the new behaviour has.
+SHIP_CONFLICT_LINE = "conflict: handing #"
+
+check("ship: hands a conflicting PR to tend rather than stopping",
+      SHIP_CONFLICT_LINE in ship_text,
+      f"{SHIP_PATH} step 2 never prints a '{SHIP_CONFLICT_LINE}...' line, so "
+      f"nothing says it sends a CONFLICTING pull request to `devflow:tend` "
+      f"itself rather than naming tend and stopping")
+
+check("ship: still stops on the three that are not conflicts",
+      "judgement call" in flat(ship_text),
+      f"{SHIP_PATH} never says why a red check and a reviewer asking for "
+      f"changes stay stops. Without the reason, the next edit widens the "
+      f"handoff to all four and ship starts answering reviewers")
+
+check("ship: tends a conflict once, and never loops",
+      "one attempt" in flat(ship_text).lower(),
+      f"{SHIP_PATH} never bounds the tend handoff to a single attempt. A "
+      f"conflict tend could not fix is a conflict a second tend cannot either")
+
+# The three below are the return path, and all three came out of the review of
+# 23 Sep 2026, which found that coming back from `tend` branched on `mergeable`
+# alone. `tend` pushes, and a push changes two things the first read cannot tell
+# you: CI restarts, and GitHub recomputes mergeability asynchronously, answering
+# `UNKNOWN` for the seconds right after -- which is exactly when this read lands.
+# A return path reading one field would merge a PR with checks running, on the
+# one step that cannot be undone.
+#
+# `hardcase` argued all three fell, on the grounds that the Rules list already
+# forbids merging something red. It does. But the step says "carry on to step 3
+# and merge", and this repo has already paid to learn that an implied step is
+# the step that gets skipped -- that is what the `docs:` line in `submit` exists
+# for, and what the worktree-guard eval measured. A backstop in the Rules is not
+# a substitute for the local line saying it.
+
+check("ship: re-reads every condition after tend, not just mergeable",
+      "all four conditions, not just `mergeable`" in flat(ship_text),
+      f"{SHIP_PATH}'s return path from tend must re-run all four of step 2's "
+      f"conditions. tend pushed, so CI restarted — branching on mergeability "
+      f"alone merges a pull request whose checks are still running")
+
+check("ship: does not read UNKNOWN mergeability as a yes",
+      "It is not a yes" in flat(ship_text)
+      and "UNKNOWN" in ship_text,
+      f"{SHIP_PATH} never says an UNKNOWN mergeability is not clearance. "
+      f"GitHub answers UNKNOWN for the first seconds after any push, and the "
+      f"handoff guarantees a push immediately before this read")
+
+check("ship: hands over only when the conflict is the only thing reported",
+      "is not a conflict to hand over" in flat(ship_text),
+      f"{SHIP_PATH} hands a PR to tend without checking it reports nothing "
+      f"else. Conflicting and changes-requested together means tend answers "
+      f"the reviewer too, which is not what a merge command was started for")
+
+SHIP_TENDED_LINE = "Tended:"
+
+check("ship: the report names a conflict it resolved on the way",
+      SHIP_TENDED_LINE in ship_text,
+      f"{SHIP_PATH} step 7 has no '{SHIP_TENDED_LINE}' line. The branch "
+      f"changed between the human starting ship and the merge landing, and "
+      f"the report is the only place that says so")
+
+check("ship: keeps the boundary that nothing may call it",
+      "disable-model-invocation: true" in ship_text
+      and re.search(r"opposite direction", ship_text) is not None,
+      f"{SHIP_PATH} must keep disable-model-invocation and say why calling "
+      f"out to tend does not weaken it — a skill that reaches outward is not "
+      f"a skill anything can reach into")
+
+check("flow: still refuses to resolve a chain conflict itself",
+      re.search(r"[Nn]ever resolve a merge conflict yourself", flow_text)
+      is not None,
+      f"{FLOW_PATH} lost its chain-conflict rule. A chain conflict means the "
+      f"plan was wrong, so resolving it hides a planning bug — that reason is "
+      f"untouched by ship tending a conflict against a moved default branch")
+
+DOCS_SHIP_PATH = os.path.join(REPO_ROOT, "docs", "ship.md")
+with open(DOCS_SHIP_PATH, encoding="utf-8") as fh:
+    docs_ship_text = fh.read()
+
+check("docs/ship: records why the conflict case alone is handed over",
+      "devflow:tend" in docs_ship_text
+      and re.search(r"CONFLICTING|conflict", docs_ship_text) is not None
+      and "judgement" in flat(docs_ship_text),
+      f"{DOCS_SHIP_PATH} never explains why the conflict is handed to tend "
+      f"while the other three stay stops, so the reasoning lives only in the "
+      f"skill it constrains")
+
+
 # ------------------- and the folder the session itself is standing in
 #
 # The worktrees checked earlier are the builders'. This one is the session's
