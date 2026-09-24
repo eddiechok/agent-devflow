@@ -1805,6 +1805,46 @@ for name, value, should_object in SAMPLES:
     else:
         check(f"lint self-test: accepts {name}", why is None, why)
 
+# --------------------------------------- agents/security-reviewer's report shape
+#
+# `security-reviewer` reviews as an attacker only, and its report has to name
+# an exploit case rather than a rule violation, or it is just `reviewer` with
+# a different name. Pinned here so an edit that drifts the sections or the
+# bar fails loudly instead of quietly turning it into a second code-quality
+# pass.
+
+SECURITY_REVIEWER_PATH = os.path.join(AGENTS_DIR, "security-reviewer.md")
+with open(SECURITY_REVIEWER_PATH, encoding="utf-8") as fh:
+    security_reviewer_text = fh.read()
+
+check("agents/security-reviewer: report carries ## Exploitable",
+      "## Exploitable" in security_reviewer_text,
+      f"{SECURITY_REVIEWER_PATH} never pins the '## Exploitable' report section")
+
+check("agents/security-reviewer: report carries ## Reviewed",
+      "## Reviewed" in security_reviewer_text,
+      f"{SECURITY_REVIEWER_PATH} never pins the '## Reviewed' report section")
+
+check("agents/security-reviewer: names the Not reported: line",
+      "Not reported:" in security_reviewer_text,
+      f"{SECURITY_REVIEWER_PATH} never pins the 'Not reported:' line for when "
+      f"the word limit bit")
+
+check("agents/security-reviewer: pins the exploit-only bar",
+      "who, what input, what they get" in security_reviewer_text,
+      f"{SECURITY_REVIEWER_PATH} never pins the exploit bar in these words -- "
+      f"who, what input, what they get")
+
+DOCS_PROVENANCE_PATH = os.path.join(REPO_ROOT, "docs", "provenance.md")
+with open(DOCS_PROVENANCE_PATH, encoding="utf-8") as fh:
+    docs_provenance_text = fh.read()
+
+check("docs/provenance: credits claude-code-security-review with its star count",
+      "anthropics/claude-code-security-review" in docs_provenance_text
+      and "6,262 stars" in docs_provenance_text,
+      f"{DOCS_PROVENANCE_PATH} does not credit "
+      f"anthropics/claude-code-security-review with its star count")
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")
