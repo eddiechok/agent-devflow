@@ -1940,6 +1940,37 @@ check("docs/submit: records why the manual opinion offer was retired",
       f"{DOCS_SUBMIT_PATH} never explains why the /code-review, "
       f"/security-review offer is gone")
 
+# --------------------------------------- README and flow no longer tell a
+# --------------------------------------- human to run /security-review
+#
+# `security-reviewer` runs on its own now. Nothing under `skills/` or in
+# README.md may still read as a hand-off to a slash command a human has to
+# remember to type.
+
+README_PATH = os.path.join(REPO_ROOT, "README.md")
+with open(README_PATH, encoding="utf-8") as fh:
+    readme_text = fh.read()
+
+check("README: never tells the human to run /security-review",
+      "/security-review" not in readme_text,
+      f"{README_PATH} still names /security-review")
+
+check("README: the agents paragraph names security-reviewer",
+      "`security-reviewer`" in readme_text,
+      f"{README_PATH} never names security-reviewer among the review agents")
+
+for slug in HUMAN_FACING_SKILLS:
+    text = human_facing_text[slug]
+    check(f"{slug}: never tells the human to run /security-review",
+          "/security-review" not in text,
+          f"{slug}/SKILL.md still names /security-review")
+
+check("flow: the danger list line says review will include security-reviewer",
+      "say plainly that the review will include `security-reviewer`"
+      in flat(flow_text),
+      f"{FLOW_PATH} never pins that line -- the danger list still reads as "
+      f"a human's job")
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")

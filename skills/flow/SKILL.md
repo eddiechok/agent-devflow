@@ -491,7 +491,7 @@ sized against a request that still names more than one thing.
 
 ### The danger list — always at least Standard
 
-If the work touches any of these, use **at least Standard**, ask the human, and say plainly that a security review is worth running:
+If the work touches any of these, use **at least Standard**, ask the human, and say plainly that the review will include `security-reviewer`:
 
 - login, permissions, sessions, or anything auth
 - passwords, API keys, tokens, secrets
