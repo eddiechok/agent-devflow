@@ -32,3 +32,6 @@ There is no typecheck: nothing here is a typed language.
 A merge to `main` changes nothing a session sees. The plugin is installed at
 local scope from this checkout, and the update copies the checkout into a cache
 directory named after the commit. Restart the session after it.
+
+## Plans
+- Tracker: github

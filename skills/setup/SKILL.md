@@ -108,16 +108,16 @@ Where should Deep plans live?
 
 **Picking github means two things, and say both out loud:**
 
-- The web sandbox has no `gh`. A plan on GitHub cannot be read there. Runs on the web fall back to a local file for that job and say so. Pick local for repos you work on from the web.
+- A cloud session does not come with `gh`. Add `apt-get update && apt-get install -y gh` to the cloud environment's setup script, and plans on GitHub work there too. Without it, runs on the web fall back to a local file for that job and say so.
 - Anyone who can edit the issue can edit the plan, and a plan is an order to `build`. Fine on your own repos. Think twice on a public one.
 
 **Prove it before writing it.** Same rule as the checks. For github, run this bare:
 
 ```
-gh issue list --limit 1
+gh api 'repos/{owner}/{repo}/issues?per_page=1' --jq length
 ```
 
-It must answer. An error means no `gh`, no auth, or no remote, and that is not a project you can write `github` for. Say which, and **write no `## Plans` block at all**.
+It must answer with a number. An error means no `gh`, no auth, or no remote, and that is not a project you can write `github` for. Say which, and **write no `## Plans` block at all**.
 
 Then make sure the label exists. A plan issue carries `devflow:plan`, and `flow` looks for it by that label:
 
@@ -192,5 +192,5 @@ the result — for example `✓ **checks** 3 of 3 pass, exit 0`.
 - Never add pipes or redirects to a check command. Bare, one per call.
 - Never overwrite an existing `## Checks` block without asking.
 - Never invent a command to fill a row. Missing is better than wrong.
-- Never write `Tracker: github` without `gh issue list` having answered in this run.
+- Never write `Tracker: github` without that `gh api` read having answered in this run.
 - Never add anything to `CLAUDE.md` except the `## Checks` and `## Plans` blocks, and never a block you did not prove.

@@ -485,13 +485,16 @@ check("flow: step 1b creates the devflow:backlog label before filing issues",
       f"no line {BACKLOG_LABEL_CMD!r} in {FLOW_PATH}")
 
 BACKLOG_ISSUE_CMD = (
-    "gh issue create --label devflow:backlog --title "
+    "gh api repos/{owner}/{repo}/issues -f title="
 )
 
 check("flow: step 1b files a devflow:backlog issue per parked feature",
-      BACKLOG_ISSUE_CMD in flow_text and "/tmp/devflow-backlog.md" in flow_text,
-      f"{FLOW_PATH} never runs 'gh issue create --label devflow:backlog "
-      f"--title ... --body-file /tmp/devflow-backlog.md'")
+      BACKLOG_ISSUE_CMD in flow_text
+      and "-F body=@/tmp/devflow-backlog.md" in flow_text
+      and "-f 'labels[]=devflow:backlog'" in flow_text,
+      f"{FLOW_PATH} never runs 'gh api repos/{{owner}}/{{repo}}/issues "
+      f"-f title=... -F body=@/tmp/devflow-backlog.md "
+      f"-f 'labels[]=devflow:backlog'', the REST form")
 
 check("flow: step 1b writes a backlog file with the parked-from line",
       ".devflow/backlog/<short-name>.md" in flow_text
@@ -668,8 +671,6 @@ check("flow: argument-hint mentions the backlog path",
       "flow's argument-hint never mentions a backlog file path")
 
 FLOW_BACKLOG_TOOLS = [
-    "Bash(gh issue list:*)",
-    "Bash(gh issue create:*)",
     "Bash(gh label create:*)",
     "Bash(rm .devflow/backlog/*)",
     "Bash(git log:*)",
@@ -2065,6 +2066,117 @@ check("agents/security-reviewer: names secrets leaking to the client",
 check("review: its description names the security pass",
       "can it be attacked" in human_facing_text["review"].split("---")[1],
       "review/SKILL.md's description still describes two axes only")
+
+
+# --------------------------- plan and backlog issues go through REST
+#
+# A cloud session reaches GitHub through a proxy that answers every GraphQL
+# request with a 403. `gh issue list`, `gh issue view` and `gh issue create`
+# all send GraphQL -- `create` too, before it posts anything -- so on a
+# `github` project every plan and backlog issue failed there, and the run fell
+# back to a file. REST through `gh api` gets through, and so does
+# `gh label create`. Tested in a cloud session on 24 Sep 2026.
+
+REVIEW_PATH = os.path.join(SKILLS_DIR, "review", "SKILL.md")
+review_skill_text = human_facing_text["review"]
+
+PLAN_LIST_REST = "issues?labels=devflow:plan&state=open"
+
+for slug, text in (("flow", flow_text), ("review", review_skill_text)):
+    check(f"{slug}: lists plan issues through REST",
+          PLAN_LIST_REST in text and "select(.pull_request | not)" in text,
+          f"{slug}/SKILL.md never lists plan issues with gh api "
+          f"'repos/{{owner}}/{{repo}}/{PLAN_LIST_REST}' and a filter that "
+          f"drops pull requests")
+
+for slug, text in (("flow", flow_text), ("review", review_skill_text),
+                   ("setup", setup_text)):
+    body = text.split("---", 2)[2]
+    check(f"{slug}: never runs gh issue list, view or create",
+          re.search(r"gh issue (list|view|create)\b", body) is None,
+          f"{slug}/SKILL.md still names a GraphQL issue command, which a "
+          f"cloud session's proxy refuses")
+
+check("flow: step 4 opens the plan issue through REST",
+      "-F body=@/tmp/devflow-plan.md" in flow_text
+      and "-f 'labels[]=devflow:plan'" in flow_text,
+      f"{FLOW_PATH} never opens the plan issue with gh api and "
+      f"-F body=@/tmp/devflow-plan.md -f 'labels[]=devflow:plan'")
+
+for slug, text in (("flow", flow_text), ("review", review_skill_text)):
+    check(f"{slug}: says what to do when gh cannot fill {{owner}}/{{repo}}",
+          "cannot fill `{owner}/{repo}`" in flat(text),
+          f"{slug}/SKILL.md never says to write the owner and repo in when "
+          f"gh cannot fill the placeholder")
+
+check("flow: reads a request issue through REST",
+      "gh api repos/{owner}/{repo}/issues/NUMBER --jq .body" in flow_text,
+      f"{FLOW_PATH} never reads a #123 request with gh api")
+
+check("review: reads a Closes issue through REST",
+      re.search(r"\*\*An issue\*\*[^\n]*gh api repos/\{owner\}/\{repo\}"
+                r"/issues/<n> --jq \.body", review_skill_text) is not None,
+      "review/SKILL.md never reads the issue a commit closes with gh api")
+
+# `gh api` takes any method and any path, and a prefix rule cannot narrow
+# either, so pre-approving it would let text in an issue body reach an admin
+# write with no prompt. It stays behind the permission prompt. The GraphQL
+# issue commands it replaced go too, since nothing runs them any more.
+for slug in ("flow", "review"):
+    tools = parsed.get(slug, (None, {}))[1].get("allowed-tools", "")
+    check(f"{slug}: allowed-tools never pre-approves gh api",
+          "gh api" not in tools,
+          f"{slug}'s allowed-tools pre-approves gh api, every method and path")
+    check(f"{slug}: allowed-tools drops the GraphQL issue commands",
+          "gh issue" not in tools,
+          f"{slug}'s allowed-tools still lists a gh issue command")
+
+SETUP_PROOF_CMD = "gh api 'repos/{owner}/{repo}/issues?per_page=1' --jq length"
+
+check("setup: proves the tracker with a REST read",
+      SETUP_PROOF_CMD in setup_text,
+      f"{SETUP_PATH} never runs {SETUP_PROOF_CMD!r}")
+
+GH_INSTALL_LINE = "apt-get update && apt-get install -y gh"
+
+check("setup: names the setup-script line that installs gh",
+      GH_INSTALL_LINE in setup_text,
+      f"{SETUP_PATH} never names {GH_INSTALL_LINE!r}")
+
+check("setup: no longer says the web has no gh",
+      "has no `gh`" not in setup_text,
+      f"{SETUP_PATH} still says the web sandbox has no gh")
+
+DOCS_WEB_PATH = os.path.join(REPO_ROOT, "docs", "web.md")
+with open(DOCS_WEB_PATH, encoding="utf-8") as fh:
+    docs_web_text = flat(fh.read())
+DOCS_FLOW_PATH = os.path.join(REPO_ROOT, "docs", "flow.md")
+with open(DOCS_FLOW_PATH, encoding="utf-8") as fh:
+    docs_flow_text = flat(fh.read())
+
+check("docs/web: names the setup-script line that installs gh",
+      GH_INSTALL_LINE in docs_web_text,
+      f"{DOCS_WEB_PATH} never names {GH_INSTALL_LINE!r}")
+
+check("docs/web: says the proxy refuses every GraphQL request",
+      "every GraphQL request" in docs_web_text,
+      f"{DOCS_WEB_PATH} still says only some GraphQL fields are refused")
+
+check("docs/web: makes no untested claim about the setup-script cache",
+      "cache keeps it" not in docs_web_text,
+      f"{DOCS_WEB_PATH} claims the setup script's cache keeps gh; untested")
+
+check("docs/web: no longer says gh comes up authenticated",
+      "comes up already authenticated" not in docs_web_text,
+      f"{DOCS_WEB_PATH} still says an installed gh just works")
+
+check("docs/flow: no longer says the web has no gh",
+      "has no `gh`" not in docs_flow_text,
+      f"{DOCS_FLOW_PATH} still says the web sandbox has no gh")
+
+check("docs/provenance: records the cloud test of 24 Sep",
+      "the cloud test of 24 Sep" in docs_provenance_text,
+      f"{DOCS_PROVENANCE_PATH} has no row citing the cloud test of 24 Sep")
 
 # --------------------------------------------------------------------- report
 
