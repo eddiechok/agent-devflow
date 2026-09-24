@@ -54,9 +54,9 @@ branch was always the real requirement. The naming was never the point.
 `403`. `ship` reports it and hands the branch to you rather than retrying. The merge is
 untouched either way. The two are separate calls, which this skill already knew.
 
-**Plans on GitHub need `gh` here.** A project whose `## Plans` block says `github`
-cannot open or read a plan issue without it. Install it in the setup script, below.
-Without it, `flow` writes the file instead and says so on the size line. The resume after a `/clear` then reads the file, not the
+**Plans on GitHub work best with `gh` here.** Install it in the setup script, below.
+Without it, devflow reaches the plan issue with `curl`. Only when that fails too does
+`flow` write the file instead, and it says so on the size line. The resume after a `/clear` then reads the file, not the
 tracker. Nothing is lost; the plan is where the web session can reach it.
 
 **`gh` is not pre-installed.** Anthropic's cloud docs say it is. A cloud session on
@@ -79,7 +79,9 @@ So `gh auth status` says the token is invalid, and requests work anyway.
 `gh pr view` all fail. `gh issue create` fails too, because it sends GraphQL before it
 posts anything. REST gets through: `gh api repos/{owner}/{repo}/...` reads, creates and
 closes issues, and `gh label create` works. So plan and backlog issues go through
-`gh api`. The `gh pr` commands in `submit`, `tend` and `ship` still send GraphQL.
+`gh api`. With no `gh` at all, devflow falls back to `curl`: `GH_TOKEN` still holds the
+placeholder, and `curl` to `api.github.com` came back `200` in the same test. Only when
+that fails too does a plan go to a file. The `gh pr` commands in `submit`, `tend` and `ship` still send GraphQL.
 
 `ship` used to report a missing CLI as `none for this branch`. Those are the same words it
 uses for a branch with no pull request. It would send you to `submit` for work that

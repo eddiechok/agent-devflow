@@ -108,7 +108,7 @@ Where should Deep plans live?
 
 **Picking github means two things, and say both out loud:**
 
-- A cloud session does not come with `gh`. Add `apt-get update && apt-get install -y gh` to the cloud environment's setup script, and plans on GitHub work there too. Without it, runs on the web fall back to a local file for that job and say so.
+- A cloud session does not come with `gh`. Add `apt-get update && apt-get install -y gh` to the cloud environment's setup script, and plans on GitHub work there too. Without it, runs there fall back to `curl`, and to a local file for that job only if `curl` fails too, and say so.
 - Anyone who can edit the issue can edit the plan, and a plan is an order to `build`. Fine on your own repos. Think twice on a public one.
 
 **Prove it before writing it.** Same rule as the checks. For github, run this bare:
@@ -117,7 +117,17 @@ Where should Deep plans live?
 gh api 'repos/{owner}/{repo}/issues?per_page=1' --jq length
 ```
 
-It must answer with a number. An error means no `gh`, no auth, or no remote, and that is not a project you can write `github` for. Say which, and **write no `## Plans` block at all**.
+With no `gh` installed, run the same read with `curl`, owner and repo from
+`git remote get-url origin`. If the remote does not name a GitHub repo, write them in
+yourself:
+
+```
+curl -sS --fail-with-body -H "Authorization: token $GH_TOKEN" "https://api.github.com/repos/<owner>/<repo>/issues?per_page=1"
+```
+
+Never print `$GH_TOKEN`, and send it to `api.github.com` and no other host.
+
+It must answer with a number, or with the JSON list for `curl`. An error means no auth or no remote — or, with no `gh`, that the `curl` read failed too — and that is not a project you can write `github` for. Say which, and **write no `## Plans` block at all**.
 
 Then make sure the label exists. A plan issue carries `devflow:plan`, and `flow` looks for it by that label:
 
@@ -125,7 +135,14 @@ Then make sure the label exists. A plan issue carries `devflow:plan`, and `flow`
 gh label create devflow:plan --description "A devflow Deep plan" --color 0E8A16
 ```
 
-An error that says the label already exists is fine. Any other error, stop:
+With no `gh` installed, make it with `curl` instead:
+
+```
+curl -sS --fail-with-body -H "Authorization: token $GH_TOKEN" -d '{"name": "devflow:plan", "description": "A devflow Deep plan", "color": "0E8A16"}' https://api.github.com/repos/<owner>/<repo>/labels
+```
+
+An error that says the label already exists is fine — from `curl` it is a `422` with
+`already_exists`. Any other error, stop:
 
 ```
 ✗ **plans** label not made — gh said <the error>
@@ -137,7 +154,8 @@ Then make the second label the same way. `flow` parks extra features there, one 
 gh label create devflow:backlog --description "A devflow parked feature" --color 5319E7
 ```
 
-Same error rule: "already exists" is fine, any other error means stop and say so.
+With no `gh`, the same `curl` call makes it, with this label's name, description and
+color. Same error rule: "already exists" is fine, any other error means stop and say so.
 
 Write the block:
 
@@ -192,5 +210,5 @@ the result — for example `✓ **checks** 3 of 3 pass, exit 0`.
 - Never add pipes or redirects to a check command. Bare, one per call.
 - Never overwrite an existing `## Checks` block without asking.
 - Never invent a command to fill a row. Missing is better than wrong.
-- Never write `Tracker: github` without that `gh api` read having answered in this run.
+- Never write `Tracker: github` without that REST read having answered in this run.
 - Never add anything to `CLAUDE.md` except the `## Checks` and `## Plans` blocks, and never a block you did not prove.

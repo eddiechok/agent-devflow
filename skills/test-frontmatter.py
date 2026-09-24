@@ -2178,6 +2178,87 @@ check("docs/provenance: records the cloud test of 24 Sep",
       "the cloud test of 24 Sep" in docs_provenance_text,
       f"{DOCS_PROVENANCE_PATH} has no row citing the cloud test of 24 Sep")
 
+
+# --------------------------- a curl fallback when gh is not installed
+#
+# A cloud session whose setup script does not install gh still reaches
+# GitHub: GH_TOKEN holds a placeholder the proxy swaps for the real
+# credential, and plain curl to api.github.com came back 200 in the cloud
+# test of 24 Sep. So a missing gh falls back to curl before it falls back to
+# a file. The token is the danger here: it goes to api.github.com only, and
+# it is never printed.
+
+CURL_AUTH = 'curl -sS --fail-with-body -H "Authorization: token $GH_TOKEN"'
+CURL_ISSUES = "https://api.github.com/repos/<owner>/<repo>/issues"
+
+check("flow: falls back to curl when gh is not installed",
+      "command -v gh" in flow_text and CURL_AUTH in flow_text
+      and CURL_ISSUES in flow_text,
+      f"{FLOW_PATH} never gives the curl form for a missing gh")
+
+check("flow: the curl fallback reads owner and repo from the remote",
+      "git remote get-url origin" in flow_text,
+      f"{FLOW_PATH} never says where curl gets <owner>/<repo> from")
+
+check("flow: the curl fallback builds the issue as JSON, not by hand",
+      "json.dumps" in flow_text
+      and "--data-binary @/tmp/devflow-issue.json" in flow_text,
+      f"{FLOW_PATH} never builds the POST body with json.dumps")
+
+check("flow: every issue call points at the curl form",
+      flat(flow_text).count("the `curl` form in step 0b") >= 3,
+      f"{FLOW_PATH} names the curl form fewer than three times: the request "
+      f"read, the backlog create and the plan create each need it")
+
+for slug, text in (("flow", flow_text), ("review", review_skill_text),
+                   ("setup", setup_text)):
+    check(f"{slug}: never prints the token, never sends it elsewhere",
+          "Never print `$GH_TOKEN`" in flat(text)
+          and "api.github.com" in text and "no other host" in flat(text),
+          f"{slug}/SKILL.md gives a curl form without the token rule")
+
+check("review: lists plan issues with curl when gh is missing",
+      CURL_AUTH in review_skill_text
+      and "https://api.github.com/repos/<owner>/<repo>/issues?labels=devflow:plan"
+      in review_skill_text,
+      "review/SKILL.md has no curl form for a missing gh")
+
+check("setup: proves the tracker with curl when gh is missing",
+      CURL_AUTH in setup_text
+      and "https://api.github.com/repos/<owner>/<repo>/issues?per_page=1"
+      in setup_text,
+      f"{SETUP_PATH} has no curl proof read for a missing gh")
+
+for slug in ("flow", "review"):
+    tools = parsed.get(slug, (None, {}))[1].get("allowed-tools", "")
+    check(f"{slug}: allowed-tools never pre-approves curl",
+          "curl" not in tools,
+          f"{slug}'s allowed-tools pre-approves curl, which carries the token")
+
+check("docs/web: names the curl fallback",
+      "falls back to `curl`" in docs_web_text,
+      f"{DOCS_WEB_PATH} never says a missing gh falls back to curl")
+
+check("setup: makes the labels with curl when gh is missing",
+      "https://api.github.com/repos/<owner>/<repo>/labels" in setup_text,
+      f"{SETUP_PATH} has a curl read but no curl label create, so setup "
+      f"stops at the label with no gh")
+
+check("setup: no longer says a missing gh goes straight to a file",
+      "Without it, runs on the web fall back to a local file"
+      not in flat(setup_text),
+      f"{SETUP_PATH} still says a missing gh means a file; curl comes first")
+
+check("docs/web: no longer says plans on GitHub need gh",
+      "Plans on GitHub need `gh` here" not in docs_web_text,
+      f"{DOCS_WEB_PATH} still says a plan issue cannot be read without gh")
+
+for slug, text in (("review", review_skill_text), ("setup", setup_text)):
+    check(f"{slug}: says what curl does when the remote names no repo",
+          "If the remote does not name a GitHub repo" in flat(text),
+          f"{slug}/SKILL.md never says to write the owner and repo in when "
+          f"the git remote does not name them")
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")
