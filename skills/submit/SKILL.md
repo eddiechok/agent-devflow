@@ -217,6 +217,50 @@ When nothing changed since the last review, there is no look to run:
 
 A fix made here is the one edit on the branch no agent has read. Name it in the PR body under **Evidence**, in these words — `Final look: fixed <file>, <what> — unread by an agent, so read those lines yourself` — because the reader is the only one who can read them now. The loop stays bounded: review, round 2, look, at most one small fix, done.
 
+**Then sort what is going under Known issues.** Each item is one of three kinds:
+
+- **A rejected finding** — a finding you checked and refused, with its reason.
+- **A test gap** — something this run could not prove: no live check, no eval case, an axis `NOT RUN`, a review cut short.
+- **A leftover bug** — a real flaw nobody fixed: a finding still standing after 2 rounds, something the look found that was too big or outside the branch, or a bug that was already there and turned up in passing.
+
+**Only a leftover bug is parked.** The other two are notes for whoever merges, and they stay in the PR body alone. A leftover bug is work, and a merged PR body is where work goes to be forgotten. **Park them before the commit**, so a backlog file ships in this PR. Park each one the way `flow` step 1b parks a feature — look for a `## Plans` block in `CLAUDE.md`.
+
+**Never park the same bug twice.** An earlier run on this branch may have parked it and then stopped before a PR body could link it. So first list what is already parked — the open issues, through the `curl` form in `flow` step 0b when there is no `gh`, and the files under `.devflow/backlog/`:
+
+```
+gh api 'repos/{owner}/{repo}/issues?labels=devflow:backlog&state=open' --jq '.[] | select(.pull_request | not) | {number, title, body}'
+```
+
+One whose body names this bug is already its link, whichever branch its `Found on:` line names — most likely `Found on: <this branch>`, but a bug that was already there may have been parked from another. Use it, and file nothing.
+
+**`## Plans` says `github`:** make the label if it is missing ("already exists" is fine), then file one issue per leftover bug. With no `gh`, use the `curl` form in `flow` step 0b for both.
+
+```
+gh label create devflow:backlog --description "A devflow parked feature" --color 5319E7
+```
+
+```
+gh api repos/{owner}/{repo}/issues -f title="<the bug>" -F body=@/tmp/devflow-backlog.md -f 'labels[]=devflow:backlog' --jq .number
+```
+
+Write the body to that temp path, outside the repo — what is wrong, where, and the fix if you know it, plus one line `Found on: <this branch>` — and remove it after each issue is filed.
+
+**No block, `local`, or a `gh` failure:** write `.devflow/backlog/<short-name>.md` instead, the same shape, under a name `flow` step 1b's name check allows. It is committed with the rest of the branch.
+
+The bug's Known issues line then ends with where it went — `— parked as #48`, or `— parked as .devflow/backlog/<short-name>.md`. **On an update, a bug the PR body already links is not parked again**; it keeps its link. One that has been fixed since comes out of Known issues: add `Closes #48` under **Why**, or delete its backlog file in this branch.
+
+**A backlog file is an edit**, written or deleted, and step 7's checks ran before it: run the `## Checks` block again — bare, one per call — before the commit.
+
+Print one line when anything was parked:
+
+```
+✓ **parked** #48 look found stale docs/pipeline.md, not on this branch
+```
+
+```
+✗ **parked** github asked, wrote .devflow/backlog/<name>.md — gh said <the error>
+```
+
 Conventional commits, so `git log` doubles as a changelog:
 
 ```
@@ -305,6 +349,7 @@ I checked this locally before pushing. I stopped my own server; step 5 is for yo
 
 ## Known issues
 - (only if the review left something unresolved)
+- step 7 of ship has no line for retargeted PRs — parked as #48
 ```
 
 **A plan issue closes with the PR.** Only if the project's `## Plans` block says `github` and this work has a `devflow:plan` issue. Then name it under **What** — `Plan: #45` — and add `Closes #45` under **Why**, beside the request issue if there is one. Find the number on the `✓ **plan** #N` line `flow` printed, or by listing open `devflow:plan` issues and matching the subject. Do not guess a number, and write nothing about a plan issue on a project that keeps plans in files.
