@@ -1845,6 +1845,72 @@ check("docs/provenance: credits claude-code-security-review with its star count"
       f"{DOCS_PROVENANCE_PATH} does not credit "
       f"anthropics/claude-code-security-review with its star count")
 
+# ------------------------------------ review spawns security-reviewer on the
+# ------------------------------------ danger list, and widens hardcase's job
+#
+# `security-reviewer` does not run on every change. `reviewer` already reads
+# the danger list on every review, so its report is where `review` reads the
+# spawn condition from. Five items start it; the other three items on the
+# same list are still worth a human's attention but do not.
+
+SECURITY_ITEMS = ("auth and permissions, secrets and keys, payments, "
+                   "public API or wire format, CI/CD config")
+NON_SECURITY_ITEMS = ("database migrations, deleting or weakening tests, "
+                       "anything that cannot be reverted")
+
+REVIEWER_PATH = os.path.join(AGENTS_DIR, "reviewer.md")
+with open(REVIEWER_PATH, encoding="utf-8") as fh:
+    reviewer_text = fh.read()
+
+check("agents/reviewer: danger list names the five security items",
+      SECURITY_ITEMS in flat(reviewer_text),
+      f"{REVIEWER_PATH} never lists the five items in these words -- "
+      f"{SECURITY_ITEMS!r}")
+
+check("agents/reviewer: danger list keeps the three non-security items",
+      NON_SECURITY_ITEMS in flat(reviewer_text),
+      f"{REVIEWER_PATH} never lists the three items in these words -- "
+      f"{NON_SECURITY_ITEMS!r}")
+
+REVIEW_SKILL_PATH = os.path.join(SKILLS_DIR, "review", "SKILL.md")
+with open(REVIEW_SKILL_PATH, encoding="utf-8") as fh:
+    review_skill_text = fh.read()
+
+check("review: starts security-reviewer only on the five security items",
+      ("Start `devflow:security-reviewer` only when that line names one of "
+       "five items: " + SECURITY_ITEMS) in flat(review_skill_text),
+      f"{REVIEW_SKILL_PATH} never pins the spawn condition in these words")
+
+check("review: hardcase is handed security-reviewer's findings too",
+      "`reviewer`'s findings, and `security-reviewer`'s findings when it ran"
+      in flat(review_skill_text),
+      f"{REVIEW_SKILL_PATH} never hands hardcase security-reviewer's findings")
+
+check("review: step 4 report carries a ## Security section",
+      "## Security" in review_skill_text,
+      f"{REVIEW_SKILL_PATH} never pins a '## Security' report section")
+
+check("review: Worst of each carries a Security line",
+      "- Security:" in review_skill_text,
+      f"{REVIEW_SKILL_PATH} never pins a 'Security:' line under Worst of each")
+
+HARDCASE_PATH = os.path.join(AGENTS_DIR, "hardcase.md")
+with open(HARDCASE_PATH, encoding="utf-8") as fh:
+    hardcase_text = fh.read()
+
+check("hardcase: accepts security-reviewer's findings",
+      "security-reviewer" in hardcase_text and "## Exploitable" in hardcase_text,
+      f"{HARDCASE_PATH} never says it is handed security-reviewer's findings "
+      f"under '## Exploitable'")
+
+DOCS_REVIEW_PATH = os.path.join(REPO_ROOT, "docs", "review.md")
+with open(DOCS_REVIEW_PATH, encoding="utf-8") as fh:
+    docs_review_text = fh.read()
+
+check("docs/review: the agent table lists security-reviewer",
+      "`security-reviewer`" in docs_review_text,
+      f"{DOCS_REVIEW_PATH} never lists security-reviewer in the agent table")
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")
