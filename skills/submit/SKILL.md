@@ -28,7 +28,7 @@ git checkout -b <type>/<short-name>
 
 **A branch you were handed counts.** Off the default branch is the whole requirement — never rename one to fit `<type>/<short-name>`.
 
-Never commit directly to the default branch. Then print:
+Never commit directly to the default branch. Then print, unless `build` printed one this run:
 
 ```
 ✓ **branch** <name>
@@ -40,7 +40,7 @@ Run the project's test, typecheck and lint commands from the `## Checks` block i
 
 **The checks must postdate the last edit.**
 
-**One exception, and it is narrow.** If `build` ran **every command in the `## Checks` block**, in this session, so that its output is already on this screen, and no file has changed since — then that output is this step's output. Print `✓ **checks** build's run stands, no edit since` and go on. It does not apply on a Deep job: the builders ran the checks inside their own agents, and five lines came back, not output. Nor when `build` ran the suite but not the lint; `build`'s handback rule only promises the suite. Any edit since, including one you made a moment ago, means run them again.
+**One exception, and it is narrow.** If `build` ran **every command in the `## Checks` block**, in this session, so that its output is already on this screen, and no file has changed since — then that output is this step's output. Print `✓ **checks** <n> of <n> pass, exit 0 — build's run, no edit since` and go on. It does not apply on a Deep job: the builders ran the checks inside their own agents, and five lines came back, not output. Nor when `build` ran the suite but not the lint; `build`'s handback rule only promises the suite. Any edit since, including one you made a moment ago, means run them again.
 
 **Run each one bare** — exactly as the Checks block writes it, one command per
 call. No pipes, no redirects, no `&&`, no `; echo $?`.
@@ -154,10 +154,10 @@ Then act on what comes back:
 
 Never write "challenged" over a `hardcase` that did not run, and never let a `Falls` you did not verify take a fix off the list.
 
-The review reports; it never edits. The fixes are yours. Once it is settled, print one line:
+The review reports; it never edits. The fixes are yours. Once it is settled, print one line that names what was found:
 
 ```
-✓ **review** both axes ran, 2 findings fixed
+✓ **review** 2 found, 2 fixed — a loose test scanner, a stop line with no mark
 ```
 
 or, when `build` said there was nothing to test:
@@ -352,7 +352,7 @@ words a user of it would know, not the file list:
 
 It goes right above the recap, and the recap leaves it out.
 
-**Then the recap.** Before the PR link, repeat every shaped line this run printed — from the first, `flow`'s or `build`'s when they ran before you, through this one — in the order they were printed, in one block. Add nothing to it — no summary, no new line, nothing this run has not already said once. It is the one place a human can read the whole run without scrolling back through the tool output sitting between the steps.
+**Then the recap.** Before the PR link, repeat the lines this run printed — from the first, `flow`'s or `build`'s when they ran before you, through this one — in the order they were printed, in one block. Leave out the routine ones, whose result is the same on almost every run: `– **pr** none found`, `✓ **branch**`, a green `✓ **checks**`, `✓ **debug** none found`, `– **look** nothing changed`, `✓ **handback**`. Every `✗` and `→` line stays. Add nothing to it — no summary, no new line, nothing this run has not already said once. It is the one place a human can read the whole run without scrolling back through the tool output sitting between the steps.
 
 Then, as the last thing this skill prints, the PR's link:
 
