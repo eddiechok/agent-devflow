@@ -1517,11 +1517,50 @@ check("ship: the deploy runs from a checkout at the merged commit",
       "must be at the merged commit" in flat(ship_text),
       f"{SHIP_PATH} never says the deploy's checkout has to hold the merge")
 
-check("ship: moves that checkout only when it is clean and detached",
-      "It is free when `status` prints nothing and `symbolic-ref` exits "
-      "non-zero" in flat(ship_text)
+check("ship: moves that checkout only when it is clean, detached or on the "
+      "default branch",
+      "It is free when `status` prints nothing and the folder is on no branch "
+      "or on the default branch" in flat(ship_text)
       and "git checkout --detach <default branch ref>" in ship_text,
       f"{SHIP_PATH} never limits the move to a checkout nobody is using")
+
+# A clean main checkout sits on `main` far more often than detached, and the
+# rule above stopped every deploy of this repo for it (24 Sep 2026, after
+# #47). Moving `main` forward with --ff-only keeps the folder on its branch,
+# as a git pull would. Any other branch is still someone's work, and a
+# fast-forward that fails means `main` holds local commits: also someone's.
+
+check("ship: moves a clean default-branch folder with --ff-only",
+      "Free and on the default branch" in flat(ship_text)
+      and "git merge --ff-only <default branch ref>" in ship_text,
+      f"{SHIP_PATH} never moves a clean folder on the default branch forward")
+
+check("ship: a failed fast-forward stops the deploy, never forced",
+      "a fast-forward that fails" in flat(ship_text)
+      and "never force it" in flat(ship_text),
+      f"{SHIP_PATH} never says what to do when --ff-only is refused")
+
+# --ff-only refuses only a branch that has diverged. One that is ahead of the
+# ref -- someone pulled the merge, then committed -- says "Already up to date"
+# and exits 0, and the deploy would ship their commit. Found by the review of
+# this change. So the folder has to land exactly on the ref.
+check("ship: checks the default-branch folder landed exactly on the ref",
+      "Then compare `git rev-parse HEAD` with `git rev-parse <default branch "
+      "ref>`" in flat(ship_text)
+      and "Already up to date" in ship_text,
+      f"{SHIP_PATH} deploys a default branch that is ahead of the remote")
+
+check("ship: any other branch, or unpushed commits, still stops the deploy",
+      "a change, any other branch, or commits the remote does not have"
+      in flat(ship_text),
+      f"{SHIP_PATH} lets a folder on a feature branch, or one holding "
+      f"unpushed commits, be moved")
+
+check("docs/ship: records why the default branch is free",
+      "--ff-only" in docs_ship_text and "#47" in docs_ship_text
+      and "Already up to date" in docs_ship_text,
+      f"{DOCS_SHIP_PATH} never says why a clean default-branch folder may "
+      f"move, or why --ff-only alone is not enough")
 
 check("ship: leaves its worktree before asking another checkout",
       "the harness refuses `git -C`" in flat(ship_text)

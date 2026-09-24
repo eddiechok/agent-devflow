@@ -113,6 +113,8 @@ A `Deploy` line deploys a checkout, and until 24 Sep 2026 nothing said which one
 
 So the checkout is moved only when nobody is in it: clean, and on no branch. A folder that is in use — a branch, or a change — stops the deploy with a line naming what holds it. A deploy that waits costs a minute; a folder moved under someone's work costs them their bearings, or their work.
 
+The default branch was added to "nobody is in it" after #47. A clean main checkout sits on `main` far more often than detached, so the first rule stopped every deploy of this repo, and the fix it asked for — detach the folder by hand — was a chore for no safety. A clean folder on the default branch holds nothing a fast-forward can lose: `git merge --ff-only` keeps it on its branch and moves it forward, as `git pull` would. What it does not do is refuse every branch with commits the remote lacks: it refuses one that has diverged, but one that is simply ahead — someone pulled the merge, then committed — says `Already up to date` and exits 0, and the deploy would ship their commit. The review of this change found that, so ship compares `HEAD` with the ref after the merge, and a folder that is not exactly at the ref is in use. Any other branch is still somebody's, and still stops the deploy.
+
 ### `Verify` as a URL or a command
 
 Not everything that ships is a website, and forcing a filesystem check into a URL field is how a block starts lying.
