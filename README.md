@@ -208,6 +208,8 @@ auth and permissions · secrets and keys · payments · public API or wire forma
 
 `review` runs agents that never saw the session: `reviewer` asks *is it built right*, `security-reviewer` asks *is it safe from an attacker* — only when the danger list names a security item — and `spec-reviewer` asks *is it the right thing*. Another, `hardcase`, tries to break `reviewer`'s and `security-reviewer`'s findings. The reports are never blended. `builder` is not a reviewer: on a Deep job it builds one chain of the plan's pieces in its own git worktree, commits each one, and reports back a branch line plus five lines per piece. One builder per chain, up to four chains at once, and `flow` merges their branches back before it submits.
 
+Folder copies get cleaned up behind the work. The worktrees `flow` cuts for a Deep job's chains are removed when they merge. The one `flow` step 0c or `tend` takes for the session itself holds your branch, so it stays until `ship` merges that branch. `ship` then removes it only when it holds nothing: no uncommitted files, no commits of its own. Otherwise it stays, and `ship`'s `cleaned` line says so. If `ship` never runs, the harness asks you to keep or remove it when the session ends.
+
 ## More
 
 One page each. Read them when you need them. A skill holds its steps; the page named
@@ -237,7 +239,7 @@ Phase 1 is the smallest useful thing. These stay out on purpose:
 - A standalone `plan` skill. You cannot revise a plan once written.
 - `debug`, a bug-fixing loop. Bugs go through `build` for now.
 - Model routing by size. A skill cannot change its own model.
-- Cleanup of folder copies. The worktrees `flow` cuts for a Deep job's chains are removed when they merge. The one `flow` step 0c or `tend` takes for the session itself holds your branch, so it stays until `ship` merges that branch. `ship` then removes it only when it holds nothing: no uncommitted files, no commits of its own. Otherwise it stays, and `ship`'s `cleaned` line says so. If `ship` never runs, the harness asks you to keep or remove it when the session ends.
+- A sweep for leftover folder copies. A worktree `ship` kept because it held work, or one from a session `ship` never ran in, stays on disk until you remove it.
 - Capturing lessons.
 
 Add each one when two weeks of real use shows you need it. Not before.
