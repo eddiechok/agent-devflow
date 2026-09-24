@@ -2,7 +2,7 @@
 name: flow
 description: "Use when a request will change anything tracked in the repo - a feature, a bug fix, a refactor, a chore or a dependency bump, and equally copy, content, docs, config, styles, images or other assets. Editing a tracked file is the test, not whether the work sounds like coding. Enter here mid-task too, the moment an investigation turns into an edit. Sizes the work as Quick, Standard or Deep, then routes it through build and submit, so the work ends as a pull request rather than uncommitted changes. Accepts free text, a GitHub issue number like #123, an issue URL, or a backlog file path under .devflow/backlog/. This is the entry point, start here."
 argument-hint: "[--quick|--deep] what you want, #123, or .devflow/backlog/<name>.md"
-allowed-tools: Bash(git status:*), Bash(git branch:*), Bash(git rev-parse:*), Bash(git symbolic-ref:*), Bash(git rev-list:*), Bash(git remote show:*), Bash(ls:*), Bash(gh pr view:*), Bash(gh label create:*), Bash(rm .devflow/backlog/*), Bash(git log:*), Bash(gh pr list:*), EnterWorktree, mcp__ccd_session__spawn_task
+allowed-tools: Bash(git status:*), Bash(git branch:*), Bash(git rev-parse:*), Bash(git symbolic-ref:*), Bash(git rev-list:*), Bash(git remote show:*), Bash(ls:*), Bash(gh label create:*), Bash(rm .devflow/backlog/*), Bash(git log:*), EnterWorktree, mcp__ccd_session__spawn_task
 ---
 
 # flow
@@ -34,10 +34,16 @@ Then move to step 1.
 Anything other than `0` — including `unknown` — is when you ask:
 
 ```
-gh pr view --json number,state,headRefName --jq '"#\(.number) [\(.state)] \(.headRefName)"'
+gh api 'repos/{owner}/{repo}/pulls?head={owner}%3A<branch>&state=all' --jq '.[] | "#\(.number) [\(if .merged_at then "MERGED" elif .state == "open" then "OPEN" else "CLOSED" end)] \(.head.ref)"'
 ```
 
-or whatever GitHub access this environment has. **A missing CLI is not a missing PR.**
+or whatever GitHub access this environment has. Pull requests go through `gh api`, never
+the `gh pr` commands, for the reason issues do in step 0b: those send GraphQL. An empty
+answer is no pull request; several lines mean several, and the open one is this branch's.
+The colon after `{owner}` is written `%3A` on purpose: `gh` reads a bare `:repo`,
+`:owner` or `:branch` as an old placeholder, and a branch named `repo-cleanup` then
+matches every PR in the repo.
+**A missing CLI is not a missing PR.**
 If the call fails rather than answering "no pull request", say which of the two you got.
 
 Look at the branch before anything else. **If it already has an open pull request**, that work has been submitted and this request is one of three things.
@@ -337,10 +343,11 @@ git log <default branch ref> --fixed-strings --grep="Backlog: .devflow/backlog/<
 ```
 
 ```
-gh pr list --state merged --search '"Backlog: .devflow/backlog/<name>.md" in:body' --json number,body --jq '.[] | select(.body | contains("Backlog: .devflow/backlog/<name>.md")) | .number'
+gh api 'search/issues?q=repo:{owner}/{repo}+is:pr+is:merged+in:body+%22Backlog:+.devflow/backlog/<name>.md%22' --jq '.items[] | select(.body | contains("Backlog: .devflow/backlog/<name>.md")) | .number'
 ```
 
-Keep the `--jq` filter. GitHub's phrase search is loose and matches bodies without the
+The query sits in the path because `gh` fills `{owner}/{repo}` there and never in a `-f`
+value. Keep the `--jq` filter. GitHub's phrase search is loose and matches bodies without the
 line; only a number the filter prints is a hit.
 
 **A hit means the feature shipped.** Remove the file, say so, and build nothing else: the
