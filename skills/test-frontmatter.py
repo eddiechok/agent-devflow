@@ -27,10 +27,12 @@ also round-trips every file through a real parser and asserts the lint agreed;
 where it is not, the lint still stands on its own.
 """
 
+import json
 import os
 import re
 import subprocess
 import sys
+import tempfile
 
 SKILLS_DIR = os.path.dirname(os.path.abspath(__file__))
 AGENTS_DIR = os.path.join(os.path.dirname(SKILLS_DIR), "agents")
@@ -1558,6 +1560,89 @@ check("docs/ship: records why ship stopped moving a checkout in use",
       "#42" in docs_ship_text and "#43" in docs_ship_text
       and "in use" in docs_ship_text,
       f"{DOCS_SHIP_PATH} never records the #42 deploy that moved #43's folder")
+
+
+# ------------------------------------- this repo's Deploy block hits the root
+#
+# A local-scope install is one entry per folder, keyed to the folder the update
+# runs in. On 24 Sep 2026 the update ran in a worktree after PR #47, said it
+# had updated, and left the main checkout's entry on the old commit. The old
+# Verify line, `test -d` on the cache directory, passed anyway: the directory
+# exists as soon as any folder updates. So the Deploy line goes to the main
+# checkout first, and Verify asks for the main checkout's entry by commit.
+
+CLAUDE_MD_PATH = os.path.join(REPO_ROOT, "CLAUDE.md")
+with open(CLAUDE_MD_PATH, encoding="utf-8") as fh:
+    claude_md_text = fh.read()
+
+deploy_block = claude_md_text.split("## Deploy", 1)[-1].split("\n## ", 1)[0]
+deploy_lines = re.findall(r"^- Deploy: (.+)$", deploy_block, re.M)
+verify_lines = re.findall(r"^- Verify: (.+)$", deploy_block, re.M)
+
+MAIN_CHECKOUT = ('"$(dirname "$(git rev-parse --path-format=absolute '
+                 '--git-common-dir)")"')
+
+check("CLAUDE.md: the Deploy line runs the update in the main checkout",
+      deploy_lines == [f"cd {MAIN_CHECKOUT} && claude plugin update "
+                       f"devflow@eddiechok-devflow --scope local"],
+      f"{CLAUDE_MD_PATH} runs the update wherever ship stands, which updates "
+      f"only that folder's install")
+
+
+def run_verify(entries):
+    """Run the Verify line against a fake ~/.claude holding these entries.
+
+    The merge's cache directory is always there, as it is once any folder
+    has updated -- which is why its presence proves nothing.
+    """
+    with tempfile.TemporaryDirectory() as home:
+        plugins = os.path.join(home, ".claude", "plugins")
+        os.makedirs(os.path.join(plugins, "cache", "eddiechok-devflow",
+                                 "devflow", _merged[:12]))
+        with open(os.path.join(plugins, "installed_plugins.json"), "w") as fh:
+            json.dump({"plugins": {"devflow@eddiechok-devflow": entries}}, fh)
+        env = dict(os.environ, HOME=home)
+        return subprocess.run(["bash", "-c", verify_lines[0]], cwd=REPO_ROOT,
+                              env=env, capture_output=True).returncode
+
+
+_git = lambda *a: subprocess.run(["git", *a], cwd=REPO_ROOT, text=True,
+                                 capture_output=True).stdout.strip()
+_main_checkout = os.path.dirname(
+    _git("rev-parse", "--path-format=absolute", "--git-common-dir"))
+# --verify, and the exit code read: a bare rev-parse of a missing ref prints
+# the name back, and every run_verify check would then compare "origin/main"
+# with itself and pass.
+_merged_run = subprocess.run(["git", "rev-parse", "--verify", "--quiet",
+                              "origin/main^{commit}"], cwd=REPO_ROOT,
+                             text=True, capture_output=True)
+_merged = _merged_run.stdout.strip() if _merged_run.returncode == 0 else ""
+
+if len(verify_lines) != 1 or not _merged:
+    check("CLAUDE.md: has one Verify line, and origin/main to check it by",
+          False, f"{len(verify_lines)} Verify line(s) in {CLAUDE_MD_PATH}, "
+          f"origin/main {'found' if _merged else 'missing -- fetch it'}")
+else:
+    check("CLAUDE.md: Verify passes when the main checkout has the merge",
+          run_verify([{"scope": "local", "projectPath": _main_checkout,
+                       "gitCommitSha": _merged}]) == 0,
+          f"{CLAUDE_MD_PATH} Verify fails on a correct install")
+    check("CLAUDE.md: Verify fails when the main checkout is on an old commit",
+          run_verify([{"scope": "local", "projectPath": _main_checkout,
+                       "gitCommitSha": "0" * 40}]) != 0,
+          f"{CLAUDE_MD_PATH} Verify passes while the main checkout is stale")
+    check("CLAUDE.md: Verify fails when only a worktree has the merge",
+          run_verify([{"scope": "local",
+                       "projectPath": os.path.join(_main_checkout, ".claude",
+                                                   "worktrees", "x"),
+                       "gitCommitSha": _merged}]) != 0,
+          f"{CLAUDE_MD_PATH} Verify passes when a worktree updated and the "
+          f"main checkout did not")
+
+check("CLAUDE.md: says each folder has its own local-scope install",
+      "one entry per folder" in flat(deploy_block),
+      f"{CLAUDE_MD_PATH} never says why the update must run in the main "
+      f"checkout")
 
 
 # ------------------------------- ship deletes the branches it can prove are empty
