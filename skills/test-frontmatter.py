@@ -2258,6 +2258,86 @@ for slug, text in (("review", review_skill_text), ("setup", setup_text)):
           f"{slug}/SKILL.md never says to write the owner and repo in when "
           f"the git remote does not name them")
 
+# ------------------------------ a leftover bug is parked, not only noted
+#
+# Known issues held three kinds of line, and only one of them is work: a bug
+# the bounded loop left open. #24, #26 and #33 each named one -- a real bug, a
+# one-line fix written out -- in a merged PR body that nothing ever read
+# again. Rejected findings and test gaps are notes for whoever merges, and a
+# tracker full of them is noise. So submit parks the leftover bugs the way
+# flow step 1b parks a feature, and links each from its Known issues line.
+
+check("submit: names the three kinds of Known issue",
+      all(k in submit_text for k in
+          ("**A rejected finding**", "**A test gap**", "**A leftover bug**")),
+      f"{SUBMIT_PATH} never sorts Known issues into rejected findings, test "
+      f"gaps and leftover bugs")
+
+check("submit: only a leftover bug is parked",
+      "Only a leftover bug is parked" in flat(submit_text),
+      f"{SUBMIT_PATH} never says rejected findings and test gaps stay in the "
+      f"PR body alone")
+
+check("submit: parks a leftover bug as a devflow:backlog issue",
+      "labels[]=devflow:backlog" in submit_text,
+      f"{SUBMIT_PATH} has no gh api call filing a devflow:backlog issue")
+
+check("submit: falls back to a backlog file",
+      ".devflow/backlog/<short-name>.md" in submit_text,
+      f"{SUBMIT_PATH} never writes a backlog file when there is no tracker")
+
+check("submit: parks before the commit, so a backlog file ships in the PR",
+      "Park them before the commit" in flat(submit_text),
+      f"{SUBMIT_PATH} never says the parking happens before step 7's commit")
+
+check("submit: the Known issues line links to what it was parked as",
+      "— parked as #" in submit_text,
+      f"{SUBMIT_PATH} never shows a Known issues line linking its backlog item")
+
+check("submit: an update does not park the same bug twice",
+      "already links" in flat(submit_text),
+      f"{SUBMIT_PATH} never says a bug the PR body already links is not "
+      f"filed again on an update")
+
+# Round 1 of review: parking came after step 7's last check run, so a backlog
+# file was committed unchecked; and the only guard against filing twice read a
+# PR body that does not exist yet when step 8 was blocked on an earlier run.
+
+check("submit: a backlog file written at step 7 gets the checks run again",
+      "A backlog file is an edit" in flat(submit_text),
+      f"{SUBMIT_PATH} commits a backlog file no check run has seen")
+
+check("submit: looks for an existing backlog item before parking",
+      "labels=devflow:backlog" in submit_text
+      and "Found on: <this branch>" in submit_text
+      and "Never park the same bug twice" in flat(submit_text),
+      f"{SUBMIT_PATH} only guards against a second filing through the PR "
+      f"body, which a blocked step 8 never wrote")
+
+# The review after merging main: the issue body used a fixed /tmp path, which
+# main had just taken off the PR body for the same reason, and the lookup read
+# only the first 30 backlog issues, so an older one parked from another branch
+# was never matched.
+
+check("submit: makes the backlog issue body with mktemp",
+      'mktemp "${TMPDIR:-/tmp}/devflow-backlog.XXXXXX"' in submit_text
+      and "/tmp/devflow-backlog.md" not in submit_text,
+      f"{SUBMIT_PATH} still writes the backlog issue body to a fixed path")
+
+check("submit: reads every page of the backlog issues",
+      "gh api --paginate 'repos/{owner}/{repo}/issues?labels=devflow:backlog"
+      in submit_text,
+      f"{SUBMIT_PATH} lists only the first page of devflow:backlog issues")
+
+check("submit: prints a parked line",
+      "✓ **parked** #" in submit_text,
+      f"{SUBMIT_PATH} never prints what it parked")
+
+check("docs/submit: says why leftover bugs are parked, citing #24, #26, #33",
+      all(f"#{n}" in docs_submit_text for n in (24, 26, 33))
+      and "leftover bug" in docs_submit_text,
+      f"{DOCS_SUBMIT_PATH} does not explain parking leftover bugs")
+
 # --------------------------- pull request calls go through REST too
 #
 # The same cloud test found `gh pr list` and `gh pr view` refused with the

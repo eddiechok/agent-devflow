@@ -141,6 +141,22 @@ review, round 2, look, one small fix, done. The price is one edit on the branch 
 agent has read, which is why it is named under **Evidence** — the reader is told which
 lines to read themselves rather than left to assume the review covered them.
 
+### Why a leftover bug is parked, and nothing else is
+
+Known issues held three kinds of line. Most were rejected findings — a reviewer was
+wrong, and here is why — or test gaps: no live check, no eval case, an axis that could not
+start. Both are for whoever merges, and both are done with once the PR is. The third kind
+is a leftover bug, and it is not done with: #24 named a resume that reads a plan file as
+dirt, #26 wrote out a one-line fix to `ship` step 7, and #33 found `ship` step 2 had no
+`UNKNOWN` case. Each sat in a merged PR body that nothing reads again, and each depended
+on the human to remember it. The bounded loop is right to stop fixing; it was wrong to
+stop tracking.
+
+So a leftover bug is parked exactly as `flow` step 1b parks a feature, and the Known issues
+line links to it. The two notes are not: a tracker full of "the reviewer was wrong" is
+noise, and noise is how a backlog stops being read. The parking happens before the commit
+because a backlog file is part of the change — it ships in the same PR that found the bug.
+
 ## Step 8 — the pull request
 
 The answer decides what this step does, and getting it wrong opens a second pull request for one change.
