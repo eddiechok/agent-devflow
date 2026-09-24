@@ -138,4 +138,6 @@ Nothing about the merge changes; it already landed and step 7 says so.
 
 Both methods rewrite the commits, so the branch's SHAs are not ancestors of the default branch even though every line of it is now there.
 
-That is how work actually gets lost, and the warning is right more often than the hurry is.
+So `git branch -d` refuses, and for a while this step forbade `-D` outright, because a forced delete on a hunch is how work actually gets lost. The price was that every squash or rebase merge ended with a local branch the human had to delete by hand — #40 and #41 both did, on 24 Sep 2026.
+
+The hunch was the problem, not the delete. The forge records the exact commit it merged, `headRefOid`. A local branch whose tip is that commit, or behind it — a commit added on GitHub never reached the local branch — holds nothing the merge did not carry, so deleting it loses nothing; a tip that differs has a commit that never reached the PR, and that one is still kept and handed over. The session's own worktree branch gets the same kind of proof from its reflog: `flow` opens it and `build` never commits there, so a tip still at the commit it was created from is empty.
