@@ -349,6 +349,24 @@ Three rules about the shape, all learned from the first real project that did no
 - Wait: 60s
 ```
 
+**A `Deploy` line deploys a checkout**, so that checkout must be at the merged commit, holding nothing else, before the first line runs. It is the folder the line runs in — `wrangler deploy` ships the files there — or the folder the project's `CLAUDE.md` says the deploy copies. **Fetch first**, `git fetch origin`: step 3 fetched before the merge, so `<default branch ref>` is stale until you do.
+
+**The folder this session is in** can be that folder — its own worktree, or the main checkout when it started there — when it is on the head branch just merged, or already detached. That branch holds nothing another session needs: when `git status --porcelain` prints nothing, run `git checkout --detach <default branch ref>` there and deploy. Uncommitted work in it is still work — stop, as below.
+
+**Any other folder** — the main checkout, most often — may be someone else's. A session inside a worktree cannot reach it — the harness refuses `git -C` — so leave the worktree first with `ExitWorktree` and `keep`. Then ask the folder, from inside it, without moving it:
+
+```
+git rev-parse HEAD
+git status --porcelain
+git symbolic-ref -q HEAD
+```
+
+It is free when `status` prints nothing and `symbolic-ref` exits non-zero — no edit and no branch in it — whether or not it is already at the ref. Free → if it is not at `<default branch ref>`, run `git checkout --detach <default branch ref>` in it, the one move that touches no branch; then deploy. Not free → it is another session's work. Do not move it, and stop: no `Deploy` line runs, from this folder or any other — some deploys copy that folder wherever they run.
+
+```
+✗ **deploy** <folder> in use — <its branch, or its changes>; deploy it yourself
+```
+
 **With no block**, watch what the forge reports: the deployment status, or the workflow run the merge triggered.
 
 ```
@@ -439,7 +457,7 @@ git rev-parse <worktree branch>
 git reflog show --format=%H <worktree branch>
 ```
 
-The tip equals the last line of the reflog → leave the worktree with `ExitWorktree` and `keep`, run `git worktree remove <path>` — no `--force`, so a dirty tree refuses — then `git branch -D <worktree branch>`. A tip that moved means someone committed there: keep both, and say so on the `cleaned` line.
+The tip equals the last line of the reflog → leave the worktree with `ExitWorktree` and `keep`, unless step 4 already did, run `git worktree remove <path>` — no `--force`, so a dirty tree refuses — then `git branch -D <worktree branch>`. A tip that moved means someone committed there: keep both, and say so on the `cleaned` line.
 
 **After a rebase or squash merge, `git branch -d` refuses the head branch.** Both rewrite the commits, so git cannot see the branch is in. The forge can: ask it which commit it merged, and compare.
 

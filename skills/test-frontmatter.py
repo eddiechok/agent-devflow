@@ -1505,6 +1505,63 @@ check("docs/ship: records why a tended branch cannot be rebased",
       f"at the top with nothing to tell them why it was moved")
 
 
+# ------------------------------- ship deploys only from a checkout it may move
+#
+# A Deploy line deploys a checkout: `wrangler deploy` ships the folder it runs
+# in, and this repo's `claude plugin update` copies the root folder. So that
+# checkout has to be at the merged commit, and step 4 never said so. When ship
+# made it so for PR #42 on 24 Sep 2026, by detaching the root at origin/main,
+# it moved the folder underneath another session that had an uncommitted edit
+# there -- the edit later became PR #43. Ship may move a checkout only when
+# nobody is in it: clean, and on no branch.
+
+check("ship: the deploy runs from a checkout at the merged commit",
+      "must be at the merged commit" in flat(ship_text),
+      f"{SHIP_PATH} never says the deploy's checkout has to hold the merge")
+
+check("ship: moves that checkout only when it is clean and detached",
+      "It is free when `status` prints nothing and `symbolic-ref` exits "
+      "non-zero" in flat(ship_text)
+      and "git checkout --detach <default branch ref>" in ship_text,
+      f"{SHIP_PATH} never limits the move to a checkout nobody is using")
+
+check("ship: leaves its worktree before asking another checkout",
+      "the harness refuses `git -C`" in flat(ship_text)
+      and "git -C <folder>" not in ship_text,
+      f"{SHIP_PATH} asks another checkout with git -C, which a worktree "
+      f"session is refused")
+
+check("ship: fetches after the merge before comparing against the ref",
+      "`<default branch ref>` is stale until you do" in flat(ship_text),
+      f"{SHIP_PATH} compares the deploy checkout against a ref fetched before "
+      f"the merge")
+
+check("ship: a folder already at the ref is still checked for someone's work",
+      "whether or not it is already at the ref" in flat(ship_text),
+      f"{SHIP_PATH} deploys from a folder with someone's uncommitted edit as "
+      f"long as it is already at the ref")
+
+check("ship: its own folder is detached, not read as someone else's work",
+      "The folder this session is in" in ship_text
+      and "or the main checkout when it started there" in flat(ship_text),
+      f"{SHIP_PATH} reads its own worktree on the merged head branch as "
+      f"another session's work")
+
+check("ship: an in-use checkout stops every Deploy line, from anywhere",
+      "no `Deploy` line runs, from this folder or any other" in flat(ship_text),
+      f"{SHIP_PATH} leaves room to run the deploy from another folder")
+
+check("ship: stops the deploy when the checkout is in use",
+      "✗ **deploy** <folder> in use — <its branch, or its changes>; deploy it yourself"
+      in ship_text,
+      f"{SHIP_PATH} never prints the in-use stop line")
+
+check("docs/ship: records why ship stopped moving a checkout in use",
+      "#42" in docs_ship_text and "#43" in docs_ship_text
+      and "in use" in docs_ship_text,
+      f"{DOCS_SHIP_PATH} never records the #42 deploy that moved #43's folder")
+
+
 # ------------------------------- ship deletes the branches it can prove are empty
 #
 # Rebase and squash rewrite a branch's commits, so `git branch -d` refuses it

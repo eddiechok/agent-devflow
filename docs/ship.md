@@ -107,6 +107,12 @@ is the one place where refusing costs nothing.
 Say which one you hit and stop — reporting a broken deploy for a proxy denial is
 exactly the misdiagnosis step 5 exists to prevent.
 
+### The checkout the deploy reads
+
+A `Deploy` line deploys a checkout, and until 24 Sep 2026 nothing said which one or where it had to be. For this repo it is the root folder, which `claude plugin update` copies. So ship detached the root at the merged commit before PR #42's deploy — and moved it underneath another session that was working there with an uncommitted edit. The edit survived the move and later became PR #43, but that session's folder changed commit mid-task, the hazard `flow`'s step 0c exists to stop.
+
+So the checkout is moved only when nobody is in it: clean, and on no branch. A folder that is in use — a branch, or a change — stops the deploy with a line naming what holds it. A deploy that waits costs a minute; a folder moved under someone's work costs them their bearings, or their work.
+
 ### `Verify` as a URL or a command
 
 Not everything that ships is a website, and forcing a filesystem check into a URL field is how a block starts lying.
