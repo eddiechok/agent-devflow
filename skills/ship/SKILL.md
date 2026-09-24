@@ -2,7 +2,7 @@
 name: ship
 description: "Use after submit, when the pull request is open and you want it finished - merged, deployed, and cleaned up behind it. Merges the PR, runs or watches the deploy, checks the change is really live, then deletes the branch and tidies up the servers, temp files and session. This is the only skill that merges, and only a human can start it."
 argument-hint: "[PR number, or blank for the current branch]"
-allowed-tools: Bash(git status:*), Bash(git rev-parse:*), Bash(git symbolic-ref:*), Bash(gh pr view:*)
+allowed-tools: Bash(git status:*), Bash(git rev-parse:*), Bash(git symbolic-ref:*), Bash(gh pr view:*), ExitWorktree
 disable-model-invocation: true
 ---
 
@@ -430,9 +430,29 @@ git push origin --delete <head branch>
 
 **A refused delete is not a failed merge.** Some environments let you push a ref and refuse to delete one: Claude Code on the web answers `HTTP 403` to the delete while ordinary pushes work all day. Print `✗ **branch** remote delete refused — <head branch> is yours to delete`, and **do not retry it or look for another way round** — a policy denial is something to report, not something to defeat.
 
-Then the local one: switch to the default branch and fast-forward it first, then delete **the PR's head branch, by the name you wrote down in step 1** — not whichever branch you were standing on when you started.
+Then the local one: **the PR's head branch, by the name you wrote down in step 1** — not whichever branch you were standing on when you started. If the folder you are in has it checked out, detach it with `git checkout --detach <default branch ref>` — never `git checkout <default branch>`, which another worktree may hold. After `ExitWorktree`, though, the folder you land in is the one `flow`'s step 0c left alone, because it was on someone else's branch: do not move it at all.
 
-**After a rebase or squash merge, `git branch -d` may warn or refuse.** Confirm the content landed — the default branch moved, and the diff is in it — then delete. Never reach for `-D` to make the warning go away.
+**First the session's own worktree, if `flow` opened one**, because the head branch is usually checked out in it and git refuses to delete a branch that is checked out. Its step 0c enters a worktree on a branch named after it, and `build` cuts the feature branch from there, so that branch should hold nothing. Prove it before deleting: its tip is still the commit it was created from.
+
+```
+git rev-parse <worktree branch>
+git reflog show --format=%H <worktree branch>
+```
+
+The tip equals the last line of the reflog → leave the worktree with `ExitWorktree` and `keep`, run `git worktree remove <path>` — no `--force`, so a dirty tree refuses — then `git branch -D <worktree branch>`. A tip that moved means someone committed there: keep both, and say so on the `cleaned` line.
+
+**After a rebase or squash merge, `git branch -d` refuses the head branch.** Both rewrite the commits, so git cannot see the branch is in. The forge can: ask it which commit it merged, and compare.
+
+```
+gh pr view <n> --json state,headRefOid
+git merge-base --is-ancestor <head branch> <headRefOid>
+```
+
+`MERGED`, and exit 0 — the branch's tip is the PR's `headRefOid`, or behind it because a commit was added on GitHub — → the branch holds nothing the merge did not carry. Delete it with `git branch -D <head branch>`. No local branch by that name → nothing to delete. A non-zero exit — the tip has a commit that was never pushed, or the check could not run — keep it:
+
+```
+✗ **branch** <head branch> kept — it has commits the merge did not carry
+```
 
 If the merge errored halfway, reconcile against the remote rather than assuming either side is right.
 
@@ -491,7 +511,7 @@ the result — for example `✓ **checks** 3 of 3 pass, exit 0`.
 - Never invent a deploy command the project did not give you.
 - Never write a `## Deploy` block for a deploy you did not just run and verify in this turn.
 - Never call a green pipeline a live check. Fetch the URL.
-- Never delete any branch but this PR's head branch. Never stop a server or delete a file this session did not create.
+- Never delete any branch but this PR's head branch and the worktree branch `flow` opened for this session. Never stop a server or delete a file this session did not create.
 - Never report a refused branch delete as a failed merge, and never retry a policy denial.
-- Never force-delete a local branch to silence a warning after a rebase or squash merge.
+- Never force-delete a branch you have not proven empty — the PR's head branch only when its tip is the merged `headRefOid`, the session's worktree branch only when its tip is where it was created.
 - Never report a deploy as working without the output that proves it.

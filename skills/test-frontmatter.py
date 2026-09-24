@@ -1504,6 +1504,64 @@ check("docs/ship: records why a tended branch cannot be rebased",
       f"at the top with nothing to tell them why it was moved")
 
 
+# ------------------------------- ship deletes the branches it can prove are empty
+#
+# Rebase and squash rewrite a branch's commits, so `git branch -d` refuses it
+# even when every line is on the default branch, and step 6 used to forbid `-D`
+# outright. Every squash or rebase merge ended with a local branch the human
+# had to delete by hand -- #40 and #41 both did. The forge knows exactly which
+# commit it merged, so the check can be precise instead of forbidden: a branch
+# whose tip is that commit holds nothing the merge did not carry. The session's
+# own worktree branch is the same shape: flow's step 0c opens it and build cuts
+# the feature branch elsewhere, so a tip still where it was created is empty.
+
+check("ship: reads the merged head commit from the forge",
+      "headRefOid" in ship_text,
+      f"{SHIP_PATH} never asks the forge which commit it merged")
+
+check("ship: force-deletes the head branch only when its tip is that commit",
+      "tip is the PR's `headRefOid`" in flat(ship_text),
+      f"{SHIP_PATH} never ties the forced delete to the merged head commit")
+
+check("ship: a tip behind the merged head is empty too, not kept",
+      "git merge-base --is-ancestor <head branch> <headRefOid>" in ship_text,
+      f"{SHIP_PATH} keeps a branch that is only behind the merged head -- a "
+      f"commit added on GitHub makes it look like unpushed work")
+
+check("ship: removes the session's worktree before its checked-out head branch",
+      "git refuses to delete a branch that is checked out" in flat(ship_text),
+      f"{SHIP_PATH} deletes the head branch while the worktree still has it "
+      f"checked out")
+
+check("ship: never moves the main checkout it returns to after the worktree",
+      "the folder you land in is the one `flow`'s step 0c left alone" in flat(ship_text)
+      and "switch to the default branch and fast-forward it first" not in ship_text,
+      f"{SHIP_PATH} still switches the folder it lands in after ExitWorktree")
+
+check("ship: keeps a head branch that holds commits the merge did not carry",
+      "✗ **branch** <head branch> kept — it has commits the merge did not carry"
+      in ship_text,
+      f"{SHIP_PATH} never prints the kept-branch line")
+
+check("ship: removes the session's worktree and its empty branch",
+      "still the commit it was created from" in flat(ship_text)
+      and "git reflog" in ship_text,
+      f"{SHIP_PATH} never proves the worktree branch empty from its reflog")
+
+check("ship: allowed-tools includes ExitWorktree",
+      "ExitWorktree" in ship_text.split("---")[1],
+      f"{SHIP_PATH} cannot leave the worktree it is about to remove")
+
+check("ship: the Rules list forbids a forced delete it has not proven",
+      "Never force-delete a branch you have not proven" in ship_text
+      and "to silence a warning" not in ship_text,
+      f"{SHIP_PATH}'s Rules still forbid -D outright, or allow it unproven")
+
+check("docs/ship: records why the forced delete is safe",
+      "headRefOid" in docs_ship_text,
+      f"{DOCS_SHIP_PATH} never explains the merged-head check")
+
+
 # ------------------------------------------- one shape for every printed line
 #
 # Before this piece a step's output had no common shape: some printed
