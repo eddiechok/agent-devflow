@@ -115,17 +115,24 @@ GitHub repo, write them in yourself. Never print `$GH_TOKEN`, and send it to
 swaps for the real credential. `curl` has no `--jq`, so read the JSON it returns yourself
 and skip every entry with a `pull_request` key. Read one body from
 `https://api.github.com/repos/<owner>/<repo>/issues/<n>`. To open an issue, build its
-JSON with `json.dumps` and post that:
+JSON with `json.dumps` and post that. Write it to a fresh file — never a fixed path,
+which another session or another user can reach first:
 
 ```
-python3 -c 'import json,sys; print(json.dumps({"title": sys.argv[1], "body": open(sys.argv[2]).read(), "labels": [sys.argv[3]]}))' "<title>" <body file> <label> > /tmp/devflow-issue.json
+mktemp "${TMPDIR:-/tmp}/devflow-issue.XXXXXX"
+```
+
+The path it prints is `<json file>` below:
+
+```
+python3 -c 'import json,sys; print(json.dumps({"title": sys.argv[1], "body": open(sys.argv[2]).read(), "labels": [sys.argv[3]]}))' "<title>" <body file> <label> > <json file>
 ```
 
 ```
-curl -sS --fail-with-body -H "Authorization: token $GH_TOKEN" --data-binary @/tmp/devflow-issue.json https://api.github.com/repos/<owner>/<repo>/issues
+curl -sS --fail-with-body -H "Authorization: token $GH_TOKEN" --data-binary @<json file> https://api.github.com/repos/<owner>/<repo>/issues
 ```
 
-Remove `/tmp/devflow-issue.json` after. A missing label is a POST of
+Remove `<json file>` after. A missing label is a POST of
 `{"name": ..., "color": ...}` to `https://api.github.com/repos/<owner>/<repo>/labels`.
 Only when `curl` fails too does the work fall back to a file.
 
@@ -450,13 +457,21 @@ both.
 gh label create devflow:backlog --description "A devflow parked feature" --color 5319E7
 ```
 
+Write each body to a fresh file outside the repo — never a fixed path, which another
+session or another user can reach first:
+
 ```
-gh api repos/{owner}/{repo}/issues -f title="<feature>" -F body=@/tmp/devflow-backlog.md -f 'labels[]=devflow:backlog' --jq .number
+mktemp "${TMPDIR:-/tmp}/devflow-backlog.XXXXXX"
 ```
 
-Write the body to that temp path, outside the repo — the feature's own text, plus one
-line `Parked from: <the feature this run built>`, never the whole original request — and
-remove it after each issue is filed.
+The path it prints is `<body file>` below. The body is the feature's own text, plus one
+line `Parked from: <the feature this run built>`, never the whole original request.
+
+```
+gh api repos/{owner}/{repo}/issues -f title="<feature>" -F body=@<body file> -f 'labels[]=devflow:backlog' --jq .number
+```
+
+Remove it after each issue is filed.
 
 **No block, `local`, or a `gh` failure:** write a file instead, one per parked feature, at
 `.devflow/backlog/<short-name>.md`. Never park under a name a `Backlog:` line already holds
@@ -679,12 +694,20 @@ Write it where the project keeps plans. Look for a `## Plans` block in `CLAUDE.m
 
 **`github` means an issue.** First list the open ones, with the same `gh api` call step 0b uses — or the `curl` form in step 0b with no `gh` — and if one already matches this work, **that is the plan**: a session was cleared after planning and before the first commit, which is the one case step 0b cannot see. Resume it, and do not open a second. Otherwise open one with the label `devflow:plan`, the plan name as the title, and the plan below as the body:
 
+Write the body to a fresh file outside the repo — never a fixed path, which another
+session or another user can reach first:
+
 ```
-gh api repos/{owner}/{repo}/issues -f title="<what this is>" -F body=@/tmp/devflow-plan.md -f 'labels[]=devflow:plan' --jq .number
+mktemp "${TMPDIR:-/tmp}/devflow-plan.XXXXXX"
 ```
 
-Write the body to that temp path, outside the repo, and remove it after. **Never under
-`.devflow/plans/`** — on a `github` project that file is what the issue replaces, and a
+The path it prints is `<body file>` below. Remove it after.
+
+```
+gh api repos/{owner}/{repo}/issues -f title="<what this is>" -F body=@<body file> -f 'labels[]=devflow:plan' --jq .number
+```
+
+**Never under `.devflow/plans/`** — on a `github` project that file is what the issue replaces, and a
 file left there makes the next step 0b find two plans for one job.
 
 Then print one line, exactly once, so the number is in the transcript:
