@@ -490,10 +490,9 @@ BACKLOG_ISSUE_CMD = (
 
 check("flow: step 1b files a devflow:backlog issue per parked feature",
       BACKLOG_ISSUE_CMD in flow_text
-      and "-F body=@/tmp/devflow-backlog.md" in flow_text
-      and "-f 'labels[]=devflow:backlog'" in flow_text,
+      and "-F body=@<body file> -f 'labels[]=devflow:backlog'" in flow_text,
       f"{FLOW_PATH} never runs 'gh api repos/{{owner}}/{{repo}}/issues "
-      f"-f title=... -F body=@/tmp/devflow-backlog.md "
+      f"-f title=... -F body=@<body file> "
       f"-f 'labels[]=devflow:backlog'', the REST form")
 
 check("flow: step 1b writes a backlog file with the parked-from line",
@@ -2154,10 +2153,9 @@ for slug, text in (("flow", flow_text), ("review", review_skill_text),
           f"cloud session's proxy refuses")
 
 check("flow: step 4 opens the plan issue through REST",
-      "-F body=@/tmp/devflow-plan.md" in flow_text
-      and "-f 'labels[]=devflow:plan'" in flow_text,
+      "-F body=@<body file> -f 'labels[]=devflow:plan'" in flow_text,
       f"{FLOW_PATH} never opens the plan issue with gh api and "
-      f"-F body=@/tmp/devflow-plan.md -f 'labels[]=devflow:plan'")
+      f"-F body=@<body file> -f 'labels[]=devflow:plan'")
 
 for slug, text in (("flow", flow_text), ("review", review_skill_text)):
     check(f"{slug}: says what to do when gh cannot fill {{owner}}/{{repo}}",
@@ -2258,7 +2256,7 @@ check("flow: the curl fallback reads owner and repo from the remote",
 
 check("flow: the curl fallback builds the issue as JSON, not by hand",
       "json.dumps" in flow_text
-      and "--data-binary @/tmp/devflow-issue.json" in flow_text,
+      and "--data-binary @<json file>" in flow_text,
       f"{FLOW_PATH} never builds the POST body with json.dumps")
 
 check("flow: every issue call points at the curl form",
@@ -2499,6 +2497,21 @@ check("submit: makes the PR body file with mktemp",
       and "/tmp/devflow-pr.md" not in submit_text,
       f"{SUBMIT_PATH} writes the PR body to a fixed path another session "
       f"or user can reach first")
+
+# The same for flow's issue bodies: the plan, each parked feature, and the
+# JSON the curl fallback posts. Each file is made fresh with mktemp, and no
+# skill that files an issue names a fixed /tmp/devflow- path.
+for kind in ("plan", "backlog", "issue"):
+    check(f"flow: makes the {kind} file with mktemp",
+          f'mktemp "${{TMPDIR:-/tmp}}/devflow-{kind}.XXXXXX"' in flow_text,
+          f"{FLOW_PATH} writes the {kind} file to a fixed path another "
+          f"session or user can reach first")
+
+for slug, text in (("flow", flow_text), ("review", review_skill_text),
+                   ("setup", setup_text), ("submit", submit_text)):
+    check(f"{slug}: names no fixed /tmp/devflow- path",
+          re.search(r"/tmp/devflow-[\w-]+\.(md|json)", text) is None,
+          f"{slug}/SKILL.md still writes to a fixed /tmp path")
 
 for cmd in (SUBMIT_OPEN, SUBMIT_UPDATE):
     check(f"submit: step 8 runs {cmd!r}",
