@@ -25,13 +25,19 @@ warning into an error.
 There is no typecheck: nothing here is a typed language.
 
 ## Deploy
-- Deploy: claude plugin update devflow@eddiechok-devflow --scope local
-- Verify: test -d "$HOME/.claude/plugins/cache/eddiechok-devflow/devflow/$(git rev-parse --short=12 HEAD)"
+- Deploy: cd "$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")" && claude plugin update devflow@eddiechok-devflow --scope local
+- Verify: python3 -c 'import json,os,sys; d=json.load(open(os.path.expanduser("~/.claude/plugins/installed_plugins.json"))); sys.exit(0 if any(e.get("projectPath")==sys.argv[1] and e.get("gitCommitSha")==sys.argv[2] for e in d["plugins"]["devflow@eddiechok-devflow"]) else 1)' "$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")" "$(git rev-parse origin/main)"
 - Wait: 10s
 
 A merge to `main` changes nothing a session sees. The plugin is installed at
-local scope from this checkout, and the update copies the checkout into a cache
+local scope from the main checkout, and the update copies it into a cache
 directory named after the commit. Restart the session after it.
+
+A local-scope install is one entry per folder, keyed to the folder the update
+runs in. Run from a worktree, the update changes only that worktree's entry and
+still says it updated, so the Deploy line goes to the main checkout first.
+Verify reads the main checkout's entry for the merged commit. The cache
+directory is no proof: it exists as soon as any folder updates.
 
 ## Plans
 - Tracker: github
