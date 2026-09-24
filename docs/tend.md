@@ -35,6 +35,27 @@ it is standing on**. Skip the checkout and every one of those answers is about t
 request — the fix lands on a PR nobody reported, and the one you were called about is still
 red.
 
+### Whose folder it is
+
+`git switch` moves the whole folder, exactly as `flow`'s `checkout -b` does. A second
+session open on the same checkout finds its branch changed underneath it, and nothing
+tells it. `flow` has step 0c for that; `tend` had nothing, and the `ship` handoff made it
+reachable from a command that does not sound like it moves anything. Before it, a human
+typed `/devflow:tend` and could expect the folder to move. Now `/devflow:ship` moves it.
+Found by running that handoff for real on PR #32, 23 Sep 2026.
+
+So `tend` copies `flow` step 0c's mechanism: a linked worktree is one session's by
+construction, and a folder on the default branch is parked where nobody works. Both are
+free to switch. Any other folder is on somebody's branch, so `tend` takes a checkout of
+its own through **EnterWorktree** and switches inside it. It copies the mechanism, not
+the conclusion. `flow` asks whether it may cut a branch here; `tend` asks whether it may
+leave the branch this folder is on. A folder already on the PR's head branch moves nowhere
+and is not asked about at all.
+
+When the worktree cannot happen, `tend` stops rather than switching anyway. From `ship`,
+that stop reads back as a conflict still there, and `ship` stops on it too, which is right:
+the human decides whose folder it is.
+
 ### No GitHub access at all
 
 Everything this skill does starts with reading what the PR reports, and a fix aimed at a failure you never read is a guess.

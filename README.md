@@ -237,7 +237,7 @@ Phase 1 is the smallest useful thing. These stay out on purpose:
 - A standalone `plan` skill. You cannot revise a plan once written.
 - `debug`, a bug-fixing loop. Bugs go through `build` for now.
 - Model routing by size. A skill cannot change its own model.
-- Cleanup of folder copies. The worktrees `flow` cuts for a Deep job's chains are removed when they merge. The one step 0c takes for the session itself is not: it holds your branch, and the harness asks you to keep or remove it when the session ends.
+- Cleanup of folder copies. The worktrees `flow` cuts for a Deep job's chains are removed when they merge. The one `flow` step 0c or `tend` takes for the session itself holds your branch, so it stays until `ship` merges that branch. `ship` then removes it only when it holds nothing: no uncommitted files, no commits of its own. Otherwise it stays, and `ship`'s `cleaned` line says so. If `ship` never runs, the harness asks you to keep or remove it when the session ends.
 - Capturing lessons.
 
 Add each one when two weeks of real use shows you need it. Not before.

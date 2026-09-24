@@ -448,9 +448,9 @@ git push origin --delete <head branch>
 
 **A refused delete is not a failed merge.** Some environments let you push a ref and refuse to delete one: Claude Code on the web answers `HTTP 403` to the delete while ordinary pushes work all day. Print `✗ **branch** remote delete refused — <head branch> is yours to delete`, and **do not retry it or look for another way round** — a policy denial is something to report, not something to defeat.
 
-Then the local one: **the PR's head branch, by the name you wrote down in step 1** — not whichever branch you were standing on when you started. If the folder you are in has it checked out, detach it with `git checkout --detach <default branch ref>` — never `git checkout <default branch>`, which another worktree may hold. After `ExitWorktree`, though, the folder you land in is the one `flow`'s step 0c left alone, because it was on someone else's branch: do not move it at all.
+Then the local one: **the PR's head branch, by the name you wrote down in step 1** — not whichever branch you were standing on when you started. If the folder you are in has it checked out, detach it with `git checkout --detach <default branch ref>` — never `git checkout <default branch>`, which another worktree may hold. After `ExitWorktree`, though, the folder you land in is the one `flow`'s step 0c or `tend`'s step 1 left alone, because it was on someone else's branch: do not move it at all.
 
-**First the session's own worktree, if `flow` opened one**, because the head branch is usually checked out in it and git refuses to delete a branch that is checked out. Its step 0c enters a worktree on a branch named after it, and `build` cuts the feature branch from there, so that branch should hold nothing. Prove it before deleting: its tip is still the commit it was created from.
+**First the session's own worktree, if `flow` or `tend` opened one**, because the head branch is usually checked out in it and git refuses to delete a branch that is checked out. `flow`'s step 0c and `tend`'s step 1 enter a worktree on a branch named after it, then `build` cuts the feature branch from there or `tend` switches to the PR's, so that branch should hold nothing. Prove it before deleting: its tip is still the commit it was created from.
 
 ```
 git rev-parse <worktree branch>
@@ -529,7 +529,7 @@ the result — for example `✓ **checks** 3 of 3 pass, exit 0`.
 - Never invent a deploy command the project did not give you.
 - Never write a `## Deploy` block for a deploy you did not just run and verify in this turn.
 - Never call a green pipeline a live check. Fetch the URL.
-- Never delete any branch but this PR's head branch and the worktree branch `flow` opened for this session. Never stop a server or delete a file this session did not create.
+- Never delete any branch but this PR's head branch and the worktree branch `flow` or `tend` opened for this session. Never stop a server or delete a file this session did not create.
 - Never report a refused branch delete as a failed merge, and never retry a policy denial.
 - Never force-delete a branch you have not proven empty — the PR's head branch only when its tip is the merged `headRefOid`, the session's worktree branch only when its tip is where it was created.
 - Never report a deploy as working without the output that proves it.
