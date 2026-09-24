@@ -75,7 +75,7 @@ An honest failure is useful. A green-looking PR over a broken feature is harmful
 
 ## Step 5 — the review
 
-It pins the range, finds the plan or issue if there is one, and runs both axes in fresh agents.
+It pins the range, finds the plan or issue if there is one, and runs both axes in fresh agents, plus `security-reviewer` when the danger list names a security item.
 
 On work with no plan and no issue, that text is the spec the second axis reads, and without it that axis does not run.
 

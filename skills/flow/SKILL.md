@@ -491,14 +491,14 @@ sized against a request that still names more than one thing.
 
 ### The danger list — always at least Standard
 
-If the work touches any of these, use **at least Standard**, ask the human, and say plainly that the review will include `security-reviewer`:
+If the work touches any of these, use **at least Standard** and ask the human. The first five are security items: when one matched, say plainly that the review will include `security-reviewer`:
 
 - login, permissions, sessions, or anything auth
 - passwords, API keys, tokens, secrets
 - payments or billing
-- database schema or data migrations
 - a public API or wire format other people depend on
 - CI/CD configuration
+- database schema or data migrations
 - deleting or weakening existing tests
 - anything the change cannot be reverted out of
 

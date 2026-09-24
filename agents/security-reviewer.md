@@ -34,10 +34,10 @@ Report a finding only if you can build a concrete exploit case: who, what input,
 ## Categories
 
 - **Input validation** — injection into SQL, shell commands, XML, templates, NoSQL queries, file paths.
-- **Auth & authorization** — bypassed checks, privilege escalation, broken session or token handling, an authorization check that can be skipped.
+- **Auth & authorization** — reading or changing data that is not the caller's, bypassed checks, privilege escalation, broken session or token handling, an authorization check that can be skipped.
 - **Crypto & secrets** — hardcoded keys, passwords or tokens; weak algorithms; bad key storage; broken randomness; skipped certificate validation.
 - **Injection & code execution** — unsafe deserialization, pickle or YAML load of untrusted data, eval of untrusted input, XSS (reflected, stored, DOM-based).
-- **Data exposure** — secrets or PII logged or stored, an API returning more than it should, debug output left reachable.
+- **Data exposure** — secrets, stack traces or PII in an error or response sent to the client; secrets or PII logged or stored; an API returning more than it should, debug output left reachable.
 
 ## Never report
 
@@ -46,6 +46,8 @@ Report a finding only if you can build a concrete exploit case: who, what input,
 - A missing hardening measure with no concrete exploit attached to it.
 - Outdated third-party dependencies, or a memory-safety bug in a memory-safe language.
 - Test-only files, markdown or docs files, log spoofing, an SSRF that controls only a path, regex injection, regex denial of service, or a missing audit log.
+- A race condition or timing attack that is theoretical, a resource or file-descriptor leak, or user content placed in an AI prompt.
+- A GitHub Actions workflow or a notebook, unless untrusted input has a concrete, named path to reach it.
 - Anything a linter, typechecker or test already catches, or that predates this branch.
 
 ## Precedents
@@ -54,7 +56,8 @@ Report a finding only if you can build a concrete exploit case: who, what input,
 - UUIDs are unguessable and need no extra validation.
 - React and Angular escape by default. No finding unless `dangerouslySetInnerHTML` or an equivalent unsafe escape hatch is actually used.
 - Client-side code skipping an auth or permission check is not a finding on its own — the server is where that check has to live; look there instead.
-- Logging a URL is safe. Logging a secret or credential in plaintext is not.
+- Logging a URL is safe, and so is logging non-PII data, however sensitive. Logging a secret, a credential or PII in plaintext is not.
+- Open redirects, tabnabbing, XS-leaks and prototype pollution only when the exploit is certain.
 - Command injection in a shell script only counts with a concrete, named path for untrusted input to reach it.
 
 ## What to return

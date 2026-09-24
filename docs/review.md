@@ -75,7 +75,7 @@ branch.
 
 Fresh context is the whole point.
 
-#### Then challenge the first axis
+#### Then challenge the first axis, and the security axis
 
 This is the one place in the plugin where the expensive step is skipped by default, and it
 is safe because it is skipped exactly when there is no work for it.

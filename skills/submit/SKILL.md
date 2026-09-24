@@ -138,6 +138,8 @@ Then act on what comes back:
 
 - **Blocking**, **Exploitable**, **Missing** and **Built wrong** — fix, then review again. At most **2 rounds**. `Exploitable` is `security-reviewer`'s own bar, and it is fixed on the same footing as `Blocking`, not weighed as a lesser finding.
 - **Round 2 is scoped, not a fresh review.** It goes to the axis agent directly — `devflow:reviewer` for its own findings, `devflow:security-reviewer` for its own, or `devflow:spec-reviewer` for its own — with the fixed point, round 1's findings in the agent's own words, and the files changed since.
+- **The last read decides the security pass, not the first.** Before the commit, read the whole diff once more against the five security items — auth and permissions, secrets and keys, payments, public API or wire format, CI/CD config. It is a list to check, not a review. If one is touched and `security-reviewer` has not read the lines that touch it — it never ran, or they arrived after it did — start it on those lines, scoped like a round 2. A fix is the likeliest place for a permission check to arrive.
+- **One bug, one fix.** When `reviewer` and `security-reviewer` name the same line for the same flaw, it is one finding: fix it once and list it once.
 - **Nobody asked for this** — either take it out, or keep it and say why in the PR under **Assumptions**. Silently keeping it is not an option.
 - Anything still standing after 2 rounds goes in the PR under **Known issues**, not hidden and not looped on forever.
 - **The last review must postdate the last edit.** A fix you make after the last round is an edit nobody has read, and so is a doc fix at step 6. Both get one short look at step 7, before the commit. It is a look, not a round.
@@ -190,7 +192,7 @@ And say so when nothing was, in those words, rather than going quiet:
 
 **If any file changed since step 2's run, run the checks again first.** Same rule as step 2: the checks must postdate the last edit. Bare, one per call, output on screen.
 
-**If any file changed since the last review that read it, one short look first.** Round 2 counts as a read of the lines it was scoped to. `devflow:reviewer` only, scoped to the lines that changed, a **200 word ceiling**, and no `hardcase`.
+**If any file changed since the last review that read it, one short look first.** Round 2 counts as a read of the lines it was scoped to. `devflow:reviewer` only, scoped to the lines that changed, a **200 word ceiling**, and no `hardcase`. Then step 5's last security read, before the commit.
 
 **If the look finds something new, it gets at most one bounded fix.** Two conditions, and both have to hold:
 

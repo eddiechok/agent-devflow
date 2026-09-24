@@ -1,13 +1,13 @@
 ---
 name: review
-description: "Use when a branch needs reviewing before it becomes a pull request, or when you want a read on work you did not write. Reviews everything between a fixed point and now along two axes, kept apart on purpose - is it built right, and is it the right thing. Each axis runs in a fresh agent that never sees this session's reasoning. Called by submit at step 5, and safe to start yourself on any branch."
+description: "Use when a branch needs reviewing before it becomes a pull request, or when you want a read on work you did not write. Reviews everything between a fixed point and now along two axes, kept apart on purpose - is it built right, and is it the right thing - and, when the danger list names a security item, can it be attacked. Each axis runs in a fresh agent that never sees this session's reasoning. Called by submit at step 5, and safe to start yourself on any branch."
 argument-hint: "[fixed point - a branch, tag or SHA. Defaults to the branch point] [request: the words the human typed, for step 2] [no-behaviour: build's reason, on its own line]"
 allowed-tools: Bash(git rev-parse:*), Bash(git merge-base:*), Bash(git diff:*), Bash(git log:*), Bash(git status:*), Bash(git symbolic-ref:*), Bash(gh issue view:*)
 ---
 
 # review
 
-Two axes, two fresh agents, no blending.
+Two axes, a security pass when the danger list calls for one, fresh agents, no blending.
 
 Why these rules are what they are: [docs/review.md](../../docs/review.md). Read it only if a
 rule looks wrong.
@@ -109,10 +109,10 @@ decides.
 
 Some sessions forbid starting an agent unless the human asked for one, in the system prompt. Look at your own instructions: if something there says not to spawn an agent unless asked, this section applies, and otherwise it does not. Where it applies, neither axis can start on its own.
 
-Do not skip it quietly, and do not review the code yourself instead — this session wrote it, which is the thing the two agents exist to avoid. Say it in one line and ask:
+Do not skip it quietly, and do not review the code yourself instead — this session wrote it, which is the thing the review agents exist to avoid. Say it in one line and ask:
 
 ```
-This harness only starts agents when you ask. Say "run the review" and both axes go.
+This harness only starts agents when you ask. Say "run the review" and every axis goes.
 ```
 
 If that answer does not come, the axis **did not run**. Print `– **review** agents not permitted — axis NOT RUN`, report it as `NOT RUN` in step 4 with the reason, and let `submit` carry it into the PR.

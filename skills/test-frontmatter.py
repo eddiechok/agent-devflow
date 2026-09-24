@@ -1966,10 +1966,47 @@ for slug in HUMAN_FACING_SKILLS:
           f"{slug}/SKILL.md still names /security-review")
 
 check("flow: the danger list line says review will include security-reviewer",
-      "say plainly that the review will include `security-reviewer`"
+      "The first five are security items: when one matched, say plainly that "
+      "the review will include `security-reviewer`"
       in flat(flow_text),
       f"{FLOW_PATH} never pins that line -- the danger list still reads as "
       f"a human's job")
+
+# ------------------------------------------ what round 1 of the review missed
+#
+# Round 1 of this branch's own review found four gaps: flow promised the
+# security pass on all eight danger-list items when only five start it; the
+# decision was made once, so a fix that added an auth check after round 1
+# shipped with no security pass; nothing said a bug both agents report is one
+# finding; and two of the request's own examples were not named in the
+# checklist.
+
+check("flow: the five security items come first in the danger list",
+      flow_text.index("- CI/CD configuration")
+      < flow_text.index("- database schema or data migrations"),
+      f"{FLOW_PATH} lists migrations among the first five, which it calls the "
+      f"security items")
+
+check("submit: a later reviewer report can still start security-reviewer",
+      "The last read decides the security pass, not the first" in submit_text,
+      f"{SUBMIT_PATH} decides the security pass once, from round 1 only")
+
+check("submit: a bug both agents report is fixed once",
+      "One bug, one fix" in submit_text,
+      f"{SUBMIT_PATH} never says a finding both agents report is one finding")
+
+check("agents/security-reviewer: names data that is not the caller's",
+      "data that is not the caller's" in security_reviewer_text,
+      f"{SECURITY_REVIEWER_PATH} never names access to another user's data")
+
+check("agents/security-reviewer: names secrets leaking to the client",
+      "sent to the client" in security_reviewer_text,
+      f"{SECURITY_REVIEWER_PATH} never names secrets leaking in an error or "
+      f"response sent to the client")
+
+check("review: its description names the security pass",
+      "can it be attacked" in human_facing_text["review"].split("---")[1],
+      "review/SKILL.md's description still describes two axes only")
 
 # --------------------------------------------------------------------- report
 
