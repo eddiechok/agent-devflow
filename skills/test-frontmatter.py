@@ -2314,6 +2314,21 @@ check("submit: looks for an existing backlog item before parking",
       f"{SUBMIT_PATH} only guards against a second filing through the PR "
       f"body, which a blocked step 8 never wrote")
 
+# The review after merging main: the issue body used a fixed /tmp path, which
+# main had just taken off the PR body for the same reason, and the lookup read
+# only the first 30 backlog issues, so an older one parked from another branch
+# was never matched.
+
+check("submit: makes the backlog issue body with mktemp",
+      'mktemp "${TMPDIR:-/tmp}/devflow-backlog.XXXXXX"' in submit_text
+      and "/tmp/devflow-backlog.md" not in submit_text,
+      f"{SUBMIT_PATH} still writes the backlog issue body to a fixed path")
+
+check("submit: reads every page of the backlog issues",
+      "gh api --paginate 'repos/{owner}/{repo}/issues?labels=devflow:backlog"
+      in submit_text,
+      f"{SUBMIT_PATH} lists only the first page of devflow:backlog issues")
+
 check("submit: prints a parked line",
       "✓ **parked** #" in submit_text,
       f"{SUBMIT_PATH} never prints what it parked")

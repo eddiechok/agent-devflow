@@ -228,8 +228,10 @@ A fix made here is the one edit on the branch no agent has read. Name it in the 
 **Never park the same bug twice.** An earlier run on this branch may have parked it and then stopped before a PR body could link it. So first list what is already parked — the open issues, through the `curl` form in `flow` step 0b when there is no `gh`, and the files under `.devflow/backlog/`:
 
 ```
-gh api 'repos/{owner}/{repo}/issues?labels=devflow:backlog&state=open' --jq '.[] | select(.pull_request | not) | {number, title, body}'
+gh api --paginate 'repos/{owner}/{repo}/issues?labels=devflow:backlog&state=open' --jq '.[] | select(.pull_request | not) | {number, title, body}'
 ```
+
+Read every page: a bug parked from another branch is likely an old one. With `curl`, add `&per_page=100&page=<n>` and read until a page comes back short.
 
 One whose body names this bug is already its link, whichever branch its `Found on:` line names — most likely `Found on: <this branch>`, but a bug that was already there may have been parked from another. Use it, and file nothing.
 
@@ -240,10 +242,16 @@ gh label create devflow:backlog --description "A devflow parked feature" --color
 ```
 
 ```
-gh api repos/{owner}/{repo}/issues -f title="<the bug>" -F body=@/tmp/devflow-backlog.md -f 'labels[]=devflow:backlog' --jq .number
+gh api repos/{owner}/{repo}/issues -f title="<the bug>" -F body=@<body file> -f 'labels[]=devflow:backlog' --jq .number
 ```
 
-Write the body to that temp path, outside the repo — what is wrong, where, and the fix if you know it, plus one line `Found on: <this branch>` — and remove it after each issue is filed.
+Write each body to a fresh file outside the repo — never a fixed path, which another session can reach first:
+
+```
+mktemp "${TMPDIR:-/tmp}/devflow-backlog.XXXXXX"
+```
+
+The path it prints is `<body file>`. The body says what is wrong, where, and the fix if you know it, plus one line `Found on: <this branch>`. Remove the file after its issue is filed.
 
 **No block, `local`, or a `gh` failure:** write `.devflow/backlog/<short-name>.md` instead, the same shape, under a name `flow` step 1b's name check allows. It is committed with the rest of the branch.
 
