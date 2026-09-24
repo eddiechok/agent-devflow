@@ -126,10 +126,10 @@ expect(add(a, b)).toBe(a + b);
 
 Run the test. **Show the output.**
 
-Then check the failure is the *right* failure. A test that fails because of a typo in the import, or because the file does not exist, has proven nothing. Once it is, print:
+Then check the failure is the *right* failure. A test that fails because of a typo in the import, or because the file does not exist, has proven nothing. Once it is, print what fails and why:
 
 ```
-✓ **red** fails for the right reason
+✓ **red** 22 new pins fail — the lines are not in the skills yet
 ```
 
 If it passes immediately, the test is wrong. Fix the test before writing any code.
@@ -140,10 +140,10 @@ Write the smallest code that makes the test pass. Not the general version. Not t
 
 ### 4. Verify GREEN — watch it pass
 
-Run the test again. **Show the output.** Then run typecheck, and print:
+Run the test again. **Show the output.** Then run typecheck, and print what passed — the tests only; the lint is `submit`'s `checks` line:
 
 ```
-✓ **green** 1 passed, exit 0
+✓ **green** 22 new pins pass, 271 in all, exit 0
 ```
 
 ### 5. Refactor — only now

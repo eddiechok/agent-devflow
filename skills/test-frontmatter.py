@@ -824,9 +824,9 @@ check("docs/submit: says why the look gets one fix, citing #23, #25 and #26",
 # them, once, in one block, at the very end, right before the PR's link.
 
 SUBMIT_RECAP_LINE = (
-    "Before the PR link, repeat every shaped line this run printed — from "
-    "the first, `flow`'s or `build`'s when they ran before you, through this "
-    "one — in the order they were printed"
+    "Before the PR link, repeat the lines this run printed — from the first, "
+    "`flow`'s or `build`'s when they ran before you, through this one — in "
+    "the order they were printed"
 )
 
 check("submit: step 9 prints a recap of the run's step lines before the PR link",
@@ -1031,7 +1031,8 @@ check("flat self-test: still misses a phrase that is not there",
 # two apart, the session itself included on a second pass. (Step 1 used to be
 # silent too, before this piece, and was not the same case: a branch that is
 # already correct has nothing to report, where step 6 always has either files
-# or a clean look. Step 1 now prints regardless, for the same reason.)
+# or a clean look. Step 1 now prints unless `build` already put a branch
+# line on screen this run, for the same reason.)
 #
 # It went wrong exactly that way on 22 Sep 2026: a follow-up pass on PR #31
 # changed how `flow`'s step 0c behaves and updated none of `docs/flow.md`,
@@ -1548,15 +1549,16 @@ for slug, text in human_facing_text.items():
 BUILD_PATH = os.path.join(SKILLS_DIR, "build", "SKILL.md")
 build_text = human_facing_text["build"]
 
+BUILD_RED_LINE = "✓ **red** 22 new pins fail — the lines are not in the skills yet"
+BUILD_GREEN_LINE = "✓ **green** 22 new pins pass, 271 in all, exit 0"
+
 check("build: verify-RED prints its own red label",
-      "✓ **red** fails for the right reason" in build_text,
-      f"{BUILD_PATH} never prints '✓ **red** fails for the right reason' "
-      f"after verify-RED")
+      BUILD_RED_LINE in build_text,
+      f"{BUILD_PATH} never prints {BUILD_RED_LINE!r} after verify-RED")
 
 check("build: verify-GREEN prints its own green label",
-      "✓ **green** 1 passed, exit 0" in build_text,
-      f"{BUILD_PATH} never prints '✓ **green** 1 passed, exit 0' after "
-      f"verify-GREEN")
+      BUILD_GREEN_LINE in build_text,
+      f"{BUILD_PATH} never prints {BUILD_GREEN_LINE!r} after verify-GREEN")
 
 check("build: no longer marks the expected-to-fail RED gate as a failure",
       "✗ **test** red" not in build_text,
@@ -1690,6 +1692,56 @@ for slug, text in human_facing_text.items():
           f"characters: {too_long}")
 
 
+# ---------------------------------- a line says what happened, not which step
+#
+# `✓ **red** fails for the right reason` read the rule back to the human and
+# told them nothing about this run; so did `✓ **checks** build's run stands`
+# and `✓ **review** both axes ran`. Each now leads with the result. And the
+# recap, which repeated all ~32 lines of a run, now leaves out the routine
+# ones whose result is the same on almost every run, so what is left is news.
+
+check("build: the red line no longer reads the rule back",
+      "✓ **red** fails for the right reason" not in build_text,
+      f"{BUILD_PATH} still prints '✓ **red** fails for the right reason'")
+
+check("build: the green line carries the tests only, not the lint",
+      "lint" in flat(build_text).split(BUILD_GREEN_LINE)[0][-200:],
+      f"{BUILD_PATH} never says, just above the green line, that the lint is "
+      f"not part of it")
+
+SUBMIT_CHECKS_STAND = "✓ **checks** <n> of <n> pass, exit 0 — build's run, no edit since"
+check("submit: the checks-stand line leads with the result",
+      SUBMIT_CHECKS_STAND in submit_text
+      and "build's run stands, no edit since" not in submit_text,
+      f"{SUBMIT_PATH} never prints {SUBMIT_CHECKS_STAND!r}")
+
+SUBMIT_REVIEW_LINE = (
+    "✓ **review** 2 found, 2 fixed — a loose test scanner, a stop line with no mark"
+)
+check("submit: the review line names what was found",
+      SUBMIT_REVIEW_LINE in submit_text
+      and "✓ **review** both axes ran" not in submit_text,
+      f"{SUBMIT_PATH} never prints {SUBMIT_REVIEW_LINE!r}")
+
+check("submit: prints no second branch line after build's",
+      "unless `build` printed one this run" in flat(submit_text),
+      f"{SUBMIT_PATH} prints '✓ **branch**' again after build already did")
+
+SUBMIT_RECAP_ROUTINE = [
+    "`– **pr** none found`", "`✓ **branch**`", "a green `✓ **checks**`",
+    "`✓ **debug** none found`", "`– **look** nothing changed`",
+    "`✓ **handback**`",
+]
+check("submit: the recap leaves out the routine lines",
+      all(item in submit_text for item in SUBMIT_RECAP_ROUTINE),
+      f"{SUBMIT_PATH} never names every routine line the recap leaves out: "
+      f"{SUBMIT_RECAP_ROUTINE}")
+
+check("submit: the recap keeps every ✗ and → line",
+      "Every `✗` and `→` line stays" in submit_text,
+      f"{SUBMIT_PATH} never says the recap keeps every ✗ and → line")
+
+
 # ------------------------------------------- cross-check against a real parser
 
 try:
@@ -1757,3 +1809,4 @@ for name, value, should_object in SAMPLES:
 
 print(f"\n{passed} passed, {failed} failed")
 sys.exit(1 if failed else 0)
+
