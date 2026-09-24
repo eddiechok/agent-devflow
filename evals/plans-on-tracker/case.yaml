@@ -37,7 +37,7 @@ graders:
   - type: tool_used
     name: opens-a-plan-issue
     tool: Bash
-    input_match: "gh issue create --label devflow:plan"
+    input_match: "labels[]=devflow:plan"
     min: 1
     weight: 3
 

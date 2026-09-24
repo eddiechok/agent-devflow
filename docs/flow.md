@@ -119,7 +119,7 @@ No block, or `local`, means the file. Then:
 - `submit` adds `Closes #45`. The plan closes when the work merges.
 - `build` never reads the tracker. `flow` hands it the piece.
 
-Two costs, and `setup` says both out loud. The web sandbox has no `gh`, so a run there falls back to a file and says so. And anyone who can edit the issue can edit the plan. A plan is an order to `build`.
+Two costs, and `setup` says both out loud. A cloud session does not have `gh` until its setup script installs it, and without it a run there falls back to a file and says so. And anyone who can edit the issue can edit the plan. A plan is an order to `build`.
 
 Local and GitHub only. A Linear or Jira ticket is still pasted in as the request.
 

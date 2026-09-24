@@ -2,7 +2,7 @@
 name: review
 description: "Use when a branch needs reviewing before it becomes a pull request, or when you want a read on work you did not write. Reviews everything between a fixed point and now along two axes, kept apart on purpose - is it built right, and is it the right thing - and, when the danger list names a security item, can it be attacked. Each axis runs in a fresh agent that never sees this session's reasoning. Called by submit at step 5, and safe to start yourself on any branch."
 argument-hint: "[fixed point - a branch, tag or SHA. Defaults to the branch point] [request: the words the human typed, for step 2] [no-behaviour: build's reason, on its own line]"
-allowed-tools: Bash(git rev-parse:*), Bash(git merge-base:*), Bash(git diff:*), Bash(git log:*), Bash(git status:*), Bash(git symbolic-ref:*), Bash(gh issue view:*)
+allowed-tools: Bash(git rev-parse:*), Bash(git merge-base:*), Bash(git diff:*), Bash(git log:*), Bash(git status:*), Bash(git symbolic-ref:*)
 ---
 
 # review
@@ -46,9 +46,9 @@ If both come back empty, stop. There is no review to run:
 
 In this order, first hit wins:
 
-0. **A plan issue** — only if the project's `CLAUDE.md` has a `## Plans` block saying `github`. List them: `gh issue list --label devflow:plan --state open --json number,title`, or whatever GitHub access this environment has. Pick the one whose subject is this work and read its body; it has the shape of a plan file. If `gh` cannot answer, say so and go on to the file — the same job may have fallen back to one.
+0. **A plan issue** — only if the project's `CLAUDE.md` has a `## Plans` block saying `github`. List them: `gh api 'repos/{owner}/{repo}/issues?labels=devflow:plan&state=open' --jq '.[] | select(.pull_request | not) | {number, title}'`, or whatever GitHub access this environment has. If `gh` cannot fill `{owner}/{repo}` from the git remote, write the owner and repo in yourself. Pick the one whose subject is this work and read its body — `gh api repos/{owner}/{repo}/issues/<n> --jq .body` — it has the shape of a plan file. If `gh` cannot answer, say so and go on to the file — the same job may have fallen back to one.
 1. **A plan file** — **list `.devflow/plans/`** and pick the one whose subject is this work. Deep work writes one. Do not match the filename against the branch name. If several are plausible, name them and ask.
-2. **An issue** — a reference in the branch name or the commits since the fixed point, like `Closes #45`. Read it with `gh issue view`, or whatever GitHub access this environment has. If you cannot open it, say so and go on to the next item.
+2. **An issue** — a reference in the branch name or the commits since the fixed point, like `Closes #45`. Read it with `gh api repos/{owner}/{repo}/issues/<n> --jq .body`, or whatever GitHub access this environment has. If you cannot open it, say so and go on to the next item.
 3. **The request itself** — the text after `request:` in `$ARGUMENTS`, if any. Pass it to `spec-reviewer` as pasted contents, and say in the report that the spec was the request.
 4. **Nothing.**
 

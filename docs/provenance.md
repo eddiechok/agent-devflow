@@ -296,8 +296,9 @@ The three states are left visible here on purpose. The promise was wrong for lon
 | Step | From | Why |
 |---|---|---|
 | 5. Ask where plans live, local or github | **Changed** — mattpocock's `setup-matt-pocock-skills`, which wires a repo to GitHub, Linear or local markdown | Theirs picks a tracker for specs, tickets and triage. Ours picks it for one thing, the Deep plan, and local stays the default. Linear and Jira stay pasted in, because `flow` cannot read them and an adapter each is a plugin of its own |
-| 5. Write `github` only after `gh issue list` answered | **Ours** | The same rule as `## Checks`. A tracker written down but never reached fails silently on the first Deep job |
-| 5. Say the two costs out loud | **Ours** | No `gh` on the web sandbox, and an editable issue is an editable order to `build`. Both are true and neither is obvious at setup time |
+| 5. Write `github` only after a `gh api` read answered | **Ours** | The same rule as `## Checks`. A tracker written down but never reached fails silently on the first Deep job |
+| 5. Say the two costs out loud | **Ours** | No `gh` in a cloud session until its setup script installs it, and an editable issue is an editable order to `build`. Both are true and neither is obvious at setup time |
+| 5. Plan and backlog issues go through `gh api` | **Real bug** — the cloud test of 24 Sep | With `gh` installed, the cloud proxy still answered every GraphQL request with a 403. `gh issue list`, `view` and `create` all send GraphQL, so a `github` project could not open or find a plan there. REST through `gh api` got through |
 | The whole skill | **Ours** | None of the three sources has one. mattpocock's setup writes an issue-tracker note, a different job |
 | Never write a command you have not run | **Same idea** — superpowers' "evidence before claims" | The failure is silent. A wrong command exits 0, and everything downstream reports the work as proven |
 | Read the manifest, never guess from convention | **Ours** | `pnpm test` and `npm test` are not interchangeable. Lockfiles say which |
