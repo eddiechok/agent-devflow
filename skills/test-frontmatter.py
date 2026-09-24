@@ -919,9 +919,11 @@ check("ship: the archive question takes the waiting mark",
       and "– **session**" not in SHIP_TEXT_FOR_MARKS,
       "ship/SKILL.md marks the archive question as skipped, not waiting")
 
-check("submit: the opinion offer takes the waiting mark",
-      "→ **opinion**" in submit_text and "– **opinion**" not in submit_text,
-      f"{SUBMIT_PATH} marks the /code-review offer as skipped, not waiting")
+check("submit: the manual opinion offer is gone",
+      "**opinion**" not in submit_text,
+      f"{SUBMIT_PATH} still prints an '**opinion**' line -- the manual "
+      f"/code-review, /security-review offer is meant to be retired now that "
+      f"security-reviewer runs on its own")
 
 
 # ------------------------------------------ a stop prints a shaped line too
@@ -1910,6 +1912,33 @@ with open(DOCS_REVIEW_PATH, encoding="utf-8") as fh:
 check("docs/review: the agent table lists security-reviewer",
       "`security-reviewer`" in docs_review_text,
       f"{DOCS_REVIEW_PATH} never lists security-reviewer in the agent table")
+
+# ---------------------------- submit treats Exploitable findings like Blocking
+# ---------------------------- and drops the manual security-review offer
+#
+# `security-reviewer` now runs on its own whenever the danger list calls for
+# it, so a human forgetting to type `/security-review` is no longer the gate.
+# Pinned here so a later edit cannot quietly bring the manual offer back.
+
+check("submit: step 5 treats Exploitable findings like Blocking",
+      "**Blocking**, **Exploitable**, **Missing** and **Built wrong**"
+      in flat(submit_text),
+      f"{SUBMIT_PATH} never folds security-reviewer's Exploitable findings "
+      f"in with Blocking")
+
+check("submit: round 2 for the security axis is scoped to security-reviewer",
+      "`devflow:security-reviewer` for its own" in flat(submit_text),
+      f"{SUBMIT_PATH} never scopes round 2 to devflow:security-reviewer")
+
+check("submit: Evidence names which axes ran, were NOT RUN, or skipped",
+      "which were `NOT RUN`, and which were `skipped`" in flat(submit_text),
+      f"{SUBMIT_PATH} never says Evidence names NOT RUN and skipped axes")
+
+check("docs/submit: records why the manual opinion offer was retired",
+      "security-reviewer" in docs_submit_text
+      and "opinion" in docs_submit_text.lower(),
+      f"{DOCS_SUBMIT_PATH} never explains why the /code-review, "
+      f"/security-review offer is gone")
 
 # --------------------------------------------------------------------- report
 

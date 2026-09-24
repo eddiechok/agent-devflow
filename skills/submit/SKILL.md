@@ -136,12 +136,12 @@ Do not do the review here — a session reviewing the code it just wrote carries
 
 Then act on what comes back:
 
-- **Blocking**, **Missing** and **Built wrong** — fix, then review again. At most **2 rounds**.
-- **Round 2 is scoped, not a fresh review.** It goes to the axis agent directly — `devflow:reviewer`, or `devflow:spec-reviewer` for its own findings — with the fixed point, round 1's findings in the agent's own words, and the files changed since.
+- **Blocking**, **Exploitable**, **Missing** and **Built wrong** — fix, then review again. At most **2 rounds**. `Exploitable` is `security-reviewer`'s own bar, and it is fixed on the same footing as `Blocking`, not weighed as a lesser finding.
+- **Round 2 is scoped, not a fresh review.** It goes to the axis agent directly — `devflow:reviewer` for its own findings, `devflow:security-reviewer` for its own, or `devflow:spec-reviewer` for its own — with the fixed point, round 1's findings in the agent's own words, and the files changed since.
 - **Nobody asked for this** — either take it out, or keep it and say why in the PR under **Assumptions**. Silently keeping it is not an option.
 - Anything still standing after 2 rounds goes in the PR under **Known issues**, not hidden and not looped on forever.
 - **The last review must postdate the last edit.** A fix you make after the last round is an edit nobody has read, and so is a doc fix at step 6. Both get one short look at step 7, before the commit. It is a look, not a round.
-- **`NOT RUN`** — an axis that could not start is not a passing axis. Name it under **Known issues**, and say in **Evidence** which axes ran. Never write "reviewed" over a review that did not happen.
+- **`NOT RUN`** — an axis that could not start is not a passing axis. Name it under **Known issues**, and say in **Evidence** which axes ran, which were `NOT RUN`, and which were `skipped` — `security-reviewer` skipped for no security item touched reads the same way `skipped — no behaviour` does, and neither is a finding. Never write "reviewed" over a review that did not happen.
 - **`Not reported: N further findings`** — the axis ran out of room. Those findings exist and you have not seen them. **Run that axis again, scoped to what it did not reach**, and if the second run is also truncated, say so under **Known issues** with the count.
 
 **A finding can be wrong, and you are allowed to say so.** Check it against the code first, then reject it in one line with the technical reason, and put the rejection in the PR under **Known issues** so the call is visible to whoever merges. Never reject a finding you have not checked, and never reject one silently — an unread finding quietly dropped is worse than a false positive fixed.
@@ -298,7 +298,7 @@ I checked this locally before pushing. I stopped my own server; step 5 is for yo
 - Tests: 48 passed, exit 0
 - Typecheck: clean
 - Live check: done, works
-- Review: both axes ran — is it built right, and is it the right thing (or: built right ran, right thing NOT RUN — no spec; or: skipped, no behaviour)
+- Review: all three ran — is it built right, is it safe from an attacker, and is it the right thing, naming which were `NOT RUN` and which were `skipped` (or: security-reviewer skipped — no security item touched, right thing NOT RUN — no spec; or: skipped, no behaviour)
 - Final look: fixed skills/ship/SKILL.md, 2 lines — unread by an agent, so read those lines yourself (or: nothing new; or: omit if no look ran)
 
 ## Known issues
@@ -328,16 +328,7 @@ commit it sits under.
 
 **Never merge.** Opening the PR is where this skill ends.
 
-The PR now exists, so the two built-in reviews finally have something to run against. Both are slash commands — **only the human can type one**, which is exactly why they sit here and not inside the automatic path. Offer them in one line, with the real PR number:
-
-```
-→ **opinion** /code-review 12, /security-review — yours to type, if installed
-/security-review: this change touched database migrations
-```
-
-**Work the danger list out from the diff, not from memory.** Read the diff against the list in `flow` and decide again.
-
-Name `/security-review` only when the change actually touched the danger list. Never report either as run, and never write their findings into the PR body — you have not seen any.
+The PR now exists. Step 5 already ran the security review this repo runs — `security-reviewer`, whenever the danger list called for it, and `hardcase` against its findings the same as `reviewer`'s. There is nothing left to offer the human here.
 
 If a check goes red on the PR after this, or a reviewer asks for something, that is `devflow:tend` — it works out whose failure it is before anything gets pushed, and comes back through here so the same PR is updated.
 
