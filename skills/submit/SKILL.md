@@ -287,15 +287,40 @@ Otherwise, once the commit is in:
 
 ## 8. Open the PR — or update the one already there
 
-**First, does this branch already have an open pull request?** Ask through whatever GitHub access this environment has.
+**First, does this branch already have an open pull request?** Ask through whatever GitHub access this environment has. With `gh`, that is `gh api`, never the `gh pr` commands: those send GraphQL, and a cloud session's GitHub proxy refuses every GraphQL request.
 
-**No PR** — push, then open one against the default branch, then print:
+```
+gh api 'repos/{owner}/{repo}/pulls?head={owner}%3A<branch>&state=open' --jq '.[].number'
+```
+
+Write the PR body to a fresh file outside the repo — never a fixed path, which another
+session or another user can reach first:
+
+```
+mktemp "${TMPDIR:-/tmp}/devflow-pr.XXXXXX"
+```
+
+The path it prints is `<body file>` below. Remove it once the PR has it.
+
+**No PR** — push, then open one against the default branch:
+
+```
+gh api repos/{owner}/{repo}/pulls -f title="<subject>" -F body=@<body file> -f head=<branch> -f base=<default branch> --jq '"#\(.number) \(.html_url)"'
+```
+
+Then print:
 
 ```
 ✓ **pr** opened #14
 ```
 
-**A PR already open** — push to the same branch, then **update that PR**. Never open a second one for a branch that has one, and report the number you updated rather than announcing a new one. What moves and what does not:
+**A PR already open** — push to the same branch, then **update that PR**. Never open a second one for a branch that has one, and report the number you updated rather than announcing a new one. Read the body that is there first — `gh api repos/{owner}/{repo}/pulls/<n> --jq .body` — then write the new one back:
+
+```
+gh api -X PATCH repos/{owner}/{repo}/pulls/<n> -F body=@<body file> --jq .html_url
+```
+
+What moves and what does not:
 
 - **Evidence** — rewritten. It describes the checks *this* run made, not the ones the first run made.
 - **Known issues** — worked out again from this run's review. Anything fixed since comes out.
@@ -310,7 +335,7 @@ Then one line on what moved:
 
 **Opening it is what you were asked for.** Invoking this skill *is* the request; it says so in its own description, and so does `flow`. Do not stop here to ask again.
 
-If the environment blocks it anyway, push the branch and then give the human the compare link and the command for whatever access they have — `gh pr create`, or the equivalent — in two lines. Never end silently on a pushed branch with no PR — work that is finished, green and invisible is the state this skill exists to prevent.
+If the environment blocks it anyway, push the branch and then give the human the compare link and the command for whatever access they have — the `gh api` call above, or the equivalent — in two lines. Never end silently on a pushed branch with no PR — work that is finished, green and invisible is the state this skill exists to prevent.
 
 If the repo has a PR template, follow its headings. Otherwise use this shape:
 

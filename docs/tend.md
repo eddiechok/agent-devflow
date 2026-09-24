@@ -18,6 +18,14 @@ fallback is fine. The branching belongs below, where the model does it.
 
 Every command below names *what to ask for*, not *how to ask*.
 
+### Why the PR line left the Context block
+
+It was an injected `gh pr view`. A cloud session's GitHub proxy refuses every GraphQL
+request, and every `gh pr` command sends GraphQL, so there it always said `no answer`.
+The REST form would need `gh api` in `allowed-tools`, and a prefix rule cannot limit its
+method or its path. An injected command the permission check refuses aborts the whole
+skill, so the read moved into step 1, where it can ask first.
+
 ## Step 1 — get on the PR's branch first
 
 Everything after this step reads the current branch and nothing else: triage asks whether

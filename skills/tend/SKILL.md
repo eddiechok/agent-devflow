@@ -2,7 +2,7 @@
 name: tend
 description: "Use when a pull request is already open and something about it needs attention - a check went red, or a reviewer left comments. Works out what the PR is reporting and whether this branch caused it, before changing anything. Fixes through build and re-submits, so the same PR is updated rather than a second one opened. Never merges; that is ship, and only a human starts it."
 argument-hint: "[PR number, or blank for the current branch]"
-allowed-tools: Bash(git status:*), Bash(git rev-parse:*), Bash(git symbolic-ref:*), Bash(git log:*), Bash(gh pr view:*)
+allowed-tools: Bash(git status:*), Bash(git rev-parse:*), Bash(git symbolic-ref:*), Bash(git log:*)
 ---
 
 # tend
@@ -16,24 +16,43 @@ rule looks wrong.
 
 - Branch: !`git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "no git"`
 - Default branch ref: !`git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null || echo origin/main`
-- PR: !`gh pr view --json number,title,state,headRefName --jq '"#\(.number) \(.title) [\(.state)] on \(.headRefName)"' 2>/dev/null || echo "no answer"`
 
-**`gh` is the example, not the requirement.** Use whatever GitHub access this environment has — the CLI, an MCP server, the API. `no answer` means the CLI is missing **or** the PR is; those are different, and only one of them is a reason to send someone to `submit`.
+**`gh` is the example, not the requirement.** Use whatever GitHub access this environment has — the CLI, an MCP server, the API. With `gh`, pull requests go through `gh api`, never the `gh pr` commands: those send GraphQL, and a cloud session's GitHub proxy refuses every GraphQL request. `gh` fills `{owner}/{repo}` from the git remote.
 
 ## 1. Find the PR
 
-`$ARGUMENTS` is a PR number if you were given one. Otherwise take the PR for the current branch.
+`$ARGUMENTS` is a PR number if you were given one. Otherwise ask for the PR on the current branch:
+
+```
+gh api 'repos/{owner}/{repo}/pulls?head={owner}%3A<branch>&state=open' --jq '.[] | "#\(.number) \(.title) on \(.head.ref)"'
+```
+
+The colon after `{owner}` is `%3A` so `gh` never reads it as a placeholder. An empty
+answer is no open PR. An error is no answer — the CLI is missing **or** the PR
+is; those are different, and only one of them is a reason to send someone to `submit`.
 
 **A number is not a branch. Get on the branch before anything else.**
 
-Ask the PR for its head branch — `headRefName`, which the Context line already requests —
-and compare it against the branch you are on. If they differ, **check it out**:
+Ask the PR for its head branch, and whether it comes from a fork:
 
 ```
-gh pr checkout <n>
+gh api repos/{owner}/{repo}/pulls/<n> --jq '"#\(.number) \(.title) [\(.state)] on \(.head.ref) fork=\(.head.repo.full_name != .base.repo.full_name)"'
 ```
 
-If the working tree is dirty, or the checkout is refused, **stop and say so**. Do not tend a
+**`fork=true` → stop.** Its branch lives in someone else's repository, and `submit`
+cannot push the fix there. Otherwise compare the head branch against the branch you are
+on. If they differ, **check it out**:
+
+```
+git fetch origin <head branch>
+git switch <head branch>
+```
+
+If `<head branch>` already existed here, bring it up to date with
+`git merge --ff-only origin/<head branch>`; a refusal means it holds commits the PR does
+not, and that is a stop too.
+
+If the working tree is dirty, the PR is from a fork, or the checkout is refused, **stop and say so**. Do not tend a
 PR from another branch, and do not stash someone's work to get there.
 
 ```
@@ -55,8 +74,34 @@ PR from another branch, and do not stash someone's work to get there.
 ## 2. Read what it is reporting
 
 ```
-gh pr view <n> --json state,mergeable,statusCheckRollup,reviewDecision,url
+gh api repos/{owner}/{repo}/pulls/<n> --jq '{state, mergeable, mergeable_state, sha: .head.sha, url: .html_url}'
 ```
+
+`mergeable: null` means GitHub is still working it out; ask again in a few seconds.
+
+Then the checks on that `sha`. CI reports them two ways, so read both:
+
+```
+gh api --paginate 'repos/{owner}/{repo}/commits/<sha>/check-runs?per_page=100' --jq '.check_runs[] | "\(.name) \(.status) \(.conclusion)"'
+```
+
+```
+gh api repos/{owner}/{repo}/commits/<sha>/status --jq '.statuses[] | "\(.context) \(.state)"'
+```
+
+Then the reviews — each reviewer's latest one is the one that stands — and the review
+comments. GitHub pages both oldest first, so `--paginate` is what reaches the newest:
+
+```
+gh api --paginate repos/{owner}/{repo}/pulls/<n>/reviews --jq '.[] | "\(.user.login) \(.state)"'
+```
+
+```
+gh api --paginate repos/{owner}/{repo}/pulls/<n>/comments --jq '.[] | "\(.id) \(.path):\(.line) \(.user.login): \(.body)"'
+```
+
+REST does not say which threads are resolved. In a cloud session the proxy names a route
+that does: `repos/{owner}/{repo}/pulls/<n>/ccr/review_threads`.
 
 Then the detail behind each red check, and each open review thread. List what you found before doing anything, one shaped line per check and one for the reviews:
 
@@ -94,7 +139,7 @@ Say what you are not doing and why, on the thread, per step 6.
 
 ### Conflicts and a stale base are yours too
 
-`mergeable: CONFLICTING`, or a branch far enough behind that the checks are answering about
+A `mergeable_state` of `dirty` — `mergeable: false` — or a branch far enough behind that the checks are answering about
 code nobody will merge, is something the pull request is reporting.
 
 It is **yours**: the default branch moved and this branch has not, which is a fact about

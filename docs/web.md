@@ -81,7 +81,12 @@ posts anything. REST gets through: `gh api repos/{owner}/{repo}/...` reads, crea
 closes issues, and `gh label create` works. So plan and backlog issues go through
 `gh api`. With no `gh` at all, devflow falls back to `curl`: `GH_TOKEN` still holds the
 placeholder, and `curl` to `api.github.com` came back `200` in the same test. Only when
-that fails too does a plan go to a file. The `gh pr` commands in `submit`, `tend` and `ship` still send GraphQL.
+that fails too does a plan go to a file.
+
+Pull requests go the same way. `flow`, `submit` and `tend` find, open, update and read
+them through `gh api` too. `gh api` is in no skill's pre-approved tools, because a prefix
+rule cannot limit its method or its path. So each call asks first, on your machine too.
+`ship` keeps `gh pr`, because `ship` is a local skill (below).
 
 `ship` used to report a missing CLI as `none for this branch`. Those are the same words it
 uses for a branch with no pull request. It would send you to `submit` for work that

@@ -602,9 +602,9 @@ BACKLOG_BUILT_LOG = (
     '--grep="Backlog: .devflow/backlog/<name>.md" --format=%h -1'
 )
 BACKLOG_BUILT_PRS = (
-    "gh pr list --state merged --search "
-    "'\"Backlog: .devflow/backlog/<name>.md\" in:body' --json number,body "
-    "--jq '.[] | select(.body | contains(\"Backlog: .devflow/backlog/<name>.md\")) "
+    "gh api 'search/issues?q=repo:{owner}/{repo}+is:pr+is:merged+in:body"
+    "+%22Backlog:+.devflow/backlog/<name>.md%22' "
+    "--jq '.items[] | select(.body | contains(\"Backlog: .devflow/backlog/<name>.md\")) "
     "| .number'"
 )
 
@@ -674,7 +674,6 @@ FLOW_BACKLOG_TOOLS = [
     "Bash(gh label create:*)",
     "Bash(rm .devflow/backlog/*)",
     "Bash(git log:*)",
-    "Bash(gh pr list:*)",
     "mcp__ccd_session__spawn_task",
 ]
 
@@ -2323,6 +2322,124 @@ check("docs/submit: says why leftover bugs are parked, citing #24, #26, #33",
       all(f"#{n}" in docs_submit_text for n in (24, 26, 33))
       and "leftover bug" in docs_submit_text,
       f"{DOCS_SUBMIT_PATH} does not explain parking leftover bugs")
+
+# --------------------------- pull request calls go through REST too
+#
+# The same cloud test found `gh pr list` and `gh pr view` refused with the
+# same 403: every `gh pr` command sends GraphQL. So `flow`, `tend` and
+# `submit` reach pull requests through `gh api`, exactly as the plan and
+# backlog issues above do. `ship` keeps `gh pr`: it is a local skill, and
+# docs/web.md says so. REST forms tested against this repo and cli/cli on
+# 24 Sep 2026. `gh` fills `{owner}` and `{repo}` in the path only, never in
+# a `-f` value, which is why the search query sits in the path.
+
+tend_text = human_facing_text["tend"]
+submit_text = human_facing_text["submit"]
+TEND_PATH = os.path.join(SKILLS_DIR, "tend", "SKILL.md")
+
+PR_BY_HEAD = "gh api 'repos/{owner}/{repo}/pulls?head={owner}%3A<branch>&state="
+
+# The colon is written %3A. `gh` still fills the old `:owner`, `:repo` and
+# `:branch` placeholders and drops the colon, so `head={owner}:repo-cleanup`
+# went out as `head=eddiechokagent-devflow-cleanup`, GitHub ignored the
+# malformed filter, and the call returned 30 unrelated PRs. Found by the
+# review of this change, 24 Sep 2026.
+
+for slug, text in (("flow", flow_text), ("tend", tend_text),
+                   ("submit", submit_text)):
+    body = text.split("---", 2)[2]
+    check(f"{slug}: never runs a gh pr command",
+          re.search(r"gh pr [a-z]", body) is None,
+          f"{slug}/SKILL.md still names a gh pr command, which sends "
+          f"GraphQL a cloud session's proxy refuses")
+    check(f"{slug}: finds the branch's PR through REST",
+          PR_BY_HEAD in text,
+          f"{slug}/SKILL.md never asks {PR_BY_HEAD!r}")
+    check(f"{slug}: never writes the head filter's colon bare",
+          "head={owner}:" not in text,
+          f"{slug}/SKILL.md writes head={{owner}}:, which gh reads as an "
+          f"old placeholder on a branch named repo-*, owner-* or branch-*")
+    tools = parsed.get(slug, (None, {}))[1].get("allowed-tools", "")
+    check(f"{slug}: allowed-tools never pre-approves gh api",
+          "gh api" not in tools,
+          f"{slug}'s allowed-tools pre-approves gh api, every method and path")
+    check(f"{slug}: allowed-tools drops the GraphQL pr commands",
+          "gh pr" not in tools,
+          f"{slug}'s allowed-tools still lists a gh pr command")
+
+check("flow: step 0 tells merged from closed from the REST answer",
+      'if .merged_at then "MERGED"' in flow_text,
+      f"{FLOW_PATH} step 0 never turns merged_at into MERGED; REST says "
+      f"closed for both")
+
+check("flow: says gh fills the placeholders in the path only",
+      "never in a `-f` value" in flat(flow_text),
+      f"{FLOW_PATH} never says why the search query sits in the path")
+
+# tend's PR line was an injected `gh pr view`. An injected `gh api` would
+# need gh api in allowed-tools, and a failed permission check aborts the
+# whole skill (docs/tend.md), so the line leaves the Context block and the
+# read moves into step 1.
+check("tend: no PR lookup in the Context block",
+      "- PR: !`" not in tend_text,
+      f"{TEND_PATH} still injects a PR lookup at load time")
+
+# The lists are paged 30 at a time, oldest first, so a PR with 31 reviews
+# hid its newest verdict on page 2. Every list tend reads takes --paginate.
+TEND_REST = [
+    "gh api repos/{owner}/{repo}/pulls/<n> --jq",
+    "git fetch origin <head branch>",
+    "git switch <head branch>",
+    "gh api --paginate 'repos/{owner}/{repo}/commits/<sha>/check-runs",
+    "commits/<sha>/status",
+    "gh api --paginate repos/{owner}/{repo}/pulls/<n>/reviews",
+    "gh api --paginate repos/{owner}/{repo}/pulls/<n>/comments",
+]
+for cmd in TEND_REST:
+    check(f"tend: reads the PR with {cmd!r}",
+          cmd in tend_text,
+          f"no {cmd!r} in {TEND_PATH}")
+
+check("tend: stops on a PR from a fork",
+      ".head.repo.full_name != .base.repo.full_name" in tend_text,
+      f"{TEND_PATH} never checks whether the PR's head is a fork it cannot "
+      f"push to")
+
+check("tend: reads a conflict the way REST reports it",
+      "`mergeable_state` of `dirty`" in flat(tend_text)
+      and "CONFLICTING" not in tend_text,
+      f"{TEND_PATH} still reads a conflict as CONFLICTING, which only "
+      f"GraphQL says")
+
+# The body file comes from mktemp. A fixed /tmp path let two sessions
+# overwrite each other's body, and let another user on the machine plant
+# the file first and write the PR body. Found by the review of this change.
+# The template carries its own X's: GNU mktemp -t refuses a name without
+# them, and a cloud session runs Linux.
+SUBMIT_OPEN = ("gh api repos/{owner}/{repo}/pulls -f title=\"<subject>\" "
+               "-F body=@<body file> -f head=<branch> "
+               "-f base=<default branch>")
+SUBMIT_UPDATE = ("gh api -X PATCH repos/{owner}/{repo}/pulls/<n> "
+                 "-F body=@<body file>")
+
+check("submit: makes the PR body file with mktemp",
+      'mktemp "${TMPDIR:-/tmp}/devflow-pr.XXXXXX"' in submit_text
+      and "/tmp/devflow-pr.md" not in submit_text,
+      f"{SUBMIT_PATH} writes the PR body to a fixed path another session "
+      f"or user can reach first")
+
+for cmd in (SUBMIT_OPEN, SUBMIT_UPDATE):
+    check(f"submit: step 8 runs {cmd!r}",
+          cmd in submit_text,
+          f"no {cmd!r} in {SUBMIT_PATH}")
+
+check("docs/web: no longer says the gh pr commands still send GraphQL",
+      "still send GraphQL" not in docs_web_text,
+      f"{DOCS_WEB_PATH} still says submit and tend send GraphQL")
+
+check("docs/web: says ship keeps gh pr because it is local",
+      "`ship` keeps `gh pr`" in docs_web_text,
+      f"{DOCS_WEB_PATH} never says why ship was left on gh pr")
 
 # --------------------------------------------------------------------- report
 
