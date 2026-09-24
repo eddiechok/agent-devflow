@@ -1714,7 +1714,8 @@ check("ship: removes the session's worktree before its checked-out head branch",
       f"checked out")
 
 check("ship: never moves the main checkout it returns to after the worktree",
-      "the folder you land in is the one `flow`'s step 0c left alone" in flat(ship_text)
+      "the folder you land in is the one `flow`'s step 0c or `tend`'s step 1 "
+      "left alone" in flat(ship_text)
       and "switch to the default branch and fast-forward it first" not in ship_text,
       f"{SHIP_PATH} still switches the folder it lands in after ExitWorktree")
 
@@ -2641,6 +2642,84 @@ for cmd in (SUBMIT_OPEN, SUBMIT_UPDATE):
     check(f"submit: step 8 runs {cmd!r}",
           cmd in submit_text,
           f"no {cmd!r} in {SUBMIT_PATH}")
+
+# ------------------------- tend asks whose folder it is before switching it
+#
+# tend step 1 runs `git switch <head branch>`, which moves the whole folder,
+# exactly as flow's `git checkout -b` does. A second session open on the same
+# checkout finds its branch changed underneath it, and nothing tells it. The
+# ship -> tend handoff (028bf66) made this reachable from a command that does
+# not sound like it moves anything. Found by running that handoff on PR #32,
+# 23 Sep 2026. So tend copies flow step 0c's mechanism -- linked worktree, or
+# parked on the default branch, is free; anything else takes a worktree -- and
+# stops rather than switching when it cannot get one.
+
+TEND_TAKEN_LINE = (
+    "✓ **worktree** this folder is on <branch> — taking a checkout of my own"
+)
+TEND_REFUSED_LINE = (
+    "✗ **worktree** refused — this folder belongs to <branch>. "
+    "Start again with: claude --worktree"
+)
+tend_values = parsed.get("tend", (None, {}))[1]
+tend_step1 = flat(tend_text.split("## 1. Find the PR", 1)[-1]
+                  .split("## 2.", 1)[0])
+
+check("tend: tells a linked worktree apart from the main checkout",
+      "git rev-parse --path-format=absolute --git-dir --git-common-dir"
+      in tend_step1,
+      f"{TEND_PATH} step 1 never asks whether it is in a linked worktree "
+      f"before it switches the folder")
+
+check("tend: asks about the folder before it switches it",
+      "git rev-parse --path-format=absolute" in tend_step1
+      and tend_step1.index("git rev-parse --path-format=absolute")
+      < tend_step1.index("git switch <head branch>"),
+      f"{TEND_PATH} switches the folder before asking whose it is")
+
+check("tend: prints the worktree line word for word",
+      TEND_TAKEN_LINE in tend_step1,
+      f"no line {TEND_TAKEN_LINE!r} in {TEND_PATH} step 1")
+
+check("tend: stops when the worktree is refused",
+      TEND_REFUSED_LINE in tend_step1
+      and re.search(r"[Dd]o not switch this folder", tend_step1) is not None,
+      f"{TEND_PATH} step 1 has no refusal path, so a refused worktree falls "
+      f"through into switching the shared folder")
+
+check("tend: is itself the project instruction EnterWorktree asks for",
+      "project instruction that tool asks for" in tend_step1,
+      f"{TEND_PATH} never says it is the instruction EnterWorktree requires")
+
+check("tend: allowed-tools includes EnterWorktree",
+      "EnterWorktree" in tend_values.get("allowed-tools", ""),
+      "tend's allowed-tools never lists EnterWorktree")
+
+# The worktree tend opens is the same shape as flow's: its own branch never
+# gets a commit, because tend switches to the PR's head branch inside it. So
+# ship cleans it up with the same proof. Found by the review of this change:
+# ship only knew flow's worktree, and its Rules forbade deleting any other.
+
+check("ship: cleans up the worktree tend opened, as it does flow's",
+      "if `flow` or `tend` opened one" in flat(ship_text),
+      f"{SHIP_PATH} only cleans up a worktree flow opened, so the one tend "
+      f"takes is left behind after every handoff")
+
+check("ship: the Rules let it delete the branch tend's worktree opened on",
+      "the worktree branch `flow` or `tend` opened for this session"
+      in flat(ship_text),
+      f"{SHIP_PATH}'s Rules forbid deleting the branch tend's worktree made")
+
+DOCS_TEND_PATH = os.path.join(REPO_ROOT, "docs", "tend.md")
+with open(DOCS_TEND_PATH, encoding="utf-8") as fh:
+    docs_tend_text = flat(fh.read())
+
+check("docs/tend: explains why tend guards the folder",
+      "EnterWorktree" in docs_tend_text
+      and "ship" in docs_tend_text
+      and "flow" in docs_tend_text and "step 0c" in docs_tend_text,
+      f"{DOCS_TEND_PATH} never explains the folder guard, or where it came "
+      f"from")
 
 check("docs/web: no longer says the gh pr commands still send GraphQL",
       "still send GraphQL" not in docs_web_text,

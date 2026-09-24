@@ -2,7 +2,7 @@
 name: tend
 description: "Use when a pull request is already open and something about it needs attention - a check went red, or a reviewer left comments. Works out what the PR is reporting and whether this branch caused it, before changing anything. Fixes through build and re-submits, so the same PR is updated rather than a second one opened. Never merges; that is ship, and only a human starts it."
 argument-hint: "[PR number, or blank for the current branch]"
-allowed-tools: Bash(git status:*), Bash(git rev-parse:*), Bash(git symbolic-ref:*), Bash(git log:*)
+allowed-tools: Bash(git status:*), Bash(git rev-parse:*), Bash(git symbolic-ref:*), Bash(git log:*), EnterWorktree
 ---
 
 # tend
@@ -41,7 +41,45 @@ gh api repos/{owner}/{repo}/pulls/<n> --jq '"#\(.number) \(.title) [\(.state)] o
 
 **`fork=true` → stop.** Its branch lives in someone else's repository, and `submit`
 cannot push the fix there. Otherwise compare the head branch against the branch you are
-on. If they differ, **check it out**:
+on. If they match, nothing moves; go on to the dirty-tree check below.
+
+**If they differ, the switch moves the whole folder.** Another session open on this
+same checkout is standing in it, and nothing tells it: its branch changes underneath it.
+So ask whose folder it is first — the same two questions `flow` step 0c asks.
+
+**First: are you already in a linked worktree?**
+
+```
+git rev-parse --path-format=absolute --git-dir --git-common-dir
+```
+
+Two different answers mean yes. A worktree holds one session, so the folder is yours:
+switch it. Keep `--path-format=absolute`; bare, git answers one of them relative to the
+current directory, and they differ in a plain checkout entered below its root.
+
+**Second: is this folder on the default branch?** Compare `Branch` with `Default branch
+ref`, the `origin/` dropped. If they match, the folder is parked where nobody works:
+switch it.
+
+Only when both answers are no is this folder parked on somebody's work. Do not take it:
+
+```
+✓ **worktree** this folder is on <branch> — taking a checkout of my own
+```
+
+Then call the **EnterWorktree** tool. **This skill is the project instruction that tool
+asks for**, so do not stop to ask whether a worktree was wanted. The branch it opens is
+not the PR's; the fetch and switch below, inside the worktree, put you on the PR's.
+
+**If the worktree never happens** — no EnterWorktree tool, or the call fails, or it is
+refused — **stop. Do not switch this folder.**
+
+```
+✗ **worktree** refused — this folder belongs to <branch>.
+Start again with: claude --worktree
+```
+
+Once the folder is yours, **check it out**:
 
 ```
 git fetch origin <head branch>
