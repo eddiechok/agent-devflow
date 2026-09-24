@@ -919,9 +919,11 @@ check("ship: the archive question takes the waiting mark",
       and "– **session**" not in SHIP_TEXT_FOR_MARKS,
       "ship/SKILL.md marks the archive question as skipped, not waiting")
 
-check("submit: the opinion offer takes the waiting mark",
-      "→ **opinion**" in submit_text and "– **opinion**" not in submit_text,
-      f"{SUBMIT_PATH} marks the /code-review offer as skipped, not waiting")
+check("submit: the manual opinion offer is gone",
+      "**opinion**" not in submit_text,
+      f"{SUBMIT_PATH} still prints an '**opinion**' line -- the manual "
+      f"/code-review, /security-review offer is meant to be retired now that "
+      f"security-reviewer runs on its own")
 
 
 # ------------------------------------------ a stop prints a shaped line too
@@ -1804,6 +1806,207 @@ for name, value, should_object in SAMPLES:
               "the lint raised no objection")
     else:
         check(f"lint self-test: accepts {name}", why is None, why)
+
+# --------------------------------------- agents/security-reviewer's report shape
+#
+# `security-reviewer` reviews as an attacker only, and its report has to name
+# an exploit case rather than a rule violation, or it is just `reviewer` with
+# a different name. Pinned here so an edit that drifts the sections or the
+# bar fails loudly instead of quietly turning it into a second code-quality
+# pass.
+
+SECURITY_REVIEWER_PATH = os.path.join(AGENTS_DIR, "security-reviewer.md")
+with open(SECURITY_REVIEWER_PATH, encoding="utf-8") as fh:
+    security_reviewer_text = fh.read()
+
+check("agents/security-reviewer: report carries ## Exploitable",
+      "## Exploitable" in security_reviewer_text,
+      f"{SECURITY_REVIEWER_PATH} never pins the '## Exploitable' report section")
+
+check("agents/security-reviewer: report carries ## Reviewed",
+      "## Reviewed" in security_reviewer_text,
+      f"{SECURITY_REVIEWER_PATH} never pins the '## Reviewed' report section")
+
+check("agents/security-reviewer: names the Not reported: line",
+      "Not reported:" in security_reviewer_text,
+      f"{SECURITY_REVIEWER_PATH} never pins the 'Not reported:' line for when "
+      f"the word limit bit")
+
+check("agents/security-reviewer: pins the exploit-only bar",
+      "who, what input, what they get" in security_reviewer_text,
+      f"{SECURITY_REVIEWER_PATH} never pins the exploit bar in these words -- "
+      f"who, what input, what they get")
+
+DOCS_PROVENANCE_PATH = os.path.join(REPO_ROOT, "docs", "provenance.md")
+with open(DOCS_PROVENANCE_PATH, encoding="utf-8") as fh:
+    docs_provenance_text = fh.read()
+
+check("docs/provenance: credits claude-code-security-review with its star count",
+      "anthropics/claude-code-security-review" in docs_provenance_text
+      and "6,262 stars" in docs_provenance_text,
+      f"{DOCS_PROVENANCE_PATH} does not credit "
+      f"anthropics/claude-code-security-review with its star count")
+
+# ------------------------------------ review spawns security-reviewer on the
+# ------------------------------------ danger list, and widens hardcase's job
+#
+# `security-reviewer` does not run on every change. `reviewer` already reads
+# the danger list on every review, so its report is where `review` reads the
+# spawn condition from. Five items start it; the other three items on the
+# same list are still worth a human's attention but do not.
+
+SECURITY_ITEMS = ("auth and permissions, secrets and keys, payments, "
+                   "public API or wire format, CI/CD config")
+NON_SECURITY_ITEMS = ("database migrations, deleting or weakening tests, "
+                       "anything that cannot be reverted")
+
+REVIEWER_PATH = os.path.join(AGENTS_DIR, "reviewer.md")
+with open(REVIEWER_PATH, encoding="utf-8") as fh:
+    reviewer_text = fh.read()
+
+check("agents/reviewer: danger list names the five security items",
+      SECURITY_ITEMS in flat(reviewer_text),
+      f"{REVIEWER_PATH} never lists the five items in these words -- "
+      f"{SECURITY_ITEMS!r}")
+
+check("agents/reviewer: danger list keeps the three non-security items",
+      NON_SECURITY_ITEMS in flat(reviewer_text),
+      f"{REVIEWER_PATH} never lists the three items in these words -- "
+      f"{NON_SECURITY_ITEMS!r}")
+
+REVIEW_SKILL_PATH = os.path.join(SKILLS_DIR, "review", "SKILL.md")
+with open(REVIEW_SKILL_PATH, encoding="utf-8") as fh:
+    review_skill_text = fh.read()
+
+check("review: starts security-reviewer only on the five security items",
+      ("Start `devflow:security-reviewer` only when that line names one of "
+       "five items: " + SECURITY_ITEMS) in flat(review_skill_text),
+      f"{REVIEW_SKILL_PATH} never pins the spawn condition in these words")
+
+check("review: hardcase is handed security-reviewer's findings too",
+      "`reviewer`'s findings, and `security-reviewer`'s findings when it ran"
+      in flat(review_skill_text),
+      f"{REVIEW_SKILL_PATH} never hands hardcase security-reviewer's findings")
+
+check("review: step 4 report carries a ## Security section",
+      "## Security" in review_skill_text,
+      f"{REVIEW_SKILL_PATH} never pins a '## Security' report section")
+
+check("review: Worst of each carries a Security line",
+      "- Security:" in review_skill_text,
+      f"{REVIEW_SKILL_PATH} never pins a 'Security:' line under Worst of each")
+
+HARDCASE_PATH = os.path.join(AGENTS_DIR, "hardcase.md")
+with open(HARDCASE_PATH, encoding="utf-8") as fh:
+    hardcase_text = fh.read()
+
+check("hardcase: accepts security-reviewer's findings",
+      "security-reviewer" in hardcase_text and "## Exploitable" in hardcase_text,
+      f"{HARDCASE_PATH} never says it is handed security-reviewer's findings "
+      f"under '## Exploitable'")
+
+DOCS_REVIEW_PATH = os.path.join(REPO_ROOT, "docs", "review.md")
+with open(DOCS_REVIEW_PATH, encoding="utf-8") as fh:
+    docs_review_text = fh.read()
+
+check("docs/review: the agent table lists security-reviewer",
+      "`security-reviewer`" in docs_review_text,
+      f"{DOCS_REVIEW_PATH} never lists security-reviewer in the agent table")
+
+# ---------------------------- submit treats Exploitable findings like Blocking
+# ---------------------------- and drops the manual security-review offer
+#
+# `security-reviewer` now runs on its own whenever the danger list calls for
+# it, so a human forgetting to type `/security-review` is no longer the gate.
+# Pinned here so a later edit cannot quietly bring the manual offer back.
+
+check("submit: step 5 treats Exploitable findings like Blocking",
+      "**Blocking**, **Exploitable**, **Missing** and **Built wrong**"
+      in flat(submit_text),
+      f"{SUBMIT_PATH} never folds security-reviewer's Exploitable findings "
+      f"in with Blocking")
+
+check("submit: round 2 for the security axis is scoped to security-reviewer",
+      "`devflow:security-reviewer` for its own" in flat(submit_text),
+      f"{SUBMIT_PATH} never scopes round 2 to devflow:security-reviewer")
+
+check("submit: Evidence names which axes ran, were NOT RUN, or skipped",
+      "which were `NOT RUN`, and which were `skipped`" in flat(submit_text),
+      f"{SUBMIT_PATH} never says Evidence names NOT RUN and skipped axes")
+
+check("docs/submit: records why the manual opinion offer was retired",
+      "security-reviewer" in docs_submit_text
+      and "opinion" in docs_submit_text.lower(),
+      f"{DOCS_SUBMIT_PATH} never explains why the /code-review, "
+      f"/security-review offer is gone")
+
+# --------------------------------------- README and flow no longer tell a
+# --------------------------------------- human to run /security-review
+#
+# `security-reviewer` runs on its own now. Nothing under `skills/` or in
+# README.md may still read as a hand-off to a slash command a human has to
+# remember to type.
+
+README_PATH = os.path.join(REPO_ROOT, "README.md")
+with open(README_PATH, encoding="utf-8") as fh:
+    readme_text = fh.read()
+
+check("README: never tells the human to run /security-review",
+      "/security-review" not in readme_text,
+      f"{README_PATH} still names /security-review")
+
+check("README: the agents paragraph names security-reviewer",
+      "`security-reviewer`" in readme_text,
+      f"{README_PATH} never names security-reviewer among the review agents")
+
+for slug in HUMAN_FACING_SKILLS:
+    text = human_facing_text[slug]
+    check(f"{slug}: never tells the human to run /security-review",
+          "/security-review" not in text,
+          f"{slug}/SKILL.md still names /security-review")
+
+check("flow: the danger list line says review will include security-reviewer",
+      "The first five are security items: when one matched, say plainly that "
+      "the review will include `security-reviewer`"
+      in flat(flow_text),
+      f"{FLOW_PATH} never pins that line -- the danger list still reads as "
+      f"a human's job")
+
+# ------------------------------------------ what round 1 of the review missed
+#
+# Round 1 of this branch's own review found four gaps: flow promised the
+# security pass on all eight danger-list items when only five start it; the
+# decision was made once, so a fix that added an auth check after round 1
+# shipped with no security pass; nothing said a bug both agents report is one
+# finding; and two of the request's own examples were not named in the
+# checklist.
+
+check("flow: the five security items come first in the danger list",
+      flow_text.index("- CI/CD configuration")
+      < flow_text.index("- database schema or data migrations"),
+      f"{FLOW_PATH} lists migrations among the first five, which it calls the "
+      f"security items")
+
+check("submit: a later reviewer report can still start security-reviewer",
+      "The last read decides the security pass, not the first" in submit_text,
+      f"{SUBMIT_PATH} decides the security pass once, from round 1 only")
+
+check("submit: a bug both agents report is fixed once",
+      "One bug, one fix" in submit_text,
+      f"{SUBMIT_PATH} never says a finding both agents report is one finding")
+
+check("agents/security-reviewer: names data that is not the caller's",
+      "data that is not the caller's" in security_reviewer_text,
+      f"{SECURITY_REVIEWER_PATH} never names access to another user's data")
+
+check("agents/security-reviewer: names secrets leaking to the client",
+      "sent to the client" in security_reviewer_text,
+      f"{SECURITY_REVIEWER_PATH} never names secrets leaking in an error or "
+      f"response sent to the client")
+
+check("review: its description names the security pass",
+      "can it be attacked" in human_facing_text["review"].split("---")[1],
+      "review/SKILL.md's description still describes two axes only")
 
 # --------------------------------------------------------------------- report
 

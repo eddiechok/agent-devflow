@@ -75,7 +75,7 @@ An honest failure is useful. A green-looking PR over a broken feature is harmful
 
 ## Step 5 — the review
 
-It pins the range, finds the plan or issue if there is one, and runs both axes in fresh agents.
+It pins the range, finds the plan or issue if there is one, and runs both axes in fresh agents, plus `security-reviewer` when the danger list names a security item.
 
 On work with no plan and no issue, that text is the spec the second axis reads, and without it that axis does not run.
 
@@ -97,7 +97,7 @@ Two agents disagreeing is not a majority vote; it is one of them having read som
 
 ### Why `/code-review` is not here
 
-The built-in `/code-review` is a better review than this one, and it still does not belong here: it works on an **open pull request** and comments back on it, and there is no PR yet. It goes to the human at step 9, where one exists.
+The built-in `/code-review` is a better review than this one, and it still does not belong here: it works on an **open pull request** and comments back on it, and there is no PR yet. It used to be offered to the human at step 9, where one exists — that offer is gone now, for the reason under step 9 below.
 
 ## Step 6 — the docs
 
@@ -165,7 +165,9 @@ first — a preview is a real build with real environment variables on a clean m
 
 ## Step 9 — handing off
 
-`flow` decided it before any code was written, and that decision does not always survive to here — a compaction, a long Deep job, or a `submit` you were invoked into directly all lose it. Losing it is silent, and what it drops is the only security gate in the loop. Deciding twice costs a moment; missing it costs the gate.
+This step used to work the danger list out from the diff a second time and offer the human `/code-review` and `/security-review` to type themselves — a manual opinion line, because the security question had nowhere automatic to run. That offer relied on `flow`'s original danger-list read surviving to here, which it did not always do: a compaction, a long Deep job, or a `submit` invoked directly all lost it, silently, and what it dropped was the only security gate in the loop.
+
+The `security-reviewer` plan, 24 Sep 2026, retired the offer rather than patching the survival problem again. `security-reviewer` now runs inside step 5, on `reviewer`'s own read of the danger list, whenever a human would have — and unlike the offer, it cannot be forgotten, because nobody has to remember to type it. So step 9 hands off with nothing left to offer.
 
 ### The recap
 

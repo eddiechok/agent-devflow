@@ -144,7 +144,7 @@ The three `[YOU]` marks are the only places you are normally needed. The third, 
 
 Here is what the chart leaves out. All of it stops the flow rather than bending it:
 
-- `flow` forces anything on the **danger list** to at least Standard size. `submit` also names `/security-review` in its handoff. That one is a slash command, so only you can start it.
+- `flow` forces anything on the **danger list** to at least Standard size. When it is one of the security items, `review` starts `security-reviewer` on its own, inside `submit`'s own review step — nothing for you to remember to run.
 - The **hook asks** before any commit that would land on the default branch.
 - **Three failed attempts** at the same problem and `build` stops. It says what each attempt ruled out. It does not try a fourth.
 - If the **live check fails** twice, `submit` stops and does not open a PR. An honest failure beats a green-looking PR over a broken feature.
@@ -180,9 +180,9 @@ That is it. A one-line bug fix asks you nothing until merge.
 
 ### The danger list
 
-These always get at least Standard size, a human check, and a security review:
+These always get at least Standard size and a human check. The first five also start `security-reviewer` automatically, inside `review`:
 
-login and permissions · secrets and keys · payments · database migrations · public APIs · CI/CD config · deleting or weakening tests · anything that cannot be reverted
+auth and permissions · secrets and keys · payments · public API or wire format · CI/CD config · database migrations · deleting or weakening tests · anything that cannot be reverted
 
 ### Escape hatches
 
@@ -199,14 +199,14 @@ login and permissions · secrets and keys · payments · database migrations · 
 | `setup` | Once per project. Finds and verifies the check commands. You invoke it yourself, so it costs nothing at runtime |
 | `flow` | Sizes the request. Routes it. Asks any questions in one batch |
 | `build` | Test first. Watch it fail for the right reason. Then make it pass |
-| `review` | Two axes in fresh agents: is it built right, is it the right thing. Reported side by side, never blended. Skipped only when `submit` passes down that `build` found no behaviour to test |
+| `review` | Ranked axes in fresh agents: is it built right, is it safe from an attacker, is it the right thing. Reported side by side, never blended. The security axis runs only when the danger list calls for it. Skipped only when `submit` passes down that `build` found no behaviour to test |
 | `submit` | Runs the checks fresh. Runs the app. Calls `review`. Commits. Opens the PR, or updates the one already open. **Never merges** |
 | `tend` | After the PR is open. Works out what a red check or a review comment is really saying. Checks whether this branch caused it. Then fixes it and re-submits |
 | `ship` | Merges it. Watches the deploy. Checks it is really live. Cleans up. **Only you can start it** |
 
 `submit` opens the PR. `ship` merges it. Only you can start `ship`. On a branch with no PR, `ship` stops and points you at `submit`. Where a PR exists, it merges.
 
-`review` runs two agents that never saw the session: `reviewer` asks *is it built right*, `spec-reviewer` asks *is it the right thing*. A third, `hardcase`, tries to break `reviewer`'s findings. The two reports are never blended. A fourth, `builder`, is not a reviewer: on a Deep job it builds one chain of the plan's pieces in its own git worktree, commits each one, and reports back a branch line plus five lines per piece. One builder per chain, up to four chains at once, and `flow` merges their branches back before it submits.
+`review` runs agents that never saw the session: `reviewer` asks *is it built right*, `security-reviewer` asks *is it safe from an attacker* — only when the danger list names a security item — and `spec-reviewer` asks *is it the right thing*. Another, `hardcase`, tries to break `reviewer`'s and `security-reviewer`'s findings. The reports are never blended. `builder` is not a reviewer: on a Deep job it builds one chain of the plan's pieces in its own git worktree, commits each one, and reports back a branch line plus five lines per piece. One builder per chain, up to four chains at once, and `flow` merges their branches back before it submits.
 
 ## More
 
@@ -219,7 +219,7 @@ wrong.
 | [docs/flow.md](docs/flow.md) | Why `flow`'s steps are what they are. Follow-ups on an open PR. Where a Deep plan goes. One feature per run, parking the rest to `devflow:backlog` or `.devflow/backlog/`. One builder per chain, in parallel worktrees. Why new work in a folder parked on someone else's branch takes a worktree of its own. The `CONTEXT.md` glossary. Size overrides. |
 | [docs/build.md](docs/build.md) | Why `build`'s gates are what they are. Running the checks bare. Where the expected value comes from. Watching it fail. When there is nothing a test could catch. |
 | [docs/submit.md](docs/submit.md) | Why `submit`'s steps are what they are. Checks that postdate the last edit. The live check. The commit and the PR body. |
-| [docs/review.md](docs/review.md) | Why `review`'s steps are what they are. The three agents. Why two axes. Why `hardcase` defaults to *falls*. The one change that gets no review. |
+| [docs/review.md](docs/review.md) | Why `review`'s steps are what they are. The four agents. Why the axes are separate and ranked apart. Why `hardcase` defaults to *falls*. The one change that gets no review. |
 | [docs/ship.md](docs/ship.md) | Why `ship`'s steps are what they are. The boundary only a human crosses. Choosing a method the branch can take. The three real merge-error runs. The deploy block. |
 | [docs/tend.md](docs/tend.md) | Why `tend`'s steps are what they are. Getting on the PR's branch first. Triage before anything is changed. |
 | [docs/setup.md](docs/setup.md) | Why `setup`'s steps are what they are. Everything downstream trusts the `## Checks` block. Running each command before writing it down. |

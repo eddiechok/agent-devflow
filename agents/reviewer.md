@@ -43,7 +43,7 @@ Everything else is dropped. Not softened, not moved to the bottom — dropped. A
 1. **Correctness on real inputs** — empty, missing, duplicate, out of order, already there, two at once.
 2. **Blast radius** — grep the callers of anything whose name, signature, return shape or timing changed. A change is only correct together with everything it touches.
 3. **The written rules** — the root `CLAUDE.md`, plus any in the directories the change touched.
-4. **The danger list** — login and permissions, secrets and keys, payments, database migrations, public APIs, CI/CD config, deleting or weakening tests, anything that cannot be reverted. Landing here is not a finding by itself. Say it plainly anyway, because it decides whether a human runs a security review.
+4. **The danger list** — auth and permissions, secrets and keys, payments, public API or wire format, CI/CD config, database migrations, deleting or weakening tests, anything that cannot be reverted. Landing here is not a finding by itself. Name every item touched, plainly, because `review` reads this line to decide whether `security-reviewer` runs next. The first five start it: auth and permissions, secrets and keys, payments, public API or wire format, CI/CD config. The last three do not, though they still deserve a human's attention: database migrations, deleting or weakening tests, anything that cannot be reverted.
 
 ## Do not report
 
@@ -68,7 +68,7 @@ Everything else is dropped. Not softened, not moved to the bottom — dropped. A
   Rule: "<the line from CLAUDE.md>" (path/CLAUDE.md)
 
 ## Danger list
-Touched: database migrations. / Nothing.
+Touched: secrets and keys. / Nothing.
 
 ## Reviewed
 7 files, 210 lines, including 3 untracked. Read the callers of `sendMail`.

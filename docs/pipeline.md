@@ -116,7 +116,7 @@ sequenceDiagram
     flow->>submit: submit
     submit->>submit: checks fresh, then run the app
     submit->>review: review from the branch point
-    review->>review: two agents, fresh context, never blended
+    review->>review: fresh agents per axis, never blended
     review-->>submit: built right / right thing
     submit->>You: the pull request, with evidence and assumptions
     You->>ship: /devflow:ship
@@ -141,6 +141,6 @@ this. That is enforced in the harness, not asked for in prose.
 | Answering `flow`'s questions | Skippable. "yes to all" takes every recommendation. Each one lands in the PR under **Assumptions** |
 | Reading the PR | The artefact the whole loop exists to put in front of you |
 | Typing `/devflow:ship` | The only skill that merges. Also the only one nothing else can call |
-| Saying "run the review" | Some harnesses block agents unless asked. There, this is the one thing that unblocks both axes |
+| Saying "run the review" | Some harnesses block agents unless asked. There, this is the one thing that unblocks every review agent |
 
 Everything else runs without stopping to ask.
