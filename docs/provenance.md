@@ -24,6 +24,7 @@ Notes about where an idea came from would cost tokens on every run forever. They
 - **[mattpocock/skills](https://github.com/mattpocock/skills)** (MIT) — `code-review`, `tdd`, `grilling`, `domain-modeling`, `implement`, `wayfinder`, `triage`
 - **[wshobson/commands](https://github.com/wshobson/commands)** (MIT) — `workflows/git-workflow.md`
 - **Anthropic's [`code-review`](https://github.com/anthropics/claude-plugins-official) plugin** (Apache-2.0) — the slash command
+- **[anthropics/claude-code-security-review](https://github.com/anthropics/claude-code-security-review)** (MIT, 6,262 stars) — `.claude/commands/security-review.md`, read in full on 2026-09-24
 
 ---
 
@@ -189,6 +190,20 @@ The three states are left visible here on purpose. The promise was wrong for lon
 | Never judges code quality | **Copied** — mattpocock | If both agents report on style, the split was pointless |
 | Pins the same pair as `reviewer` | **Ours** | The two reports are never ranked against each other. Giving one axis a weaker model ranks them anyway, and silently |
 
+## `security-reviewer` agent — what an attacker gets
+
+| Part | From | Why |
+|---|---|---|
+| The agent exists at all | **Ours** | `reviewer`'s danger list only ever handed the security question to a human, offered `/security-review` at the end of `submit`, and nobody ran it by default. A fresh agent that runs whenever the danger list names a security item closes the gap without waiting on a human to remember |
+| Read-only, fresh context, no `Task`/`Agent` tool | **Copied** — `reviewer`, and behind it, superpowers and mattpocock's docs on template agents that keep spawning more agents | Same shape as `reviewer`: this agent cannot edit anything or start one of its own |
+| Categories: input validation, auth & authorization, crypto & secrets, injection & code execution, data exposure | **Changed** — anthropics/claude-code-security-review's "SECURITY CATEGORIES TO EXAMINE" | Five headings kept, each folded from several bullet points into one line. The source's DOS/CI-workflow/GitHub Actions callouts are folded into the exclusions instead, since they read as exclusions everywhere else in the source too |
+| The exploit-only bar — who, what input, what they get | **Changed** — the source's "MINIMIZE FALSE POSITIVES: only flag issues where you're >80% confident of actual exploitability" and its 1-10 confidence scoring | A percentage or a 1-10 score is still a number nobody can check. `reviewer`'s bar — name the input that fails — is the model already used here: name the attacker, the input, and what they get, or drop the finding |
+| The "never report" list | **Copied** — the source's EXCLUSIONS and HARD EXCLUSIONS blocks | DOS, secrets already secured, rate limiting, a missing hardening measure with nothing concrete attached, outdated dependencies, memory-safety bugs in memory-safe languages, test-only files, docs files, log spoofing, path-only SSRF, regex injection and regex DoS, missing audit logs. The source's 17-item list is condensed; nothing in it was dropped, only merged where two bullets said the same thing |
+| The precedents | **Copied** — the source's PRECEDENTS block | Trusted env vars and CLI flags, unguessable UUIDs, React/Angular's default escaping, client-side auth checks not being the finding, logging a URL versus logging a secret, and shell-script command injection needing a concrete untrusted-input path. The source's remaining precedents either restate an exclusion already carried over or apply to a sub-task pipeline this agent does not run |
+| Report shape mirrors `reviewer`'s | **Copied** — `reviewer`'s own report shape, itself from Anthropic's `code-review` plugin and mattpocock | `## Exploitable` and `## Reviewed` stand in for `reviewer`'s `## Blocking` and `## Reviewed`, same 400-word ceiling, same `Not reported:` line when the ceiling drops a real finding |
+| Pins `model: opus`, `effort: xhigh` | **Copied** — `reviewer` and `spec-reviewer` pin the same pair | The three review axes are never ranked against each other. Giving the security axis a weaker model ranks it below the other two, silently |
+| Started only when the danger list names a security item | **Ours** | `security-reviewer` does not run on every change — most changes touch nothing security-shaped, and a fresh agent on every diff is a cost nobody asked to pay. `reviewer` already reads the danger list for every review, so it is the cheapest place to decide whether the security pass is worth starting |
+
 ## `submit`
 
 | Step | From | Why |
@@ -212,13 +227,14 @@ The three states are left visible here on purpose. The promise was wrong for lon
 | 7. Conventional commits | **Same idea** — wshobson says "following conventions" | Makes `git log` a changelog |
 | 8. The PR body shape | **Ours** | **Assumptions** pairs with `flow`'s one round of questions. **How to check this yourself** has to be steps that were actually run |
 | 8. Use the preview link if one appeared | **Ours** | A preview is a real build on a clean machine. It catches what a laptop cannot |
-| 9. `/code-review` handed to you | **Real bug** — it could not run | Not installed. A slash command a skill cannot type at itself. And it reviews an **open PR**. Step 5 asked for it four steps before a PR existed |
+| 9. `/code-review` handed to you | **Real bug** — it could not run | Not installed. A slash command a skill cannot type at itself. And it reviews an **open PR**. Step 5 asked for it four steps before a PR existed. **Superseded on 24 Sep 2026** — see the retirement row below |
 | 9. Never claim a review ran | **Ours** | The old step 5 said `/code-review` "is already installed". A false line in a prompt reads like a finished step |
 | 8. Invoking `submit` is the request for the PR | **Real bug** — the edx-landing session | The web harness says not to open a PR unless the human explicitly asked. The skill's own description says it opens one, so typing it is the asking. But somebody had to write that down |
 | 8. Blocked PR: push, then hand over the link and the command | **Ours** | The failure mode is silence. Finished, green and invisible is the state this skill exists to prevent |
 | 4. Use `run` if it exists, else the project's own way | **Real bug** — the audit of 18 Aug | The same shape as the `/code-review` assertion. That one was fixed as a special case rather than as a rule. Now it is a rule |
 | 8. Update the PR when one is already open | **Real bug** — the audit of 18 Aug | A branch has one pull request. The old step opened a second, because it only knew how to create |
-| 9. Re-derive the danger list from the diff | **Real bug** — the audit of 18 Aug | `flow` decided it before the code existed, and nothing carried the decision here. The loss was silent, and it dropped the only security gate in the loop |
+| 9. Re-derive the danger list from the diff | **Real bug** — the audit of 18 Aug | `flow` decided it before the code existed, and nothing carried the decision here. The loss was silent, and it dropped the only security gate in the loop. **Superseded on 24 Sep 2026** — see the row below |
+| 9. The manual opinion offer is retired | **Ours**, 24 Sep 2026 | Supersedes the three rows above. A human typing `/security-review` was the only security gate in the loop, and the row above exists because the decision to offer it kept failing to survive to step 9. `security-reviewer` replaces the offer rather than patching its survival again: it runs inside step 5, reading `reviewer`'s own danger-list line, so the gate no longer depends on a human remembering to type a command. `/code-review` is dropped from the same line because it never was the security gate — it only ever travelled beside it |
 | 9. Never merge | **Ours** | The line the whole plugin is built around |
 | 2. `exit=N` only comes for a runner the hook knows | **Real bug** — the audit of 19 Aug | The step promised that running bare gets you the exit line. The hook only rewraps commands matching its own list, and this repo's own checks match none of them. So the promise was false in the repo that wrote it. The gap invites a fabricated `exit=0` |
 | 5. `Not reported:` is a finding, not a footnote | **Real bug** — the audit of 19 Aug | Both agents were told to print the line, and `review` was told to carry it through. `submit` is the only reader and had no branch for it. So a truncated review printed exactly like a clean one. That is the same failure `NOT RUN` was written to prevent |
