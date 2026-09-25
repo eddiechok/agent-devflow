@@ -65,8 +65,7 @@ Only a mistake. A good run writes nothing.
 Tested on 2026-09-25.
 
 - **Mac:** the active `gh` account has write access to the repo. A push works.
-- **Web:** by default a session reaches only the repo it was opened on, and it has no `gh`. A clone of a second repo fails with `could not read Username`. After the `add_repo` tool adds `eddiechok/devflow-lessons` to the session, `git push` to `main` works (probe commit `c03e36f`).
-- **Open:** does `add_repo` show the human an approval prompt? Not confirmed.
+- **Web:** by default a session reaches only the repo it was opened on, and it has no `gh`. A clone of a second repo fails with `could not read Username`. After the `add_repo` tool adds `eddiechok/devflow-lessons` to the session, `git push` to `main` works (probe commit `c03e36f`). `add_repo` showed the human no approval prompt.
 - **Fallback:** if `add_repo` fails, the session prints the line in its reply, as `overrides.md` does today. The human copies it.
 
 ## The review step
