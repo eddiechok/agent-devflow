@@ -1,0 +1,53 @@
+schema_version: "1.1"
+name: bug-routes-to-debug
+description: A bug the report cannot point at routes through devflow:debug, not devflow:plan, even though "I don't know what's causing it" reads like Deep's own test.
+tags: [sizing, flow, debug]
+
+context:
+  scaffold_script: ./scaffold.sh
+
+execution:
+  # Deliberately names no file, function or line -- that is the whole trigger.
+  # And deliberately worded like Deep's "cannot name the files it touches yet",
+  # which is exactly the false trail flow's own routing has to see past.
+  prompt: "/devflow:flow when I run the CLI with a batch of names, the count next to each name is way higher than 1, 2, 3 and it gets worse the longer the list is. I have no idea what's causing it or where to even look."
+  max_turns: 12
+  timeout_seconds: 300
+  allowed_tools: [Bash, Read, Edit, Glob, Grep, Skill]
+
+runs: 3
+
+graders:
+  - type: regex
+    name: not-sized-deep
+    target: trace
+    pattern: "Deep\\s*[—–-]"
+    match: not_contains
+    weight: 2
+
+  - type: tool_used
+    name: routes-to-debug
+    tool: Skill
+    input_match: "devflow:debug"
+    min: 1
+    weight: 3
+
+  - type: tool_used
+    name: does-not-route-to-plan
+    tool: Skill
+    input_match: "devflow:plan"
+    max: 0
+    weight: 3
+
+  - type: llm
+    name: names-no-plan
+    focus: trace
+    criteria: >
+      PASS only if the assistant treats "I don't know what's causing it" as a
+      reason to look for the cause with a red-capable command, not as a reason
+      to write a multi-piece plan. FAIL if it proposes a plan, pieces, or
+      chains for this bug, or if it guesses a fix before anything went red.
+
+expected_outcome: >
+  Sizes the work Standard, not Deep, and calls devflow:debug rather than
+  devflow:plan even though the report cannot name where the bug is.

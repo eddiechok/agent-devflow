@@ -364,6 +364,8 @@ If you arrived here mid-turn, because a question or an investigation turned into
 
 **Quick** → go straight to `devflow:build`. No questions.
 
+**A bug nobody can point at** is not Deep — read [references/debug-route.md](references/debug-route.md); it stays Standard and calls `devflow:debug` before `devflow:build`.
+
 **Standard** → if anything is genuinely ambiguous, ask **one** round of questions (see below), then `devflow:build`. If nothing is ambiguous, go straight to `devflow:build`.
 
 **Deep** → ask one round of questions, get agreement, then call `devflow:plan` with the

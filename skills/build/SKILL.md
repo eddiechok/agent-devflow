@@ -164,6 +164,10 @@ Count your attempts at the same problem.
 
 **After 3**, stop and report. Do not try a fourth patch at the same layer — three failures at one layer usually means the problem is somewhere else.
 
+**If the three attempts were three guesses at a cause nobody had actually found**, the next
+step is not a fourth guess — it is `devflow:debug`. Name it in the stuck line rather than
+trying again.
+
 Print it, with what each attempt ruled out and where you would look next under it:
 
 ```
@@ -231,4 +235,6 @@ the result — for example `✓ **checks** 3 of 3 pass, exit 0`.
 - Never write to `CONTEXT.md`. Read it, use its words, and report a wrong one rather than fixing it.
 - Never widen scope mid-piece. Finish the piece, then raise the next one separately.
 - Never commit anything but a finished plan piece, and never open a PR.
+- Never try a fourth patch when three attempts were three guesses at a cause nobody had
+  found. Name `devflow:debug` in the stuck line instead.
 - Run the full test suite once before handing back — not after every edit, and not never. On a plan piece that run is what makes committing it safe, so a five-piece plan runs it five times and that is the price of five trustworthy checkpoints.
