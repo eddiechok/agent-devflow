@@ -77,7 +77,7 @@ A good run writes nothing. Lines come from three places.
   - how long each size took, and what it cost
   - how many review rounds ran, and how many found nothing
 
-  This needs no new logging. Web sessions are not counted: their saved sessions are lost when the container ends.
+  This needs no new logging. Archived sessions count: archiving keeps the saved file, and a subagent's run is saved beside it. Deleted sessions do not count. Web sessions are not counted either: their saved sessions are lost when the container ends.
 
 ## Reaching the lessons repo
 
