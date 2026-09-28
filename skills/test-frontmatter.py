@@ -3393,16 +3393,31 @@ check("debug: says it is normally started by flow but safe by hand",
 # its own it would fall through to `plan` instead of `devflow:debug`. The line
 # and the reference it points at are pinned word for word, the same reason
 # every other routing line in this file is.
+#
+# The exception has to sit in step 2, inside the size table. Written in step 4
+# first, it came after step 3 had already announced Deep and waited on a round
+# of questions, so the route was never reached (review of #72).
 
+FLOW_STEP2 = flow_text.split("## Step 2", 1)[-1].split("## Step 3", 1)[0]
+FLOW_STEP4 = flow_text.split("## Step 4", 1)[-1].split("## Step 5", 1)[0]
+
+FLOW_DEBUG_SIZE_EXCEPTION = (
+    "or you cannot name the files it touches yet — **not** a bug nobody can "
+    "point at, which is Standard ([references/debug-route.md]"
+    "(references/debug-route.md))"
+)
 FLOW_DEBUG_ROUTE_LINE = (
-    "**A bug nobody can point at** is not Deep — read "
-    "[references/debug-route.md](references/debug-route.md); it stays "
-    "Standard and calls `devflow:debug` before `devflow:build`."
+    "**A bug nobody can point at** calls `devflow:debug` first, then "
+    "`devflow:build`."
 )
 
-check("flow: step 4 routes an unknown-cause bug to debug-route.md",
-      FLOW_DEBUG_ROUTE_LINE in flow_text,
-      f"no line {FLOW_DEBUG_ROUTE_LINE!r} in {FLOW_PATH}")
+check("flow: step 2's Deep row sends an unknown-cause bug to Standard",
+      FLOW_DEBUG_SIZE_EXCEPTION in FLOW_STEP2,
+      f"no {FLOW_DEBUG_SIZE_EXCEPTION!r} in step 2 of {FLOW_PATH}")
+
+check("flow: step 4 routes an unknown-cause bug through debug",
+      FLOW_DEBUG_ROUTE_LINE in FLOW_STEP4,
+      f"no {FLOW_DEBUG_ROUTE_LINE!r} in step 4 of {FLOW_PATH}")
 
 DEBUG_ROUTE_PATH = os.path.join(SKILLS_DIR, "flow", "references", "debug-route.md")
 with open(DEBUG_ROUTE_PATH, encoding="utf-8") as fh:

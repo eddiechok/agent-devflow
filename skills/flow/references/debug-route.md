@@ -6,12 +6,12 @@ does. Nothing here changes for that bug.
 
 **A bug nobody can point at is different, and it is easy to misread as Deep.** Deep's own
 test is "you cannot name the files it touches yet" — true of this bug too, which is why it
-needs a rule of its own rather than falling through to Step 2's table. Not knowing where a
-*feature* belongs is a design question, and `plan` exists to answer it across many files and
-several pieces. Not knowing where a *bug* is is a different question with a different
-answer: one command that makes it show itself. That is `devflow:debug`'s job, not `plan`'s,
-and it stays a single piece of work — sized Standard, never Deep, whatever the sizing table's
-Deep row seems to say about the files.
+needs a rule of its own, in Step 2's table itself, so it is sized before Step 3 announces
+anything. Not knowing where a *feature* belongs is a design question, and `plan` exists to
+answer it across many files and several pieces. Not knowing where a *bug* is is a different
+question with a different answer: one command that makes it show itself. That is
+`devflow:debug`'s job, not `plan`'s, and it stays a single piece of work — sized Standard,
+never Deep.
 
 ## Recognising the case
 
