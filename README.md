@@ -271,7 +271,6 @@ Working on the plugin? The checks are in [CLAUDE.md](CLAUDE.md). `claude plugin 
 Phase 1 is the smallest useful thing. These stay out on purpose:
 
 - `debug`, a bug-fixing loop. Bugs go through `build` for now.
-- Model routing by size. A skill cannot change its own model.
 - A sweep for leftover folder copies. A worktree `ship` kept because it held work, or one from a session `ship` never ran in, stays on disk until you remove it.
 
 Add each one when two weeks of real use shows you need it. Not before.
