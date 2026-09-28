@@ -216,12 +216,12 @@ one your own run noticed that none of them did.
 
 **If any file changed since the last review that read it, one short look first.** Round 2 counts as a read of the lines it was scoped to. `devflow:reviewer` only, scoped to the lines that changed, a **200 word ceiling**, and no `hardcase`. Then step 5's last security read, before the commit.
 
-**If the look finds something new, it gets at most one bounded fix.** Two conditions, and both have to hold:
+**If the look finds something new, it gets at most 3 bounded fixes, one per look.** Two conditions on each fix, and both have to hold:
 
 - **Small** — a few lines, the kind of fix that takes a minute.
 - **In a file already changed on this branch.**
 
-Both hold → fix it, run the `## Checks` block again — bare, one per call, as at step 2 — and stop. **No further look.** Either fails — a bigger fix, or a file the branch did not touch — → **stop editing** and put it under **Known issues**, as before. Print which of the two happened, in one line:
+Both hold → fix it, run the `## Checks` block again — bare, one per call, as at step 2 — then **look again**, scoped to only the lines that fix changed, same agent, same ceiling. Hand that look a finding that fix did not cover too — a look can find two things — so the next fix takes it, or Known issues does once the cap is spent. Either fails — a bigger fix, or a file the branch did not touch — → **stop editing**, and put it under **Known issues** with every finding still waiting for a fix. Print what each look did, one line each:
 
 ```
 ✓ **look** fixed in place — skills/ship/SKILL.md, 2 lines
@@ -231,19 +231,23 @@ Both hold → fix it, run the `## Checks` block again — bare, one per call, as
 – **look** known issue — docs/pipeline.md, not on this branch
 ```
 
+```
+✓ **look** clean — the fix to skills/ship/SKILL.md reads right
+```
+
+**The last look only reports.** After the third fix, the look that reads it cannot fix anything: what it finds goes under **Known issues**, and a leftover bug is parked below. So the run always ends on a read, never on an edit. The loop stays bounded: review, round 2, look, at most 3 small fixes each read by its own look, done.
+
 When nothing changed since the last review, there is no look to run:
 
 ```
 – **look** nothing changed since the last review
 ```
 
-A fix made here is the one edit on the branch no agent has read. Name it in the PR body under **Evidence**, in these words — `Final look: fixed <file>, <what> — unread by an agent, so read those lines yourself` — because the reader is the only one who can read them now. The loop stays bounded: review, round 2, look, at most one small fix, done.
-
 **Then sort what is going under Known issues.** Each item is one of three kinds:
 
 - **A rejected finding** — a finding you checked and refused, with its reason.
 - **A test gap** — something this run could not prove: no live check, no eval case, an axis `NOT RUN`, a review cut short.
-- **A leftover bug** — a real flaw nobody fixed: a finding still standing after 2 rounds, something the look found that was too big or outside the branch, or a bug that was already there and turned up in passing.
+- **A leftover bug** — a real flaw nobody fixed: a finding still standing after 2 rounds, something a look found that was too big, outside the branch, or found by the last look, or a bug that was already there and turned up in passing.
 
 **Only a leftover bug is parked.** The other two are notes for whoever merges, and they stay in the PR body alone. A leftover bug is work, and a merged PR body is where work goes to be forgotten. **Park them before the commit**, so a backlog file ships in this PR. Park each one the way `flow` step 1b parks a feature — look for a `## Plans` block in `CLAUDE.md`.
 
@@ -400,7 +404,6 @@ I checked this locally before pushing. I stopped my own server; step 5 is for yo
 - Typecheck: clean
 - Live check: done, works
 - Review: all three ran — is it built right, is it safe from an attacker, and is it the right thing, naming which were `NOT RUN` and which were `skipped` (or: security-reviewer skipped — no security item touched, right thing NOT RUN — no spec; or: skipped, no behaviour)
-- Final look: fixed skills/ship/SKILL.md, 2 lines — unread by an agent, so read those lines yourself (or: nothing new; or: omit if no look ran)
 
 ## Known issues
 - (only if the review left something unresolved)

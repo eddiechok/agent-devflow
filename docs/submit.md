@@ -117,11 +117,11 @@ Step 6 is also where a fact this run learned about **this project** — not devf
 
 A marker removed at 3, a live-check fix at 4, a review fix at 5, a doc at 6 — any of them means step 2's run no longer covers the tree you are about to commit.
 
-The checks always postdate the last edit, and so does the look — except for the one small fix the look itself may make, which is named under **Evidence** for exactly that reason. That is the whole of the rule, stated at the last place an edit can land.
+The checks always postdate the last edit, and so does the look — every fix the look makes is read by a look after it. That is the whole of the rule, stated at the last place an edit can land.
 
 `build` commits each plan piece as it lands, so the working tree can be clean by the time you reach this step — and the fixes from steps 5 and 6 may be all that is left.
 
-### Why the look gets one fix, and only one
+### Why the look gets up to three fixes, and the last look only reports
 
 The look exists so the last review postdates the last edit, and the first version of the
 rule sent anything it found straight under **Known issues**, so the fix-then-look loop
@@ -134,16 +134,25 @@ dirty; and #26, where `ship` step 6 promised that step 7 names the retargeted PR
 step 7's template did not list them. Each one became a follow-up the human had to
 remember, which is worse than the minute.
 
-So the look now gets one fix, bounded twice over. **Small**, because a fix of a few lines
+So the look then got one fix, bounded twice over. **Small**, because a fix of a few lines
 is one a human can read in the PR without an agent's help. **In a file already changed on
 this branch**, because a file the branch did not touch is scope the request never asked
 for, and widening a PR at the last step is how a change stops being reviewable. Anything
 that fails either test goes under Known issues exactly as before.
 
-**No further look after that fix**, and that is the part that keeps the loop bounded:
-review, round 2, look, one small fix, done. The price is one edit on the branch that no
-agent has read, which is why it is named under **Evidence** — the reader is told which
-lines to read themselves rather than left to assume the review covered them.
+That second version also said **no further look after that fix**, to keep the loop bounded:
+review, round 2, look, one small fix, done. The price was one edit on the branch that no
+agent had read, named under **Evidence** so the reader knew which lines to read
+themselves. On PR #65 that line was a real edge case in `flow` step 0b, and the human
+asked the obvious question: why does the run end on an edit nobody reviewed?
+
+Bounded does not have to mean unread. The loop now **ends on a read**: up to three fixes,
+each followed by a look at only the lines that fix changed, and **the last look only
+reports** — what it finds goes under Known issues, and a leftover bug is parked. The cap
+keeps the loop finite; the report-only last look keeps every line read. Three, not one,
+because the findings shrink fast but not to zero — #65 went six, two, one — and a fix a
+look can check is worth more than a line the human has to. Not more than three, because
+a problem that survives three small fixes is a plan problem, and that is the human's.
 
 ### Why a leftover bug is parked, and nothing else is
 
