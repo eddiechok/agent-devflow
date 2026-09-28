@@ -27,9 +27,13 @@ What is counted, per devflow skill:
   so a session with more than one `flow` run in it gets that same session
   total attached to each of its runs
 - how many `review` runs happened, and how many of them reported no
-  findings, matched by a short, best-effort list of phrases `review`'s own
-  SKILL.md uses for a clean run -- there is no single marker Claude Code
-  guarantees, so this is a text match, not a hard contract
+  findings: every line of the run's printed `## Worst of each` block says
+  `none` or `skipped`, or `review` stopped with nothing to review. That block
+  is `review`'s own report shape, not something Claude Code guarantees, so
+  this is a text match, not a hard contract
+
+Only devflow's own skills are counted. A built-in command like `/model` is
+not a skill run and changes nothing; another plugin's skill is left out.
 """
 
 import argparse
@@ -43,25 +47,38 @@ from datetime import datetime, timezone
 SIZE_RE = re.compile(r"^(Quick|Standard|Deep)\s+—")
 COMMAND_NAME_RE = re.compile(r"<command-name>\s*/?([^<]+?)\s*</command-name>")
 
-# Best-effort. `review`'s SKILL.md prints one of these when an axis found
-# nothing to raise. See docs/lessons.md for why this cannot be a hard match.
-NO_FINDINGS_MARKERS = (
-    "nothing to challenge",
-    "nothing to review since",
-    "no findings",
-    "found nothing",
-)
+# `review`'s step 4 report ends in this block, one line per axis. A run is
+# clean only when every line says none or skipped -- "nothing to challenge"
+# is printed when the first axis alone is clean, so it cannot decide this.
+WORST_RE = re.compile(r"^- (?:\*\*)?(Built right|Security|Right thing):(?:\*\*)?\s*(.*)$", re.M)
+CLEAN_WORST = ("none", "skipped", "no spec")
+NOTHING_TO_REVIEW = "nothing to review since"
+
+
+def review_is_clean(text):
+    """True or False when `text` holds a Worst of each block or review's
+    nothing-to-review stop line, None when it holds neither."""
+    if NOTHING_TO_REVIEW in text.lower():
+        return True
+    if "Worst of each" not in text:
+        return None
+    worst = WORST_RE.findall(text)
+    if not worst:
+        return None
+    return all(value.strip().lower().startswith(CLEAN_WORST) for _, value in worst)
 
 
 def normalize_skill(name):
-    """`/devflow:review` and the bare `/flow` both name a devflow skill;
-    fold them to the same `devflow:<name>` key."""
+    """`/devflow:review` names a devflow skill. Anything else -- `/model`,
+    `/clear`, another plugin's `/x:y` -- is not one, and gives None."""
     name = name.strip().lstrip("/")
-    if not name:
-        return None
-    if name.startswith("devflow:"):
+    if name.startswith("devflow:") and len(name) > len("devflow:"):
         return name
-    return "devflow:" + name
+    return None
+
+
+def is_devflow(skill):
+    return bool(skill) and skill.startswith("devflow:")
 
 
 def text_blocks(content):
@@ -149,6 +166,12 @@ def process_records(records, seed_skill=None):
     }
     current_skill = seed_skill
     review_run = None  # [skill, found_nothing] while a review run is open
+    # A `flow` run prints its size once, and `submit`'s recap repeats that
+    # line word for word. A follow-up request gets a new size line with no new
+    # start. So once `flow` is loaded, every size line is a run unless it is
+    # the same line as the last one counted -- that one is a recap.
+    flow_seen = False
+    last_size_line = None
 
     def close_review():
         nonlocal review_run
@@ -160,6 +183,17 @@ def process_records(records, seed_skill=None):
         if found:
             r[1] += 1
         review_run = None
+
+    def start(skill):
+        """A skill was started -- typed as a command, or called through the
+        Skill tool, which is how `submit` starts `review`."""
+        nonlocal review_run, flow_seen, last_size_line
+        close_review()
+        if skill == "devflow:review":
+            review_run = [skill, False]
+        if skill == "devflow:flow":
+            flow_seen = True
+            last_size_line = None
 
     for kind, rec in records:
         if kind == "skip":
@@ -181,38 +215,44 @@ def process_records(records, seed_skill=None):
             m = COMMAND_NAME_RE.search(content)
             if m:
                 new_skill = normalize_skill(m.group(1))
-                if new_skill and new_skill != current_skill:
-                    close_review()
+                # Every typed command is a new run, even the same skill again:
+                # attributionSkill keeps current_skill pointing at it between.
+                if new_skill:
+                    start(new_skill)
                     current_skill = new_skill
-                    if new_skill == "devflow:review":
-                        review_run = [new_skill, False]
 
         attribution = rec.get("attributionSkill")
         if attribution:
             current_skill = attribution
 
         for used in skill_tool_uses(content):
+            start(used)
             current_skill = used
 
         if isinstance(content, str) and content.strip().lower() == "yes to all":
             origin = rec.get("origin") or {}
-            if origin.get("kind") == "human" and current_skill:
+            if origin.get("kind") == "human" and is_devflow(current_skill):
                 stats["yes_to_all"][current_skill] = stats["yes_to_all"].get(current_skill, 0) + 1
 
         denial_kind = rec.get("toolDenialKind")
-        if denial_kind and current_skill:
+        if denial_kind and is_devflow(current_skill):
             d = stats["denials"].setdefault(current_skill, {})
             d[denial_kind] = d.get(denial_kind, 0) + 1
 
         for text in text_blocks(content):
             stripped = text.strip()
-            m = SIZE_RE.match(stripped)
-            if m and current_skill == "devflow:flow":
+            first_line = stripped.split("\n", 1)[0].strip()
+            m = SIZE_RE.match(first_line)
+            if (m and flow_seen and rec.get("type") == "assistant"
+                    and first_line != last_size_line):
                 stats["flow_runs"].append({"size": m.group(1)})
-            if review_run is not None:
-                low = text.lower()
-                if any(marker in low for marker in NO_FINDINGS_MARKERS):
-                    review_run[1] = True
+                last_size_line = first_line
+            # Only what the session said. The skill's own text and a test
+            # run's output both name these phrases without meaning them.
+            if review_run is not None and rec.get("type") == "assistant":
+                clean = review_is_clean(text)
+                if clean is not None:
+                    review_run[1] = clean
 
     close_review()
     return stats

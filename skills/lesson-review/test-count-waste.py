@@ -111,7 +111,10 @@ def build_fixture(root):
             {
                 "type": "assistant",
                 "attributionSkill": "devflow:review",
-                "message": {"content": [{"type": "text", "text": "– **review** clean — nothing to challenge"}]},
+                "message": {"content": [{"type": "text", "text": "– **review** clean — nothing to challenge\n\n"
+                                         "## Worst of each\n- Built right: none\n"
+                                         "- Security: skipped — no security item touched\n"
+                                         "- Right thing: none"}]},
                 "timestamp": "2026-09-21T00:00:01.000Z",
             },
         ],
@@ -285,6 +288,173 @@ with tempfile.TemporaryDirectory() as root:
 with tempfile.TemporaryDirectory() as empty_root:
     empty_report = cw.scan(empty_root, since=None)
     check("an empty projects dir scans clean", empty_report["sessions_scanned"] == 0)
+
+# The shape a real Deep run leaves: `flow` prints its size line, calls
+# `submit` through the Skill tool, `submit` calls `review` the same way, and
+# `submit`'s recap repeats the size line at the end. Found on the real
+# ~/.claude/projects: `review` started by the Skill tool counted as no run,
+# and the recap counted as a second `flow` run.
+with tempfile.TemporaryDirectory() as root:
+    proj = os.path.join(root, "-Users-eddiechok-Github-personal-fixture-repo")
+
+    def skill_call(skill):
+        return {
+            "type": "assistant",
+            "attributionSkill": "devflow:flow",
+            "message": {"content": [{"type": "tool_use", "name": "Skill", "input": {"skill": skill}}]},
+        }
+
+    def said(text):
+        return {
+            "type": "assistant",
+            "attributionSkill": "devflow:flow",
+            "message": {"content": [{"type": "text", "text": text}]},
+        }
+
+    write_jsonl(
+        os.path.join(proj, "eeeeeeee-0000-0000-0000-000000000005.jsonl"),
+        [
+            {"type": "user", "message": {"content": "<command-name>/devflow:flow</command-name>"}},
+            said("Deep — new skill and a new loop across skills."),
+            skill_call("devflow:submit"),
+            skill_call("devflow:review"),
+            said("## Worst of each\n- Built right: none\n- Security: none\n- Right thing: none"),
+            said("Deep — new skill and a new loop across skills.\n\n– **review** clean"),
+        ],
+    )
+
+    # A second review, in its own session, that found something. The harness
+    # saves the skill's own text as an isMeta user record, and review's text
+    # names "nothing to challenge" -- found on the real files, where it made
+    # every review read as clean. So does a test run's output.
+    write_jsonl(
+        os.path.join(proj, "ffffffff-0000-0000-0000-000000000006.jsonl"),
+        [
+            skill_call("devflow:review"),
+            {"type": "user", "isMeta": True,
+             "message": {"content": [{"type": "text", "text": "Base directory for this skill: x\n"
+                                      "or: nothing to challenge — the first axis was clean"}]}},
+            {"type": "user", "message": {"content": [{"type": "tool_result",
+                                         "content": "ok   review: nothing to review since"}]}},
+            said("## Blocking\n- the scanner misses a line"),
+        ],
+    )
+
+    nested = cw.scan(root, since=None)
+    check("a size line repeated in the recap is one flow run, not two",
+          len(nested["flow_runs"]) == 1, nested["flow_runs"])
+    nested_review = nested["review_runs"].get("devflow:review")
+    check("a review started by the Skill tool is counted as a run",
+          nested_review is not None and nested_review["runs"] == 2, nested["review_runs"])
+    check("only the clean one counts as no findings -- not the skill's own text",
+          nested_review is not None and nested_review["no_findings"] == 1, nested["review_runs"])
+
+# Three more shapes, from the review of this script. `attributionSkill` keeps
+# saying `devflow:flow` between commands, so a second typed `/devflow:flow`
+# looked like no change at all. Built-ins like `/model` and other plugins'
+# skills are not devflow's, and must not be charged as if they were. And
+# `review` prints "nothing to challenge" when only its first axis is clean --
+# the spec axis can still have found something.
+with tempfile.TemporaryDirectory() as root:
+    proj = os.path.join(root, "-Users-eddiechok-Github-personal-fixture-repo")
+
+    def typed(command):
+        return {"type": "user", "message": {"content": f"<command-name>{command}</command-name>"}}
+
+    def flow_said(text):
+        return {"type": "assistant", "attributionSkill": "devflow:flow",
+                "message": {"content": [{"type": "text", "text": text}]}}
+
+    def review_said(text):
+        return {"type": "assistant", "attributionSkill": "devflow:review",
+                "message": {"content": [{"type": "text", "text": text}]}}
+
+    write_jsonl(
+        os.path.join(proj, "99999999-0000-0000-0000-000000000009.jsonl"),
+        [
+            typed("/devflow:flow"),
+            flow_said("Quick — one."),
+            typed("/devflow:flow"),
+            flow_said("Standard — two."),
+            typed("/model"),
+            {"type": "user", "toolDenialKind": "user-rejected"},
+            {"type": "user", "message": {"content": "yes to all"}, "origin": {"kind": "human"}},
+            {"type": "assistant", "message": {"content": [
+                {"type": "tool_use", "name": "Skill", "input": {"skill": "superpowers:brainstorming"}}]}},
+            {"type": "user", "toolDenialKind": "permission-rule"},
+            typed("/devflow:review"),
+            review_said("## Worst of each\n- Built right: a loose scanner\n- Security: none\n"
+                        "- Right thing: none"),
+            typed("/devflow:review"),
+            review_said("– **review** clean — nothing to challenge\n\n## Worst of each\n"
+                        "- Built right: none\n- Security: none\n- Right thing: the export is missing"),
+        ],
+    )
+
+    more = cw.scan(root, since=None)
+    check("a second typed /devflow:flow is a second run",
+          [r["size"] for r in more["flow_runs"]] == ["Quick", "Standard"], more["flow_runs"])
+    check("a built-in command is not a devflow skill",
+          not any(k.startswith("devflow:model") for k in list(more["denials"]) + list(more["yes_to_all"])),
+          (more["denials"], more["yes_to_all"]))
+    check("waste after a built-in command stays charged to the devflow skill",
+          more["denials"].get("devflow:flow", {}).get("user-rejected") == 1
+          and more["yes_to_all"].get("devflow:flow") == 1,
+          (more["denials"], more["yes_to_all"]))
+    check("another plugin's skill is left out of the counts",
+          all(k.startswith("devflow:") for k in more["denials"]), more["denials"])
+    more_review = more["review_runs"].get("devflow:review")
+    check("two typed reviews are two runs",
+          more_review is not None and more_review["runs"] == 2, more["review_runs"])
+    check("a review whose spec axis found something is not clean",
+          more_review is not None and more_review["no_findings"] == 0, more["review_runs"])
+
+# Round 2 of the review, both found on the real files. Real reports bold
+# the Worst of each labels. And a human's follow-up request in a session
+# where `flow` is already loaded gets a new size line with no new start --
+# while `submit`'s recap, after `submit` starts, must still not count.
+with tempfile.TemporaryDirectory() as root:
+    proj = os.path.join(root, "-Users-eddiechok-Github-personal-fixture-repo")
+
+    def human(text):
+        return {"type": "user", "message": {"content": text}, "origin": {"kind": "human"}}
+
+    def plain(text):
+        return {"type": "assistant", "message": {"content": [{"type": "text", "text": text}]}}
+
+    def skill(name):
+        return {"type": "assistant", "message": {"content": [
+            {"type": "tool_use", "name": "Skill", "input": {"skill": name}}]}}
+
+    write_jsonl(
+        os.path.join(proj, "88888888-0000-0000-0000-000000000008.jsonl"),
+        [
+            skill("devflow:flow"),
+            plain("Standard — first request."),
+            skill("devflow:submit"),
+            skill("devflow:review"),
+            plain("## Worst of each\n- **Built right:** none.\n- **Security:** skipped — no security"
+                  " item touched\n- **Right thing:** no spec, axis skipped."),
+            plain("Standard — first request.\n\n✓ **review** 0 found"),
+            human("now also tighten the copy"),
+            plain("Quick — follow-up on #12, same branch."),
+            skill("devflow:submit"),
+            plain("Quick — follow-up on #12, same branch."),
+            # The final look's case: a typed `/devflow:submit` is itself a
+            # human record, and so is a plain reply before the recap.
+            human("<command-name>/devflow:flow</command-name>"),
+            plain("Deep — third request."),
+            human("<command-name>/devflow:submit</command-name>"),
+            human("yes to all"),
+            plain("Deep — third request.\n\n✓ **pr** opened #15"),
+        ],
+    )
+
+    last = cw.scan(root, since=None)
+    check("a clean review with bold labels counts as no findings",
+          last["review_runs"].get("devflow:review", {}).get("no_findings") == 1, last["review_runs"])
+    check("a follow-up request's size line is its own run; recaps are not",
+          [r["size"] for r in last["flow_runs"]] == ["Standard", "Quick", "Deep"], last["flow_runs"])
 
 print(f"\n{passed} passed, {failed} failed")
 sys.exit(1 if failed else 0)

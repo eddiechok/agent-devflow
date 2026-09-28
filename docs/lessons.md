@@ -44,9 +44,9 @@ Each line has seven parts: the date, the project, the skill, the kind (below), w
 
 **A file, not issues.** A web session has no `gh`, but it can push a file. One file also reads top to bottom at review time.
 
-**One file for every project.** Lessons kept per project scatter, and a pattern only shows when you read them side by side. That is why `overrides.md` is global too.
+**One file for every project.** Lessons kept per project scatter, and a pattern only shows when you read them side by side. That is why `overrides.md` was global too.
 
-`overrides.md` moves into this file. On a hosted session `~/.claude` is lost when the session ends, and the file with it.
+`overrides.md` moved into this file. On a hosted session `~/.claude` is lost when the session ends, and the file with it.
 
 ## Mistakes, waste and ideas
 
@@ -81,7 +81,11 @@ A good run writes nothing. Lines come from three places.
     `"not recorded"` rather than a guess
   - each `flow` run's size, next to that session's whole duration and cost from its last
     `cost-state` record
-  - how many `review` runs happened, and how many reported no findings
+  - how many `review` runs happened, and how many reported no findings — every line of
+    the run's `## Worst of each` block says `none` or `skipped`
+
+  Only devflow's own skills are counted. `/model` and other built-in commands are not skill
+  runs, and another plugin's skills are left out.
 
   This needs no new logging. Archived sessions count: archiving keeps the saved file, and a
   subagent's run is saved beside it. Deleted sessions do not count, and neither do web
@@ -94,7 +98,7 @@ Tested on 2026-09-25.
 
 - **Mac:** the active `gh` account has write access to the repo. A push works.
 - **Web:** by default a session reaches only the repo it was opened on, and it has no `gh`. A clone of a second repo fails with `could not read Username`. After the `add_repo` tool adds `eddiechok/devflow-lessons` to the session, `git push` to `main` works (probe commit `c03e36f`). `add_repo` showed the human no approval prompt.
-- **Fallback:** if `add_repo` fails, the session prints the line in its reply, as `overrides.md` does today. The human copies it.
+- **Fallback:** if `add_repo` fails, the session prints the line in its reply. The human copies it.
 
 ## The review step
 
