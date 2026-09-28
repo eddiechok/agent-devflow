@@ -2806,6 +2806,57 @@ check("lesson: description says what it does",
       "lesson's description is empty")
 
 
+# --------------------------------------- flow records overrides through lesson
+#
+# Before `lesson` existed, `flow` wrote overrides to a file under
+# `~/.claude/devflow/`. On a hosted session that directory is inside a
+# container that is deleted when the session ends, which is exactly the
+# problem `lesson`'s repo destination was built to fix -- so the override
+# path has to move onto it, not sit beside it as a second, competing
+# collector. The rule that only a differing flag is a correction, and the
+# printed `override` line, both survive unchanged.
+
+check("flow: Recording overrides calls devflow:lesson",
+      re.search(r"Recording overrides.*devflow:lesson", flow_text, re.S)
+      is not None,
+      f"{FLOW_PATH}'s Recording overrides section never calls devflow:lesson")
+
+check("flow: no longer writes overrides to a file of its own",
+      "overrides.md" not in flow_text,
+      f"{FLOW_PATH} still names overrides.md -- lesson is now the only writer")
+
+check("flow: keeps the printed override line",
+      "✓ **override** recorded — guessed Quick, you said Deep" in flow_text,
+      f"{FLOW_PATH} no longer prints the override line, even though the "
+      f"destination behind it changed")
+
+check("flow: keeps the only-a-differing-flag rule",
+      "Only a flag that differs from your own size is a correction"
+      in flow_text,
+      f"{FLOW_PATH} lost the rule that a matching flag is not a correction")
+
+OVERRIDES_PATH_LITERAL = "~/.claude/devflow/overrides.md"
+
+for path in ("docs/flow.md", "evals/README.md"):
+    with open(os.path.join(REPO_ROOT, path), encoding="utf-8") as fh:
+        text = fh.read()
+    check(f"{path}: no longer names the old overrides file",
+          OVERRIDES_PATH_LITERAL not in text,
+          f"{path} still names {OVERRIDES_PATH_LITERAL!r}")
+
+check("docs/lessons.md: still the one place that may name the old file",
+      OVERRIDES_PATH_LITERAL in open(
+          os.path.join(REPO_ROOT, "docs", "lessons.md"), encoding="utf-8"
+      ).read(),
+      "docs/lessons.md dropped the migration note naming the old overrides "
+      "file, which is the one place it is allowed to stay")
+
+check("flow: stays at or under its size cap of 1059 lines",
+      len(flow_text.splitlines()) <= 1059,
+      f"{FLOW_PATH} is {len(flow_text.splitlines())} lines, over its cap. "
+      f"Move a why paragraph verbatim to docs/flow.md instead of growing it")
+
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")
