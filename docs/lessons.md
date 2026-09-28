@@ -1,12 +1,12 @@
 # Capturing lessons
 
-The plan for [#57](https://github.com/eddiechok/agent-devflow/issues/57). **None of it is built.** The short version is in the [README](../README.md#what-is-not-here-yet).
+Built now, from [#57](https://github.com/eddiechok/agent-devflow/issues/57). Two skills carry it: `lesson` collects, `lesson-review` reads and proposes. The short version is in the [README](../README.md#the-skills).
 
-The two-week rule still holds. Until about 2026-10-08, use devflow on the Mac. Use a web session only when you are away from the Mac, and start it with "use the devflow flow skill" ([docs/web.md](web.md) says why). Then decide from real data. If nothing went wrong, nothing here gets built.
+Until about 2026-10-08, use devflow on the Mac. Use a web session only when you are away from the Mac, and start it with "use the devflow flow skill" ([docs/web.md](web.md) says why) — waste counting cannot see a web session at all, below.
 
 ## The goal
 
-Improve all of devflow from real runs, not only `flow`'s sizing. Today the only piece is `~/.claude/devflow/overrides.md`, and it only collects ([docs/flow.md](flow.md)).
+Improve all of devflow from real runs, not only `flow`'s sizing. Before this, the only piece was `~/.claude/devflow/overrides.md`, and it only collected ([docs/flow.md](flow.md)). `flow` now records overrides through `devflow:lesson` instead, so everything collects in one place.
 
 Collecting is the first step of a loop:
 
@@ -71,13 +71,22 @@ A good run writes nothing. Lines come from three places.
   - the human stops `build`, or reverts what it wrote
   - `submit`'s checks pass, but CI fails
   - `tend` blames the wrong cause
-- **Counted, for waste**, by the review step, not during a run. Claude Code already saves every session under `~/.claude/projects/`. The review counts, per skill:
-  - how often the human answered "yes to all", which marks questions nobody needed
-  - how many permission prompts the human clicked
-  - how long each size took, and what it cost
-  - how many review rounds ran, and how many found nothing
+- **Counted, for waste**, by `skills/lesson-review/count-waste.py`, not during a run. It reads
+  `~/.claude/projects/*/*.jsonl` — one JSON object per line, undocumented, so it skips
+  whatever line it cannot make sense of and counts the skips rather than guessing a shape —
+  plus each session's subagent transcripts, saved beside it. Per devflow skill, it counts:
+  - how often the human answered "yes to all", charged to whichever skill's command was open
+  - permission prompts — but the session file only ever records a *denial*
+    (`toolDenialKind`); an approved prompt leaves no trace at all, so approvals print as
+    `"not recorded"` rather than a guess
+  - each `flow` run's size, next to that session's whole duration and cost from its last
+    `cost-state` record
+  - how many `review` runs happened, and how many reported no findings
 
-  This needs no new logging. Archived sessions count: archiving keeps the saved file, and a subagent's run is saved beside it. Deleted sessions do not count. Web sessions are not counted either: their saved sessions are lost when the container ends.
+  This needs no new logging. Archived sessions count: archiving keeps the saved file, and a
+  subagent's run is saved beside it. Deleted sessions do not count, and neither do web
+  sessions — their saved sessions are lost when the container ends, so nothing here can see
+  them at all.
 
 ## Reaching the lessons repo
 
