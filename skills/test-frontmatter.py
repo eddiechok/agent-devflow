@@ -762,10 +762,12 @@ check("ship: retargets stacked PRs before deleting the branch",
 # issues, so the fix-then-look loop would end. It found something on almost
 # every PR -- #23, #25 and #26 each shipped with a one-line Known issue that
 # a minute would have fixed -- and each one became a follow-up for the human
-# to remember. So the look now gets one bounded fix: small, and in a file the
-# branch already changed. Both conditions, the "no further look" that keeps
-# the loop bounded, and the Evidence line that says the last edit went unread
-# live only in the prompt, so they are pinned here like the rules above.
+# to remember. So the look got one bounded fix: small, and in a file the
+# branch already changed -- and then "no further look", which left that one
+# fix unread by any agent. On 28 Sep 2026 the loop changed to end on a read:
+# up to three bounded fixes, each followed by a look at only the lines it
+# changed, and the last look only reports. The limits, the cap and the
+# report-only rule live only in the prompt, so they are pinned here.
 
 SUBMIT_PATH = os.path.join(SKILLS_DIR, "submit", "SKILL.md")
 with open(SUBMIT_PATH, encoding="utf-8") as fh:
@@ -795,20 +797,44 @@ check("submit: the final look's fix must be in a file already on the branch",
       f"{SUBMIT_PATH} never says the fix has to land in a file already changed "
       f"on this branch")
 
-check("submit: after the one fix there is no further look",
-      re.search(r"[Nn]o further look", submit_text) is not None,
-      f"{SUBMIT_PATH} never says 'no further look' -- without it the loop "
-      f"the bounded fix was meant to end is open again")
+check("submit: the look gets at most 3 fixes",
+      "at most 3 bounded fixes" in flat(submit_text),
+      f"{SUBMIT_PATH} never caps the look's fixes at 3 -- without a cap the "
+      f"fix-then-look loop is open again")
 
-check("submit: names the fix under Evidence as unread by an agent",
-      "unread by an agent" in submit_text
-      and "**Evidence**" in submit_text,
-      f"{SUBMIT_PATH} never tells the PR reader that the final look's fix went "
-      f"unread by an agent")
+check("submit: every fix gets a look at only the lines it changed",
+      "only the lines that fix changed" in flat(submit_text),
+      f"{SUBMIT_PATH} never sends each fix to a look scoped to its own lines")
+
+check("submit: the last look only reports",
+      "The last look only reports" in flat(submit_text),
+      f"{SUBMIT_PATH} never says the last look cannot fix -- the run could "
+      f"end on an edit no agent read")
+
+# A look can find two things at once. One fix per look means the second one
+# has to go somewhere: the next fix while the cap allows, Known issues after.
+check("submit: a finding the fix did not cover is carried, not dropped",
+      "a finding that fix did not cover" in flat(submit_text),
+      f"{SUBMIT_PATH} gives a second finding from the same look no route -- "
+      f"the next look reads only the fix's lines and never sees it again")
+
+check("submit: stopping early sends every waiting finding to Known issues",
+      "every finding still waiting" in flat(submit_text),
+      f"{SUBMIT_PATH}: when a fix is too big and editing stops, a second "
+      f"small finding from the same look has no route")
+
+check("submit: no edit is left unread by an agent",
+      "unread by an agent" not in submit_text
+      and re.search(r"[Nn]o further look", submit_text) is None,
+      f"{SUBMIT_PATH} still ends the loop on an unread fix")
 
 DOCS_SUBMIT_PATH = os.path.join(REPO_ROOT, "docs", "submit.md")
 with open(DOCS_SUBMIT_PATH, encoding="utf-8") as fh:
     docs_submit_text = fh.read()
+
+check("docs/submit: says why the loop now ends on a read",
+      "ends on a read" in flat(docs_submit_text),
+      f"{DOCS_SUBMIT_PATH} never says why the look loop ends on a read")
 
 check("docs/submit: says why the look gets one fix, citing #23, #25 and #26",
       all(f"#{n}" in docs_submit_text for n in (23, 25, 26)),
@@ -1000,10 +1026,10 @@ check("submit: the Evidence Review line names both axes in plain words",
       f"'right thing'. 'both axes ran' does not say which two, and the PR "
       f"reader never read the review skill")
 
-check("submit: the Evidence Final look line says to read those lines yourself",
-      "read those lines yourself" in flat(submit_text),
-      f"{SUBMIT_PATH}: the 'Final look' line says 'unread by an agent' without "
-      f"saying what that asks of the reader")
+check("submit: the Evidence block has no Final look line",
+      "Final look:" not in submit_text,
+      f"{SUBMIT_PATH} still asks for a 'Final look:' Evidence line; every fix "
+      f"is read by a look now, so there is nothing left for the reader to read")
 
 SEAM_LABEL = "`tested at:`"
 
