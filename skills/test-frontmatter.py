@@ -1832,7 +1832,7 @@ check("build: no longer uses the bare test label for the green gate",
 SHAPED_LABELS = {
     "backlog", "branch", "chains", "checks", "chips", "cleaned", "commit",
     "conflict", "debug", "deploy", "docs", "done", "features", "glossary",
-    "green", "handback", "lint", "live", "look", "merge", "merged",
+    "green", "handback", "lesson", "lint", "live", "look", "merge", "merged",
     "no-behaviour", "open", "opinion", "override", "parked", "piece",
     "plan", "plans", "pr", "pushed", "red", "retargeted", "review",
     "session", "settings", "stuck", "tended", "test", "theirs", "todo",
@@ -2897,6 +2897,50 @@ with open(DOCS_SHIP_PATH, encoding="utf-8") as fh:
 check("docs/ship: mentions the lesson a failed Verify writes",
       "devflow:lesson" in docs_ship_text,
       f"{DOCS_SHIP_PATH} never mentions devflow:lesson")
+
+
+# ------------------------------- submit sorts a lesson by which repo it fits
+#
+# docs/lessons.md draws the line: a fact about *this* project goes into that
+# project's `CLAUDE.md`, in the same PR as the work that found it, so the
+# human approves it with the work; a fact about devflow itself goes to
+# `devflow:lesson` and the private lessons repo instead. `submit` is the one
+# place that sorts, because it is the one place with both the finished run
+# and the commit the fact can ride along in -- no subagent does this sort.
+
+check("submit: adds a project fact to CLAUDE.md in the same commit",
+      "add one line for it to the project's CLAUDE.md" in flat(submit_text)
+      and "in this same commit" in flat(submit_text),
+      f"{SUBMIT_PATH} never says a project fact is added to CLAUDE.md in "
+      f"the same commit")
+
+check("submit: a devflow fact goes to devflow:lesson, never to CLAUDE.md",
+      "devflow:lesson" in submit_text,
+      f"{SUBMIT_PATH} never names devflow:lesson for a fact about devflow "
+      f"itself")
+
+check("submit: prints the lesson-added line",
+      "✓ **lesson** added to CLAUDE.md" in submit_text,
+      f"{SUBMIT_PATH} never prints the exact '✓ **lesson** added to "
+      f"CLAUDE.md — ...' line")
+
+check("submit: the session sorts the lesson, no subagent does",
+      re.search(r"no subagent", submit_text) is not None,
+      f"{SUBMIT_PATH} never says the run itself sorts a lesson rather than "
+      f"a subagent")
+
+check("submit: a project lesson is listed in the PR body too",
+      re.search(r"PR body", flat(submit_text)) is not None
+      and "added to CLAUDE.md" in flat(submit_text),
+      f"{SUBMIT_PATH} never says the added CLAUDE.md line also goes in the "
+      f"PR body, so the human approves it with the work")
+
+DOCS_SUBMIT_TEXT_FOR_LESSON = docs_submit_text
+
+check("docs/submit: mentions the project-lesson behaviour",
+      "CLAUDE.md" in docs_submit_text and "devflow:lesson" in docs_submit_text,
+      f"{DOCS_SUBMIT_PATH} never mentions submit adding a project lesson to "
+      f"CLAUDE.md or devflow:lesson for a devflow one")
 
 
 # --------------------------------------------------------------------- report
