@@ -2943,6 +2943,83 @@ check("docs/submit: mentions the project-lesson behaviour",
       f"CLAUDE.md or devflow:lesson for a devflow one")
 
 
+# ---------------------------------------- lesson-review reads and proposes
+#
+# `lesson-review` is the other half of the loop `lesson` only collects for:
+# it reads every line in the lessons repo, groups them, and proposes a skill
+# change -- but four of docs/lessons.md's rules are the difference between a
+# review that helps and one that quietly makes every skill worse, so they are
+# pinned here rather than left to prose a later edit could soften: a skill
+# changes only on a repeat, at least two of the same kind of mistake; a line
+# with no repeat in about 30 days moves out to `archive.md` rather than
+# lingering; and running the real eval suite costs money, so the skill asks
+# the human before it ever runs `evals/run.py`.
+
+LESSON_REVIEW_PATH = os.path.join(SKILLS_DIR, "lesson-review", "SKILL.md")
+with open(LESSON_REVIEW_PATH, encoding="utf-8") as fh:
+    lesson_review_text = fh.read()
+
+check("lesson-review: has a frontmatter block to check",
+      "lesson-review" in parsed,
+      "skills/lesson-review/SKILL.md was never parsed above")
+
+lesson_review_values = parsed.get("lesson-review", (None, {}))[1]
+
+check("lesson-review: names the hard-coded lessons repo",
+      LESSON_REPO in lesson_review_text,
+      f"{LESSON_REVIEW_PATH} never names {LESSON_REPO!r}")
+
+check("lesson-review: a skill changes only on a repeat, at least twice",
+      "at least twice" in lesson_review_text,
+      f"{LESSON_REVIEW_PATH} never says a skill changes only when the same "
+      f"kind of mistake shows up at least twice")
+
+check("lesson-review: an unrepeated line archives after about 30 days",
+      "30 day" in lesson_review_text.lower()
+      and "archive.md" in lesson_review_text,
+      f"{LESSON_REVIEW_PATH} never says a line with no repeat after about "
+      f"30 days moves to archive.md")
+
+check("lesson-review: asks the human before running the real eval suite",
+      re.search(r"[Aa]sk the human before[^\n]*evals/run\.py", lesson_review_text)
+      is not None,
+      f"{LESSON_REVIEW_PATH} never says it asks the human before running "
+      f"python3 evals/run.py -- that run costs real money")
+
+check("lesson-review: a human approves every skill change",
+      "human approves every skill change" in lesson_review_text,
+      f"{LESSON_REVIEW_PATH} never repeats the 'a human approves every "
+      f"skill change' rule from docs/lessons.md")
+
+check("lesson-review: it proposes, it does not edit a skill itself",
+      re.search(r"[Nn]ot edit a skill", lesson_review_text) is not None,
+      f"{LESSON_REVIEW_PATH} never says it proposes changes without editing "
+      f"a skill itself")
+
+check("lesson-review: links docs/lessons.md",
+      "docs/lessons.md" in lesson_review_text
+      or "../../docs/lessons.md" in lesson_review_text,
+      f"{LESSON_REVIEW_PATH} never links docs/lessons.md")
+
+check("lesson-review: description says what it does",
+      bool(literal(lesson_review_values.get("description", ""))),
+      "lesson-review's description is empty")
+
+check("lesson-review: runs count-waste.py from its own skill directory",
+      "count-waste.py" in lesson_review_text,
+      f"{LESSON_REVIEW_PATH} never names count-waste.py")
+
+check("lesson-review: each proposal comes with a new eval case",
+      re.search(r"new eval case", lesson_review_text) is not None,
+      f"{LESSON_REVIEW_PATH} never says each proposal comes with a new "
+      f"eval case under evals/")
+
+check("lesson-review: old against new on the whole eval suite",
+      re.search(r"[Oo]ld against new", lesson_review_text) is not None,
+      f"{LESSON_REVIEW_PATH} never says the whole eval suite runs on both "
+      f"the old and the new skill")
+
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")
