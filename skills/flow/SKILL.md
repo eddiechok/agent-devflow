@@ -1,7 +1,7 @@
 ---
 name: flow
-description: "Use when a request will change anything tracked in the repo - a feature, a bug fix, a refactor, a chore or a dependency bump, and equally copy, content, docs, config, styles, images or other assets. Editing a tracked file is the test, not whether the work sounds like coding. Enter here mid-task too, the moment an investigation turns into an edit. Sizes the work as Quick, Standard or Deep, then routes it through build and submit, so the work ends as a pull request rather than uncommitted changes. Accepts free text, a GitHub issue number like #123, an issue URL, or a backlog file path under .devflow/backlog/. This is the entry point, start here."
-argument-hint: "[--quick|--deep] what you want, #123, or .devflow/backlog/<name>.md"
+description: "Use when a request will change anything tracked in the repo - a feature, a bug fix, a refactor, a chore or a dependency bump, and equally copy, content, docs, config, styles, images or other assets. Editing a tracked file is the test, not whether the work sounds like coding. Enter here mid-task too, the moment an investigation turns into an edit. Sizes the work as Quick, Standard or Deep, then routes it through build and submit, so the work ends as a pull request rather than uncommitted changes. Accepts free text, a GitHub issue number like #123, an issue URL, a backlog file path under .devflow/backlog/, or a plan to build - a devflow:plan issue or a path under .devflow/plans/. This is the entry point, start here."
+argument-hint: "[--quick|--deep] what you want, #123, .devflow/backlog/<name>.md, or .devflow/plans/<name>.md"
 allowed-tools: Bash(git status:*), Bash(git branch:*), Bash(git rev-parse:*), Bash(git symbolic-ref:*), Bash(git rev-list:*), Bash(git remote show:*), Bash(ls:*), Bash(gh label create:*), Bash(rm .devflow/backlog/*), Bash(git log:*), EnterWorktree, mcp__ccd_session__spawn_task
 ---
 
@@ -62,12 +62,18 @@ Look at the branch before anything else. **If it already has an open pull reques
 **this is new work and needs a fresh branch cut from the default branch ref**, and cut it
 from that ref rather than from here, or the new PR carries the old one's commits too.
 
-### A PR that is merged or closed is not an open one
+Say which of the three you decided, in the same line as the size:
 
-A `MERGED` or `CLOSED` answer is not one of the three cases above — read
-[references/merged-or-closed-pr.md](references/merged-or-closed-pr.md) before treating
-this as a follow-up: it is new work, cut fresh from the default branch ref, said the same
-way the size line is said.
+```
+Standard — follow-up on #12, tightening the copy it added.
+```
+
+If the branch is one you may not leave — a harness that pins it, as Claude Code on the web
+does — say so and ask which the human wants: carry on inside this PR, or stop and start a
+fresh session. Never quietly bolt unrelated work onto someone's open pull request.
+
+**A `MERGED` or `CLOSED` PR is none of the three** — it is new work, cut fresh from the
+default branch ref. Read [references/merged-or-closed-pr.md](references/merged-or-closed-pr.md).
 
 ## Step 0b — is this plan already running?
 
@@ -107,6 +113,12 @@ what is built, and runs the builders (see its own
 [resume reference](../plan/references/resume.md) for how). Skip step 2 and skip the
 questions; both were settled in the first round and the plan holds their answers. When
 `devflow:plan` reports back, treat that as `build` finishing and go to step 5.
+
+**A request that names a plan is that plan**, whatever `Commits ahead` says: a path
+under `.devflow/plans/`, or `#n` for an issue labelled `devflow:plan` —
+`gh api repos/{owner}/{repo}/issues/<n> --jq '[.labels[].name]'`. Hand it over the same
+way. With no piece in the log and no `git tag --list 'devflow/*/base'` it is new work:
+step 0c runs first, and `new-work` goes with the plan. A base tag means chains started.
 
 Only when no plan matches is this a new request. A plan whose subject is plainly something
 else does not match, and neither does one whose pieces are all in the log — that job is
@@ -184,8 +196,8 @@ project asked, and this line is the project asking, for the reason above. So do 
 to ask whether a worktree was wanted here. It was.
 
 **The worktree is a folder, not a base.** It settles which tree `checkout -b` moves and
-nothing else. `worktree.baseRef` may well be `head` — this skill writes that itself for
-the chains — and `head` cuts the new checkout from `<branch>`, the very work this request
+nothing else. `worktree.baseRef` may well be `head` — `devflow:plan` writes that itself
+for the chains — and `head` cuts the new checkout from `<branch>`, the very work this request
 has nothing to do with. So the base is still `build`'s to fix: tell it in as many words
 that **this is new work and needs a fresh branch cut from the default branch ref**, exactly
 as step 0 does. Inside the worktree that `checkout -b` reaches nobody.
@@ -239,7 +251,7 @@ and a perfectly good spec: paste the text, and if the work is Deep, put it in th
 so `review`'s second axis has something to judge against. Never quietly drop that axis
 because the tracker was the wrong shape — say the spec came in as pasted text.
 
-If `--quick` or `--deep` is present, that is the size. Still work out your own size, silently, then skip the rest of step 2. **If yours differs, record the override** — see "Recording overrides" at the end. If it matches, there was no correction: record nothing and print nothing. Do not argue with an explicit override.
+If `--quick` or `--deep` is present, that is the size. Still work out your own size, silently, then skip the rest of step 2. **If yours differs, record the override** — read [references/size-override.md](references/size-override.md). If it matches, there was no correction: record nothing and print nothing. Do not argue with an explicit override.
 
 ## Step 1b — one feature per run
 
@@ -353,7 +365,8 @@ If you arrived here mid-turn, because a question or an investigation turned into
 **Standard** → if anything is genuinely ambiguous, ask **one** round of questions (see below), then `devflow:build`. If nothing is ambiguous, go straight to `devflow:build`.
 
 **Deep** → ask one round of questions, get agreement, then call `devflow:plan` with the
-request and the agreed answers. `plan` writes the plan, then runs one builder agent per
+request and the agreed answers. Where step 0 or 0c decided **new work, fresh branch**,
+tell `devflow:plan` too, as `new-work` — no `build` runs on Deep to hear it. `plan` writes the plan, then runs one builder agent per
 chain, several chains at once, and reports back when the branch carries every piece —
 treat that report the way you would `build` finishing.
 
@@ -450,20 +463,6 @@ The only reasons not to call `submit`:
 - The human said not to.
 
 Both are things you say out loud. Neither is silence.
-
-## Recording overrides
-
-Work out your own size first, so the record shows what would have happened. **Only a flag that differs from your own size is a correction.** `--deep` on work you would have called Deep is not an override, and a line saying `guessed: Deep | correct: Deep` teaches the classifier nothing. Call nothing in that case.
-
-When it differs, call `devflow:lesson` with skill `flow`, kind `mistake`, what `sized "<request>" <guessed>, human said <correct>`, proof `none`, and the flag itself, `--quick` or `--deep`, as the human's words.
-
-**Print the same line as before**, exactly once, whatever `devflow:lesson` itself prints:
-
-```
-✓ **override** recorded — guessed Quick, you said Deep
-```
-
-Beyond that one line, do not discuss it and do not ask about it. Record it and carry on with the size the human asked for.
 
 ## Output
 

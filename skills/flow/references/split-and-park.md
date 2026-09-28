@@ -30,7 +30,8 @@ Remove it after each issue is filed.
 **No block, `local`, or a `gh` failure:** write a file instead, one per parked feature, at
 `.devflow/backlog/<short-name>.md`. Never park under a name a `Backlog:` line already holds
 — step 1 would read that entry as built and delete it. Run both of step 1's lookups for
-the name first, and on a hit from either pick another. If `gh` cannot answer, the name is
+the name first — the `git log` and the `gh api` search in
+[backlog-path.md](backlog-path.md) — and on a hit from either pick another. If `gh` cannot answer, the name is
 unchecked; use `<short-name>-<YYYY-MM-DD>` instead:
 
 ```markdown

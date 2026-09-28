@@ -687,6 +687,14 @@ check("split-and-park: checks a name with both of step 1's lookups",
       f"{SPLIT_PARK_PATH} checks a name with fewer lookups than step 1 "
       f"uses to call it built, so a PR-body-only line slips through")
 
+# The lookups themselves live in backlog-path.md, which flow reads only for a
+# backlog-path request. A free-text request reaches step 1b without them, so
+# the sentence that names them has to say where they are.
+check("split-and-park: links the file that holds step 1's lookups",
+      "backlog-path.md" in split_park_text,
+      f"{SPLIT_PARK_PATH} names step 1's lookups but never links "
+      f"backlog-path.md, the only file that holds them")
+
 check("backlog-path: deletes a backlog file whose feature already shipped",
       BACKLOG_BUILT_LINE in flat(backlog_path_text),
       f"no line {BACKLOG_BUILT_LINE!r} in {BACKLOG_PATH_REF}")
@@ -2444,11 +2452,17 @@ check("flow: says command -v gh finds nothing before falling back",
       "command -v gh" in flow_text,
       f"{FLOW_PATH} never checks for a missing gh before the curl fallback")
 
-check("flow: every issue call points at the curl fallback reference",
-      flow_text.count("references/curl-fallback.md") >= 3,
-      f"{FLOW_PATH} names the curl fallback reference fewer than three "
-      f"times: the request read, the backlog create and step 0b's own "
-      f"pointer each need it")
+# One pointer per call site, each checked where it lives. A count across
+# flow's own text passed on a single markdown link, which names the file twice.
+for where, text in (
+        ("flow step 0b", flow_text.split("## Step 0b", 1)[-1].split("## Step 0c", 1)[0]),
+        ("flow step 1", flow_text.split("## Step 1 ", 1)[-1].split("## Step 1b", 1)[0]),
+        ("split-and-park", split_park_text),
+        ("plan", plan_text)):
+    check(f"{where}: points its issue calls at the curl fallback",
+          "curl-fallback.md" in text,
+          f"{where} makes a GitHub issue call with no pointer to "
+          f"references/curl-fallback.md for a missing gh")
 
 for slug, text in (("review", review_skill_text), ("setup", setup_text)):
     check(f"{slug}: never prints the token, never sends it elsewhere",
@@ -2896,24 +2910,31 @@ check("lesson: description says what it does",
 # collector. The rule that only a differing flag is a correction, and the
 # printed `override` line, both survive unchanged.
 
-check("flow: Recording overrides calls devflow:lesson",
-      re.search(r"Recording overrides.*devflow:lesson", flow_text, re.S)
-      is not None,
-      f"{FLOW_PATH}'s Recording overrides section never calls devflow:lesson")
+OVERRIDE_PATH = os.path.join(SKILLS_DIR, "flow", "references", "size-override.md")
+with open(OVERRIDE_PATH, encoding="utf-8") as fh:
+    override_text = fh.read()
+
+check("flow: step 1 points a differing flag at the override reference",
+      "references/size-override.md" in flow_text,
+      f"{FLOW_PATH} never points at references/size-override.md")
+
+check("size-override: records the override through devflow:lesson",
+      "devflow:lesson" in override_text,
+      f"{OVERRIDE_PATH} never calls devflow:lesson")
 
 check("flow: no longer writes overrides to a file of its own",
-      "overrides.md" not in flow_text,
+      "overrides.md" not in flow_text + override_text,
       f"{FLOW_PATH} still names overrides.md -- lesson is now the only writer")
 
-check("flow: keeps the printed override line",
-      "✓ **override** recorded — guessed Quick, you said Deep" in flow_text,
-      f"{FLOW_PATH} no longer prints the override line, even though the "
+check("size-override: keeps the printed override line",
+      "✓ **override** recorded — guessed Quick, you said Deep" in override_text,
+      f"{OVERRIDE_PATH} no longer prints the override line, even though the "
       f"destination behind it changed")
 
-check("flow: keeps the only-a-differing-flag rule",
+check("size-override: keeps the only-a-differing-flag rule",
       "Only a flag that differs from your own size is a correction"
-      in flow_text,
-      f"{FLOW_PATH} lost the rule that a matching flag is not a correction")
+      in override_text,
+      f"{OVERRIDE_PATH} lost the rule that a matching flag is not a correction")
 
 OVERRIDES_PATH_LITERAL = "~/.claude/devflow/overrides.md"
 
@@ -3149,6 +3170,60 @@ check("flow: step 4's Deep route calls devflow:plan",
 check("flow: a resumed plan is handed to devflow:plan too",
       "`devflow:plan`'s to run, not flow's" in flow_text,
       f"{FLOW_PATH} step 0b never hands a matched plan to devflow:plan")
+
+# `plan` by hand prints `/devflow:flow #45 builds it`. A plan written by hand
+# sits on a branch with no commits, where step 0b's issue lookup never runs,
+# so flow has to recognise the plan from the request itself.
+check("flow: a request that names a plan runs that plan",
+      "labelled `devflow:plan`" in flat(flow_text)
+      and "under `.devflow/plans/`" in flat(flow_text)
+      and "is that plan" in flat(flow_text),
+      f"{FLOW_PATH} never treats a request naming a plan issue or plan file "
+      f"as that plan, so `/devflow:flow #45` asks the questions again")
+
+# On Deep no `build` runs in the session, so nothing else cuts the feature
+# branch. A plan run from `/devflow:flow #45` on a fresh checkout would merge
+# every chain into the default branch, locally.
+check("plan: cuts the feature branch before the base tag",
+      "git checkout -b <type>/<short-name> <default branch ref>" in plan_text
+      and plan_text.index("git checkout -b <type>/<short-name> <default branch ref>")
+      < plan_text.index("git tag devflow/<plan short-name>/base HEAD"),
+      f"{PLAN_PATH} never cuts a feature branch before tagging the base, so "
+      f"the chains merge into whatever branch the session stands on")
+
+# Step 0 and step 0c say "new work, fresh branch" to `build`. On Deep no
+# `build` runs, so the same words have to reach `plan`, or it keeps a stale
+# branch and merges the chains on top of that branch's commits.
+check("flow: tells devflow:plan when this is new work",
+      "tell `devflow:plan` too" in flat(flow_text),
+      f"{FLOW_PATH} says 'new work, fresh branch' only to build, which never "
+      f"runs on Deep work")
+
+check("plan: takes a new-work flag from flow",
+      "new-work" in re.search(r"^argument-hint: (.+)$", plan_text, re.M).group(1),
+      f"{PLAN_PATH} argument-hint has no field for flow's 'this is new work'")
+
+check("flow: its argument hint names a plan",
+      ".devflow/plans/" in re.search(r"^argument-hint: (.+)$", flow_text,
+                                      re.M).group(1),
+      f"{FLOW_PATH} argument-hint never offers a plan as the request")
+
+# Step 0 decides between three cases for an open PR. The pinned-harness
+# question and the size-line wording apply to all three, so they stay in the
+# body flow always reads -- not in the merged-or-closed reference.
+check("flow: the pinned-harness question stays in the always-read body",
+      "carry on inside this PR" in flat(flow_text),
+      f"{FLOW_PATH} lost the pinned-harness question to a reference file "
+      f"read only for a merged or closed PR")
+
+check("flow: says which of the three cases in the size line",
+      "Say which of the three you decided" in flow_text,
+      f"{FLOW_PATH} lost the rule to name the step 0 case in the size line")
+
+check("flow: step 0c says plan writes worktree.baseRef, not flow",
+      "this skill writes that itself" not in flow_text,
+      f"{FLOW_PATH} step 0c still says flow writes worktree.baseRef; "
+      f"`plan` writes it now")
 
 
 # ------------------------------ the size budget is a check, not a courtesy

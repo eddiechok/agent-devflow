@@ -1,8 +1,8 @@
 ---
 name: plan
 description: "Use for Deep work - a new feature, a new subsystem, a change across many files, or anything you cannot yet name the files for. Writes the plan down as reviewable pieces with chain letters, or revises one already written, then runs one builder agent per chain until the branch carries every piece. Called by flow after its round of questions on Deep work, and after flow's own step 0b on a resume. Also safe to start by hand as /devflow:plan, which does flow's step 0b check itself, then writes or revises the plan and stops - flow builds it from there."
-argument-hint: "[request: the words the human typed] [answers: the agreed round of questions] [resume: <#n or .devflow/plans/path>, if flow already found a match]"
-allowed-tools: Bash(git status:*), Bash(git branch:*), Bash(git worktree:*), Bash(git rev-parse:*), Bash(git symbolic-ref:*), Bash(git merge-base:*), Bash(git merge:*), Bash(git tag:*), Bash(git log:*)
+argument-hint: "[request: the words the human typed] [answers: the agreed round of questions] [resume: <#n or .devflow/plans/path>, if flow already found a match] [new-work, if flow decided a fresh branch]"
+allowed-tools: Bash(git status:*), Bash(git branch:*), Bash(git checkout -b:*), Bash(git worktree:*), Bash(git rev-parse:*), Bash(git symbolic-ref:*), Bash(git merge-base:*), Bash(git merge:*), Bash(git tag:*), Bash(git log:*)
 ---
 
 # plan
@@ -238,6 +238,14 @@ finds the setting already there is the run that spawns chains.
 **The check below still runs on the runs that do spawn.** A settings file that says
 `"head"` is not proof the value reached this session either — one edited by hand a minute
 ago reads exactly like one loaded at start-up. So finding it does not excuse trusting it.
+
+**Stand on the feature branch first.** No `build` runs in this session, so nothing else
+cuts it. On the default branch, or when `flow` passed `new-work`, cut it from the
+default branch ref, the same rule `build` follows; on any other branch, keep it:
+
+```
+git checkout -b <type>/<short-name> <default branch ref>
+```
 
 **Then tag this branch's tip**, before the first spawn, so the base survives a `/clear`:
 

@@ -8,13 +8,3 @@ default branch will be empty or wrong, because its commits are already in.
 Treat it as new work, and say so: fresh branch, cut from the default branch ref, not from
 here. The same applies when the branch is simply behind — start from the ref, not from
 where you happen to be standing.
-
-Say which of the three you decided, in the same line as the size:
-
-```
-Standard — follow-up on #12, tightening the copy it added.
-```
-
-If the branch is one you may not leave — a harness that pins it, as Claude Code on the web
-does — say so and ask which the human wants: carry on inside this PR, or stop and start a
-fresh session. Never quietly bolt unrelated work onto someone's open pull request.

@@ -265,6 +265,28 @@ check_true(
 check_true("trace: excludes the whole skill body, not just one line",
            "new subsystem" not in trace)
 
+# A skill that points at `references/<name>.md` has the model `Read` it, and a
+# reference file carries worked examples of the very lines graders look for --
+# `split-and-park.md` holds `✓ **chips** 2 offered`. A `Read` of a skill's own
+# file is the skill body arriving by another tool, so it is dropped the same way.
+READ_EVENTS = [
+    {"type": "assistant", "message": {"content": [
+        {"type": "tool_use", "id": "r1", "name": "Read", "input": {
+            "file_path": "/p/devflow/skills/flow/references/split-and-park.md"}},
+        {"type": "tool_use", "id": "r2", "name": "Read", "input": {
+            "file_path": "/tmp/project/greet.py"}},
+    ]}},
+    {"type": "user", "message": {"content": [
+        {"type": "tool_result", "tool_use_id": "r1", "content": "✓ **chips** 2 offered"},
+        {"type": "tool_result", "tool_use_id": "r2", "content": "def greet(name):"},
+    ]}},
+]
+read_trace = run.build_trace(READ_EVENTS)
+check_true("trace: EXCLUDES a Read of a skill's reference file",
+           "**chips** 2 offered" not in read_trace)
+check_true("trace: still includes a Read of a project file",
+           "def greet(name):" in read_trace)
+
 check(
     "trace: tool calls are found in order",
     [c["name"] for c in run.tool_calls(EVENTS)],

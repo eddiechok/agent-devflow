@@ -236,9 +236,16 @@ shape as superpowers' `writing-plans` skill.
 match check first: a file under `.devflow/plans/`, or an open `devflow:plan` issue whose
 subject matches. Then it asks its one round of questions, using `flow`'s own rules rather
 than a second copy of them, writes the plan or the revision, and **stops**. It does not run
-the chains — only `flow` sizes the work, cuts the branch, and calls `submit` when they are
-done, so the by-hand path prints the plan's number or path and the `/devflow:flow` command
-that builds it, and leaves the building to a run that does.
+the chains — only `flow` sizes the work, checks the folder, and calls `submit` when they
+are done, so the by-hand path prints the plan's number or path and the `/devflow:flow`
+command that builds it, and leaves the building to a run that does.
+
+That command has to work on a fresh branch. `flow`'s step 0b looks up plan issues only
+when commits are ahead, and a plan written by hand has none, so a request that *names* a
+plan — `#45` labelled `devflow:plan`, or a path under `.devflow/plans/` — is that plan
+whatever the count says. And because no `build` runs in a Deep session, `plan` cuts the
+feature branch itself before it tags the base; otherwise the chains would merge into
+whatever branch the session stood on, the default one included.
 
 ## The reasons, step by step
 
