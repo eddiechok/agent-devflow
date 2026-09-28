@@ -123,10 +123,10 @@ trace happens to show it, which it may well do after `tend` pushes. That is
 opportunistic coverage, not measurement.
 
 The first four are the classifier, which is the part of `flow` most likely to
-drift and the only part with correction data behind it
-(`~/.claude/devflow/overrides.md`). They cut themselves off after a handful of
-turns — the size announcement is all they measure, and letting the work run
-would multiply the cost for no extra signal.
+drift and the only part with correction data behind it, recorded through
+`devflow:lesson` into the lessons repo. They cut themselves off after a
+handful of turns — the size announcement is all they measure, and letting the
+work run would multiply the cost for no extra signal.
 
 `sizing-standard` is the odd one out and worth understanding before you trust a
 green run from it. The other three use requests nobody would argue about, which
