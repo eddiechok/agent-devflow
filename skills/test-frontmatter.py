@@ -2729,6 +2729,83 @@ check("docs/web: says ship keeps gh pr because it is local",
       "`ship` keeps `gh pr`" in docs_web_text,
       f"{DOCS_WEB_PATH} never says why ship was left on gh pr")
 
+
+# --------------------------------------------- lesson writes one devflow line
+#
+# `lesson` is the only place a devflow mistake, waste observation or idea
+# turns into a line in the lessons repo, so four things about it are pinned
+# here rather than left to prose a later edit could soften: which repo it
+# writes to (a hard-coded private repo, never this project and never
+# `~/.claude`), the seven-part shape of the line it appends, the exact line
+# it prints when it cannot reach the repo at all -- the human has to copy it
+# by hand, so the wording is the contract -- and the rule that it never edits
+# a skill itself. A human approves every skill change; `lesson` only ever
+# collects the evidence for one.
+
+LESSON_PATH = os.path.join(SKILLS_DIR, "lesson", "SKILL.md")
+with open(LESSON_PATH, encoding="utf-8") as fh:
+    lesson_text = fh.read()
+
+check("lesson: has a frontmatter block to check",
+      "lesson" in parsed,
+      "skills/lesson/SKILL.md was never parsed above")
+
+lesson_values = parsed.get("lesson", (None, {}))[1]
+
+LESSON_REPO = "eddiechok/devflow-lessons"
+
+check("lesson: names the hard-coded lessons repo",
+      LESSON_REPO in lesson_text,
+      f"{LESSON_PATH} never names {LESSON_REPO!r}")
+
+LESSON_LINE_SHAPE = (
+    'YYYY-MM-DD | <project> | <skill> | <kind> | <what> | <proof> | '
+    '"<human\'s words>"'
+)
+
+check("lesson: pins the seven-part line shape",
+      LESSON_LINE_SHAPE in lesson_text,
+      f"no line {LESSON_LINE_SHAPE!r} in {LESSON_PATH}")
+
+LESSON_FALLBACK_LINE = (
+    "✗ **lesson** could not reach eddiechok/devflow-lessons — copy this "
+    "line:"
+)
+
+check("lesson: prints the exact fallback line when every write fails",
+      LESSON_FALLBACK_LINE in lesson_text,
+      f"no line {LESSON_FALLBACK_LINE!r} in {LESSON_PATH}. Without the exact "
+      f"wording the human has nothing reliable to copy by hand")
+
+check("lesson: never writes into the current project or ~/.claude",
+      re.search(r"[Nn]ever write a lesson into the current project",
+                lesson_text) is not None,
+      f"{LESSON_PATH} never rules out writing the lesson locally instead of "
+      f"to the lessons repo")
+
+check("lesson: never edits a skill -- a human approves every skill change",
+      re.search(r"[Nn]ever edit a skill", lesson_text) is not None,
+      f"{LESSON_PATH} never says it will not edit a skill itself")
+
+check("lesson: says a human approves every skill change",
+      "human approves every skill change" in lesson_text,
+      f"{LESSON_PATH} never repeats the 'a human approves every skill "
+      f"change' rule from docs/lessons.md")
+
+check("lesson: a project fact goes to CLAUDE.md through submit, not here",
+      "CLAUDE.md" in lesson_text and "submit" in lesson_text,
+      f"{LESSON_PATH} never says a fact about this project goes to "
+      f"CLAUDE.md through submit instead of into a devflow lesson")
+
+check("lesson: links docs/lessons.md",
+      "docs/lessons.md" in lesson_text or "../../docs/lessons.md" in lesson_text,
+      f"{LESSON_PATH} never links docs/lessons.md")
+
+check("lesson: description says what it does",
+      bool(literal(lesson_values.get("description", ""))),
+      "lesson's description is empty")
+
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")
