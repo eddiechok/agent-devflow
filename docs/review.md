@@ -27,6 +27,8 @@ It exists because `spec-reviewer` is not symmetrical with the other two. Every `
 
 But `hardcase` gets no vote. A finding that fell is still printed, with the reason. `submit` checks the refuting line itself before dropping anything. Two agents disagreeing is not a majority. It is one of them having read something the other did not.
 
+A finding that falls is also one of the three clearest signs a devflow mistake happened — `reviewer` or `security-reviewer` flagged something real work shows was not there — so `review` calls `devflow:lesson` for each one, naming whichever agent raised it. See [docs/lessons.md](lessons.md).
+
 All four are agents, not prompt templates. `tools:` grants read, grep, glob and bash. None has Edit or Write, and none can start another agent. Those two limits are real. But bash can still write a file or run `git`. So "never edit" is a rule in each prompt, not a wall in the harness. Bash stays because `git diff` is how they read the change.
 
 All four pin `model: opus` and `effort: xhigh`. A review does not quietly become a cheaper review because of what you happened to have `/model` set to. An under-powered review still prints, and still reports nothing wrong.

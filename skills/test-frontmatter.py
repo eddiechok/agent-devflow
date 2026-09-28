@@ -2857,6 +2857,48 @@ check("flow: stays at or under its size cap of 1059 lines",
       f"Move a why paragraph verbatim to docs/flow.md instead of growing it")
 
 
+# ------------------------------ review and ship write a lesson on clear signs
+#
+# Two of the three clearest signs docs/lessons.md names live here: `hardcase`
+# refuting a finding, and a deploy's `Verify` line failing. Both are pinned by
+# name -- `devflow:lesson` -- rather than by outcome, because the outcome
+# (both sections still printed, the existing failure handling still running)
+# looks identical whether or not the call happened, and a call nobody can see
+# is a call that silently stops happening the day someone tidies the prose
+# around it.
+
+check("review: calls devflow:lesson for a finding hardcase falls",
+      "devflow:lesson" in review_skill_text,
+      f"{os.path.join(SKILLS_DIR, 'review', 'SKILL.md')} never names "
+      f"devflow:lesson for a finding hardcase refutes")
+
+check("ship: calls devflow:lesson when Verify fails after deploy",
+      "devflow:lesson" in ship_text,
+      f"{SHIP_PATH} never names devflow:lesson for a failed post-deploy "
+      f"Verify")
+
+check("ship: stays at or under its size cap of 535 lines",
+      len(ship_text.splitlines()) <= 535,
+      f"{SHIP_PATH} is {len(ship_text.splitlines())} lines, over its cap. "
+      f"Move a why paragraph verbatim to docs/ship.md instead of growing it")
+
+DOCS_REVIEW_PATH = os.path.join(REPO_ROOT, "docs", "review.md")
+with open(DOCS_REVIEW_PATH, encoding="utf-8") as fh:
+    docs_review_text = fh.read()
+
+check("docs/review: mentions the lesson a falling finding writes",
+      "devflow:lesson" in docs_review_text,
+      f"{DOCS_REVIEW_PATH} never mentions devflow:lesson")
+
+DOCS_SHIP_PATH = os.path.join(REPO_ROOT, "docs", "ship.md")
+with open(DOCS_SHIP_PATH, encoding="utf-8") as fh:
+    docs_ship_text = fh.read()
+
+check("docs/ship: mentions the lesson a failed Verify writes",
+      "devflow:lesson" in docs_ship_text,
+      f"{DOCS_SHIP_PATH} never mentions devflow:lesson")
+
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")

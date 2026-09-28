@@ -154,6 +154,11 @@ No single overall winner. One worst finding per axis, or none.
 
 **Carry a `Not reported:` line through.** If either agent says findings were dropped, say so beside that axis — the same reason `NOT RUN` is not `none`.
 
+**Each finding under `Falls` writes a lesson.** Call `devflow:lesson` — skill is whichever
+agent raised it, `reviewer` or `security-reviewer`, kind `mistake`, what `<agent> flagged
+<the finding, short>; hardcase refuted it`, proof the branch's HEAD commit or the PR. Still
+print both sections as `hardcase` wrote them; this is in addition to that, not instead.
+
 ## 5. Hand back
 
 If `submit` called this, return the report and stop — `submit` decides what to fix.

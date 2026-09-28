@@ -81,6 +81,12 @@ This was rejected once before it was accepted, and the rejection is worth record
 
 **And a refusal is neither.** It was two states until #32 hit a third: a deterministic `no` from the forge, which leaves the default branch unmoved exactly as a transient failure does. So the SHA — the oracle below, and the right answer to the first two states — cannot separate them, and the instruction it hands you is "retry", which for a refusal is the one move certain to fail. What tells them apart is the error's own words: `500` and `503` are the transport falling over, where `can't be rebased` is the forge answering the question. Retrying a refusal spends the cap and ends with the pull request still open, which is what makes it worth a row of its own rather than a sentence.
 
+**The third row is the one the SHA cannot find for you.** A refusal and a transient
+failure both leave the default branch exactly where it was, so the oracle below says "did
+not land" for both and stops being able to help. What separates them is the error's own
+words: `500` and `503` are the transport falling over, where `can't be rebased`, `not
+mergeable` or a required check is the forge answering the question you asked.
+
 ### Ask git, not the API
 
 **This is the oracle, and it keeps working when `gh` does not.** `ls-remote` speaks the git protocol; `gh pr merge` and `gh pr view` go through the GraphQL API. In a real run the API returned 503 to every call for several minutes while `ls-remote` answered correctly throughout. When the thing that failed is the API, do not ask the API whether it failed.
@@ -127,6 +133,8 @@ is the entire remaining value of the step. Reporting second-hand evidence as pro
 just overstate — it closes the conversation that would have caught it.
 
 A passing pipeline sitting on top of a broken page is worse than an honest failure.
+
+A `Verify` line failing after the deploy just ran is one of the three clearest signs a devflow mistake happened, so this step calls `devflow:lesson` before reporting it — see [docs/lessons.md](lessons.md).
 
 The merge is already done and cannot be undone from here, so an accurate report is the entire remaining value of this step.
 
