@@ -769,6 +769,11 @@ SHIP_PATH = os.path.join(SKILLS_DIR, "ship", "SKILL.md")
 with open(SHIP_PATH, encoding="utf-8") as fh:
     ship_text = fh.read()
 
+CONFLICT_HANDOVER_PATH = os.path.join(SKILLS_DIR, "ship", "references",
+                                       "conflict-handover.md")
+with open(CONFLICT_HANDOVER_PATH, encoding="utf-8") as fh:
+    conflict_handover_text = fh.read()
+
 check("ship: reads the PR's base before merging",
       "baseRefName" in ship_text,
       f"{SHIP_PATH} never asks for baseRefName, so a stacked PR merges into "
@@ -1150,11 +1155,16 @@ check("docs/submit: records why step 6 prints, citing #31",
 # only the new behaviour has.
 SHIP_CONFLICT_LINE = "**conflict** handing #"
 
-check("ship: hands a conflicting PR to tend rather than stopping",
-      SHIP_CONFLICT_LINE in ship_text,
-      f"{SHIP_PATH} step 2 never prints a '{SHIP_CONFLICT_LINE}...' line, so "
-      f"nothing says it sends a CONFLICTING pull request to `devflow:tend` "
-      f"itself rather than naming tend and stopping")
+check("ship: points at the conflict-handover reference",
+      "references/conflict-handover.md" in ship_text,
+      f"{SHIP_PATH} step 2 never points at references/conflict-handover.md "
+      f"for the one thing it hands over rather than stops on")
+
+check("conflict-handover: hands a conflicting PR to tend rather than stopping",
+      SHIP_CONFLICT_LINE in conflict_handover_text,
+      f"{CONFLICT_HANDOVER_PATH} never prints a '{SHIP_CONFLICT_LINE}...' "
+      f"line, so nothing says it sends a CONFLICTING pull request to "
+      f"`devflow:tend` itself rather than naming tend and stopping")
 
 check("ship: still stops on the three that are not conflicts",
       "judgement call" in flat(ship_text),
@@ -1162,10 +1172,11 @@ check("ship: still stops on the three that are not conflicts",
       f"changes stay stops. Without the reason, the next edit widens the "
       f"handoff to all four and ship starts answering reviewers")
 
-check("ship: tends a conflict once, and never loops",
-      "one attempt" in flat(ship_text).lower(),
-      f"{SHIP_PATH} never bounds the tend handoff to a single attempt. A "
-      f"conflict tend could not fix is a conflict a second tend cannot either")
+check("conflict-handover: tends a conflict once, and never loops",
+      "one attempt" in flat(conflict_handover_text).lower(),
+      f"{CONFLICT_HANDOVER_PATH} never bounds the tend handoff to a single "
+      f"attempt. A conflict tend could not fix is a conflict a second tend "
+      f"cannot either")
 
 # The three below are the return path, and all three came out of the review of
 # 23 Sep 2026, which found that coming back from `tend` branched on `mergeable`
@@ -1182,24 +1193,25 @@ check("ship: tends a conflict once, and never loops",
 # for, and what the worktree-guard eval measured. A backstop in the Rules is not
 # a substitute for the local line saying it.
 
-check("ship: re-reads every condition after tend, not just mergeable",
-      "all four conditions, not just `mergeable`" in flat(ship_text),
-      f"{SHIP_PATH}'s return path from tend must re-run all four of step 2's "
-      f"conditions. tend pushed, so CI restarted — branching on mergeability "
-      f"alone merges a pull request whose checks are still running")
+check("conflict-handover: re-reads every condition after tend, not just mergeable",
+      "all four conditions, not just `mergeable`" in flat(conflict_handover_text),
+      f"{CONFLICT_HANDOVER_PATH}'s return path from tend must re-run all four "
+      f"of step 2's conditions. tend pushed, so CI restarted — branching on "
+      f"mergeability alone merges a pull request whose checks are still running")
 
-check("ship: does not read UNKNOWN mergeability as a yes",
-      "It is not a yes" in flat(ship_text)
-      and "UNKNOWN" in ship_text,
-      f"{SHIP_PATH} never says an UNKNOWN mergeability is not clearance. "
-      f"GitHub answers UNKNOWN for the first seconds after any push, and the "
-      f"handoff guarantees a push immediately before this read")
+check("conflict-handover: does not read UNKNOWN mergeability as a yes",
+      "It is not a yes" in flat(conflict_handover_text)
+      and "UNKNOWN" in conflict_handover_text,
+      f"{CONFLICT_HANDOVER_PATH} never says an UNKNOWN mergeability is not "
+      f"clearance. GitHub answers UNKNOWN for the first seconds after any "
+      f"push, and the handoff guarantees a push immediately before this read")
 
-check("ship: hands over only when the conflict is the only thing reported",
-      "is not a conflict to hand over" in flat(ship_text),
-      f"{SHIP_PATH} hands a PR to tend without checking it reports nothing "
-      f"else. Conflicting and changes-requested together means tend answers "
-      f"the reviewer too, which is not what a merge command was started for")
+check("conflict-handover: hands over only when the conflict is the only thing reported",
+      "is not a conflict to hand over" in flat(conflict_handover_text),
+      f"{CONFLICT_HANDOVER_PATH} hands a PR to tend without checking it "
+      f"reports nothing else. Conflicting and changes-requested together "
+      f"means tend answers the reviewer too, which is not what a merge "
+      f"command was started for")
 
 SHIP_TENDED_LINE = "**tended**"
 
@@ -3143,27 +3155,24 @@ check("flow: a resumed plan is handed to devflow:plan too",
 #
 # skill-creator's own advice is "Keep SKILL.md under 500 lines" -- a skill
 # that grows past it costs every future read of it, and nothing else here
-# enforces that except a human noticing. `ship` still carries its own higher
-# cap, set at its size on the day it earned an exception (535, checked
-# individually above); every other skill, `flow` included since #64 moved
-# its Deep content into `plan` and its rare paths into references, stays
-# under the ordinary 500. Splitting `ship` under 500 too is the rest of
-# backlog issue #61 -- this loop is what stops a ninth skill from quietly
-# needing the same exception before that lands.
+# enforces that except a human noticing. `flow` and `ship` used to carry
+# their own higher caps, set at their sizes on the day each earned an
+# exception; #64 moved flow's Deep content into `plan` and both skills'
+# rare paths into references, so every skill now stays under the ordinary
+# 500 with no exception at all -- this loop is what stops a ninth skill
+# from quietly needing one again.
 
-SKILL_SIZE_CAPS = {"ship": 535}
-DEFAULT_SKILL_SIZE_CAP = 500
+SKILL_SIZE_CAP = 500
 
 for slug in skills:
-    cap = SKILL_SIZE_CAPS.get(slug, DEFAULT_SKILL_SIZE_CAP)
     skill_path = os.path.join(SKILLS_DIR, slug, "SKILL.md")
     with open(skill_path, encoding="utf-8") as fh:
         line_count = len(fh.read().splitlines())
-    check(f"{slug}: SKILL.md stays at or under its size cap of {cap} lines",
-          line_count <= cap,
-          f"{skill_path} is {line_count} lines, over its cap of {cap}. Move "
-          f"a why paragraph verbatim to that skill's docs page instead of "
-          f"growing it")
+    check(f"{slug}: SKILL.md stays at or under its size cap of {SKILL_SIZE_CAP} lines",
+          line_count <= SKILL_SIZE_CAP,
+          f"{skill_path} is {line_count} lines, over its cap of "
+          f"{SKILL_SIZE_CAP}. Move a why paragraph verbatim to that skill's "
+          f"docs page instead of growing it")
 
 
 # --------------------------------------------------------------------- report
