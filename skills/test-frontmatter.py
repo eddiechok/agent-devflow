@@ -3386,6 +3386,63 @@ check("debug: says it is normally started by flow but safe by hand",
       f"safe to invoke directly")
 
 
+# ------------------------- flow routes an unknown-cause bug to debug, not plan
+#
+# Piece 2 of plan #72. A bug with no known cause reads exactly like Deep's own
+# test -- "you cannot name the files it touches yet" -- so without a rule of
+# its own it would fall through to `plan` instead of `devflow:debug`. The line
+# and the reference it points at are pinned word for word, the same reason
+# every other routing line in this file is.
+
+FLOW_DEBUG_ROUTE_LINE = (
+    "**A bug nobody can point at** is not Deep — read "
+    "[references/debug-route.md](references/debug-route.md); it stays "
+    "Standard and calls `devflow:debug` before `devflow:build`."
+)
+
+check("flow: step 4 routes an unknown-cause bug to debug-route.md",
+      FLOW_DEBUG_ROUTE_LINE in flow_text,
+      f"no line {FLOW_DEBUG_ROUTE_LINE!r} in {FLOW_PATH}")
+
+DEBUG_ROUTE_PATH = os.path.join(SKILLS_DIR, "flow", "references", "debug-route.md")
+with open(DEBUG_ROUTE_PATH, encoding="utf-8") as fh:
+    debug_route_text = fh.read()
+
+check("debug-route: says the bug goes to debug, not plan",
+      "not `plan`" in debug_route_text,
+      f"{DEBUG_ROUTE_PATH} never says an unknown-cause bug goes to debug "
+      f"rather than plan")
+
+check("debug-route: hands debug's report to build as the piece",
+      "the red command becomes `build`'s first failing test" in
+      flat(debug_route_text),
+      f"{DEBUG_ROUTE_PATH} never says debug's red command becomes build's "
+      f"first failing test")
+
+check("debug-route: then submit, the same Standard path as today",
+      "the same\nStandard path as any other change" in debug_route_text
+      or "the same Standard path as any other change" in flat(debug_route_text),
+      f"{DEBUG_ROUTE_PATH} never says the piece still ends through submit, "
+      f"the same Standard path as any other change")
+
+check("debug-route: relays debug's stop-and-ask instead of guessing",
+      "Do not call `build` on a guess." in debug_route_text,
+      f"{DEBUG_ROUTE_PATH} never says a stop from debug is relayed rather "
+      f"than papered over with a guess")
+
+check("build: the stuck section names devflow:debug",
+      "devflow:debug" in build_text,
+      f"{os.path.join(SKILLS_DIR, 'build', 'SKILL.md')} never names "
+      f"devflow:debug in its stuck section")
+
+check("build: three guessed attempts point at debug, not a fourth guess",
+      "three attempts were three guesses at a cause nobody had actually "
+      "found" in flat(build_text),
+      f"{os.path.join(SKILLS_DIR, 'build', 'SKILL.md')} never says three "
+      f"guessed attempts at an unfound cause hand off to devflow:debug "
+      f"instead of a fourth guess")
+
+
 # ------------------------------ the size budget is a check, not a courtesy
 #
 # skill-creator's own advice is "Keep SKILL.md under 500 lines" -- a skill
