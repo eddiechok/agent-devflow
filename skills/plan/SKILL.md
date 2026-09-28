@@ -94,6 +94,7 @@ Either way the plan has this shape:
 # <what this is>
 
 Issue: #123 (if there is one)
+Branch: <type>/<short-name> (written once the branch is cut)
 
 ## Assumptions
 - Took the recommendation on X because no answer was given
@@ -142,7 +143,8 @@ survivable: you may `/clear` between pieces and pick up from the plan plus
 of them exist.
 
 The plan itself is still not a progress tracker — nothing writes back to it, file or issue,
-except the `## Changes` line a revise appends. It is the spec `review`'s second axis reads.
+except the `Branch:` line written once the branch is cut and the `## Changes` line a revise
+appends. It is the spec `review`'s second axis reads.
 
 ## Revise the plan
 
@@ -239,13 +241,31 @@ finds the setting already there is the run that spawns chains.
 `"head"` is not proof the value reached this session either — one edited by hand a minute
 ago reads exactly like one loaded at start-up. So finding it does not excuse trusting it.
 
-**Stand on the feature branch first.** No `build` runs in this session, so nothing else
-cuts it. On the default branch, or when `flow` passed `new-work`, cut it from the
-default branch ref, the same rule `build` follows; on any other branch, keep it:
+**Stand on the feature branch first**, on every path, the sequential one included. No
+`build` runs in this session, so nothing else cuts it. **Read the plan's `Branch:` line
+before anything moves.** If it names a branch other than the one you stand on, and
+`git rev-parse --verify --quiet refs/heads/<branch>` still finds it, stop:
+`✗ **plan** <plan> is on <branch>, not here` — the built pieces live there. Otherwise, on
+the default branch, or when `flow` passed `new-work`, cut it from the default branch ref,
+the same rule `build` follows; on any other branch, keep it:
 
 ```
 git checkout -b <type>/<short-name> <default branch ref>
 ```
+
+**Then write `Branch: <name>` into the plan**, under its `Issue:` line, naming the branch
+you now stand on, cut or kept. If it already names this branch, write nothing. Only a line
+whose branch is gone is replaced. The line is how `flow`'s step 0b tells this plan's resume from
+new work — a base tag comes only with chains, and a commit only with a finished piece. A
+file gets it by edit. An issue gets it by reading the body, adding the line, writing it to
+a fresh `mktemp` file, and:
+
+```
+gh api -X PATCH repos/{owner}/{repo}/issues/<n> -F body=@<body file>
+```
+
+With no `gh`, the curl fallback sends the same PATCH as JSON `{"body": ...}`. If both fail,
+print `✗ **plan** could not write Branch: to #<n> — <the error>` and carry on.
 
 **Then tag this branch's tip**, before the first spawn, so the base survives a `/clear`:
 

@@ -149,6 +149,11 @@ already answered, and rebuild pieces that are already committed. `flow` only che
 whether a plan matches — resuming it, and everything past that, is `devflow:plan`'s job;
 see [docs/plan.md](plan.md).
 
+A plan named in the request has started when a piece is in the log or its own `Branch:`
+line names a branch that exists. Not any plan's base tag: those are shared by every
+worktree and outlive a stopped run, and the sequential path never makes one. A started plan
+on another branch stops the run rather than resuming on the wrong commits.
+
 ### Step 1 — get the request
 
 Anyone can open an issue, and you cannot tell from here who did.

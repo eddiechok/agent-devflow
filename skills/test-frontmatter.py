@@ -3225,6 +3225,78 @@ check("flow: tells devflow:plan when this is new work",
       f"{FLOW_PATH} says 'new work, fresh branch' only to build, which never "
       f"runs on Deep work")
 
+# Issues #67 and #68: step 0b used to call a named plan new work when there
+# was no piece in the log and no `devflow/*/base` tag. That glob matches any
+# plan's tag, so a leftover tag from plan x made a new plan y look started
+# (#67); and the sequential path makes no tag at all, so a plan stuck on its
+# first piece looked new (#68). `plan` now writes the branch it built on into
+# the plan, and `flow` asks for that branch -- the plan's own, and nobody
+# else's.
+
+check("plan: the plan shape carries a Branch: line",
+      re.search(r"^Issue: #123.*\nBranch: <type>/<short-name>", plan_text,
+                re.M) is not None,
+      f"{PLAN_PATH}'s plan shape has no 'Branch:' line under 'Issue:'")
+
+check("plan: writes the Branch: line once it stands on the branch",
+      "write `Branch: <name>` into the plan" in flat(plan_text)
+      and flat(plan_text).index("write `Branch: <name>` into the plan")
+      < flat(plan_text).index("git tag devflow/<plan short-name>/base HEAD"),
+      f"{PLAN_PATH} never writes the branch it cut or kept into the plan "
+      f"before the chains start, so a resume cannot find it")
+
+# A `Branch:` line naming a branch that is gone -- deleted after a stopped
+# run -- reads as new work to flow. If plan then kept that stale line, every
+# later resume would read as new work too.
+check("plan: a stale Branch: line is replaced, not kept",
+      "Only a line whose branch is gone is replaced" in flat(plan_text),
+      f"{PLAN_PATH} keeps any Branch: line already in the plan, even one "
+      f"naming a branch that no longer exists")
+
+# A plan matched by subject reaches `plan` without flow's branch check. A
+# line naming another branch that still exists is where the built pieces
+# live; overwriting it with this branch loses them.
+check("plan: stops on a Branch: line naming another live branch",
+      "✗ **plan** <plan> is on <branch>, not here" in plan_text,
+      f"{PLAN_PATH} overwrites a Branch: line whose branch still exists")
+
+# The stop has to come before the cut, or plan leaves the human on a new,
+# empty branch it then refuses to build on.
+check("plan: checks the Branch: line before it cuts a branch",
+      "✗ **plan** <plan> is on <branch>, not here" in plan_text
+      and plan_text.index("✗ **plan** <plan> is on <branch>, not here")
+      < plan_text.index("git checkout -b <type>/<short-name> <default branch ref>"),
+      f"{PLAN_PATH} cuts a branch first, then stops on a live Branch: line")
+
+check("plan: the Branch: line is written on every path",
+      "every path, the sequential one included" in flat(plan_text),
+      f"{PLAN_PATH} writes 'Branch:' only where it tags the base, and the "
+      f"sequential path makes no tag (#68)")
+
+check("plan: an issue plan gets its Branch: line by PATCH",
+      "gh api -X PATCH repos/{owner}/{repo}/issues/<n> -F body=@<body file>"
+      in plan_text,
+      f"{PLAN_PATH} never says how the Branch: line reaches a plan kept "
+      f"as a GitHub issue")
+
+check("plan: says Branch: is one of the lines written back",
+      "except the `Branch:` line" in flat(plan_text),
+      f"{PLAN_PATH} still says nothing writes back to the plan but "
+      f"## Changes")
+
+check("flow: step 0b no longer reads any plan's base tag",
+      "devflow/*/base" not in flow_text,
+      f"{FLOW_PATH} step 0b still globs every plan's base tag (#67)")
+
+check("flow: step 0b reads the named plan's own Branch: line",
+      "its `Branch:` line names a branch that exists" in flat(flow_text),
+      f"{FLOW_PATH} step 0b never checks the named plan's own branch, so "
+      f"a plan stuck on piece 1 reads as new work (#68)")
+
+check("flow: step 0b stops when the plan's branch is not this one",
+      "✗ **plan** <plan> is on <branch>, not here" in flow_text,
+      f"{FLOW_PATH} resumes a plan on whatever branch the folder is on")
+
 check("plan: takes a new-work flag from flow",
       "new-work" in re.search(r"^argument-hint: (.+)$", plan_text, re.M).group(1),
       f"{PLAN_PATH} argument-hint has no field for flow's 'this is new work'")

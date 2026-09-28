@@ -117,8 +117,10 @@ questions; both were settled in the first round and the plan holds their answers
 **A request that names a plan is that plan**, whatever `Commits ahead` says: a path
 under `.devflow/plans/`, or `#n` for an issue labelled `devflow:plan` —
 `gh api repos/{owner}/{repo}/issues/<n> --jq '[.labels[].name]'`. Hand it over the same
-way. With no piece in the log and no `git tag --list 'devflow/*/base'` it is new work:
-step 0c runs first, and `new-work` goes with the plan. A base tag means chains started.
+way. It started if a piece is in the log or its `Branch:` line names a branch that exists
+(`git rev-parse --verify --quiet refs/heads/<branch>`). Started on another branch, stop:
+`✗ **plan** <plan> is on <branch>, not here` — run it again from that branch. Not started,
+it is new work: step 0c runs first, and `new-work` goes with the plan.
 
 Only when no plan matches is this a new request. A plan whose subject is plainly something
 else does not match, and neither does one whose pieces are all in the log — that job is
