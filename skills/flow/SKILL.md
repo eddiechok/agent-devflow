@@ -64,22 +64,10 @@ from that ref rather than from here, or the new PR carries the old one's commits
 
 ### A PR that is merged or closed is not an open one
 
-The three cases above are all about an **open** pull request. If the branch's PR came back
-`MERGED` or `CLOSED`, this branch is finished, and piling new work on it is worse than
-piling it on an open one — the diff against the default branch will be empty or wrong,
-because its commits are already in.
-
-Treat it as new work, and say so: fresh branch, cut from the default branch ref, not from
-here. The same applies when the branch is simply behind — start from the ref, not from
-where you happen to be standing.
-
-Say which of the three you decided, in the same line as the size:
-
-```
-Standard — follow-up on #12, tightening the copy it added.
-```
-
-If the branch is one you may not leave — a harness that pins it, as Claude Code on the web does — say so and ask which the human wants: carry on inside this PR, or stop and start a fresh session. Never quietly bolt unrelated work onto someone's open pull request.
+A `MERGED` or `CLOSED` answer is not one of the three cases above — read
+[references/merged-or-closed-pr.md](references/merged-or-closed-pr.md) before treating
+this as a follow-up: it is new work, cut fresh from the default branch ref, said the same
+way the size line is said.
 
 ## Step 0b — is this plan already running?
 
@@ -230,54 +218,10 @@ Start again with: claude --worktree
 `$ARGUMENTS` is the request.
 
 **A path under `.devflow/backlog/` is not free text — it is a feature this project already
-decided to build later.** First ask whether it was built already. A chip run started
-before this file reached the default branch could not see it, so its commit and its PR
-body name the file instead, on a `Backlog:` line. Look on the default branch, then, if
-that finds nothing and `gh` answers, in the merged pull requests:
-
-```
-git log <default branch ref> --fixed-strings --grep="Backlog: .devflow/backlog/<name>.md" --format=%h -1
-```
-
-```
-gh api 'search/issues?q=repo:{owner}/{repo}+is:pr+is:merged+in:body+%22Backlog:+.devflow/backlog/<name>.md%22' --jq '.items[] | select(.body | contains("Backlog: .devflow/backlog/<name>.md")) | .number'
-```
-
-The query sits in the path because `gh` fills `{owner}/{repo}` there and never in a `-f`
-value. Keep the `--jq` filter. GitHub's phrase search is loose and matches bodies without the
-line; only a number the filter prints is a hit.
-
-**A hit means the feature shipped.** Remove the file, say so, and build nothing else: the
-deletion is the whole change, so size it Quick and carry on to `build` and `submit`.
-
-```
-– **backlog** .devflow/backlog/<name>.md already built in <sha or #n>
-deleting it, nothing else to build
-```
-
-**No hit** — read the file; its contents are the request, exactly as an issue body is.
-Then remove the file and say so, so the deletion ships in this run's own PR rather than
-lingering as a stale entry the next run reads and parks all over again:
-
-```
-rm .devflow/backlog/<name>.md
-```
-
-```
-✓ **backlog** took .devflow/backlog/<name>.md — the file is deleted in this branch
-```
-
-**A request that ends `Also parked as .devflow/backlog/<name>.md`** came from a step 1b
-chip. The text above that line is what to build, but keep that line in the request you
-hand `submit` at step 5 — it is how `submit` knows to write the `Backlog:` line. If the
-file is in this checkout, remove it and print the `took` line. If it is not, the kept run
-has not merged yet; print this, and `submit` writes the `Backlog:` line a later run looks
-for:
-
-```
-– **backlog** .devflow/backlog/<name>.md is not in this checkout
-the commit names it, so a later run skips it
-```
+decided to build later.** Read
+[references/backlog-path.md](references/backlog-path.md) before sizing anything: whether
+it was already built, the `took` and `already built` lines, and how a chip's `Also parked
+as` line is kept for `submit`.
 
 If it starts with `#` or is a GitHub issue URL, read the issue first — `gh api repos/{owner}/{repo}/issues/NUMBER --jq .body`, the curl fallback (references/curl-fallback.md) with no `gh`, or whatever GitHub access this environment has. The issue body is the request. Remember the number so `submit` can close it.
 
@@ -336,89 +280,10 @@ sizes, not how the kept one is built, so it runs even on a request that turns ou
 Quick. **`--quick` and `--deep` do not stop the split** — they size the kept feature only,
 after this round has picked it.
 
-Once the kept feature is settled, park the others, one entry each, the same way
-`devflow:plan` writes a plan — look for a `## Plans` block in `CLAUDE.md`.
-
-**`## Plans` says `github`:** make the label if it is missing ("already exists" is fine),
-then file one issue per parked feature. With no `gh`, use the curl fallback
-(references/curl-fallback.md) for both.
-
-```
-gh label create devflow:backlog --description "A devflow parked feature" --color 5319E7
-```
-
-Write each body to a fresh file outside the repo — never a fixed path, which another
-session or another user can reach first:
-
-```
-mktemp "${TMPDIR:-/tmp}/devflow-backlog.XXXXXX"
-```
-
-The path it prints is `<body file>` below. The body is the feature's own text, plus one
-line `Parked from: <the feature this run built>`, never the whole original request.
-
-```
-gh api repos/{owner}/{repo}/issues -f title="<feature>" -F body=@<body file> -f 'labels[]=devflow:backlog' --jq .number
-```
-
-Remove it after each issue is filed.
-
-**No block, `local`, or a `gh` failure:** write a file instead, one per parked feature, at
-`.devflow/backlog/<short-name>.md`. Never park under a name a `Backlog:` line already holds
-— step 1 would read that entry as built and delete it. Run both of step 1's lookups for
-the name first, and on a hit from either pick another. If `gh` cannot answer, the name is
-unchecked; use `<short-name>-<YYYY-MM-DD>` instead:
-
-```markdown
-# <feature>
-
-<the feature's own text>
-
-Parked from: <the feature this run built>
-```
-
-Either way, print exactly one line once every feature is parked:
-
-```
-✓ **parked** #46 add export, #47 fix login
-```
-
-```
-✓ **parked** .devflow/backlog/add-export.md, .devflow/backlog/fix-login.md
-```
-
-**If `## Plans` said `github` and `gh` fails**, fall back to the file and say so instead
-of the `parked` line, the same way step 4's plan falls back:
-
-```
-✗ **parked** github asked, wrote .devflow/backlog/<name>.md — gh said <the error>
-```
-
-**Then offer a chip per parked feature, if `mcp__ccd_session__spawn_task` is a tool you
-have.** Chips come on top of parking, never instead of parking: the issue or the file is
-the record, and a chip is one click to start it. A chip starts a new session in a fresh
-worktree, and a fresh worktree has only committed files, so the prompt must stand alone:
-
-- **Parked as an issue** — the prompt is `/devflow:flow #<n>`. The issue carries the text,
-  and `submit` closes it.
-- **Parked as a file** — the prompt is `/devflow:flow ` followed by the feature's own
-  text, never the backlog path: the file is untracked here and not in that worktree. End
-  it with one line, `Also parked as .devflow/backlog/<short-name>.md — delete it in this
-  branch if it is there.` Step 1 reads that line, and `submit` turns it into a
-  `Backlog:` line, so an entry the chip could not see is skipped later, not built twice.
-- **This run's request was an issue or a backlog file** — offer no file-case chip. That
-  text was not typed by the human, and a chip hands it to the next run as if it were,
-  past step 1's guard. The file alone is the record; an issue-case chip is still fine,
-  because the next run reads the issue through that guard.
-
-Title each chip `Build <feature>`. Then print exactly one line:
-
-```
-✓ **chips** 2 offered — each starts its own flow run in a fresh worktree
-```
-
-**No such tool** — the CLI, the web — print nothing and offer nothing. The `parked` line
-already said where each feature went.
+Once the kept feature is settled, park the others. Read
+[references/split-and-park.md](references/split-and-park.md) for how: the label and issue
+or file it goes to, the `parked:` line, and the chip `spawn_task` offers per parked
+feature.
 
 Then step 2 sizes the kept feature alone.
 
