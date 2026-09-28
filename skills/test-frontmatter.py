@@ -235,12 +235,13 @@ check("agents/builder: leaves isolation to flow's Agent call",
       f"Pinned here it cannot be switched off for the sequential path, "
       f"which then cuts worktrees from the default branch")
 
-with open(os.path.join(SKILLS_DIR, "flow", "SKILL.md"), encoding="utf-8") as fh:
-    flow_body = fh.read()
+PLAN_PATH = os.path.join(SKILLS_DIR, "plan", "SKILL.md")
+with open(PLAN_PATH, encoding="utf-8") as fh:
+    plan_text = fh.read()
 
-check("flow: asks for the worktree on the Agent call",
-      'isolation:\n   "worktree"' in flow_body or 'isolation: "worktree"' in flow_body,
-      "skills/flow/SKILL.md never says to pass isolation: \"worktree\" when spawning")
+check("plan: asks for the worktree on the Agent call",
+      'isolation:\n   "worktree"' in plan_text or 'isolation: "worktree"' in plan_text,
+      "skills/plan/SKILL.md never says to pass isolation: \"worktree\" when spawning")
 
 
 # ------------------------------- and the directory that isolation creates
@@ -325,36 +326,38 @@ STOP_LINE = (
     "setting did not take; restart the session and run flow again to resume"
 )
 
-# Both lines are pinned against `flat(flow_text)`, not `flow_text` -- each now
+# Both lines are pinned against `flat(plan_text)`, not `plan_text` -- each now
 # prints as two physical lines, the shaped one and a detail line straight
 # after it, to keep the shaped line itself at or under 80 visible columns.
 # `flat` is what already lets every other multi-line pin in this file survive
-# a rewrap; these are no different.
+# a rewrap; these are no different. This whole loop moved from `flow` into
+# `devflow:plan` -- see skills/plan/SKILL.md's "Run one builder per chain" --
+# so the pins moved with it.
 
-check("flow: prints the worktree.baseRef line word for word",
-      SETTINGS_LINE in flat(flow_text),
-      f"no line {SETTINGS_LINE!r} in {FLOW_PATH}. The human reads that line and "
+check("plan: prints the worktree.baseRef line word for word",
+      SETTINGS_LINE in flat(plan_text),
+      f"no line {SETTINGS_LINE!r} in {PLAN_PATH}. The human reads that line and "
       f"nothing else says their own --worktree sessions changed too")
 
-check("flow: refuses to write the committed settings file",
-      re.search(r"[Nn]ever write[^\n]*\.claude/settings\.json", flow_text)
+check("plan: refuses to write the committed settings file",
+      re.search(r"[Nn]ever write[^\n]*\.claude/settings\.json", plan_text)
       is not None,
-      "no 'never write .claude/settings.json' rule in flow. That file is "
+      "no 'never write .claude/settings.json' rule in plan. That file is "
       "committed, and baseRef is a preference about one machine")
 
-check("flow: checks the chain branch descends from this one",
-      "git merge-base --is-ancestor" in flow_text,
-      "flow never runs 'git merge-base --is-ancestor'. Writing the setting is "
+check("plan: checks the chain branch descends from this one",
+      "git merge-base --is-ancestor" in plan_text,
+      "plan never runs 'git merge-base --is-ancestor'. Writing the setting is "
       "not proof it took -- it may only be read at session start")
 
-check("flow: says what to do when the setting did not take",
-      STOP_LINE in flat(flow_text),
-      f"no line {STOP_LINE!r} in {FLOW_PATH}. A chain off the wrong base must "
+check("plan: says what to do when the setting did not take",
+      STOP_LINE in flat(plan_text),
+      f"no line {STOP_LINE!r} in {PLAN_PATH}. A chain off the wrong base must "
       f"stop the loop, not get merged")
 
 
 # A setting written a moment ago is not in force: settings are read when a
-# session starts, and this session started before `flow` wrote the file. So the
+# session starts, and this session started before `plan` wrote the file. So the
 # very run that writes `worktree.baseRef` is the one run that must not spawn
 # chains -- every worktree it cut would come off the default branch, the
 # ancestor check would catch it, and a whole job's work would have to be rebuilt
@@ -367,14 +370,14 @@ WROTE_NOW_LINE = (
     "not spawn chains"
 )
 
-check("flow: names the run that just wrote the setting",
-      WROTE_NOW_LINE in flow_text,
-      f"no line {WROTE_NOW_LINE!r} in {FLOW_PATH}. The run that writes the "
+check("plan: names the run that just wrote the setting",
+      WROTE_NOW_LINE in plan_text,
+      f"no line {WROTE_NOW_LINE!r} in {PLAN_PATH}. The run that writes the "
       f"setting cannot use it, and has to say which run can")
 
-check("flow: that run does not spawn chains",
-      re.search(r"[Dd]o not spawn chains", flow_text) is not None,
-      "flow never says not to spawn chains on the run that wrote the setting. "
+check("plan: that run does not spawn chains",
+      re.search(r"[Dd]o not spawn chains", plan_text) is not None,
+      "plan never says not to spawn chains on the run that wrote the setting. "
       "Writing it and spawning anyway cuts every worktree from the wrong base")
 
 
@@ -382,15 +385,28 @@ check("flow: that run does not spawn chains",
 #
 # In file mode the plan lives at `.devflow/plans/<name>.md` and is untracked
 # until `submit` commits it, so `git status --short` prints a `??` line for it
-# on every resume. Step 0b reads that line to decide whether a piece was left
-# half-built, and a half-built piece sends one chain down the sequential path
-# with `dirty` handed to the builder. Read the plan file as dirt and every
-# file-mode resume serialises a chain and tells `build` to preserve work that
-# does not exist. Found by the final look on 22 Sep 2026.
+# on every resume. `plan`'s own resume reference reads that line to decide
+# whether a piece was left half-built, and a half-built piece sends one chain
+# down the sequential path with `dirty` handed to the builder. Read the plan
+# file as dirt and every file-mode resume serialises a chain and tells `build`
+# to preserve work that does not exist. Found by the final look on 22 Sep
+# 2026; the pin moved into `plan`'s resume reference with the text.
 
-check("flow: discounts the untracked plan file when reading the tree as dirty",
-      "?? .devflow/plans/" in flow_text,
-      f"{FLOW_PATH} never says a `?? .devflow/plans/` line is not dirt")
+RESUME_PATH = os.path.join(SKILLS_DIR, "plan", "references", "resume.md")
+with open(RESUME_PATH, encoding="utf-8") as fh:
+    resume_text = fh.read()
+
+BACKLOG_PATH_REF = os.path.join(SKILLS_DIR, "flow", "references", "backlog-path.md")
+with open(BACKLOG_PATH_REF, encoding="utf-8") as fh:
+    backlog_path_text = fh.read()
+
+SPLIT_PARK_PATH = os.path.join(SKILLS_DIR, "flow", "references", "split-and-park.md")
+with open(SPLIT_PARK_PATH, encoding="utf-8") as fh:
+    split_park_text = fh.read()
+
+check("plan: resume reference discounts the untracked plan file as dirt",
+      "?? .devflow/plans/" in resume_text,
+      f"{RESUME_PATH} never says a `?? .devflow/plans/` line is not dirt")
 
 
 # ------------------------------- step 1 takes a backlog file as the request
@@ -401,22 +417,29 @@ check("flow: discounts the untracked plan file when reading the tree as dirty",
 # file so the deletion ships in that run's own PR -- otherwise the same
 # backlog entry gets read, and parked, forever. The exact printed line is
 # pinned here so it cannot silently drift from what a resumed run expects to
-# see, the same reason the settings and stop lines above are pinned.
+# see, the same reason the settings and stop lines above are pinned. This
+# whole rare path moved out of step 1 into references/backlog-path.md, so
+# the pins on its literal text moved with it, renamed to say so.
+
+check("flow: step 1 points at the backlog-path reference",
+      "references/backlog-path.md" in flow_text,
+      f"{FLOW_PATH} step 1 never points at references/backlog-path.md for "
+      f"a request under .devflow/backlog/")
 
 BACKLOG_TAKEN_LINE = (
     "✓ **backlog** took .devflow/backlog/<name>.md — the file is deleted "
     "in this branch"
 )
 
-check("flow: step 1 reads a backlog path as the request and deletes it",
-      BACKLOG_TAKEN_LINE in flow_text,
-      f"no line {BACKLOG_TAKEN_LINE!r} in {FLOW_PATH}. A request under "
+check("backlog-path: reads a backlog path as the request and deletes it",
+      BACKLOG_TAKEN_LINE in backlog_path_text,
+      f"no line {BACKLOG_TAKEN_LINE!r} in {BACKLOG_PATH_REF}. A request under "
       f".devflow/backlog/ has to be read as the request, and the file "
       f"deleted, with this exact line printed")
 
-check("flow: step 0b discounts the untracked backlog directory too",
-      "?? .devflow/backlog/" in flow_text,
-      f"{FLOW_PATH} never says a `?? .devflow/backlog/` line is not dirt")
+check("plan: resume reference discounts the untracked backlog directory too",
+      "?? .devflow/backlog/" in resume_text,
+      f"{RESUME_PATH} never says a `?? .devflow/backlog/` line is not dirt")
 
 
 # ------------------------------- step 1b: one feature per run, not three in a PR
@@ -472,55 +495,63 @@ check("flow: the Rules list carries the one-feature-per-run rule",
 
 # --------------------------- step 1b parks the rest, to GitHub or to a file
 #
-# The label create command, the issue create command, the file shape and the
-# printed `parked:` line are exact commands and exact text a resumed run and
-# a human both read literally, so they are pinned word for word -- the same
-# reason the settings and stop lines earlier in this file are pinned.
+# The label create command, the issue create command, the file shape, the
+# printed `parked:` line and the chip offer are exact commands and exact text
+# a resumed run and a human both read literally, so they are pinned word for
+# word -- the same reason the settings and stop lines earlier in this file
+# are pinned. The whole rare path moved out of step 1b into
+# references/split-and-park.md, so the pins on its literal text moved with
+# it, renamed to say so.
+
+check("flow: step 1b points at the split-and-park reference",
+      "references/split-and-park.md" in flow_text,
+      f"{FLOW_PATH} step 1b never points at references/split-and-park.md "
+      f"for how to park the rest")
 
 BACKLOG_LABEL_CMD = (
     'gh label create devflow:backlog --description "A devflow parked feature" '
     "--color 5319E7"
 )
 
-check("flow: step 1b creates the devflow:backlog label before filing issues",
-      BACKLOG_LABEL_CMD in flow_text,
-      f"no line {BACKLOG_LABEL_CMD!r} in {FLOW_PATH}")
+check("split-and-park: creates the devflow:backlog label before filing issues",
+      BACKLOG_LABEL_CMD in split_park_text,
+      f"no line {BACKLOG_LABEL_CMD!r} in {SPLIT_PARK_PATH}")
 
 BACKLOG_ISSUE_CMD = (
     "gh api repos/{owner}/{repo}/issues -f title="
 )
 
-check("flow: step 1b files a devflow:backlog issue per parked feature",
-      BACKLOG_ISSUE_CMD in flow_text
-      and "-F body=@<body file> -f 'labels[]=devflow:backlog'" in flow_text,
-      f"{FLOW_PATH} never runs 'gh api repos/{{owner}}/{{repo}}/issues "
+check("split-and-park: files a devflow:backlog issue per parked feature",
+      BACKLOG_ISSUE_CMD in split_park_text
+      and "-F body=@<body file> -f 'labels[]=devflow:backlog'" in split_park_text,
+      f"{SPLIT_PARK_PATH} never runs 'gh api repos/{{owner}}/{{repo}}/issues "
       f"-f title=... -F body=@<body file> "
       f"-f 'labels[]=devflow:backlog'', the REST form")
 
-check("flow: step 1b writes a backlog file with the parked-from line",
-      ".devflow/backlog/<short-name>.md" in flow_text
-      and "Parked from:" in flow_text,
-      f"{FLOW_PATH} never writes .devflow/backlog/<short-name>.md with a "
+check("split-and-park: writes a backlog file with the parked-from line",
+      ".devflow/backlog/<short-name>.md" in split_park_text
+      and "Parked from:" in split_park_text,
+      f"{SPLIT_PARK_PATH} never writes .devflow/backlog/<short-name>.md with a "
       f"'Parked from:' line")
 
-check("flow: step 1b prints the parked: line for the issue case",
-      "✓ **parked** #46 add export, #47 fix login" in flow_text,
-      f"{FLOW_PATH} never prints the exact '✓ **parked** #46 add export, "
+check("split-and-park: prints the parked: line for the issue case",
+      "✓ **parked** #46 add export, #47 fix login" in split_park_text,
+      f"{SPLIT_PARK_PATH} never prints the exact '✓ **parked** #46 add export, "
       f"#47 fix login' example")
 
-check("flow: step 1b prints the parked: line for the file case",
+check("split-and-park: prints the parked: line for the file case",
       "✓ **parked** .devflow/backlog/add-export.md, .devflow/backlog/fix-login.md"
-      in flow_text,
-      f"{FLOW_PATH} never prints the exact file-case 'parked' example")
+      in split_park_text,
+      f"{SPLIT_PARK_PATH} never prints the exact file-case 'parked' example")
 
 BACKLOG_FALLBACK_LINE = (
     "✗ **parked** github asked, wrote .devflow/backlog/<name>.md — gh said "
     "<the error>"
 )
 
-check("flow: step 1b falls back to the file on a gh failure",
-      BACKLOG_FALLBACK_LINE in flow_text,
-      f"no line {BACKLOG_FALLBACK_LINE!r} in {FLOW_PATH}")
+check("split-and-park: falls back to the file on a gh failure",
+      BACKLOG_FALLBACK_LINE in split_park_text,
+      f"no line {BACKLOG_FALLBACK_LINE!r} in {SPLIT_PARK_PATH}")
 
 # --------------------------- step 1b offers a chip per parked feature, too
 #
@@ -535,32 +566,32 @@ check("flow: step 1b falls back to the file on a gh failure",
 
 CHIP_ISSUE_PROMPT = "/devflow:flow #<n>"
 
-check("flow: step 1b offers a chip per parked feature through spawn_task",
-      "mcp__ccd_session__spawn_task" in flow_text,
-      f"{FLOW_PATH} never names mcp__ccd_session__spawn_task")
+check("split-and-park: offers a chip per parked feature through spawn_task",
+      "mcp__ccd_session__spawn_task" in split_park_text,
+      f"{SPLIT_PARK_PATH} never names mcp__ccd_session__spawn_task")
 
-check("flow: step 1b's chip for a parked issue runs flow on the number",
-      CHIP_ISSUE_PROMPT in flow_text,
-      f"no chip prompt {CHIP_ISSUE_PROMPT!r} in {FLOW_PATH}")
+check("split-and-park: the chip for a parked issue runs flow on the number",
+      CHIP_ISSUE_PROMPT in split_park_text,
+      f"no chip prompt {CHIP_ISSUE_PROMPT!r} in {SPLIT_PARK_PATH}")
 
-check("flow: step 1b's chip for a parked file carries the text, not the path",
-      "never the backlog path" in flow_text,
-      f"{FLOW_PATH} never says a file-case chip carries the feature's text "
+check("split-and-park: the chip for a parked file carries the text, not the path",
+      "never the backlog path" in split_park_text,
+      f"{SPLIT_PARK_PATH} never says a file-case chip carries the feature's text "
       f"and never the backlog path")
 
 CHIP_LINE = "✓ **chips** 2 offered — each starts its own flow run in a fresh worktree"
 
-check("flow: step 1b prints the chips: line",
-      CHIP_LINE in flow_text,
-      f"no line {CHIP_LINE!r} in {FLOW_PATH}")
+check("split-and-park: prints the chips: line",
+      CHIP_LINE in split_park_text,
+      f"no line {CHIP_LINE!r} in {SPLIT_PARK_PATH}")
 
 # A file-case chip hands the parked text to the next run as free text, which
 # step 1 treats as the human's own words. Text that came from an issue or a
 # backlog file was never that, so it gets no file-case chip.
 
-check("flow: step 1b offers no file-case chip for text the human did not type",
-      "offer no file-case chip" in flow_text,
-      f"{FLOW_PATH} never refuses a file-case chip for text from an issue "
+check("split-and-park: offers no file-case chip for text the human did not type",
+      "offer no file-case chip" in split_park_text,
+      f"{SPLIT_PARK_PATH} never refuses a file-case chip for text from an issue "
       f"or a backlog file")
 
 # A chip clicked before the kept PR merges cannot see the backlog file, and
@@ -577,12 +608,14 @@ CHIP_FILE_LINE = (
     "branch if it is there."
 )
 
-check("flow: a file-case chip ends with the Also parked as line",
-      CHIP_FILE_LINE in flat(flow_text),
-      f"no line {CHIP_FILE_LINE!r} in {FLOW_PATH}")
+check("split-and-park: a file-case chip ends with the Also parked as line",
+      CHIP_FILE_LINE in flat(split_park_text),
+      f"no line {CHIP_FILE_LINE!r} in {SPLIT_PARK_PATH}")
 
 check("flow: a chip run no longer leans on Known issues for a missing file",
-      "say so under Known issues" not in flat(flow_text),
+      "say so under Known issues" not in flat(flow_text)
+      and "say so under Known issues" not in flat(split_park_text)
+      and "say so under Known issues" not in flat(backlog_path_text),
       f"{FLOW_PATH} still has a chip run name a missing backlog file under "
       f"Known issues, which submit can drop")
 
@@ -591,12 +624,13 @@ BACKLOG_ABSENT_LINE = (
     "commit names it, so a later run skips it"
 )
 
-# Pinned against `flat(flow_text)`: the shaped line and its detail print as
-# two physical lines, to keep the shaped line at or under 80 visible columns.
+# Pinned against `flat(backlog_path_text)`: the shaped line and its detail
+# print as two physical lines, to keep the shaped line at or under 80
+# visible columns.
 
-check("flow: a chip run says when its backlog file is not in its checkout",
-      BACKLOG_ABSENT_LINE in flat(flow_text),
-      f"no line {BACKLOG_ABSENT_LINE!r} in {FLOW_PATH}")
+check("backlog-path: says when its file is not in its checkout",
+      BACKLOG_ABSENT_LINE in flat(backlog_path_text),
+      f"no line {BACKLOG_ABSENT_LINE!r} in {BACKLOG_PATH_REF}")
 
 BACKLOG_BUILT_LOG = (
     'git log <default branch ref> --fixed-strings '
@@ -609,18 +643,18 @@ BACKLOG_BUILT_PRS = (
     "| .number'"
 )
 
-check("flow: step 1 asks the default branch's log before taking a backlog file",
-      BACKLOG_BUILT_LOG in flow_text,
-      f"no command {BACKLOG_BUILT_LOG!r} in {FLOW_PATH}")
+check("backlog-path: asks the default branch's log before taking a backlog file",
+      BACKLOG_BUILT_LOG in backlog_path_text,
+      f"no command {BACKLOG_BUILT_LOG!r} in {BACKLOG_PATH_REF}")
 
 # GitHub's phrase search is loose: on 23 Sep 2026 a quoted phrase from #34's
 # body also matched four merged PRs that do not contain it. A loose hit here
 # deletes a real backlog entry and builds nothing, so the --jq filter checks
 # the exact line again, and the search only narrows what gets fetched.
 
-check("flow: step 1 asks the merged PRs too, for a body-only Backlog line",
-      BACKLOG_BUILT_PRS in flow_text,
-      f"no command {BACKLOG_BUILT_PRS!r} in {FLOW_PATH}")
+check("backlog-path: asks the merged PRs too, for a body-only Backlog line",
+      BACKLOG_BUILT_PRS in backlog_path_text,
+      f"no command {BACKLOG_BUILT_PRS!r} in {BACKLOG_PATH_REF}")
 
 BACKLOG_BUILT_LINE = (
     "– **backlog** .devflow/backlog/<name>.md already built in <sha or #n> "
@@ -634,32 +668,32 @@ BACKLOG_BUILT_LINE = (
 # already holds would read as built and be deleted -- step 1b has to refuse
 # that name when it parks.
 
-check("flow: step 1 keeps the Also parked line in the request for submit",
-      "keep that line in the request" in flat(flow_text),
-      f"{FLOW_PATH} never says the `Also parked as` line stays in the "
+check("backlog-path: keeps the Also parked line in the request for submit",
+      "keep that line in the request" in flat(backlog_path_text),
+      f"{BACKLOG_PATH_REF} never says the `Also parked as` line stays in the "
       f"request step 5 hands to submit")
 
-check("flow: step 1b never parks under a name a Backlog: line already holds",
-      "a name a `Backlog:` line already holds" in flat(flow_text),
-      f"{FLOW_PATH} step 1b never refuses a short name an old Backlog: "
+check("split-and-park: never parks under a name a Backlog: line already holds",
+      "a name a `Backlog:` line already holds" in flat(split_park_text),
+      f"{SPLIT_PARK_PATH} never refuses a short name an old Backlog: "
       f"line would match")
 
-check("flow: step 1b dates the name when gh cannot answer the PR lookup",
-      "<short-name>-<YYYY-MM-DD>" in flow_text,
-      f"{FLOW_PATH} step 1b trusts a name the PR lookup could not check")
+check("split-and-park: dates the name when gh cannot answer the PR lookup",
+      "<short-name>-<YYYY-MM-DD>" in split_park_text,
+      f"{SPLIT_PARK_PATH} trusts a name the PR lookup could not check")
 
-check("flow: step 1b checks a name with both of step 1's lookups",
-      "both of step 1's lookups" in flat(flow_text),
-      f"{FLOW_PATH} step 1b checks a name with fewer lookups than step 1 "
+check("split-and-park: checks a name with both of step 1's lookups",
+      "both of step 1's lookups" in flat(split_park_text),
+      f"{SPLIT_PARK_PATH} checks a name with fewer lookups than step 1 "
       f"uses to call it built, so a PR-body-only line slips through")
 
-check("flow: step 1 deletes a backlog file whose feature already shipped",
-      BACKLOG_BUILT_LINE in flat(flow_text),
-      f"no line {BACKLOG_BUILT_LINE!r} in {FLOW_PATH}")
+check("backlog-path: deletes a backlog file whose feature already shipped",
+      BACKLOG_BUILT_LINE in flat(backlog_path_text),
+      f"no line {BACKLOG_BUILT_LINE!r} in {BACKLOG_PATH_REF}")
 
-check("flow: step 1b offers chips on top of parking, never instead of it",
-      "never instead of parking" in flow_text,
-      f"{FLOW_PATH} never says chips come on top of parking, never instead")
+check("split-and-park: offers chips on top of parking, never instead of it",
+      "never instead of parking" in split_park_text,
+      f"{SPLIT_PARK_PATH} never says chips come on top of parking, never instead")
 
 flow_values = parsed.get("flow", (None, {}))[1]
 
@@ -734,6 +768,11 @@ check("setup: says flow parks extra features under the backlog label",
 SHIP_PATH = os.path.join(SKILLS_DIR, "ship", "SKILL.md")
 with open(SHIP_PATH, encoding="utf-8") as fh:
     ship_text = fh.read()
+
+CONFLICT_HANDOVER_PATH = os.path.join(SKILLS_DIR, "ship", "references",
+                                       "conflict-handover.md")
+with open(CONFLICT_HANDOVER_PATH, encoding="utf-8") as fh:
+    conflict_handover_text = fh.read()
 
 check("ship: reads the PR's base before merging",
       "baseRefName" in ship_text,
@@ -1007,10 +1046,10 @@ check("submit: the Evidence Final look line says to read those lines yourself",
 
 SEAM_LABEL = "`tested at:`"
 
-check("flow: prints a piece's seam under a label the reader knows",
-      SEAM_LABEL in flat(flow_text),
-      f"{FLOW_PATH}: the chain loop never says to print the seam as "
-      f"{SEAM_LABEL}. `seam` is this plugin's word, and step 3 is where it "
+check("plan: prints a piece's seam under a label the reader knows",
+      SEAM_LABEL in flat(plan_text),
+      f"{PLAN_PATH}: the chain loop never says to print the seam as "
+      f"{SEAM_LABEL}. `seam` is this plugin's word, and the report is where it "
       f"would otherwise reach someone who never read this skill")
 
 # Same rule as the lint self-test at the end of this file. `flat` widens what
@@ -1116,11 +1155,16 @@ check("docs/submit: records why step 6 prints, citing #31",
 # only the new behaviour has.
 SHIP_CONFLICT_LINE = "**conflict** handing #"
 
-check("ship: hands a conflicting PR to tend rather than stopping",
-      SHIP_CONFLICT_LINE in ship_text,
-      f"{SHIP_PATH} step 2 never prints a '{SHIP_CONFLICT_LINE}...' line, so "
-      f"nothing says it sends a CONFLICTING pull request to `devflow:tend` "
-      f"itself rather than naming tend and stopping")
+check("ship: points at the conflict-handover reference",
+      "references/conflict-handover.md" in ship_text,
+      f"{SHIP_PATH} step 2 never points at references/conflict-handover.md "
+      f"for the one thing it hands over rather than stops on")
+
+check("conflict-handover: hands a conflicting PR to tend rather than stopping",
+      SHIP_CONFLICT_LINE in conflict_handover_text,
+      f"{CONFLICT_HANDOVER_PATH} never prints a '{SHIP_CONFLICT_LINE}...' "
+      f"line, so nothing says it sends a CONFLICTING pull request to "
+      f"`devflow:tend` itself rather than naming tend and stopping")
 
 check("ship: still stops on the three that are not conflicts",
       "judgement call" in flat(ship_text),
@@ -1128,10 +1172,11 @@ check("ship: still stops on the three that are not conflicts",
       f"changes stay stops. Without the reason, the next edit widens the "
       f"handoff to all four and ship starts answering reviewers")
 
-check("ship: tends a conflict once, and never loops",
-      "one attempt" in flat(ship_text).lower(),
-      f"{SHIP_PATH} never bounds the tend handoff to a single attempt. A "
-      f"conflict tend could not fix is a conflict a second tend cannot either")
+check("conflict-handover: tends a conflict once, and never loops",
+      "one attempt" in flat(conflict_handover_text).lower(),
+      f"{CONFLICT_HANDOVER_PATH} never bounds the tend handoff to a single "
+      f"attempt. A conflict tend could not fix is a conflict a second tend "
+      f"cannot either")
 
 # The three below are the return path, and all three came out of the review of
 # 23 Sep 2026, which found that coming back from `tend` branched on `mergeable`
@@ -1148,24 +1193,25 @@ check("ship: tends a conflict once, and never loops",
 # for, and what the worktree-guard eval measured. A backstop in the Rules is not
 # a substitute for the local line saying it.
 
-check("ship: re-reads every condition after tend, not just mergeable",
-      "all four conditions, not just `mergeable`" in flat(ship_text),
-      f"{SHIP_PATH}'s return path from tend must re-run all four of step 2's "
-      f"conditions. tend pushed, so CI restarted — branching on mergeability "
-      f"alone merges a pull request whose checks are still running")
+check("conflict-handover: re-reads every condition after tend, not just mergeable",
+      "all four conditions, not just `mergeable`" in flat(conflict_handover_text),
+      f"{CONFLICT_HANDOVER_PATH}'s return path from tend must re-run all four "
+      f"of step 2's conditions. tend pushed, so CI restarted — branching on "
+      f"mergeability alone merges a pull request whose checks are still running")
 
-check("ship: does not read UNKNOWN mergeability as a yes",
-      "It is not a yes" in flat(ship_text)
-      and "UNKNOWN" in ship_text,
-      f"{SHIP_PATH} never says an UNKNOWN mergeability is not clearance. "
-      f"GitHub answers UNKNOWN for the first seconds after any push, and the "
-      f"handoff guarantees a push immediately before this read")
+check("conflict-handover: does not read UNKNOWN mergeability as a yes",
+      "It is not a yes" in flat(conflict_handover_text)
+      and "UNKNOWN" in conflict_handover_text,
+      f"{CONFLICT_HANDOVER_PATH} never says an UNKNOWN mergeability is not "
+      f"clearance. GitHub answers UNKNOWN for the first seconds after any "
+      f"push, and the handoff guarantees a push immediately before this read")
 
-check("ship: hands over only when the conflict is the only thing reported",
-      "is not a conflict to hand over" in flat(ship_text),
-      f"{SHIP_PATH} hands a PR to tend without checking it reports nothing "
-      f"else. Conflicting and changes-requested together means tend answers "
-      f"the reviewer too, which is not what a merge command was started for")
+check("conflict-handover: hands over only when the conflict is the only thing reported",
+      "is not a conflict to hand over" in flat(conflict_handover_text),
+      f"{CONFLICT_HANDOVER_PATH} hands a PR to tend without checking it "
+      f"reports nothing else. Conflicting and changes-requested together "
+      f"means tend answers the reviewer too, which is not what a merge "
+      f"command was started for")
 
 SHIP_TENDED_LINE = "**tended**"
 
@@ -1182,12 +1228,12 @@ check("ship: keeps the boundary that nothing may call it",
       f"out to tend does not weaken it — a skill that reaches outward is not "
       f"a skill anything can reach into")
 
-check("flow: still refuses to resolve a chain conflict itself",
-      re.search(r"[Nn]ever resolve a merge conflict yourself", flow_text)
-      is not None,
-      f"{FLOW_PATH} lost its chain-conflict rule. A chain conflict means the "
+check("plan: still refuses to resolve a chain conflict itself",
+      re.search(r"[Nn]ever resolve a chain merge conflict yourself",
+                flat(plan_text)) is not None,
+      f"{PLAN_PATH} lost its chain-conflict rule. A chain conflict means the "
       f"plan was wrong, so resolving it hides a planning bug — that reason is "
-      f"untouched by ship tending a conflict against a moved default branch")
+      f"untouched by ship tending a PR conflict against a moved default branch")
 
 DOCS_SHIP_PATH = os.path.join(REPO_ROOT, "docs", "ship.md")
 with open(DOCS_SHIP_PATH, encoding="utf-8") as fh:
@@ -2277,9 +2323,9 @@ for slug, text in (("flow", flow_text), ("review", review_skill_text),
           f"{slug}/SKILL.md still names a GraphQL issue command, which a "
           f"cloud session's proxy refuses")
 
-check("flow: step 4 opens the plan issue through REST",
-      "-F body=@<body file> -f 'labels[]=devflow:plan'" in flow_text,
-      f"{FLOW_PATH} never opens the plan issue with gh api and "
+check("plan: opens the plan issue through REST",
+      "-F body=@<body file> -f 'labels[]=devflow:plan'" in plan_text,
+      f"{PLAN_PATH} never opens the plan issue with gh api and "
       f"-F body=@<body file> -f 'labels[]=devflow:plan'")
 
 for slug, text in (("flow", flow_text), ("review", review_skill_text)):
@@ -2301,7 +2347,7 @@ check("review: reads a Closes issue through REST",
 # either, so pre-approving it would let text in an issue body reach an admin
 # write with no prompt. It stays behind the permission prompt. The GraphQL
 # issue commands it replaced go too, since nothing runs them any more.
-for slug in ("flow", "review"):
+for slug in ("flow", "review", "plan"):
     tools = parsed.get(slug, (None, {}))[1].get("allowed-tools", "")
     check(f"{slug}: allowed-tools never pre-approves gh api",
           "gh api" not in tools,
@@ -2366,35 +2412,55 @@ check("docs/provenance: records the cloud test of 24 Sep",
 # test of 24 Sep. So a missing gh falls back to curl before it falls back to
 # a file. The token is the danger here: it goes to api.github.com only, and
 # it is never printed.
+#
+# The form itself moved out of flow's step 0b into its own reference file --
+# skills/flow/references/curl-fallback.md -- once `devflow:plan` needed the
+# same calls too, so it is written once and pointed at from both places. The
+# pins on the literal curl commands moved with the text; flow and plan keep
+# only the pins that say they point at it.
 
 CURL_AUTH = 'curl -sS --fail-with-body -H "Authorization: token $GH_TOKEN"'
 CURL_ISSUES = "https://api.github.com/repos/<owner>/<repo>/issues"
 
-check("flow: falls back to curl when gh is not installed",
-      "command -v gh" in flow_text and CURL_AUTH in flow_text
-      and CURL_ISSUES in flow_text,
-      f"{FLOW_PATH} never gives the curl form for a missing gh")
+CURL_FALLBACK_PATH = os.path.join(SKILLS_DIR, "flow", "references",
+                                   "curl-fallback.md")
+with open(CURL_FALLBACK_PATH, encoding="utf-8") as fh:
+    curl_fallback_text = fh.read()
 
-check("flow: the curl fallback reads owner and repo from the remote",
-      "git remote get-url origin" in flow_text,
-      f"{FLOW_PATH} never says where curl gets <owner>/<repo> from")
+check("curl-fallback: gives the curl form for a missing gh",
+      CURL_AUTH in curl_fallback_text and CURL_ISSUES in curl_fallback_text,
+      f"{CURL_FALLBACK_PATH} never gives the curl form for a missing gh")
 
-check("flow: the curl fallback builds the issue as JSON, not by hand",
-      "json.dumps" in flow_text
-      and "--data-binary @<json file>" in flow_text,
-      f"{FLOW_PATH} never builds the POST body with json.dumps")
+check("curl-fallback: reads owner and repo from the remote",
+      "git remote get-url origin" in curl_fallback_text,
+      f"{CURL_FALLBACK_PATH} never says where curl gets <owner>/<repo> from")
 
-check("flow: every issue call points at the curl form",
-      flat(flow_text).count("the `curl` form in step 0b") >= 3,
-      f"{FLOW_PATH} names the curl form fewer than three times: the request "
-      f"read, the backlog create and the plan create each need it")
+check("curl-fallback: builds the issue as JSON, not by hand",
+      "json.dumps" in curl_fallback_text
+      and "--data-binary @<json file>" in curl_fallback_text,
+      f"{CURL_FALLBACK_PATH} never builds the POST body with json.dumps")
 
-for slug, text in (("flow", flow_text), ("review", review_skill_text),
-                   ("setup", setup_text)):
+check("flow: says command -v gh finds nothing before falling back",
+      "command -v gh" in flow_text,
+      f"{FLOW_PATH} never checks for a missing gh before the curl fallback")
+
+check("flow: every issue call points at the curl fallback reference",
+      flow_text.count("references/curl-fallback.md") >= 3,
+      f"{FLOW_PATH} names the curl fallback reference fewer than three "
+      f"times: the request read, the backlog create and step 0b's own "
+      f"pointer each need it")
+
+for slug, text in (("review", review_skill_text), ("setup", setup_text)):
     check(f"{slug}: never prints the token, never sends it elsewhere",
           "Never print `$GH_TOKEN`" in flat(text)
           and "api.github.com" in text and "no other host" in flat(text),
           f"{slug}/SKILL.md gives a curl form without the token rule")
+
+check("curl-fallback: never prints the token, never sends it elsewhere",
+      "Never print `$GH_TOKEN`" in flat(curl_fallback_text)
+      and "api.github.com" in curl_fallback_text
+      and "no other host" in flat(curl_fallback_text),
+      f"{CURL_FALLBACK_PATH} gives a curl form without the token rule")
 
 check("review: lists plan issues with curl when gh is missing",
       CURL_AUTH in review_skill_text
@@ -2567,9 +2633,9 @@ check("flow: step 0 tells merged from closed from the REST answer",
       f"{FLOW_PATH} step 0 never turns merged_at into MERGED; REST says "
       f"closed for both")
 
-check("flow: says gh fills the placeholders in the path only",
-      "never in a `-f` value" in flat(flow_text),
-      f"{FLOW_PATH} never says why the search query sits in the path")
+check("backlog-path: says gh fills the placeholders in the path only",
+      "never in a `-f` value" in flat(backlog_path_text),
+      f"{BACKLOG_PATH_REF} never says why the search query sits in the path")
 
 # tend's PR line was an injected `gh pr view`. An injected `gh api` would
 # need gh api in allowed-tools, and a failed permission check aborts the
@@ -2623,17 +2689,31 @@ check("submit: makes the PR body file with mktemp",
       f"{SUBMIT_PATH} writes the PR body to a fixed path another session "
       f"or user can reach first")
 
-# The same for flow's issue bodies: the plan, each parked feature, and the
-# JSON the curl fallback posts. Each file is made fresh with mktemp, and no
-# skill that files an issue names a fixed /tmp/devflow- path.
-for kind in ("plan", "backlog", "issue"):
-    check(f"flow: makes the {kind} file with mktemp",
-          f'mktemp "${{TMPDIR:-/tmp}}/devflow-{kind}.XXXXXX"' in flow_text,
-          f"{FLOW_PATH} writes the {kind} file to a fixed path another "
-          f"session or user can reach first")
+# The same for the issue bodies these skills file: the plan (now plan's own),
+# each parked feature (now split-and-park's own), and the JSON the curl
+# fallback posts (now the curl fallback reference's). Each file is made fresh
+# with mktemp, and no skill or reference that files an issue names a fixed
+# /tmp/devflow- path.
+check("split-and-park: makes the backlog file with mktemp",
+      'mktemp "${TMPDIR:-/tmp}/devflow-backlog.XXXXXX"' in split_park_text,
+      f"{SPLIT_PARK_PATH} writes the backlog file to a fixed path another "
+      f"session or user can reach first")
+
+check("plan: makes the plan file with mktemp",
+      'mktemp "${TMPDIR:-/tmp}/devflow-plan.XXXXXX"' in plan_text,
+      f"{PLAN_PATH} writes the plan file to a fixed path another "
+      f"session or user can reach first")
+
+check("curl-fallback: makes the issue file with mktemp",
+      'mktemp "${TMPDIR:-/tmp}/devflow-issue.XXXXXX"' in curl_fallback_text,
+      f"{CURL_FALLBACK_PATH} writes the issue file to a fixed path another "
+      f"session or user can reach first")
 
 for slug, text in (("flow", flow_text), ("review", review_skill_text),
-                   ("setup", setup_text), ("submit", submit_text)):
+                   ("setup", setup_text), ("submit", submit_text),
+                   ("plan", plan_text), ("curl-fallback", curl_fallback_text),
+                   ("backlog-path", backlog_path_text),
+                   ("split-and-park", split_park_text)):
     check(f"{slug}: names no fixed /tmp/devflow- path",
           re.search(r"/tmp/devflow-[\w-]+\.(md|json)", text) is None,
           f"{slug}/SKILL.md still writes to a fixed /tmp path")
@@ -3023,30 +3103,76 @@ check("lesson-review: old against new on the whole eval suite",
       f"the old and the new skill")
 
 
+# ----------------------------- plan owns Deep: write, revise, resume, build
+#
+# Issue #64: the plan-related parts of `flow` moved into their own `plan`
+# skill, so `flow` and `ship` could both get under 500 lines (#61). Three
+# things are new rather than moved, and are pinned here rather than beside
+# the migrated text above: a revise only ever touches a piece with no commit
+# in the log yet, so a plan cannot quietly disagree with what already
+# shipped; every revise appends one dated line under `## Changes`, so
+# `spec-reviewer` can see the plan changed and why; and `flow`'s own Deep
+# route now calls `devflow:plan` rather than writing the plan itself.
+
+check("plan: a revise only touches a piece with no commit in the log",
+      "no commit in the log" in plan_text,
+      f"{PLAN_PATH} never says a revise checks a piece's commit before "
+      f"touching it")
+
+check("plan: a change to a built piece is a new piece, not an edit",
+      "not a revise of that piece; it is a new piece" in flat(plan_text),
+      f"{PLAN_PATH} never says a change to a built piece becomes a new "
+      f"piece instead of rewriting the built one")
+
+check("plan: every revise appends a dated ## Changes line",
+      "## Changes" in plan_text
+      and "Date, what changed, why" in plan_text,
+      f"{PLAN_PATH} never appends a dated '## Changes' line on every revise")
+
+check("plan: started by hand writes or revises, then stops",
+      "Started by hand" in plan_text
+      and re.search(r"and \*\*stop\.\*\*", plan_text) is not None,
+      f"{PLAN_PATH} never says the by-hand path stops once the plan is "
+      f"written or revised, instead of going on to build it")
+
+PLAN_NEXT_LINE = "→ **next** /devflow:flow #45 builds it"
+
+check("plan: the by-hand path prints the next step",
+      PLAN_NEXT_LINE in plan_text,
+      f"no line {PLAN_NEXT_LINE!r} in {PLAN_PATH}. Without it a plan written "
+      f"by hand does not say how to build it")
+
+check("flow: step 4's Deep route calls devflow:plan",
+      "call `devflow:plan`" in flow_text,
+      f"{FLOW_PATH} step 4 never calls devflow:plan on Deep work")
+
+check("flow: a resumed plan is handed to devflow:plan too",
+      "`devflow:plan`'s to run, not flow's" in flow_text,
+      f"{FLOW_PATH} step 0b never hands a matched plan to devflow:plan")
+
+
 # ------------------------------ the size budget is a check, not a courtesy
 #
 # skill-creator's own advice is "Keep SKILL.md under 500 lines" -- a skill
 # that grows past it costs every future read of it, and nothing else here
-# enforces that except a human noticing. `flow` and `ship` already carry
+# enforces that except a human noticing. `flow` and `ship` used to carry
 # their own higher caps, set at their sizes on the day each earned an
-# exception (1059 and 535 respectively, checked individually above); every
-# other skill stays under the ordinary 500. Splitting `flow` and `ship`
-# under 500 too is backlog issue #61 -- this loop is what stops a ninth
-# skill from quietly needing the same exception before that lands.
+# exception; #64 moved flow's Deep content into `plan` and both skills'
+# rare paths into references, so every skill now stays under the ordinary
+# 500 with no exception at all -- this loop is what stops a ninth skill
+# from quietly needing one again.
 
-SKILL_SIZE_CAPS = {"flow": 1059, "ship": 535}
-DEFAULT_SKILL_SIZE_CAP = 500
+SKILL_SIZE_CAP = 500
 
 for slug in skills:
-    cap = SKILL_SIZE_CAPS.get(slug, DEFAULT_SKILL_SIZE_CAP)
     skill_path = os.path.join(SKILLS_DIR, slug, "SKILL.md")
     with open(skill_path, encoding="utf-8") as fh:
         line_count = len(fh.read().splitlines())
-    check(f"{slug}: SKILL.md stays at or under its size cap of {cap} lines",
-          line_count <= cap,
-          f"{skill_path} is {line_count} lines, over its cap of {cap}. Move "
-          f"a why paragraph verbatim to that skill's docs page instead of "
-          f"growing it")
+    check(f"{slug}: SKILL.md stays at or under its size cap of {SKILL_SIZE_CAP} lines",
+          line_count <= SKILL_SIZE_CAP,
+          f"{skill_path} is {line_count} lines, over its cap of "
+          f"{SKILL_SIZE_CAP}. Move a why paragraph verbatim to that skill's "
+          f"docs page instead of growing it")
 
 
 # --------------------------------------------------------------------- report

@@ -87,6 +87,7 @@ That part is easy to get wrong. `build` and `submit` split the commit between th
 sequenceDiagram
     actor You
     participant flow
+    participant plan
     participant builder
     participant build
     participant review
@@ -97,22 +98,24 @@ sequenceDiagram
     flow->>You: "Deep — new subsystem." one line, first
     flow->>You: one round of questions, each with a recommendation
     You-->>flow: answers, or "yes to all"
-    flow->>flow: writes .devflow/plans/email-alerts.md
+    flow->>plan: request, answers
+    plan->>plan: writes .devflow/plans/email-alerts.md
 
     par chain A, in its own worktree on its own branch
-        flow->>builder: the plan body, chain A, clean or dirty
+        plan->>builder: the plan body, chain A, clean or dirty
         builder->>build: build chain A's pieces, in order
         build->>build: test first, watch it fail, make it pass
         build->>build: full suite, then commit the piece
         build-->>builder: green, with the output that proves it
-        builder-->>flow: branch, then five lines per piece
+        builder-->>plan: branch, then five lines per piece
     and chain B, and up to two more chains at once
-        flow->>builder: the plan body, chain B, clean or dirty
-        builder-->>flow: branch, then five lines per piece
+        plan->>builder: the plan body, chain B, clean or dirty
+        builder-->>plan: branch, then five lines per piece
     end
 
-    flow->>flow: merge-tree each chain branch, then git merge --no-ff
-    flow->>flow: remove the worktrees and the chain branches
+    plan->>plan: merge-tree each chain branch, then git merge --no-ff
+    plan->>plan: remove the worktrees and the chain branches
+    plan-->>flow: report back, chain by chain
     flow->>submit: submit
     submit->>submit: checks fresh, then run the app
     submit->>review: review from the branch point
