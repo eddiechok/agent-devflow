@@ -98,6 +98,11 @@ There are two exceptions. `ship` is the one skill nothing else can call. `flow` 
       │                                                      │
       ├── Quick ────────────────────────────┐                │
       │                                     │                │
+      ├── Standard, and a bug nobody        │                │
+      │   can point at ──► debug ───────────┤                │
+      │   finds the cause, proves it        │                │
+      │   with one red command              │                │
+      │                                     │                │
       ├── Standard ── unclear? ── no ───────┤                │
       │                  │                  │                │
       │                 yes                 │                │
@@ -138,6 +143,11 @@ There are two exceptions. `ship` is the one skill nothing else can call. `flow` 
                                       merge. Watch the deploy.
                                       Check it is live. Tidy up.
 ```
+
+A bug nobody can point at takes a short detour on the Standard branch, before `build`:
+`devflow:debug` finds the cause and proves it with one red command, then hands that
+command to `build` as its first failing test. A bug you can already point at skips the
+detour and goes straight into the same `build` box.
 
 There is a second view of the same thing in [docs/pipeline.md](docs/pipeline.md). It shows where work can *sit*, and what is allowed to move it. This chart answers what happens next. That one answers where the work is now.
 
@@ -227,6 +237,7 @@ auth and permissions · secrets and keys · payments · public API or wire forma
 |---|---|
 | `setup` | Once per project. Finds and verifies the check commands. You invoke it yourself, so it costs nothing at runtime |
 | `flow` | Sizes the request. Routes it. Asks any questions in one batch |
+| `debug` | A bug nobody can point at, before `build` sees it: builds a red-capable loop, ranks 3 to 5 falsifiable causes, and hands the confirmed one to `build` as its first failing test. Called by `flow`, or start it by hand |
 | `plan` | Deep work only: writes the plan, revises it, resumes it, and runs one builder per chain. Called by `flow`, or start it by hand — it writes or revises the plan and stops, then tells you `/devflow:flow` builds it |
 | `build` | Test first. Watch it fail for the right reason. Then make it pass |
 | `review` | Ranked axes in fresh agents: is it built right, is it safe from an attacker, is it the right thing. Reported side by side, never blended. The security axis runs only when the danger list calls for it. Skipped only when `submit` passes down that `build` found no behaviour to test |
@@ -251,6 +262,7 @@ wrong.
 | Page | What it covers |
 |---|---|
 | [docs/flow.md](docs/flow.md) | Why `flow`'s steps are what they are. Follow-ups on an open PR. One feature per run, parking the rest to `devflow:backlog` or `.devflow/backlog/`. Why new work in a folder parked on someone else's branch takes a worktree of its own. The `CONTEXT.md` glossary. Size overrides. |
+| [docs/debug.md](docs/debug.md) | Why `debug`'s phases are what they are. Why it never writes a fix. Why the loop comes before everything else. Why the ranked list of causes is shown, not waited on. |
 | [docs/plan.md](docs/plan.md) | Why `plan`'s steps are what they are. Where a Deep plan goes and how revising one works. One builder per chain, in parallel worktrees. Plans kept as GitHub issues. Starting `plan` by hand. |
 | [docs/build.md](docs/build.md) | Why `build`'s gates are what they are. Running the checks bare. Where the expected value comes from. Watching it fail. When there is nothing a test could catch. |
 | [docs/submit.md](docs/submit.md) | Why `submit`'s steps are what they are. Checks that postdate the last edit. The live check. The commit and the PR body. |
@@ -270,7 +282,6 @@ Working on the plugin? The checks are in [CLAUDE.md](CLAUDE.md). `claude plugin 
 
 Phase 1 is the smallest useful thing. These stay out on purpose:
 
-- `debug`, a bug-fixing loop. Bugs go through `build` for now.
 - A sweep for leftover folder copies. A worktree `ship` kept because it held work, or one from a session `ship` never ran in, stays on disk until you remove it.
 
 Add each one when two weeks of real use shows you need it. Not before.

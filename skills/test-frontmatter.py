@@ -3324,6 +3324,140 @@ check("flow: step 0c says plan writes worktree.baseRef, not flow",
       f"`plan` writes it now")
 
 
+# ------------------------------------------------- debug: the four agreed answers
+#
+# Issue #55, plan #72: `debug` finds a bug's cause before anything is fixed, and
+# nothing more. The four lines the human agreed to are pinned here word for word,
+# the same reason every other agreed decision in this file is -- a rewrite that
+# drifts from one of them would still read as a passing skill.
+
+DEBUG_PATH = os.path.join(SKILLS_DIR, "debug", "SKILL.md")
+with open(DEBUG_PATH, encoding="utf-8") as fh:
+    debug_text = fh.read()
+
+debug_values = parsed.get("debug", (None, {}))[1]
+
+check("skills: debug is among the skills found",
+      "debug" in skills,
+      f"no skills/debug/SKILL.md found in {SKILLS_DIR!r}")
+
+check("debug: only finds the cause; the fix goes to build",
+      "`debug` only finds the cause. It never writes the fix." in debug_text,
+      f"{DEBUG_PATH} never says it only finds the cause and leaves the fix "
+      f"to build -- fixing here would test the fix with the same loop that "
+      f"found the cause, instead of a fresh test in build's own five gates")
+
+check("debug: shows its ranked list of causes and does not wait on it",
+      "Show the ranked list, and carry on — do not wait for the human to "
+      "answer." in debug_text,
+      f"{DEBUG_PATH} never says the ranked list is shown and not waited on")
+
+check("debug: ranks 3 to 5 falsifiable causes",
+      "Write down 3 to 5 candidate causes before testing any of them"
+      in debug_text,
+      f"{DEBUG_PATH} never asks for 3 to 5 falsifiable causes before testing "
+      f"any of them")
+
+check("debug: stops and asks the human when no loop can be built",
+      "**Stop, and ask the human.**" in debug_text,
+      f"{DEBUG_PATH} never stops and asks the human when it cannot build a "
+      f"red-capable loop")
+
+check("debug: never guesses a cause without a command that went red",
+      "Never guess a cause without a command that has actually gone red on it"
+      in flat(debug_text),
+      f"{DEBUG_PATH} never rules out guessing a cause with no red command "
+      f"behind it")
+
+check("debug: reports the cause and the red command for build",
+      "ready to become `build`'s first failing test." in flat(debug_text),
+      f"{DEBUG_PATH} never says the red command it hands back is ready to "
+      f"become build's first failing test")
+
+check("debug: is model-invocable, not gated behind a human typing it",
+      "disable-model-invocation" not in debug_values,
+      f"debug's frontmatter sets disable-model-invocation; it is meant to be "
+      f"startable by flow on its own, and safe to start by hand too")
+
+check("debug: says it is normally started by flow but safe by hand",
+      "Normally started by the flow skill, but safe to invoke directly."
+      in debug_values.get("description", ""),
+      f"debug's description never says it is normally started by flow and "
+      f"safe to invoke directly")
+
+
+# ------------------------- flow routes an unknown-cause bug to debug, not plan
+#
+# Piece 2 of plan #72. A bug with no known cause reads exactly like Deep's own
+# test -- "you cannot name the files it touches yet" -- so without a rule of
+# its own it would fall through to `plan` instead of `devflow:debug`. The line
+# and the reference it points at are pinned word for word, the same reason
+# every other routing line in this file is.
+#
+# The exception has to sit in step 2, inside the size table. Written in step 4
+# first, it came after step 3 had already announced Deep and waited on a round
+# of questions, so the route was never reached (review of #72).
+
+FLOW_STEP2 = flow_text.split("## Step 2", 1)[-1].split("## Step 3", 1)[0]
+FLOW_STEP4 = flow_text.split("## Step 4", 1)[-1].split("## Step 5", 1)[0]
+
+FLOW_DEBUG_SIZE_EXCEPTION = (
+    "or you cannot name the files it touches yet — **not** a bug nobody can "
+    "point at, which is Standard ([references/debug-route.md]"
+    "(references/debug-route.md))"
+)
+FLOW_DEBUG_ROUTE_LINE = (
+    "**A bug nobody can point at** calls `devflow:debug` first, then "
+    "`devflow:build`."
+)
+
+check("flow: step 2's Deep row sends an unknown-cause bug to Standard",
+      FLOW_DEBUG_SIZE_EXCEPTION in FLOW_STEP2,
+      f"no {FLOW_DEBUG_SIZE_EXCEPTION!r} in step 2 of {FLOW_PATH}")
+
+check("flow: step 4 routes an unknown-cause bug through debug",
+      FLOW_DEBUG_ROUTE_LINE in FLOW_STEP4,
+      f"no {FLOW_DEBUG_ROUTE_LINE!r} in step 4 of {FLOW_PATH}")
+
+DEBUG_ROUTE_PATH = os.path.join(SKILLS_DIR, "flow", "references", "debug-route.md")
+with open(DEBUG_ROUTE_PATH, encoding="utf-8") as fh:
+    debug_route_text = fh.read()
+
+check("debug-route: says the bug goes to debug, not plan",
+      "not `plan`" in debug_route_text,
+      f"{DEBUG_ROUTE_PATH} never says an unknown-cause bug goes to debug "
+      f"rather than plan")
+
+check("debug-route: hands debug's report to build as the piece",
+      "the red command becomes `build`'s first failing test" in
+      flat(debug_route_text),
+      f"{DEBUG_ROUTE_PATH} never says debug's red command becomes build's "
+      f"first failing test")
+
+check("debug-route: then submit, the same Standard path as today",
+      "the same\nStandard path as any other change" in debug_route_text
+      or "the same Standard path as any other change" in flat(debug_route_text),
+      f"{DEBUG_ROUTE_PATH} never says the piece still ends through submit, "
+      f"the same Standard path as any other change")
+
+check("debug-route: relays debug's stop-and-ask instead of guessing",
+      "Do not call `build` on a guess." in debug_route_text,
+      f"{DEBUG_ROUTE_PATH} never says a stop from debug is relayed rather "
+      f"than papered over with a guess")
+
+check("build: the stuck section names devflow:debug",
+      "devflow:debug" in build_text,
+      f"{os.path.join(SKILLS_DIR, 'build', 'SKILL.md')} never names "
+      f"devflow:debug in its stuck section")
+
+check("build: three guessed attempts point at debug, not a fourth guess",
+      "three attempts were three guesses at a cause nobody had actually "
+      "found" in flat(build_text),
+      f"{os.path.join(SKILLS_DIR, 'build', 'SKILL.md')} never says three "
+      f"guessed attempts at an unfound cause hand off to devflow:debug "
+      f"instead of a fourth guess")
+
+
 # ------------------------------ the size budget is a check, not a courtesy
 #
 # skill-creator's own advice is "Keep SKILL.md under 500 lines" -- a skill

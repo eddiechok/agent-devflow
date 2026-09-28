@@ -36,6 +36,8 @@ stateDiagram-v2
 
     [*] --> Sized: /devflow:flow
     Sized --> Building: build, on a branch
+    Sized --> Diagnosing: debug, a bug nobody can point at
+    Diagnosing --> Building: build, with the cause and its red command
     Building --> Building: five gates, once per piece
     Building --> Submitted: submit
     Submitted --> Reporting: a check goes red, a review lands, or the base moved
@@ -47,6 +49,13 @@ stateDiagram-v2
     Submitted --> Reporting: ship, when the only thing reported is a conflict
     Merged --> Live: deploy watched, URL fetched
     Live --> [*]
+
+    note right of Diagnosing
+        Work can wait here. When no command
+        makes the bug show, debug stops and
+        asks you for a log, access or a way
+        to reproduce it. It never guesses.
+    end note
 
     note right of Submitted
         Three ways out, and only one of

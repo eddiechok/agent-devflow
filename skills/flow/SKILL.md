@@ -311,7 +311,7 @@ sized against a request that still names more than one thing.
 |---|---|---|
 | **Quick** | Typo, rename, config value, doc fix, dependency bump with no breaking changes, a bug in code you can already point at | No planning, no questions |
 | **Standard** | Changing behaviour of code that already exists, one clear seam, you know roughly where it goes | Questions only if genuinely unclear |
-| **Deep** | New feature, new subsystem, a change across many files, or you cannot name the files it touches yet | One round of questions, then a written plan |
+| **Deep** | New feature, new subsystem, a change across many files, or you cannot name the files it touches yet — **not** a bug nobody can point at, which is Standard ([references/debug-route.md](references/debug-route.md)) | One round of questions, then a written plan |
 
 **Upgrade from Quick to Standard the moment** the change reaches a second file you did not expect, or you cannot state the fix in one sentence.
 
@@ -364,7 +364,7 @@ If you arrived here mid-turn, because a question or an investigation turned into
 
 **Quick** → go straight to `devflow:build`. No questions.
 
-**Standard** → if anything is genuinely ambiguous, ask **one** round of questions (see below), then `devflow:build`. If nothing is ambiguous, go straight to `devflow:build`.
+**Standard** → if anything is genuinely ambiguous, ask **one** round of questions (see below), then `devflow:build`. If nothing is ambiguous, go straight to `devflow:build`. **A bug nobody can point at** calls `devflow:debug` first, then `devflow:build`.
 
 **Deep** → ask one round of questions, get agreement, then call `devflow:plan` with the
 request and the agreed answers. Where step 0 or 0c decided **new work, fresh branch**,
