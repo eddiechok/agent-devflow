@@ -12,8 +12,8 @@ Collecting is the first step of a loop:
 
 1. **Collect.** Log each mistake when it happens.
 2. **Review.** Read the lessons together. Find the patterns.
-3. **Fix.** Change the skill text.
-4. **Check.** Turn the lesson into an eval case under `evals/`. Run the evals. The new case passes and the old cases still pass.
+3. **Fix.** Change the skill text. Patch what is there before adding anything new.
+4. **Check.** Turn the lesson into an eval case under `evals/`. Run every eval on the old skill and on the new one. The new case passes, and nothing else gets worse.
 
 Step 4 makes each lesson a test that stays. The same mistake cannot come back without an eval failing.
 
@@ -35,8 +35,10 @@ A project lesson goes in the PR, so the human sees it and approves it with the w
 One line per lesson, in `lessons.md`, in a **private** repo: `eddiechok/devflow-lessons`.
 
 ```
-2026-10-02 | shop-repo | build | wrote the test after the code
+2026-10-02 | shop-repo | build | mistake | wrote the test after the code | shop-repo#12 | "test first, always"
 ```
+
+Each line has seven parts: the date, the project, the skill, the kind (below), what went wrong, a link to the proof (a PR or a commit), and the human's own words when they corrected it. The proof lets the review check the lesson against what really happened. The human's words hold the fix, not only the fact that something broke.
 
 **Not in this repo's issues.** This repo is public. A lesson from a client project can name the client, a product or a bug. A leak cannot be fully undone.
 
@@ -46,11 +48,21 @@ One line per lesson, in `lessons.md`, in a **private** repo: `eddiechok/devflow-
 
 `overrides.md` moves into this file. On a hosted session `~/.claude` is lost when the session ends, and the file with it.
 
+## Mistakes, waste and ideas
+
+A run can be correct and still be slow, cost too much, or ask too many questions. So a devflow lesson has one of three kinds:
+
+| Kind | Example | How it is found |
+|---|---|---|
+| mistake | "`flow` sized it Quick. It was Deep." | the signs below, when they happen |
+| waste | "The human answered 'yes to all' 9 times in 10." | counted from saved sessions, at review time |
+| idea | "The PR body could carry a screenshot." | the human, by hand, or a research pass |
+
 ## What writes a line
 
-Only a mistake. A good run writes nothing.
+A good run writes nothing. Lines come from three places.
 
-- **By hand**, for any kind of mistake: `/devflow:lesson "..."`.
+- **By hand**, for any kind: `/devflow:lesson "..."` for a mistake, `/devflow:lesson idea "..."` for an idea.
 - **Automatically**, for the three clearest signs:
   - `flow`: the human used `--quick` or `--deep`. This exists today.
   - `review`: `hardcase` refutes a finding. The finding was a false alarm.
@@ -59,6 +71,13 @@ Only a mistake. A good run writes nothing.
   - the human stops `build`, or reverts what it wrote
   - `submit`'s checks pass, but CI fails
   - `tend` blames the wrong cause
+- **Counted, for waste**, by the review step, not during a run. Claude Code already saves every session under `~/.claude/projects/`. The review counts, per skill:
+  - how often the human answered "yes to all", which marks questions nobody needed
+  - how many permission prompts the human clicked
+  - how long each size took, and what it cost
+  - how many review rounds ran, and how many found nothing
+
+  This needs no new logging. Archived sessions count: archiving keeps the saved file, and a subagent's run is saved beside it. Deleted sessions do not count. Web sessions are not counted either: their saved sessions are lost when the container ends.
 
 ## Reaching the lessons repo
 
@@ -71,3 +90,25 @@ Tested on 2026-09-25.
 ## The review step
 
 A skill the human starts by hand, in a new session, for example once a month. It reads `lessons.md` and proposes skill changes, each with an eval case. It uses no subagents unless the file gets big.
+
+Four rules:
+
+- **Only repeats.** A skill changes only when the same kind of mistake shows up at least twice. One mistake is a note, not a pattern. A line with no repeat after about 30 days leaves the review and moves to `archive.md`, so nothing is lost.
+- **A size budget.** Each skill has a size it may not grow past. Every proposal states its net change in words, and a review deletes as well as adds. More text is not better: longer instructions cost more and can score worse.
+- **A rule becomes a check.** When a lesson is really "never do X", it becomes a hook or a script check, like the bash guard in `hooks/`, not another sentence in a skill. A sentence can be ignored. A check cannot.
+- **Old against new.** The whole eval suite runs on both versions of the skill. A change that makes any case worse does not go in, even if the new case passes.
+- **Waste and ideas prove it in numbers.** A change with no mistake behind it must be faster, cheaper or need fewer prompts, with the evals unchanged. If it cannot show that, it does not go in. This is where bloat comes from otherwise.
+
+A research pass, like the one below, is an idea source too. Run one every few months.
+
+## What the research says
+
+Six research agents looked at how others do this, on 2026-09-28. The star counts were checked with `gh api`.
+
+- **The capture and approval design holds up.** Lessons from outside signals, approved by a human, work. Lessons an agent writes about itself, unchecked, can do harm: in SkillsBench, skills a model wrote for itself scored below no skills at all, and the Reflexion paper has nothing that filters out a bad reflection.
+- **Human words help.** Letta (letta-ai/letta, 24.9k stars) measured a 21% gain from skills learned from runs alone, and 37% with human feedback added.
+- **Lessons go stale.** GitHub Copilot Memory stores a citation with each memory and deletes one unused for 28 days. Hermes Agent (NousResearch/hermes-agent, 249k stars) marks a skill stale after 14 days unused and archives it after 30, because otherwise its library filled with narrow near-duplicates.
+- **More text can be worse.** An ETH Zurich study (arXiv 2602.11988) found that `AGENTS.md`-style context files gave no gain in task success and raised cost by over 20%.
+- **Prose rules get broken.** In Claude Code issue #33603, a rule marked mandatory after one failure was broken in each of the next three sessions.
+- **The closest match is obra/superpowers** (292k stars). Its lessons go straight into the skill text, a human approves each change, and changes are tested with evals before they ship.
+- **Capture without proof is the common gap.** Every's compound-engineering plugin (25.3k stars) captures lessons well, but nothing shows a lesson prevented the next mistake. The eval step here is the answer to that.
