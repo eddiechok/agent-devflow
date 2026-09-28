@@ -3324,6 +3324,68 @@ check("flow: step 0c says plan writes worktree.baseRef, not flow",
       f"`plan` writes it now")
 
 
+# ------------------------------------------------- debug: the four agreed answers
+#
+# Issue #55, plan #72: `debug` finds a bug's cause before anything is fixed, and
+# nothing more. The four lines the human agreed to are pinned here word for word,
+# the same reason every other agreed decision in this file is -- a rewrite that
+# drifts from one of them would still read as a passing skill.
+
+DEBUG_PATH = os.path.join(SKILLS_DIR, "debug", "SKILL.md")
+with open(DEBUG_PATH, encoding="utf-8") as fh:
+    debug_text = fh.read()
+
+debug_values = parsed.get("debug", (None, {}))[1]
+
+check("skills: debug is among the skills found",
+      "debug" in skills,
+      f"no skills/debug/SKILL.md found in {SKILLS_DIR!r}")
+
+check("debug: only finds the cause; the fix goes to build",
+      "`debug` only finds the cause. It never writes the fix." in debug_text,
+      f"{DEBUG_PATH} never says it only finds the cause and leaves the fix "
+      f"to build -- fixing here would test the fix with the same loop that "
+      f"found the cause, instead of a fresh test in build's own five gates")
+
+check("debug: shows its ranked list of causes and does not wait on it",
+      "Show the ranked list, and carry on — do not wait for the human to "
+      "answer." in debug_text,
+      f"{DEBUG_PATH} never says the ranked list is shown and not waited on")
+
+check("debug: ranks 3 to 5 falsifiable causes",
+      "Write down 3 to 5 candidate causes before testing any of them"
+      in debug_text,
+      f"{DEBUG_PATH} never asks for 3 to 5 falsifiable causes before testing "
+      f"any of them")
+
+check("debug: stops and asks the human when no loop can be built",
+      "**Stop, and ask the human.**" in debug_text,
+      f"{DEBUG_PATH} never stops and asks the human when it cannot build a "
+      f"red-capable loop")
+
+check("debug: never guesses a cause without a command that went red",
+      "Never guess a cause without a command that has actually gone red on it"
+      in flat(debug_text),
+      f"{DEBUG_PATH} never rules out guessing a cause with no red command "
+      f"behind it")
+
+check("debug: reports the cause and the red command for build",
+      "ready to become `build`'s first failing test." in flat(debug_text),
+      f"{DEBUG_PATH} never says the red command it hands back is ready to "
+      f"become build's first failing test")
+
+check("debug: is model-invocable, not gated behind a human typing it",
+      "disable-model-invocation" not in debug_values,
+      f"debug's frontmatter sets disable-model-invocation; it is meant to be "
+      f"startable by flow on its own, and safe to start by hand too")
+
+check("debug: says it is normally started by flow but safe by hand",
+      "Normally started by the flow skill, but safe to invoke directly."
+      in debug_values.get("description", ""),
+      f"debug's description never says it is normally started by flow and "
+      f"safe to invoke directly")
+
+
 # ------------------------------ the size budget is a check, not a courtesy
 #
 # skill-creator's own advice is "Keep SKILL.md under 500 lines" -- a skill
