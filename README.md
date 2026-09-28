@@ -158,6 +158,34 @@ Here is what the chart leaves out. All of it stops the flow rather than bending 
 
 It announces the size in one line before doing anything. That way you can disagree straight away.
 
+### Learning from runs
+
+A second, slower loop sits beside the first. It turns mistakes in real runs into skill fixes.
+
+```
+flow         you overrode the size             ──┐
+review       hardcase refuted a finding        ──┤
+ship         Verify failed after the deploy    ──┤  one line each
+[YOU]        /devflow:lesson "..."             ──┤
+                                                 ▼
+                            lessons.md, in the private
+                            eddiechok/devflow-lessons repo
+                                                 ┆  about once a month
+                                                 ▼
+                            [YOU] /devflow:lesson-review
+                                  counts waste from saved sessions
+                                  proposes a change only on a repeat,
+                                  each with a new eval case, run
+                                  old against new
+                                                 │
+                                                 ▼
+                            [YOU] yes to one proposal
+                                  applied as shown, then the
+                                  frontmatter test and validate run
+```
+
+A fact about your project is not a devflow lesson. `submit` puts that in the project's own `CLAUDE.md`, in the same PR, so you approve it with the work. [docs/lessons.md](docs/lessons.md) has the rules.
+
 ### When it will ask you
 
 **Direction.** Deep jobs always ask. Standard asks only when genuinely unclear. Quick never asks.
