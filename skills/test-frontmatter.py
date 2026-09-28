@@ -3020,6 +3020,32 @@ check("lesson-review: old against new on the whole eval suite",
       f"the old and the new skill")
 
 
+# ------------------------------ the size budget is a check, not a courtesy
+#
+# skill-creator's own advice is "Keep SKILL.md under 500 lines" -- a skill
+# that grows past it costs every future read of it, and nothing else here
+# enforces that except a human noticing. `flow` and `ship` already carry
+# their own higher caps, set at their sizes on the day each earned an
+# exception (1059 and 535 respectively, checked individually above); every
+# other skill stays under the ordinary 500. Splitting `flow` and `ship`
+# under 500 too is backlog issue #61 -- this loop is what stops a ninth
+# skill from quietly needing the same exception before that lands.
+
+SKILL_SIZE_CAPS = {"flow": 1059, "ship": 535}
+DEFAULT_SKILL_SIZE_CAP = 500
+
+for slug in skills:
+    cap = SKILL_SIZE_CAPS.get(slug, DEFAULT_SKILL_SIZE_CAP)
+    skill_path = os.path.join(SKILLS_DIR, slug, "SKILL.md")
+    with open(skill_path, encoding="utf-8") as fh:
+        line_count = len(fh.read().splitlines())
+    check(f"{slug}: SKILL.md stays at or under its size cap of {cap} lines",
+          line_count <= cap,
+          f"{skill_path} is {line_count} lines, over its cap of {cap}. Move "
+          f"a why paragraph verbatim to that skill's docs page instead of "
+          f"growing it")
+
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")
