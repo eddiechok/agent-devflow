@@ -247,6 +247,14 @@ whatever the count says. And because no `build` runs in a Deep session, `plan` c
 feature branch itself before it tags the base; otherwise the chains would merge into
 whatever branch the session stood on, the default one included.
 
+Once it stands on that branch, `plan` writes `Branch: <name>` into the plan, and that is
+the one thing `flow` checks to tell a named plan's resume from new work. It used to check
+for any `devflow/*/base` tag. Tags are shared by every worktree, and one stays behind when
+a run stops, so another plan's tag made a new plan look started (#67). The sequential path
+makes no tag at all, and commits nothing until a piece is done, so a plan stuck on piece 1
+looked new and its half-built piece was left behind (#68). The line names this plan's own
+branch, and it is written on every path, before the first builder runs.
+
 ## The reasons, step by step
 
 Every paragraph below was moved here out of `skills/plan/SKILL.md`, word for word, or out
