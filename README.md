@@ -98,6 +98,11 @@ There are two exceptions. `ship` is the one skill nothing else can call. `flow` 
       │                                                      │
       ├── Quick ────────────────────────────┐                │
       │                                     │                │
+      ├── Standard, and a bug nobody        │                │
+      │   can point at ──► debug ───────────┤                │
+      │   finds the cause, proves it        │                │
+      │   with one red command              │                │
+      │                                     │                │
       ├── Standard ── unclear? ── no ───────┤                │
       │                  │                  │                │
       │                 yes                 │                │
