@@ -88,7 +88,8 @@ A good run writes nothing. Lines come from three places.
   runs, and another plugin's skills are left out.
   A resumed or forked session copies earlier records into a new file. Each record counts
   once, in the oldest file that holds it: the one made first, which a Mac records and
-  other systems only guess at from the last change.
+  other systems only guess at from the last change. A `review` run cut off before its
+  `## Worst of each` block is finished by the file it was resumed into.
 
   This needs no new logging. Archived sessions count: archiving keeps the saved file, and a
   subagent's run is saved beside it. Deleted sessions do not count, and neither do web

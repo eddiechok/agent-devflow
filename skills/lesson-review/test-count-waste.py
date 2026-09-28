@@ -523,5 +523,36 @@ with tempfile.TemporaryDirectory() as root:
     check("'not yes to all' is not a yes to all",
           order["yes_to_all"] == {}, order["yes_to_all"])
 
+# Issue #63. A session quit partway through `review`, before its Worst of each
+# block, then resumed into a new file: the resumed file finishes the run.
+with tempfile.TemporaryDirectory() as root:
+    proj = os.path.join(root, "-proj-c")
+    started = [
+        {"uuid": "r1", "type": "user", "timestamp": "2026-09-02T00:00:00.000Z",
+         "message": {"content": "<command-name>/devflow:review</command-name>"}},
+        {"uuid": "r2", "type": "assistant", "attributionSkill": "devflow:review",
+         "timestamp": "2026-09-02T00:00:01.000Z",
+         "message": {"content": [{"type": "text", "text": "Reading the diff."}]}},
+    ]
+    write_jsonl(os.path.join(proj, "cccccccc-0000-0000-0000-00000000000c.jsonl"), started)
+    write_jsonl(os.path.join(proj, "dddddddd-0000-0000-0000-00000000000d.jsonl"), started + [
+        {"uuid": "r3", "type": "assistant", "attributionSkill": "devflow:review",
+         "timestamp": "2026-09-02T01:00:00.000Z",
+         "message": {"content": [{"type": "text", "text":
+                     "## Worst of each\n- Built right: none\n- Security: skipped\n- Right thing: none"}]}},
+    ])
+    # Only the review is still open at the end of this third file, and no
+    # later file finishes it: it counts where it started, as one that found
+    # something.
+    write_jsonl(os.path.join(proj, "eeeeeeee-0000-0000-0000-00000000000e.jsonl"), [
+        {"uuid": "q1", "type": "user", "timestamp": "2026-09-03T00:00:00.000Z",
+         "message": {"content": "<command-name>/devflow:review</command-name>"}},
+    ])
+
+    resumed = cw.scan(root, since=None)
+    check("a review resumed mid-run is finished by the file it resumed into",
+          resumed["review_runs"].get("devflow:review") == {"runs": 2, "no_findings": 1},
+          resumed["review_runs"])
+
 print(f"\n{passed} passed, {failed} failed")
 sys.exit(1 if failed else 0)

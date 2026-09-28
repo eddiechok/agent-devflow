@@ -30,7 +30,8 @@ What is counted, per devflow skill:
   findings: every line of the run's printed `## Worst of each` block says
   `none` or `skipped`, or `review` stopped with nothing to review. That block
   is `review`'s own report shape, not something Claude Code guarantees, so
-  this is a text match, not a hard contract
+  this is a text match, not a hard contract. A run whose file ends before
+  that block waits for a resumed file to finish it
 
 Only devflow's own skills are counted. A built-in command like `/model` is
 not a skill run and changes nothing; another plugin's skill is left out.
@@ -151,10 +152,12 @@ def read_jsonl(path):
             yield ("rec", rec)
 
 
-def process_records(records, seed_skill=None, seen=None):
+def process_records(records, seed_skill=None, seen=None, waiting=None):
     """Walk one session's (or one subagent's) records in order and return
     its local tallies. `seed_skill` is the skill to charge events to before
-    anything in the file says otherwise -- a subagent's own `agentType`."""
+    anything in the file says otherwise -- a subagent's own `agentType`.
+    `waiting` holds the start uuids of review runs an earlier file ended
+    without a verdict; a copied start found here is that run, finished here."""
     stats = {
         "yes_to_all": {},
         "denials": {},
@@ -168,10 +171,16 @@ def process_records(records, seed_skill=None, seen=None):
         # counted in the file they came from, so they count nothing here.
         "new_uuids": set(),
         "copied": 0,
+        # A review run cut off at end of file, before its verdict, is not
+        # closed there: a resumed file may finish it. start uuid -> skill.
+        "waiting": {},
+        "finished": set(),  # waiting runs this file took over
     }
     seen = seen if seen is not None else set()
+    waiting = waiting or {}
     current_skill = seed_skill
-    review_run = None  # [skill, found_nothing] while a review run is open
+    # [skill, found_nothing, copied, start uuid, verdict seen] while open
+    review_run = None
     # A `flow` run prints its size once, and `submit`'s recap repeats that
     # line word for word. A follow-up request gets a new size line with no new
     # start. So once `flow` is loaded, every size line is a run unless it is
@@ -183,7 +192,7 @@ def process_records(records, seed_skill=None, seen=None):
         nonlocal review_run
         if review_run is None:
             return
-        skill, found, copied = review_run
+        skill, found, copied = review_run[:3]
         review_run = None
         if copied:
             return
@@ -198,7 +207,10 @@ def process_records(records, seed_skill=None, seen=None):
         nonlocal review_run, flow_seen, last_size_line
         close_review()
         if skill == "devflow:review":
-            review_run = [skill, False, copied]
+            taken_over = copied and uid in waiting
+            if taken_over:
+                stats["finished"].add(uid)
+            review_run = [skill, False, copied and not taken_over, uid, False]
         if skill == "devflow:flow":
             flow_seen = True
             last_size_line = None
@@ -271,7 +283,11 @@ def process_records(records, seed_skill=None, seen=None):
                 clean = review_is_clean(text)
                 if clean is not None:
                     review_run[1] = clean
+                    review_run[4] = True
 
+    if review_run is not None and not review_run[2] and not review_run[4] and review_run[3]:
+        stats["waiting"][review_run[3]] = review_run[0]
+        review_run = None
     close_review()
     return stats
 
@@ -366,6 +382,7 @@ def scan(projects_dir, since=None):
         return report
 
     seen = set()  # every record uuid already counted, across all files
+    waiting = {}  # review runs cut off before their verdict: start uuid -> skill
     # Oldest first, so a copied record is counted in the file it came from.
     latest = datetime.max.replace(tzinfo=timezone.utc)
     sessions = sorted(
@@ -373,7 +390,7 @@ def scan(projects_dir, since=None):
         key=lambda s: (first_timestamp(s[1]) or latest, created(s[1]), s[1]),
     )
     for session_id, session_path, subagent_paths in sessions:
-        session_stats = process_records(read_jsonl(session_path), seen=seen)
+        session_stats = process_records(read_jsonl(session_path), seen=seen, waiting=waiting)
 
         if since_dt is not None:
             last = session_stats["last_timestamp"]
@@ -389,6 +406,9 @@ def scan(projects_dir, since=None):
         merge_counts(report["yes_to_all"], session_stats["yes_to_all"])
         merge_denials(report["denials"], session_stats["denials"])
         merge_review(report["review_runs"], session_stats["review"])
+        for uid in session_stats["finished"]:
+            waiting.pop(uid, None)
+        waiting.update(session_stats["waiting"])
 
         cost_state = session_stats["cost_state"] or {}
         duration_ms = cost_state.get("totalDuration")
@@ -410,6 +430,10 @@ def scan(projects_dir, since=None):
             report["skipped_lines"] += sub_stats["skipped"]
             merge_counts(report["yes_to_all"], sub_stats["yes_to_all"])
             merge_denials(report["denials"], sub_stats["denials"])
+
+    # No later file finished these, so they end where they stopped.
+    for skill in waiting.values():
+        merge_review(report["review_runs"], {skill: (1, 0)})
 
     report["review_runs"] = {
         skill: {"runs": runs, "no_findings": no_findings}
