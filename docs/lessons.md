@@ -35,10 +35,10 @@ A project lesson goes in the PR, so the human sees it and approves it with the w
 One line per lesson, in `lessons.md`, in a **private** repo: `eddiechok/devflow-lessons`.
 
 ```
-2026-10-02 | shop-repo | build | wrote the test after the code | shop-repo#12 | "test first, always"
+2026-10-02 | shop-repo | build | mistake | wrote the test after the code | shop-repo#12 | "test first, always"
 ```
 
-Each line has six parts: the date, the project, the skill, what went wrong, a link to the proof (a PR or a commit), and the human's own words when they corrected it. The proof lets the review check the lesson against what really happened. The human's words hold the fix, not only the fact that something broke.
+Each line has seven parts: the date, the project, the skill, the kind (below), what went wrong, a link to the proof (a PR or a commit), and the human's own words when they corrected it. The proof lets the review check the lesson against what really happened. The human's words hold the fix, not only the fact that something broke.
 
 **Not in this repo's issues.** This repo is public. A lesson from a client project can name the client, a product or a bug. A leak cannot be fully undone.
 
@@ -48,11 +48,21 @@ Each line has six parts: the date, the project, the skill, what went wrong, a li
 
 `overrides.md` moves into this file. On a hosted session `~/.claude` is lost when the session ends, and the file with it.
 
+## Mistakes, waste and ideas
+
+A run can be correct and still be slow, cost too much, or ask too many questions. So a devflow lesson has one of three kinds:
+
+| Kind | Example | How it is found |
+|---|---|---|
+| mistake | "`flow` sized it Quick. It was Deep." | the signs below, when they happen |
+| waste | "The human answered 'yes to all' 9 times in 10." | counted from saved sessions, at review time |
+| idea | "The PR body could carry a screenshot." | the human, by hand, or a research pass |
+
 ## What writes a line
 
-Only a mistake. A good run writes nothing.
+A good run writes nothing. Lines come from three places.
 
-- **By hand**, for any kind of mistake: `/devflow:lesson "..."`.
+- **By hand**, for any kind: `/devflow:lesson "..."` for a mistake, `/devflow:lesson idea "..."` for an idea.
 - **Automatically**, for the three clearest signs:
   - `flow`: the human used `--quick` or `--deep`. This exists today.
   - `review`: `hardcase` refutes a finding. The finding was a false alarm.
@@ -61,6 +71,13 @@ Only a mistake. A good run writes nothing.
   - the human stops `build`, or reverts what it wrote
   - `submit`'s checks pass, but CI fails
   - `tend` blames the wrong cause
+- **Counted, for waste**, by the review step, not during a run. Claude Code already saves every session under `~/.claude/projects/`. The review counts, per skill:
+  - how often the human answered "yes to all", which marks questions nobody needed
+  - how many permission prompts the human clicked
+  - how long each size took, and what it cost
+  - how many review rounds ran, and how many found nothing
+
+  This needs no new logging. Web sessions are not counted: their saved sessions are lost when the container ends.
 
 ## Reaching the lessons repo
 
@@ -80,6 +97,9 @@ Four rules:
 - **A size budget.** Each skill has a size it may not grow past. Every proposal states its net change in words, and a review deletes as well as adds. More text is not better: longer instructions cost more and can score worse.
 - **A rule becomes a check.** When a lesson is really "never do X", it becomes a hook or a script check, like the bash guard in `hooks/`, not another sentence in a skill. A sentence can be ignored. A check cannot.
 - **Old against new.** The whole eval suite runs on both versions of the skill. A change that makes any case worse does not go in, even if the new case passes.
+- **Waste and ideas prove it in numbers.** A change with no mistake behind it must be faster, cheaper or need fewer prompts, with the evals unchanged. If it cannot show that, it does not go in. This is where bloat comes from otherwise.
+
+A research pass, like the one below, is an idea source too. Run one every few months.
 
 ## What the research says
 
