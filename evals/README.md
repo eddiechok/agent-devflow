@@ -1,6 +1,6 @@
 # evals
 
-Thirteen cases. Run them before you push a change to a skill. Two are manual, see below.
+Fourteen cases. Run them before you push a change to a skill. Two are manual, see below.
 
 ## Which runner
 
@@ -30,7 +30,7 @@ python3 evals/run.py --case sizing-* --runs 1
 python3 evals/run.py --dry-run                # parse and print, run nothing
 ```
 
-It scores **55 of the 67 graders** — every `regex`, `tool_used`, `tool_order`
+It scores **58 of the 70 graders** — every `regex`, `tool_used`, `tool_order`
 and `file_exists`. The twelve `llm` graders come back `skip`, stay out of the
 denominator, and are counted in the summary. **A skip is never a pass**, the
 same way `NOT RUN` is never `none`.
@@ -79,7 +79,8 @@ size with a bare `regex`/`trace` grader.
 | `sizing-standard` | low | Borderline work gets sized by coin flip, so Quick skips the questions |
 | `sizing-deep` | low | A new subsystem gets built with no plan and no questions |
 | `danger-list` | low | Secrets work slips through at Quick with nobody told |
-| `bug-routes-to-debug` | low | An unknown-cause bug gets planned across many files instead of routed through `devflow:debug` |
+| `bug-routes-to-debug` | low | A bug only running can show — the code reads as correct — gets planned across many files instead of routed through `devflow:debug` |
+| `bug-routes-to-build` | low | A bug the request already points at takes the `devflow:debug` detour it does not need, instead of going straight to `devflow:build` |
 | `auto-trigger` | low | Work never reaches `flow` at all, so nothing ever ships |
 | `setup-writes-checks` | medium | Every downstream check runs a command nobody verified |
 | `full-loop` | high | The skills stop handing off to each other |

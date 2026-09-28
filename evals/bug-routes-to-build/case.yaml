@@ -1,0 +1,44 @@
+schema_version: "1.1"
+name: bug-routes-to-build
+description: A bug the request already points at goes straight to devflow:build, without the devflow:debug detour meant for a cause nobody can find.
+tags: [sizing, flow, debug]
+
+context:
+  scaffold_script: ./scaffold.sh
+
+execution:
+  # The other half of bug-routes-to-debug. This prompt names the file and the
+  # symptom, and the code shows the cause on one read, so there is no cause
+  # left to find: debug-route.md sends a bug you can point at to build.
+  prompt: "/devflow:flow in src/cli.js, batch mode counts wrong: `node src/cli.js --batch alice bob carol` prints #1, #3, #5 instead of #1, #2, #3."
+  max_turns: 12
+  timeout_seconds: 300
+  allowed_tools: [Bash, Read, Edit, Glob, Grep, Skill]
+
+runs: 3
+
+graders:
+  - type: regex
+    name: not-sized-deep
+    target: trace
+    pattern: "Deep\\s*[—–-]"
+    match: not_contains
+    weight: 2
+
+  - type: tool_used
+    name: routes-to-build
+    tool: Skill
+    input_match: "devflow:build"
+    min: 1
+    weight: 3
+
+  - type: tool_used
+    name: skips-debug
+    tool: Skill
+    input_match: "devflow:debug"
+    max: 0
+    weight: 3
+
+expected_outcome: >
+  Sizes the work Quick or Standard and calls devflow:build directly; never
+  calls devflow:debug, because the request already points at the bug.

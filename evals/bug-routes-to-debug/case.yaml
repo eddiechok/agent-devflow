@@ -1,16 +1,20 @@
 schema_version: "1.1"
 name: bug-routes-to-debug
-description: A bug the report cannot point at routes through devflow:debug, not devflow:plan, even though "I don't know what's causing it" reads like Deep's own test.
+description: A bug that only running can show routes through devflow:debug, not devflow:plan, even though "I don't know what's causing it" reads like Deep's own test.
 tags: [sizing, flow, debug]
 
 context:
   scaffold_script: ./scaffold.sh
 
 execution:
-  # Deliberately names no file, function or line -- that is the whole trigger.
-  # And deliberately worded like Deep's "cannot name the files it touches yet",
-  # which is exactly the false trail flow's own routing has to see past.
-  prompt: "/devflow:flow when I run the CLI with a batch of names, the count next to each name is way higher than 1, 2, 3 and it gets worse the longer the list is. I have no idea what's causing it or where to even look."
+  # Names the command and the data file, but not the cause. The code is
+  # correct and team.txt looks right on screen: the second alice ends in a
+  # zero-width space. The request cannot point at the cause, so the route is
+  # devflow:debug. The limit, said out loud: a session that reads team.txt
+  # receives that character, and one that spots and confirms it while sizing
+  # may go to build, which debug-route.md allows -- this case would score that
+  # correct run as a fail. bug-routes-to-build is the other half.
+  prompt: "/devflow:flow `node src/cli.js --batch-file team.txt` is supposed to greet each person once, but alice gets greeted twice. team.txt looks fine to me and so does the code. I have no idea what's causing it or where to even look."
   max_turns: 12
   timeout_seconds: 300
   allowed_tools: [Bash, Read, Edit, Glob, Grep, Skill]
@@ -50,4 +54,5 @@ graders:
 
 expected_outcome: >
   Sizes the work Standard, not Deep, and calls devflow:debug rather than
-  devflow:plan even though the report cannot name where the bug is.
+  devflow:plan: neither the report nor a read of the code can name where
+  the bug is.
