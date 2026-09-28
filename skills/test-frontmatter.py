@@ -235,12 +235,13 @@ check("agents/builder: leaves isolation to flow's Agent call",
       f"Pinned here it cannot be switched off for the sequential path, "
       f"which then cuts worktrees from the default branch")
 
-with open(os.path.join(SKILLS_DIR, "flow", "SKILL.md"), encoding="utf-8") as fh:
-    flow_body = fh.read()
+PLAN_PATH = os.path.join(SKILLS_DIR, "plan", "SKILL.md")
+with open(PLAN_PATH, encoding="utf-8") as fh:
+    plan_text = fh.read()
 
-check("flow: asks for the worktree on the Agent call",
-      'isolation:\n   "worktree"' in flow_body or 'isolation: "worktree"' in flow_body,
-      "skills/flow/SKILL.md never says to pass isolation: \"worktree\" when spawning")
+check("plan: asks for the worktree on the Agent call",
+      'isolation:\n   "worktree"' in plan_text or 'isolation: "worktree"' in plan_text,
+      "skills/plan/SKILL.md never says to pass isolation: \"worktree\" when spawning")
 
 
 # ------------------------------- and the directory that isolation creates
@@ -325,36 +326,38 @@ STOP_LINE = (
     "setting did not take; restart the session and run flow again to resume"
 )
 
-# Both lines are pinned against `flat(flow_text)`, not `flow_text` -- each now
+# Both lines are pinned against `flat(plan_text)`, not `plan_text` -- each now
 # prints as two physical lines, the shaped one and a detail line straight
 # after it, to keep the shaped line itself at or under 80 visible columns.
 # `flat` is what already lets every other multi-line pin in this file survive
-# a rewrap; these are no different.
+# a rewrap; these are no different. This whole loop moved from `flow` into
+# `devflow:plan` -- see skills/plan/SKILL.md's "Run one builder per chain" --
+# so the pins moved with it.
 
-check("flow: prints the worktree.baseRef line word for word",
-      SETTINGS_LINE in flat(flow_text),
-      f"no line {SETTINGS_LINE!r} in {FLOW_PATH}. The human reads that line and "
+check("plan: prints the worktree.baseRef line word for word",
+      SETTINGS_LINE in flat(plan_text),
+      f"no line {SETTINGS_LINE!r} in {PLAN_PATH}. The human reads that line and "
       f"nothing else says their own --worktree sessions changed too")
 
-check("flow: refuses to write the committed settings file",
-      re.search(r"[Nn]ever write[^\n]*\.claude/settings\.json", flow_text)
+check("plan: refuses to write the committed settings file",
+      re.search(r"[Nn]ever write[^\n]*\.claude/settings\.json", plan_text)
       is not None,
-      "no 'never write .claude/settings.json' rule in flow. That file is "
+      "no 'never write .claude/settings.json' rule in plan. That file is "
       "committed, and baseRef is a preference about one machine")
 
-check("flow: checks the chain branch descends from this one",
-      "git merge-base --is-ancestor" in flow_text,
-      "flow never runs 'git merge-base --is-ancestor'. Writing the setting is "
+check("plan: checks the chain branch descends from this one",
+      "git merge-base --is-ancestor" in plan_text,
+      "plan never runs 'git merge-base --is-ancestor'. Writing the setting is "
       "not proof it took -- it may only be read at session start")
 
-check("flow: says what to do when the setting did not take",
-      STOP_LINE in flat(flow_text),
-      f"no line {STOP_LINE!r} in {FLOW_PATH}. A chain off the wrong base must "
+check("plan: says what to do when the setting did not take",
+      STOP_LINE in flat(plan_text),
+      f"no line {STOP_LINE!r} in {PLAN_PATH}. A chain off the wrong base must "
       f"stop the loop, not get merged")
 
 
 # A setting written a moment ago is not in force: settings are read when a
-# session starts, and this session started before `flow` wrote the file. So the
+# session starts, and this session started before `plan` wrote the file. So the
 # very run that writes `worktree.baseRef` is the one run that must not spawn
 # chains -- every worktree it cut would come off the default branch, the
 # ancestor check would catch it, and a whole job's work would have to be rebuilt
@@ -367,14 +370,14 @@ WROTE_NOW_LINE = (
     "not spawn chains"
 )
 
-check("flow: names the run that just wrote the setting",
-      WROTE_NOW_LINE in flow_text,
-      f"no line {WROTE_NOW_LINE!r} in {FLOW_PATH}. The run that writes the "
+check("plan: names the run that just wrote the setting",
+      WROTE_NOW_LINE in plan_text,
+      f"no line {WROTE_NOW_LINE!r} in {PLAN_PATH}. The run that writes the "
       f"setting cannot use it, and has to say which run can")
 
-check("flow: that run does not spawn chains",
-      re.search(r"[Dd]o not spawn chains", flow_text) is not None,
-      "flow never says not to spawn chains on the run that wrote the setting. "
+check("plan: that run does not spawn chains",
+      re.search(r"[Dd]o not spawn chains", plan_text) is not None,
+      "plan never says not to spawn chains on the run that wrote the setting. "
       "Writing it and spawning anyway cuts every worktree from the wrong base")
 
 
@@ -382,15 +385,20 @@ check("flow: that run does not spawn chains",
 #
 # In file mode the plan lives at `.devflow/plans/<name>.md` and is untracked
 # until `submit` commits it, so `git status --short` prints a `??` line for it
-# on every resume. Step 0b reads that line to decide whether a piece was left
-# half-built, and a half-built piece sends one chain down the sequential path
-# with `dirty` handed to the builder. Read the plan file as dirt and every
-# file-mode resume serialises a chain and tells `build` to preserve work that
-# does not exist. Found by the final look on 22 Sep 2026.
+# on every resume. `plan`'s own resume reference reads that line to decide
+# whether a piece was left half-built, and a half-built piece sends one chain
+# down the sequential path with `dirty` handed to the builder. Read the plan
+# file as dirt and every file-mode resume serialises a chain and tells `build`
+# to preserve work that does not exist. Found by the final look on 22 Sep
+# 2026; the pin moved into `plan`'s resume reference with the text.
 
-check("flow: discounts the untracked plan file when reading the tree as dirty",
-      "?? .devflow/plans/" in flow_text,
-      f"{FLOW_PATH} never says a `?? .devflow/plans/` line is not dirt")
+RESUME_PATH = os.path.join(SKILLS_DIR, "plan", "references", "resume.md")
+with open(RESUME_PATH, encoding="utf-8") as fh:
+    resume_text = fh.read()
+
+check("plan: resume reference discounts the untracked plan file as dirt",
+      "?? .devflow/plans/" in resume_text,
+      f"{RESUME_PATH} never says a `?? .devflow/plans/` line is not dirt")
 
 
 # ------------------------------- step 1 takes a backlog file as the request
@@ -414,9 +422,9 @@ check("flow: step 1 reads a backlog path as the request and deletes it",
       f".devflow/backlog/ has to be read as the request, and the file "
       f"deleted, with this exact line printed")
 
-check("flow: step 0b discounts the untracked backlog directory too",
-      "?? .devflow/backlog/" in flow_text,
-      f"{FLOW_PATH} never says a `?? .devflow/backlog/` line is not dirt")
+check("plan: resume reference discounts the untracked backlog directory too",
+      "?? .devflow/backlog/" in resume_text,
+      f"{RESUME_PATH} never says a `?? .devflow/backlog/` line is not dirt")
 
 
 # ------------------------------- step 1b: one feature per run, not three in a PR
@@ -1007,10 +1015,10 @@ check("submit: the Evidence Final look line says to read those lines yourself",
 
 SEAM_LABEL = "`tested at:`"
 
-check("flow: prints a piece's seam under a label the reader knows",
-      SEAM_LABEL in flat(flow_text),
-      f"{FLOW_PATH}: the chain loop never says to print the seam as "
-      f"{SEAM_LABEL}. `seam` is this plugin's word, and step 3 is where it "
+check("plan: prints a piece's seam under a label the reader knows",
+      SEAM_LABEL in flat(plan_text),
+      f"{PLAN_PATH}: the chain loop never says to print the seam as "
+      f"{SEAM_LABEL}. `seam` is this plugin's word, and the report is where it "
       f"would otherwise reach someone who never read this skill")
 
 # Same rule as the lint self-test at the end of this file. `flat` widens what
@@ -1182,12 +1190,12 @@ check("ship: keeps the boundary that nothing may call it",
       f"out to tend does not weaken it — a skill that reaches outward is not "
       f"a skill anything can reach into")
 
-check("flow: still refuses to resolve a chain conflict itself",
-      re.search(r"[Nn]ever resolve a merge conflict yourself", flow_text)
-      is not None,
-      f"{FLOW_PATH} lost its chain-conflict rule. A chain conflict means the "
+check("plan: still refuses to resolve a chain conflict itself",
+      re.search(r"[Nn]ever resolve a chain merge conflict yourself",
+                flat(plan_text)) is not None,
+      f"{PLAN_PATH} lost its chain-conflict rule. A chain conflict means the "
       f"plan was wrong, so resolving it hides a planning bug — that reason is "
-      f"untouched by ship tending a conflict against a moved default branch")
+      f"untouched by ship tending a PR conflict against a moved default branch")
 
 DOCS_SHIP_PATH = os.path.join(REPO_ROOT, "docs", "ship.md")
 with open(DOCS_SHIP_PATH, encoding="utf-8") as fh:
@@ -2277,9 +2285,9 @@ for slug, text in (("flow", flow_text), ("review", review_skill_text),
           f"{slug}/SKILL.md still names a GraphQL issue command, which a "
           f"cloud session's proxy refuses")
 
-check("flow: step 4 opens the plan issue through REST",
-      "-F body=@<body file> -f 'labels[]=devflow:plan'" in flow_text,
-      f"{FLOW_PATH} never opens the plan issue with gh api and "
+check("plan: opens the plan issue through REST",
+      "-F body=@<body file> -f 'labels[]=devflow:plan'" in plan_text,
+      f"{PLAN_PATH} never opens the plan issue with gh api and "
       f"-F body=@<body file> -f 'labels[]=devflow:plan'")
 
 for slug, text in (("flow", flow_text), ("review", review_skill_text)):
@@ -2301,7 +2309,7 @@ check("review: reads a Closes issue through REST",
 # either, so pre-approving it would let text in an issue body reach an admin
 # write with no prompt. It stays behind the permission prompt. The GraphQL
 # issue commands it replaced go too, since nothing runs them any more.
-for slug in ("flow", "review"):
+for slug in ("flow", "review", "plan"):
     tools = parsed.get(slug, (None, {}))[1].get("allowed-tools", "")
     check(f"{slug}: allowed-tools never pre-approves gh api",
           "gh api" not in tools,
@@ -2366,35 +2374,55 @@ check("docs/provenance: records the cloud test of 24 Sep",
 # test of 24 Sep. So a missing gh falls back to curl before it falls back to
 # a file. The token is the danger here: it goes to api.github.com only, and
 # it is never printed.
+#
+# The form itself moved out of flow's step 0b into its own reference file --
+# skills/flow/references/curl-fallback.md -- once `devflow:plan` needed the
+# same calls too, so it is written once and pointed at from both places. The
+# pins on the literal curl commands moved with the text; flow and plan keep
+# only the pins that say they point at it.
 
 CURL_AUTH = 'curl -sS --fail-with-body -H "Authorization: token $GH_TOKEN"'
 CURL_ISSUES = "https://api.github.com/repos/<owner>/<repo>/issues"
 
-check("flow: falls back to curl when gh is not installed",
-      "command -v gh" in flow_text and CURL_AUTH in flow_text
-      and CURL_ISSUES in flow_text,
-      f"{FLOW_PATH} never gives the curl form for a missing gh")
+CURL_FALLBACK_PATH = os.path.join(SKILLS_DIR, "flow", "references",
+                                   "curl-fallback.md")
+with open(CURL_FALLBACK_PATH, encoding="utf-8") as fh:
+    curl_fallback_text = fh.read()
 
-check("flow: the curl fallback reads owner and repo from the remote",
-      "git remote get-url origin" in flow_text,
-      f"{FLOW_PATH} never says where curl gets <owner>/<repo> from")
+check("curl-fallback: gives the curl form for a missing gh",
+      CURL_AUTH in curl_fallback_text and CURL_ISSUES in curl_fallback_text,
+      f"{CURL_FALLBACK_PATH} never gives the curl form for a missing gh")
 
-check("flow: the curl fallback builds the issue as JSON, not by hand",
-      "json.dumps" in flow_text
-      and "--data-binary @<json file>" in flow_text,
-      f"{FLOW_PATH} never builds the POST body with json.dumps")
+check("curl-fallback: reads owner and repo from the remote",
+      "git remote get-url origin" in curl_fallback_text,
+      f"{CURL_FALLBACK_PATH} never says where curl gets <owner>/<repo> from")
 
-check("flow: every issue call points at the curl form",
-      flat(flow_text).count("the `curl` form in step 0b") >= 3,
-      f"{FLOW_PATH} names the curl form fewer than three times: the request "
-      f"read, the backlog create and the plan create each need it")
+check("curl-fallback: builds the issue as JSON, not by hand",
+      "json.dumps" in curl_fallback_text
+      and "--data-binary @<json file>" in curl_fallback_text,
+      f"{CURL_FALLBACK_PATH} never builds the POST body with json.dumps")
 
-for slug, text in (("flow", flow_text), ("review", review_skill_text),
-                   ("setup", setup_text)):
+check("flow: says command -v gh finds nothing before falling back",
+      "command -v gh" in flow_text,
+      f"{FLOW_PATH} never checks for a missing gh before the curl fallback")
+
+check("flow: every issue call points at the curl fallback reference",
+      flow_text.count("references/curl-fallback.md") >= 3,
+      f"{FLOW_PATH} names the curl fallback reference fewer than three "
+      f"times: the request read, the backlog create and step 0b's own "
+      f"pointer each need it")
+
+for slug, text in (("review", review_skill_text), ("setup", setup_text)):
     check(f"{slug}: never prints the token, never sends it elsewhere",
           "Never print `$GH_TOKEN`" in flat(text)
           and "api.github.com" in text and "no other host" in flat(text),
           f"{slug}/SKILL.md gives a curl form without the token rule")
+
+check("curl-fallback: never prints the token, never sends it elsewhere",
+      "Never print `$GH_TOKEN`" in flat(curl_fallback_text)
+      and "api.github.com" in curl_fallback_text
+      and "no other host" in flat(curl_fallback_text),
+      f"{CURL_FALLBACK_PATH} gives a curl form without the token rule")
 
 check("review: lists plan issues with curl when gh is missing",
       CURL_AUTH in review_skill_text
@@ -2623,17 +2651,28 @@ check("submit: makes the PR body file with mktemp",
       f"{SUBMIT_PATH} writes the PR body to a fixed path another session "
       f"or user can reach first")
 
-# The same for flow's issue bodies: the plan, each parked feature, and the
-# JSON the curl fallback posts. Each file is made fresh with mktemp, and no
-# skill that files an issue names a fixed /tmp/devflow- path.
-for kind in ("plan", "backlog", "issue"):
-    check(f"flow: makes the {kind} file with mktemp",
-          f'mktemp "${{TMPDIR:-/tmp}}/devflow-{kind}.XXXXXX"' in flow_text,
-          f"{FLOW_PATH} writes the {kind} file to a fixed path another "
-          f"session or user can reach first")
+# The same for the issue bodies these skills file: the plan (now plan's own),
+# each parked feature (flow's), and the JSON the curl fallback posts (now the
+# curl fallback reference's). Each file is made fresh with mktemp, and no
+# skill or reference that files an issue names a fixed /tmp/devflow- path.
+check("flow: makes the backlog file with mktemp",
+      'mktemp "${TMPDIR:-/tmp}/devflow-backlog.XXXXXX"' in flow_text,
+      f"{FLOW_PATH} writes the backlog file to a fixed path another "
+      f"session or user can reach first")
+
+check("plan: makes the plan file with mktemp",
+      'mktemp "${TMPDIR:-/tmp}/devflow-plan.XXXXXX"' in plan_text,
+      f"{PLAN_PATH} writes the plan file to a fixed path another "
+      f"session or user can reach first")
+
+check("curl-fallback: makes the issue file with mktemp",
+      'mktemp "${TMPDIR:-/tmp}/devflow-issue.XXXXXX"' in curl_fallback_text,
+      f"{CURL_FALLBACK_PATH} writes the issue file to a fixed path another "
+      f"session or user can reach first")
 
 for slug, text in (("flow", flow_text), ("review", review_skill_text),
-                   ("setup", setup_text), ("submit", submit_text)):
+                   ("setup", setup_text), ("submit", submit_text),
+                   ("plan", plan_text), ("curl-fallback", curl_fallback_text)):
     check(f"{slug}: names no fixed /tmp/devflow- path",
           re.search(r"/tmp/devflow-[\w-]+\.(md|json)", text) is None,
           f"{slug}/SKILL.md still writes to a fixed /tmp path")
@@ -3021,6 +3060,54 @@ check("lesson-review: old against new on the whole eval suite",
       re.search(r"[Oo]ld against new", lesson_review_text) is not None,
       f"{LESSON_REVIEW_PATH} never says the whole eval suite runs on both "
       f"the old and the new skill")
+
+
+# ----------------------------- plan owns Deep: write, revise, resume, build
+#
+# Issue #64: the plan-related parts of `flow` moved into their own `plan`
+# skill, so `flow` and `ship` could both get under 500 lines (#61). Three
+# things are new rather than moved, and are pinned here rather than beside
+# the migrated text above: a revise only ever touches a piece with no commit
+# in the log yet, so a plan cannot quietly disagree with what already
+# shipped; every revise appends one dated line under `## Changes`, so
+# `spec-reviewer` can see the plan changed and why; and `flow`'s own Deep
+# route now calls `devflow:plan` rather than writing the plan itself.
+
+check("plan: a revise only touches a piece with no commit in the log",
+      "no commit in the log" in plan_text,
+      f"{PLAN_PATH} never says a revise checks a piece's commit before "
+      f"touching it")
+
+check("plan: a change to a built piece is a new piece, not an edit",
+      "not a revise of that piece; it is a new piece" in flat(plan_text),
+      f"{PLAN_PATH} never says a change to a built piece becomes a new "
+      f"piece instead of rewriting the built one")
+
+check("plan: every revise appends a dated ## Changes line",
+      "## Changes" in plan_text
+      and "Date, what changed, why" in plan_text,
+      f"{PLAN_PATH} never appends a dated '## Changes' line on every revise")
+
+check("plan: started by hand writes or revises, then stops",
+      "Started by hand" in plan_text
+      and re.search(r"and \*\*stop\.\*\*", plan_text) is not None,
+      f"{PLAN_PATH} never says the by-hand path stops once the plan is "
+      f"written or revised, instead of going on to build it")
+
+PLAN_NEXT_LINE = "→ **next** /devflow:flow #45 builds it"
+
+check("plan: the by-hand path prints the next step",
+      PLAN_NEXT_LINE in plan_text,
+      f"no line {PLAN_NEXT_LINE!r} in {PLAN_PATH}. Without it a plan written "
+      f"by hand does not say how to build it")
+
+check("flow: step 4's Deep route calls devflow:plan",
+      "call `devflow:plan`" in flow_text,
+      f"{FLOW_PATH} step 4 never calls devflow:plan on Deep work")
+
+check("flow: a resumed plan is handed to devflow:plan too",
+      "`devflow:plan`'s to run, not flow's" in flow_text,
+      f"{FLOW_PATH} step 0b never hands a matched plan to devflow:plan")
 
 
 # ------------------------------ the size budget is a check, not a courtesy
