@@ -175,17 +175,11 @@ Three rules keep it small and true:
 /devflow:flow --quick <request>
 ```
 
-`flow` records overrides to `~/.claude/devflow/overrides.md`. They go there **globally, not per project**. They are notes about this plugin, not about any one repo. They are only useful when you review them together.
+`flow` records overrides through `devflow:lesson`, as a devflow `mistake`, and `lesson` writes it into the lessons repo, not into this project or `~/.claude`. They are notes about this plugin, not about any one repo, which is why they go there rather than anywhere per-project.
 
-`flow` also prints the line it wrote.
+`flow` also prints the line it always did.
 
-⚠️ On a hosted session that home directory sits inside a container. The container goes away when the session ends. The file does not survive, so the reply is the only copy. Paste it somewhere durable if you work on the web.
-
-Each line is a real example of the classifier getting it wrong, with your correction. After a month you have a set of labelled cases from actual use. That beats any examples invented up front. Do not delete the file.
-
-This is the only self-improvement machinery in Phase 1. It only collects, on purpose. There is no review step yet.
-
-Read the file when it has twenty or so lines in it. See whether a pattern is there. If one is, that is a change to `flow`. Make it through the normal flow, since this repo is just another project.
+Each line is a real example of the classifier getting it wrong, with your correction. Because the destination is a repo rather than a file under `~/.claude`, it survives a hosted session ending — see [docs/lessons.md](lessons.md) for why that mattered, and for the review step that reads it later.
 
 ## The reasons, step by step
 
@@ -300,11 +294,13 @@ does, and the work sits finished-but-uncommitted on a dirty working tree.
 If the human used `--quick` or `--deep`, they are correcting a mistake this skill would
 have made. That is free labelled test data and it should not be lost.
 
-Global on purpose. These are notes about **this plugin**, not about the project you happen
-to be in. Kept per-project they would scatter across every repo you work in, get committed
-into unrelated projects, and be impossible to review together — which is the only way they
-are useful.
+It goes through `devflow:lesson` rather than a file `flow` writes itself, and lands in the
+lessons repo rather than anywhere per-project. Kept per-project these would scatter across
+every repo you work in, get committed into unrelated projects, and be impossible to review
+together — which is the only way they are useful. One shared collector, used by every
+skill with a clear sign to record, is cheaper than each skill inventing its own file and
+its own review step. See [docs/lessons.md](lessons.md) for the fuller reasoning.
 
 On a hosted session — Claude Code on the web included — `~/.claude` is inside a container
-that is deleted when the session ends, so the file you just wrote may not be there
-tomorrow. The reply is in the transcript, which is.
+that is deleted when the session ends, which is exactly why the destination moved to a
+repo. The reply is in the transcript regardless, so it was never the only copy.

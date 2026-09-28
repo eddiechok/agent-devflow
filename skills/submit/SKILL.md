@@ -188,6 +188,28 @@ And say so when nothing was, in those words, rather than going quiet:
 
 **A step that prints nothing cannot be told from a step that was skipped** — not in the transcript, not in the commit, not by whoever reads the pull request, and not by you on a second pass through this skill. Every other step here leaves a line for that reason. This one is the step most easily lost on a follow-up, because the docs were already right the first time round.
 
+### A fact worth keeping is not always about devflow
+
+Two kinds of lesson, and this run is the only one that can tell them apart — no subagent
+does this sort, because a fresh agent was not there for the mistake.
+
+**A fact about this project** — "the tests need the sandbox key", something the next run
+on this repo would need and `CLAUDE.md` does not already say — gets **add one line for it
+to the project's CLAUDE.md**, in this same commit, so the human approves it with the work
+rather than discovering it cold on a later run. List it under **What** in the PR body too.
+Print:
+
+```
+✓ **lesson** added to CLAUDE.md — the tests need the sandbox key
+```
+
+Nothing to add → print nothing. This is not step 6's `docs` line, and does not replace it.
+
+**A fact about devflow itself** — `flow` sized something wrong, a review finding fell,
+a deploy's `Verify` failed — never goes into `CLAUDE.md`. Call `devflow:lesson` instead;
+`flow`, `review` and `ship` already call it on their own clear signs, so this is only for
+one your own run noticed that none of them did.
+
 ## 7. Commit
 
 **If any file changed since step 2's run, run the checks again first.** Same rule as step 2: the checks must postdate the last edit. Bare, one per call, output on screen.

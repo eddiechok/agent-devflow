@@ -1832,7 +1832,7 @@ check("build: no longer uses the bare test label for the green gate",
 SHAPED_LABELS = {
     "backlog", "branch", "chains", "checks", "chips", "cleaned", "commit",
     "conflict", "debug", "deploy", "docs", "done", "features", "glossary",
-    "green", "handback", "lint", "live", "look", "merge", "merged",
+    "green", "handback", "lesson", "lint", "live", "look", "merge", "merged",
     "no-behaviour", "open", "opinion", "override", "parked", "piece",
     "plan", "plans", "pr", "pushed", "red", "retargeted", "review",
     "session", "settings", "stuck", "tended", "test", "theirs", "todo",
@@ -2728,6 +2728,326 @@ check("docs/web: no longer says the gh pr commands still send GraphQL",
 check("docs/web: says ship keeps gh pr because it is local",
       "`ship` keeps `gh pr`" in docs_web_text,
       f"{DOCS_WEB_PATH} never says why ship was left on gh pr")
+
+
+# --------------------------------------------- lesson writes one devflow line
+#
+# `lesson` is the only place a devflow mistake, waste observation or idea
+# turns into a line in the lessons repo, so four things about it are pinned
+# here rather than left to prose a later edit could soften: which repo it
+# writes to (a hard-coded private repo, never this project and never
+# `~/.claude`), the seven-part shape of the line it appends, the exact line
+# it prints when it cannot reach the repo at all -- the human has to copy it
+# by hand, so the wording is the contract -- and the rule that it never edits
+# a skill itself. A human approves every skill change; `lesson` only ever
+# collects the evidence for one.
+
+LESSON_PATH = os.path.join(SKILLS_DIR, "lesson", "SKILL.md")
+with open(LESSON_PATH, encoding="utf-8") as fh:
+    lesson_text = fh.read()
+
+check("lesson: has a frontmatter block to check",
+      "lesson" in parsed,
+      "skills/lesson/SKILL.md was never parsed above")
+
+lesson_values = parsed.get("lesson", (None, {}))[1]
+
+LESSON_REPO = "eddiechok/devflow-lessons"
+
+check("lesson: names the hard-coded lessons repo",
+      LESSON_REPO in lesson_text,
+      f"{LESSON_PATH} never names {LESSON_REPO!r}")
+
+LESSON_LINE_SHAPE = (
+    'YYYY-MM-DD | <project> | <skill> | <kind> | <what> | <proof> | '
+    '"<human\'s words>"'
+)
+
+check("lesson: pins the seven-part line shape",
+      LESSON_LINE_SHAPE in lesson_text,
+      f"no line {LESSON_LINE_SHAPE!r} in {LESSON_PATH}")
+
+LESSON_FALLBACK_LINE = (
+    "✗ **lesson** could not reach eddiechok/devflow-lessons — copy this "
+    "line:"
+)
+
+check("lesson: prints the exact fallback line when every write fails",
+      LESSON_FALLBACK_LINE in lesson_text,
+      f"no line {LESSON_FALLBACK_LINE!r} in {LESSON_PATH}. Without the exact "
+      f"wording the human has nothing reliable to copy by hand")
+
+check("lesson: never writes into the current project or ~/.claude",
+      re.search(r"[Nn]ever write a lesson into the current project",
+                lesson_text) is not None,
+      f"{LESSON_PATH} never rules out writing the lesson locally instead of "
+      f"to the lessons repo")
+
+check("lesson: never edits a skill -- a human approves every skill change",
+      re.search(r"[Nn]ever edit a skill", lesson_text) is not None,
+      f"{LESSON_PATH} never says it will not edit a skill itself")
+
+check("lesson: says a human approves every skill change",
+      "human approves every skill change" in lesson_text,
+      f"{LESSON_PATH} never repeats the 'a human approves every skill "
+      f"change' rule from docs/lessons.md")
+
+check("lesson: a project fact goes to CLAUDE.md through submit, not here",
+      "CLAUDE.md" in lesson_text and "submit" in lesson_text,
+      f"{LESSON_PATH} never says a fact about this project goes to "
+      f"CLAUDE.md through submit instead of into a devflow lesson")
+
+check("lesson: links docs/lessons.md",
+      "docs/lessons.md" in lesson_text or "../../docs/lessons.md" in lesson_text,
+      f"{LESSON_PATH} never links docs/lessons.md")
+
+check("lesson: description says what it does",
+      bool(literal(lesson_values.get("description", ""))),
+      "lesson's description is empty")
+
+
+# --------------------------------------- flow records overrides through lesson
+#
+# Before `lesson` existed, `flow` wrote overrides to a file under
+# `~/.claude/devflow/`. On a hosted session that directory is inside a
+# container that is deleted when the session ends, which is exactly the
+# problem `lesson`'s repo destination was built to fix -- so the override
+# path has to move onto it, not sit beside it as a second, competing
+# collector. The rule that only a differing flag is a correction, and the
+# printed `override` line, both survive unchanged.
+
+check("flow: Recording overrides calls devflow:lesson",
+      re.search(r"Recording overrides.*devflow:lesson", flow_text, re.S)
+      is not None,
+      f"{FLOW_PATH}'s Recording overrides section never calls devflow:lesson")
+
+check("flow: no longer writes overrides to a file of its own",
+      "overrides.md" not in flow_text,
+      f"{FLOW_PATH} still names overrides.md -- lesson is now the only writer")
+
+check("flow: keeps the printed override line",
+      "✓ **override** recorded — guessed Quick, you said Deep" in flow_text,
+      f"{FLOW_PATH} no longer prints the override line, even though the "
+      f"destination behind it changed")
+
+check("flow: keeps the only-a-differing-flag rule",
+      "Only a flag that differs from your own size is a correction"
+      in flow_text,
+      f"{FLOW_PATH} lost the rule that a matching flag is not a correction")
+
+OVERRIDES_PATH_LITERAL = "~/.claude/devflow/overrides.md"
+
+for path in ("docs/flow.md", "evals/README.md"):
+    with open(os.path.join(REPO_ROOT, path), encoding="utf-8") as fh:
+        text = fh.read()
+    check(f"{path}: no longer names the old overrides file",
+          OVERRIDES_PATH_LITERAL not in text,
+          f"{path} still names {OVERRIDES_PATH_LITERAL!r}")
+
+check("flow: stays at or under its size cap of 1059 lines",
+      len(flow_text.splitlines()) <= 1059,
+      f"{FLOW_PATH} is {len(flow_text.splitlines())} lines, over its cap. "
+      f"Move a why paragraph verbatim to docs/flow.md instead of growing it")
+
+
+# ------------------------------ review and ship write a lesson on clear signs
+#
+# Two of the three clearest signs docs/lessons.md names live here: `hardcase`
+# refuting a finding, and a deploy's `Verify` line failing. Both are pinned by
+# name -- `devflow:lesson` -- rather than by outcome, because the outcome
+# (both sections still printed, the existing failure handling still running)
+# looks identical whether or not the call happened, and a call nobody can see
+# is a call that silently stops happening the day someone tidies the prose
+# around it.
+
+check("review: calls devflow:lesson for a finding hardcase falls",
+      "devflow:lesson" in review_skill_text,
+      f"{os.path.join(SKILLS_DIR, 'review', 'SKILL.md')} never names "
+      f"devflow:lesson for a finding hardcase refutes")
+
+check("ship: calls devflow:lesson when Verify fails after deploy",
+      "devflow:lesson" in ship_text,
+      f"{SHIP_PATH} never names devflow:lesson for a failed post-deploy "
+      f"Verify")
+
+check("ship: stays at or under its size cap of 535 lines",
+      len(ship_text.splitlines()) <= 535,
+      f"{SHIP_PATH} is {len(ship_text.splitlines())} lines, over its cap. "
+      f"Move a why paragraph verbatim to docs/ship.md instead of growing it")
+
+DOCS_REVIEW_PATH = os.path.join(REPO_ROOT, "docs", "review.md")
+with open(DOCS_REVIEW_PATH, encoding="utf-8") as fh:
+    docs_review_text = fh.read()
+
+check("docs/review: mentions the lesson a falling finding writes",
+      "devflow:lesson" in docs_review_text,
+      f"{DOCS_REVIEW_PATH} never mentions devflow:lesson")
+
+DOCS_SHIP_PATH = os.path.join(REPO_ROOT, "docs", "ship.md")
+with open(DOCS_SHIP_PATH, encoding="utf-8") as fh:
+    docs_ship_text = fh.read()
+
+check("docs/ship: mentions the lesson a failed Verify writes",
+      "devflow:lesson" in docs_ship_text,
+      f"{DOCS_SHIP_PATH} never mentions devflow:lesson")
+
+
+# ------------------------------- submit sorts a lesson by which repo it fits
+#
+# docs/lessons.md draws the line: a fact about *this* project goes into that
+# project's `CLAUDE.md`, in the same PR as the work that found it, so the
+# human approves it with the work; a fact about devflow itself goes to
+# `devflow:lesson` and the private lessons repo instead. `submit` is the one
+# place that sorts, because it is the one place with both the finished run
+# and the commit the fact can ride along in -- no subagent does this sort.
+
+check("submit: adds a project fact to CLAUDE.md in the same commit",
+      "add one line for it to the project's CLAUDE.md" in flat(submit_text)
+      and "in this same commit" in flat(submit_text),
+      f"{SUBMIT_PATH} never says a project fact is added to CLAUDE.md in "
+      f"the same commit")
+
+check("submit: a devflow fact goes to devflow:lesson, never to CLAUDE.md",
+      "devflow:lesson" in submit_text,
+      f"{SUBMIT_PATH} never names devflow:lesson for a fact about devflow "
+      f"itself")
+
+check("submit: prints the lesson-added line",
+      "✓ **lesson** added to CLAUDE.md" in submit_text,
+      f"{SUBMIT_PATH} never prints the exact '✓ **lesson** added to "
+      f"CLAUDE.md — ...' line")
+
+check("submit: the session sorts the lesson, no subagent does",
+      re.search(r"no subagent", submit_text) is not None,
+      f"{SUBMIT_PATH} never says the run itself sorts a lesson rather than "
+      f"a subagent")
+
+check("submit: a project lesson is listed in the PR body too",
+      re.search(r"PR body", flat(submit_text)) is not None
+      and "added to CLAUDE.md" in flat(submit_text),
+      f"{SUBMIT_PATH} never says the added CLAUDE.md line also goes in the "
+      f"PR body, so the human approves it with the work")
+
+DOCS_SUBMIT_TEXT_FOR_LESSON = docs_submit_text
+
+check("docs/submit: mentions the project-lesson behaviour",
+      "CLAUDE.md" in docs_submit_text and "devflow:lesson" in docs_submit_text,
+      f"{DOCS_SUBMIT_PATH} never mentions submit adding a project lesson to "
+      f"CLAUDE.md or devflow:lesson for a devflow one")
+
+
+# ---------------------------------------- lesson-review reads and proposes
+#
+# `lesson-review` is the other half of the loop `lesson` only collects for:
+# it reads every line in the lessons repo, groups them, and proposes a skill
+# change -- but four of docs/lessons.md's rules are the difference between a
+# review that helps and one that quietly makes every skill worse, so they are
+# pinned here rather than left to prose a later edit could soften: a skill
+# changes only on a repeat, at least two of the same kind of mistake; a line
+# with no repeat in about 30 days moves out to `archive.md` rather than
+# lingering; and running the real eval suite costs money, so the skill asks
+# the human before it ever runs `evals/run.py`.
+
+LESSON_REVIEW_PATH = os.path.join(SKILLS_DIR, "lesson-review", "SKILL.md")
+with open(LESSON_REVIEW_PATH, encoding="utf-8") as fh:
+    lesson_review_text = fh.read()
+
+check("lesson-review: has a frontmatter block to check",
+      "lesson-review" in parsed,
+      "skills/lesson-review/SKILL.md was never parsed above")
+
+lesson_review_values = parsed.get("lesson-review", (None, {}))[1]
+
+check("lesson-review: names the hard-coded lessons repo",
+      LESSON_REPO in lesson_review_text,
+      f"{LESSON_REVIEW_PATH} never names {LESSON_REPO!r}")
+
+check("lesson-review: a skill changes only on a repeat, at least twice",
+      "at least twice" in lesson_review_text,
+      f"{LESSON_REVIEW_PATH} never says a skill changes only when the same "
+      f"kind of mistake shows up at least twice")
+
+check("lesson-review: an unrepeated line archives after about 30 days",
+      "30 day" in lesson_review_text.lower()
+      and "archive.md" in lesson_review_text,
+      f"{LESSON_REVIEW_PATH} never says a line with no repeat after about "
+      f"30 days moves to archive.md")
+
+check("lesson-review: asks the human before running the real eval suite",
+      re.search(r"[Aa]sk the human before[^\n]*evals/run\.py", lesson_review_text)
+      is not None,
+      f"{LESSON_REVIEW_PATH} never says it asks the human before running "
+      f"python3 evals/run.py -- that run costs real money")
+
+check("lesson-review: a human approves every skill change",
+      "human approves every skill change" in lesson_review_text,
+      f"{LESSON_REVIEW_PATH} never repeats the 'a human approves every "
+      f"skill change' rule from docs/lessons.md")
+
+check("lesson-review: it proposes, it does not edit a skill itself",
+      re.search(r"[Nn]ot edit a skill", lesson_review_text) is not None,
+      f"{LESSON_REVIEW_PATH} never says it proposes changes without editing "
+      f"a skill itself")
+
+check("lesson-review: links docs/lessons.md",
+      "docs/lessons.md" in lesson_review_text
+      or "../../docs/lessons.md" in lesson_review_text,
+      f"{LESSON_REVIEW_PATH} never links docs/lessons.md")
+
+check("lesson-review: description says what it does",
+      bool(literal(lesson_review_values.get("description", ""))),
+      "lesson-review's description is empty")
+
+check("lesson-review: runs count-waste.py from its own skill directory",
+      "count-waste.py" in lesson_review_text,
+      f"{LESSON_REVIEW_PATH} never names count-waste.py")
+
+# evals/run.py, the new eval case and skills/test-frontmatter.py all live in
+# this repo. The plugin is on in other projects too, so a lesson-review started
+# there would write the eval case into the wrong repo. Found in review.
+check("lesson-review: checks it is in the agent-devflow checkout first",
+      "evals/run.py" in lesson_review_text
+      and re.search(r"agent-devflow checkout", flat(lesson_review_text)) is not None
+      and re.search(r"stop(s)? before step 4", flat(lesson_review_text)) is not None,
+      f"{LESSON_REVIEW_PATH} does not check for the agent-devflow checkout "
+      "before it writes an eval case or runs the evals")
+
+check("lesson-review: each proposal comes with a new eval case",
+      re.search(r"new eval case", lesson_review_text) is not None,
+      f"{LESSON_REVIEW_PATH} never says each proposal comes with a new "
+      f"eval case under evals/")
+
+check("lesson-review: old against new on the whole eval suite",
+      re.search(r"[Oo]ld against new", lesson_review_text) is not None,
+      f"{LESSON_REVIEW_PATH} never says the whole eval suite runs on both "
+      f"the old and the new skill")
+
+
+# ------------------------------ the size budget is a check, not a courtesy
+#
+# skill-creator's own advice is "Keep SKILL.md under 500 lines" -- a skill
+# that grows past it costs every future read of it, and nothing else here
+# enforces that except a human noticing. `flow` and `ship` already carry
+# their own higher caps, set at their sizes on the day each earned an
+# exception (1059 and 535 respectively, checked individually above); every
+# other skill stays under the ordinary 500. Splitting `flow` and `ship`
+# under 500 too is backlog issue #61 -- this loop is what stops a ninth
+# skill from quietly needing the same exception before that lands.
+
+SKILL_SIZE_CAPS = {"flow": 1059, "ship": 535}
+DEFAULT_SKILL_SIZE_CAP = 500
+
+for slug in skills:
+    cap = SKILL_SIZE_CAPS.get(slug, DEFAULT_SKILL_SIZE_CAP)
+    skill_path = os.path.join(SKILLS_DIR, slug, "SKILL.md")
+    with open(skill_path, encoding="utf-8") as fh:
+        line_count = len(fh.read().splitlines())
+    check(f"{slug}: SKILL.md stays at or under its size cap of {cap} lines",
+          line_count <= cap,
+          f"{skill_path} is {line_count} lines, over its cap of {cap}. Move "
+          f"a why paragraph verbatim to that skill's docs page instead of "
+          f"growing it")
+
 
 # --------------------------------------------------------------------- report
 

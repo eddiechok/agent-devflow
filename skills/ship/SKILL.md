@@ -261,12 +261,6 @@ Three states, one skill, and the last two look identical from the outside:
 | Failed **before** the merge | `503` | unchanged | still there | retry |
 | **Refused** | `This branch can't be rebased` | unchanged | still there | **change the method, never retry** |
 
-**The third row is the one the SHA cannot find for you.** A refusal and a transient
-failure both leave the default branch exactly where it was, so the oracle below says "did
-not land" for both and stops being able to help. What separates them is the error's own
-words: `500` and `503` are the transport falling over, where `can't be rebased`, `not
-mergeable` or a required check is the forge answering the question you asked.
-
 **A refusal is deterministic, so retrying is the one move guaranteed to fail.** The same
 call refused once is refused forever; "retry, with a wait" spends the cap and ends with the
 pull request still open. Read what the refusal names, fix that, and go again **once** with
@@ -395,7 +389,9 @@ before the change?**
 
 **Only first-hand ends this step.**
 
-If it is not live, **say so plainly**, with what you saw. Do not report a successful deploy:
+If it is not live, call `devflow:lesson` first — skill `ship`, kind `mistake`, what
+`Verify failed after deploy: <the line and what came back>`, proof the merged PR — then
+**say so plainly**, with what you saw. Do not report a successful deploy:
 
 ```
 ✗ **live** <what you saw instead>

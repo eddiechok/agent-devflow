@@ -158,6 +158,34 @@ Here is what the chart leaves out. All of it stops the flow rather than bending 
 
 It announces the size in one line before doing anything. That way you can disagree straight away.
 
+### Learning from runs
+
+A second, slower loop sits beside the first. It turns mistakes in real runs into skill fixes.
+
+```
+flow         you overrode the size             ──┐
+review       hardcase refuted a finding        ──┤
+ship         Verify failed after the deploy    ──┤  one line each
+[YOU]        /devflow:lesson "..."             ──┤
+                                                 ▼
+                            lessons.md, in the private
+                            eddiechok/devflow-lessons repo
+                                                 ┆  about once a month
+                                                 ▼
+                            [YOU] /devflow:lesson-review
+                                  counts waste from saved sessions
+                                  proposes a change only on a repeat,
+                                  each with a new eval case, run
+                                  old against new
+                                                 │
+                                                 ▼
+                            [YOU] yes to one proposal
+                                  applied as shown, then the
+                                  frontmatter test and validate run
+```
+
+A fact about your project is not a devflow lesson. `submit` puts that in the project's own `CLAUDE.md`, in the same PR, so you approve it with the work. [docs/lessons.md](docs/lessons.md) has the rules.
+
 ### When it will ask you
 
 **Direction.** Deep jobs always ask. Standard asks only when genuinely unclear. Quick never asks.
@@ -203,6 +231,8 @@ auth and permissions · secrets and keys · payments · public API or wire forma
 | `submit` | Runs the checks fresh. Runs the app. Calls `review`. Commits. Opens the PR, or updates the one already open. **Never merges** |
 | `tend` | After the PR is open. Works out what a red check or a review comment is really saying. Checks whether this branch caused it. Then fixes it and re-submits |
 | `ship` | Merges it. Watches the deploy. Checks it is really live. Cleans up. **Only you can start it** |
+| `lesson` | Writes one line to the private lessons repo — a mistake, an idea, or an override — so a later review can spot a pattern |
+| `lesson-review` | Reads the lessons and counts waste from saved sessions. Proposes a skill change only on a repeat, each with an eval case. **A human approves every change**. You start it yourself |
 
 `submit` opens the PR. `ship` merges it. Only you can start `ship`. On a branch with no PR, `ship` stops and points you at `submit`. Where a PR exists, it merges.
 
@@ -226,7 +256,7 @@ wrong.
 | [docs/tend.md](docs/tend.md) | Why `tend`'s steps are what they are. Getting on the PR's branch first. Triage before anything is changed. |
 | [docs/setup.md](docs/setup.md) | Why `setup`'s steps are what they are. Everything downstream trusts the `## Checks` block. Running each command before writing it down. |
 | [docs/pipeline.md](docs/pipeline.md) | Where work can sit, and what moves it. |
-| [docs/lessons.md](docs/lessons.md) | Not built yet. The plan for capturing lessons from real runs, and the loop that turns each one into a fix and an eval case. |
+| [docs/lessons.md](docs/lessons.md) | How `lesson` and `lesson-review` capture and act on real runs. Where waste counting reads from, and what it cannot see. The loop that turns a repeat into a fix and an eval case. |
 | [docs/web.md](docs/web.md) | Claude Code on the web. Start with "use the devflow flow skill". On Pro, say "run the review". `ship` is local only. |
 | [docs/hook.md](docs/hook.md) | The bash hook. It trims check output, allows the bare check commands, and asks before a commit to the default branch. It stops mistakes, not attackers. |
 | [docs/provenance.md](docs/provenance.md) | Where every idea came from. Every bug that shaped a rule. Full credits. |
@@ -241,7 +271,6 @@ Phase 1 is the smallest useful thing. These stay out on purpose:
 - `debug`, a bug-fixing loop. Bugs go through `build` for now.
 - Model routing by size. A skill cannot change its own model.
 - A sweep for leftover folder copies. A worktree `ship` kept because it held work, or one from a session `ship` never ran in, stays on disk until you remove it.
-- Capturing lessons. The plan is in [docs/lessons.md](docs/lessons.md).
 
 Add each one when two weeks of real use shows you need it. Not before.
 

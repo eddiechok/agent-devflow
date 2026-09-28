@@ -1007,19 +1007,11 @@ Both are things you say out loud. Neither is silence.
 
 ## Recording overrides
 
-**Write it outside the project**, to `~/.claude/devflow/overrides.md`, creating the directory and file if missing.
+Work out your own size first, so the record shows what would have happened. **Only a flag that differs from your own size is a correction.** `--deep` on work you would have called Deep is not an override, and a line saying `guessed: Deep | correct: Deep` teaches the classifier nothing. Call nothing in that case.
 
-Work out your own size first, so the record shows what would have happened. **Only a flag that differs from your own size is a correction.** `--deep` on work you would have called Deep is not an override, and a line saying `guessed: Deep | correct: Deep` teaches the classifier nothing. Write nothing in that case.
+When it differs, call `devflow:lesson` with skill `flow`, kind `mistake`, what `sized "<request>" <guessed>, human said <correct>`, proof `none`, and the flag itself, `--quick` or `--deep`, as the human's words.
 
-When it differs:
-
-```
-- 2026-08-16 | myapp | "fix the login redirect" | guessed: Quick | correct: Deep
-```
-
-Include the project name. Patterns show up across repos.
-
-**Print the line as well as writing it**, exactly once:
+**Print the same line as before**, exactly once, whatever `devflow:lesson` itself prints:
 
 ```
 ✓ **override** recorded — guessed Quick, you said Deep
