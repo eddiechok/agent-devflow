@@ -258,6 +258,9 @@ def _content(message):
     return body or []
 
 
+SKILL_FILE = re.compile(r"/skills/[^/]+/(SKILL\.md|references/[^/]+\.md)$")
+
+
 def tool_calls(events):
     """Every tool the assistant invoked, in order."""
     calls = []
@@ -304,13 +307,20 @@ def build_trace(events):
     A skill's body is input to the model, not evidence of what it did. So the
     result of a `Skill` call is dropped and everything else is kept.
 
-    Known limit, stated rather than hidden: a plain `Read` of a SKILL.md would
-    land in the trace and could fool a sizing grader the same way. Nothing in
-    these cases does that — the scaffolds build a throwaway project that does
-    not contain the plugin — but if you write a case that greps the plugin
-    source, do not use a bare `regex`/`trace` grader for a size.
+    A `Read` of a skill's own file is the same input by another tool: a skill
+    that points at `references/<name>.md` has the model read it, and those
+    files carry worked examples of the lines graders look for. So a `Read`
+    whose path is a SKILL.md or a file under a skill's `references/` is
+    dropped too. A case that greps the plugin source some other way — `cat`,
+    `grep` — still lands in the trace; do not use a bare `regex`/`trace`
+    grader for a size there.
     """
-    skill_results = {c["id"] for c in tool_calls(events) if c.get("name") == "Skill"}
+    skill_results = {
+        c["id"] for c in tool_calls(events)
+        if c.get("name") == "Skill"
+        or (c.get("name") == "Read"
+            and SKILL_FILE.search((c.get("input") or {}).get("file_path", "")))
+    }
     parts = []
     for event in events:
         kind = event.get("type")

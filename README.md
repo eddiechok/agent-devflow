@@ -105,17 +105,18 @@ There are two exceptions. `ship` is the one skill nothing else can call. `flow` 
       └── Deep ──────────┴──► ask, once ────┤                │
                               [YOU] answer, │                │
                               or take the   │                │
-                              recs. Deep:   │                │
-                              plan written  │                │
+                              recs. Then    │                │
+                              plan writes it│                │
                                             ▼                │
                     ┌───────────────────► build              │
                     │                     write the test     │
                     │                     watch it fail      │
                     │                     make it pass       │
-                    │                     Deep: one builder  │
-                    │                     agent per chain,   │
-                    │                     chains in parallel,│
-                    │                     each commits       │
+                    │                     Deep: plan runs    │
+                    │                     one builder agent  │
+                    │                     per chain, chains  │
+                    │                     in parallel, each  │
+                    │                     commits            │
                     │                       │                │
                     │                       ▼                │
                     │                     submit             │
@@ -148,7 +149,7 @@ Here is what the chart leaves out. All of it stops the flow rather than bending 
 - The **hook asks** before any commit that would land on the default branch.
 - **Three failed attempts** at the same problem and `build` stops. It says what each attempt ruled out. It does not try a fourth.
 - If the **live check fails** twice, `submit` stops and does not open a PR. An honest failure beats a green-looking PR over a broken feature.
-- A **builder that says `stuck`** stops a Deep job. `flow` stops spawning new chains, lets the running ones finish, then says which chain and which piece, and what the builder ruled out, before handing it to you. It does not try that piece again.
+- A **builder that says `stuck`** stops a Deep job. `plan` stops spawning new chains, lets the running ones finish, then says which chain and which piece, and what the builder ruled out, before handing it to you. It does not try that piece again.
 
 | Size | For | What happens |
 |---|---|---|
@@ -226,6 +227,7 @@ auth and permissions · secrets and keys · payments · public API or wire forma
 |---|---|
 | `setup` | Once per project. Finds and verifies the check commands. You invoke it yourself, so it costs nothing at runtime |
 | `flow` | Sizes the request. Routes it. Asks any questions in one batch |
+| `plan` | Deep work only: writes the plan, revises it, resumes it, and runs one builder per chain. Called by `flow`, or start it by hand — it writes or revises the plan and stops, then tells you `/devflow:flow` builds it |
 | `build` | Test first. Watch it fail for the right reason. Then make it pass |
 | `review` | Ranked axes in fresh agents: is it built right, is it safe from an attacker, is it the right thing. Reported side by side, never blended. The security axis runs only when the danger list calls for it. Skipped only when `submit` passes down that `build` found no behaviour to test |
 | `submit` | Runs the checks fresh. Runs the app. Calls `review`. Commits. Opens the PR, or updates the one already open. **Never merges** |
@@ -236,9 +238,9 @@ auth and permissions · secrets and keys · payments · public API or wire forma
 
 `submit` opens the PR. `ship` merges it. Only you can start `ship`. On a branch with no PR, `ship` stops and points you at `submit`. Where a PR exists, it merges.
 
-`review` runs agents that never saw the session: `reviewer` asks *is it built right*, `security-reviewer` asks *is it safe from an attacker* — only when the danger list names a security item — and `spec-reviewer` asks *is it the right thing*. Another, `hardcase`, tries to break `reviewer`'s and `security-reviewer`'s findings. The reports are never blended. `builder` is not a reviewer: on a Deep job it builds one chain of the plan's pieces in its own git worktree, commits each one, and reports back a branch line plus five lines per piece. One builder per chain, up to four chains at once, and `flow` merges their branches back before it submits.
+`review` runs agents that never saw the session: `reviewer` asks *is it built right*, `security-reviewer` asks *is it safe from an attacker* — only when the danger list names a security item — and `spec-reviewer` asks *is it the right thing*. Another, `hardcase`, tries to break `reviewer`'s and `security-reviewer`'s findings. The reports are never blended. `builder` is not a reviewer: on a Deep job it builds one chain of the plan's pieces in its own git worktree, commits each one, and reports back a branch line plus five lines per piece. One builder per chain, up to four chains at once, and `plan` merges their branches back before it reports to `flow`, which then submits.
 
-Folder copies get cleaned up behind the work. The worktrees `flow` cuts for a Deep job's chains are removed when they merge. The one `flow` step 0c or `tend` takes for the session itself holds your branch, so it stays until `ship` merges that branch. `ship` then removes it only when it holds nothing: no uncommitted files, no commits of its own. Otherwise it stays, and `ship`'s `cleaned` line says so. If `ship` never runs, the harness asks you to keep or remove it when the session ends.
+Folder copies get cleaned up behind the work. The worktrees `plan` cuts for a Deep job's chains are removed when they merge. The one `flow` step 0c or `tend` takes for the session itself holds your branch, so it stays until `ship` merges that branch. `ship` then removes it only when it holds nothing: no uncommitted files, no commits of its own. Otherwise it stays, and `ship`'s `cleaned` line says so. If `ship` never runs, the harness asks you to keep or remove it when the session ends.
 
 ## More
 
@@ -248,7 +250,8 @@ wrong.
 
 | Page | What it covers |
 |---|---|
-| [docs/flow.md](docs/flow.md) | Why `flow`'s steps are what they are. Follow-ups on an open PR. Where a Deep plan goes. One feature per run, parking the rest to `devflow:backlog` or `.devflow/backlog/`. One builder per chain, in parallel worktrees. Why new work in a folder parked on someone else's branch takes a worktree of its own. The `CONTEXT.md` glossary. Size overrides. |
+| [docs/flow.md](docs/flow.md) | Why `flow`'s steps are what they are. Follow-ups on an open PR. One feature per run, parking the rest to `devflow:backlog` or `.devflow/backlog/`. Why new work in a folder parked on someone else's branch takes a worktree of its own. The `CONTEXT.md` glossary. Size overrides. |
+| [docs/plan.md](docs/plan.md) | Why `plan`'s steps are what they are. Where a Deep plan goes and how revising one works. One builder per chain, in parallel worktrees. Plans kept as GitHub issues. Starting `plan` by hand. |
 | [docs/build.md](docs/build.md) | Why `build`'s gates are what they are. Running the checks bare. Where the expected value comes from. Watching it fail. When there is nothing a test could catch. |
 | [docs/submit.md](docs/submit.md) | Why `submit`'s steps are what they are. Checks that postdate the last edit. The live check. The commit and the PR body. |
 | [docs/review.md](docs/review.md) | Why `review`'s steps are what they are. The four agents. Why the axes are separate and ranked apart. Why `hardcase` defaults to *falls*. The one change that gets no review. |
@@ -267,7 +270,6 @@ Working on the plugin? The checks are in [CLAUDE.md](CLAUDE.md). `claude plugin 
 
 Phase 1 is the smallest useful thing. These stay out on purpose:
 
-- A standalone `plan` skill. You cannot revise a plan once written.
 - `debug`, a bug-fixing loop. Bugs go through `build` for now.
 - Model routing by size. A skill cannot change its own model.
 - A sweep for leftover folder copies. A worktree `ship` kept because it held work, or one from a session `ship` never ran in, stays on disk until you remove it.

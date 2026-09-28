@@ -49,8 +49,8 @@ it spends money.
 
 **A rendered `SKILL.md` is not part of the trace.** The `Skill` tool returns the
 whole skill body as a tool result, and `skills/flow/SKILL.md` contains its own
-worked examples — `Quick — single-file copy change.` at line 569 and `Deep — new
-subsystem, touches auth (danger list).` at 573. Count those as trace and three
+worked examples — `Quick — single-file copy change.` at line 336 and `Deep — new
+subsystem, touches auth (danger list).` at 340. Count those as trace and three
 weight-3 graders stop measuring anything:
 
 | Grader | What it would do |
@@ -62,11 +62,14 @@ weight-3 graders stop measuring anything:
 So the result of a `Skill` call is dropped and everything else is kept. A skill's
 body is input to the model, not evidence of what it did.
 
-The limit, said out loud: a plain `Read` of a `SKILL.md` would land in the trace
-and could fool a sizing grader the same way. Nothing in these cases does that —
-the scaffolds build a throwaway project that does not contain the plugin — but do
-not write a case that greps the plugin source and then judges a size with a bare
-`regex`/`trace` grader.
+A `Read` of a skill's own file is dropped too — a `SKILL.md`, or a file under a
+skill's `references/`. Skills point the model at reference files for rare paths,
+and those files hold worked examples of the lines graders look for:
+`split-and-park.md` carries `✓ **chips** 2 offered`.
+
+The limit, said out loud: the plugin source read any other way — `cat`, `grep` —
+still lands in the trace. Do not write a case that does that and then judges a
+size with a bare `regex`/`trace` grader.
 
 ## What each case is for
 
