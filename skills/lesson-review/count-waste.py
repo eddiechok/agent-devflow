@@ -151,7 +151,7 @@ def read_jsonl(path):
             yield ("rec", rec)
 
 
-def process_records(records, seed_skill=None):
+def process_records(records, seed_skill=None, seen=None):
     """Walk one session's (or one subagent's) records in order and return
     its local tallies. `seed_skill` is the skill to charge events to before
     anything in the file says otherwise -- a subagent's own `agentType`."""
@@ -163,7 +163,13 @@ def process_records(records, seed_skill=None):
         "skipped": 0,
         "last_timestamp": None,
         "cost_state": None,
+        # A resumed or forked session copies earlier records, uuids and all,
+        # into a new file. Those still set which skill is open, but they were
+        # counted in the file they came from, so they count nothing here.
+        "new_uuids": set(),
+        "copied": 0,
     }
+    seen = seen if seen is not None else set()
     current_skill = seed_skill
     review_run = None  # [skill, found_nothing] while a review run is open
     # A `flow` run prints its size once, and `submit`'s recap repeats that
@@ -177,12 +183,14 @@ def process_records(records, seed_skill=None):
         nonlocal review_run
         if review_run is None:
             return
-        skill, found = review_run
+        skill, found, copied = review_run
+        review_run = None
+        if copied:
+            return
         r = stats["review"].setdefault(skill, [0, 0])
         r[0] += 1
         if found:
             r[1] += 1
-        review_run = None
 
     def start(skill):
         """A skill was started -- typed as a command, or called through the
@@ -190,7 +198,7 @@ def process_records(records, seed_skill=None):
         nonlocal review_run, flow_seen, last_size_line
         close_review()
         if skill == "devflow:review":
-            review_run = [skill, False]
+            review_run = [skill, False, copied]
         if skill == "devflow:flow":
             flow_seen = True
             last_size_line = None
@@ -199,6 +207,13 @@ def process_records(records, seed_skill=None):
         if kind == "skip":
             stats["skipped"] += 1
             continue
+
+        uid = rec.get("uuid")
+        copied = bool(uid) and uid in seen
+        if copied:
+            stats["copied"] += 1
+        elif uid:
+            stats["new_uuids"].add(uid)
 
         ts = record_timestamp(rec)
         if ts is not None:
@@ -229,13 +244,15 @@ def process_records(records, seed_skill=None):
             start(used)
             current_skill = used
 
-        if isinstance(content, str) and content.strip().lower() == "yes to all":
+        # "Yes to all, go ahead." is a yes; "not yes to all" is not.
+        if (isinstance(content, str) and content.strip().lower().startswith("yes to all")
+                and not copied):
             origin = rec.get("origin") or {}
             if origin.get("kind") == "human" and is_devflow(current_skill):
                 stats["yes_to_all"][current_skill] = stats["yes_to_all"].get(current_skill, 0) + 1
 
         denial_kind = rec.get("toolDenialKind")
-        if denial_kind and is_devflow(current_skill):
+        if denial_kind and is_devflow(current_skill) and not copied:
             d = stats["denials"].setdefault(current_skill, {})
             d[denial_kind] = d.get(denial_kind, 0) + 1
 
@@ -245,7 +262,8 @@ def process_records(records, seed_skill=None):
             m = SIZE_RE.match(first_line)
             if (m and flow_seen and rec.get("type") == "assistant"
                     and first_line != last_size_line):
-                stats["flow_runs"].append({"size": m.group(1)})
+                if not copied:
+                    stats["flow_runs"].append({"size": m.group(1)})
                 last_size_line = first_line
             # Only what the session said. The skill's own text and a test
             # run's output both name these phrases without meaning them.
@@ -305,6 +323,28 @@ def merge_review(target, source):
         r[1] += no_findings
 
 
+def first_timestamp(path):
+    """The first timestamp in a session file. Session ids are random, so
+    only time says which of two files holding the same records is older."""
+    for kind, rec in read_jsonl(path):
+        if kind == "rec":
+            ts = record_timestamp(rec)
+            if ts is not None:
+                return ts
+    return None
+
+
+def created(path):
+    """When the file was made. A copy keeps the old records' timestamps, so
+    two files can start at the same moment; the original was made first.
+    macOS records a birth time; elsewhere the last change is the best left."""
+    try:
+        st = os.stat(path)
+    except OSError:
+        return float("inf")
+    return getattr(st, "st_birthtime", st.st_mtime)
+
+
 def scan(projects_dir, since=None):
     """Read every session under `projects_dir` and return the report dict.
     `since` is a `YYYY-MM-DD` string, or `None` for no cutoff."""
@@ -325,15 +365,26 @@ def scan(projects_dir, since=None):
     if not os.path.isdir(projects_dir):
         return report
 
-    for session_id, session_path, subagent_paths in find_sessions(projects_dir):
-        session_stats = process_records(read_jsonl(session_path))
+    seen = set()  # every record uuid already counted, across all files
+    # Oldest first, so a copied record is counted in the file it came from.
+    latest = datetime.max.replace(tzinfo=timezone.utc)
+    sessions = sorted(
+        find_sessions(projects_dir),
+        key=lambda s: (first_timestamp(s[1]) or latest, created(s[1]), s[1]),
+    )
+    for session_id, session_path, subagent_paths in sessions:
+        session_stats = process_records(read_jsonl(session_path), seen=seen)
 
         if since_dt is not None:
             last = session_stats["last_timestamp"]
             if last is not None and last < since_dt:
                 continue
 
-        report["sessions_scanned"] += 1
+        seen |= session_stats["new_uuids"]
+        # A file that is nothing but copies of another is not another session,
+        # but its subagents below are still its own.
+        if not (session_stats["copied"] and not session_stats["new_uuids"]):
+            report["sessions_scanned"] += 1
         report["skipped_lines"] += session_stats["skipped"]
         merge_counts(report["yes_to_all"], session_stats["yes_to_all"])
         merge_denials(report["denials"], session_stats["denials"])
@@ -354,7 +405,8 @@ def scan(projects_dir, since=None):
 
         for subagent_path in subagent_paths:
             agent_type = subagent_type(subagent_path)
-            sub_stats = process_records(read_jsonl(subagent_path), seed_skill=agent_type)
+            sub_stats = process_records(read_jsonl(subagent_path), seed_skill=agent_type, seen=seen)
+            seen |= sub_stats["new_uuids"]
             report["skipped_lines"] += sub_stats["skipped"]
             merge_counts(report["yes_to_all"], sub_stats["yes_to_all"])
             merge_denials(report["denials"], sub_stats["denials"])

@@ -19,6 +19,12 @@ other half of the loop: it reads what was collected, and turns a pattern into a 
 **It proposes; it does not edit a skill itself.** A human approves every skill change, so
 the most this skill ever does on its own is write the proposal down and ask.
 
+**Steps 4 to 6 need the agent-devflow checkout.** The eval cases, `evals/run.py` and
+`skills/test-frontmatter.py` live there, and the plugin is on in other projects too.
+Steps 1 to 3 only read, so they work from any folder. Before step 4, check that
+`evals/run.py` and `skills/test-frontmatter.py` exist in this folder. If they do not, print
+what steps 1 to 3 found, say this is not the agent-devflow checkout, and stop before step 4.
+
 ## 1. Read the lessons
 
 ```

@@ -456,5 +456,72 @@ with tempfile.TemporaryDirectory() as root:
     check("a follow-up request's size line is its own run; recaps are not",
           [r["size"] for r in last["flow_runs"]] == ["Standard", "Quick", "Deep"], last["flow_runs"])
 
+# From the review of the whole branch. A resumed or forked session copies the
+# same records, uuids and all, into a second file -- and one session id can be
+# saved under two project folders. Each record counts once. And a reply that
+# says "yes to all" among other words still says it.
+with tempfile.TemporaryDirectory() as root:
+    records = [
+        {"uuid": "u1", "type": "user", "message": {"content": "<command-name>/devflow:flow</command-name>"}},
+        {"uuid": "u2", "type": "assistant", "attributionSkill": "devflow:flow",
+         "message": {"content": [{"type": "text", "text": "Deep — one job."}]}},
+        {"uuid": "u3", "type": "user", "message": {"content": "Yes to all, go ahead."},
+         "origin": {"kind": "human"}},
+    ]
+    write_jsonl(os.path.join(root, "-proj-a", "11111111-0000-0000-0000-000000000001.jsonl"), records)
+    write_jsonl(os.path.join(root, "-proj-a--claude-worktrees-x",
+                             "11111111-0000-0000-0000-000000000001.jsonl"), records)
+    write_jsonl(os.path.join(root, "-proj-a", "22222222-0000-0000-0000-000000000002.jsonl"),
+                records + [{"uuid": "u4", "type": "assistant", "attributionSkill": "devflow:flow",
+                            "message": {"content": [{"type": "text", "text": "Quick — a second job."}]}}])
+
+    dup = cw.scan(root, since=None)
+    check("a record copied into another file counts once",
+          [r["size"] for r in dup["flow_runs"]] == ["Deep", "Quick"], dup["flow_runs"])
+    check("a copied yes-to-all counts once, and a longer reply still counts",
+          dup["yes_to_all"].get("devflow:flow") == 1, dup["yes_to_all"])
+
+# Round 2 of that review. Session ids are random, so a fork's file can sort
+# before the original's: the older file must still own the run and its cost.
+# A file of nothing but copies still has its own subagents. And "not yes to
+# all" is not a yes.
+with tempfile.TemporaryDirectory() as root:
+    proj = os.path.join(root, "-proj-b")
+    original = [
+        {"uuid": "o1", "type": "user", "timestamp": "2026-09-01T00:00:00.000Z",
+         "message": {"content": "<command-name>/devflow:flow</command-name>"}},
+        {"uuid": "o2", "type": "assistant", "attributionSkill": "devflow:flow",
+         "timestamp": "2026-09-01T00:00:01.000Z",
+         "message": {"content": [{"type": "text", "text": "Deep — the original."}]}},
+        {"uuid": "o3", "type": "user", "timestamp": "2026-09-01T00:00:02.000Z",
+         "message": {"content": "Not yes to all, ask me about each one."}, "origin": {"kind": "human"}},
+        {"type": "cost-state", "totalCostUSD": 1.0, "totalDuration": 1000},
+    ]
+    write_jsonl(os.path.join(proj, "bbbbbbbb-0000-0000-0000-00000000000b.jsonl"), original)
+    write_jsonl(os.path.join(proj, "bbbbbbbb-0000-0000-0000-00000000000b", "subagents", "agent-9.jsonl"),
+                [{"uuid": "s1", "type": "user", "toolDenialKind": "user-rejected"}])
+    with open(os.path.join(proj, "bbbbbbbb-0000-0000-0000-00000000000b", "subagents", "agent-9.meta.json"),
+              "w", encoding="utf-8") as f:
+        json.dump({"agentType": "devflow:reviewer"}, f)
+    write_jsonl(os.path.join(proj, "aaaaaaaa-0000-0000-0000-00000000000a.jsonl"),
+                original[:3] + [{"type": "cost-state", "totalCostUSD": 9.0, "totalDuration": 9000}])
+    # Written a moment apart, the two files can share one timestamp. Set them
+    # an hour and a minute apart. On a Mac, an mtime set before the birth time
+    # moves the birth time back with it.
+    import time
+    hour_ago = time.time() - 3600
+    os.utime(os.path.join(proj, "bbbbbbbb-0000-0000-0000-00000000000b.jsonl"), (hour_ago, hour_ago))
+    os.utime(os.path.join(proj, "aaaaaaaa-0000-0000-0000-00000000000a.jsonl"),
+             (hour_ago + 60, hour_ago + 60))
+
+    order = cw.scan(root, since=None)
+    check("the older file owns a copied run, and its own cost",
+          [(r["session"][:8], r["cost_usd"]) for r in order["flow_runs"]] == [("bbbbbbbb", 1.0)],
+          order["flow_runs"])
+    check("a session's subagents are counted even when its main file is all copies",
+          order["denials"].get("devflow:reviewer", {}).get("user-rejected") == 1, order["denials"])
+    check("'not yes to all' is not a yes to all",
+          order["yes_to_all"] == {}, order["yes_to_all"])
+
 print(f"\n{passed} passed, {failed} failed")
 sys.exit(1 if failed else 0)

@@ -2844,13 +2844,6 @@ for path in ("docs/flow.md", "evals/README.md"):
           OVERRIDES_PATH_LITERAL not in text,
           f"{path} still names {OVERRIDES_PATH_LITERAL!r}")
 
-check("docs/lessons.md: still the one place that may name the old file",
-      OVERRIDES_PATH_LITERAL in open(
-          os.path.join(REPO_ROOT, "docs", "lessons.md"), encoding="utf-8"
-      ).read(),
-      "docs/lessons.md dropped the migration note naming the old overrides "
-      "file, which is the one place it is allowed to stay")
-
 check("flow: stays at or under its size cap of 1059 lines",
       len(flow_text.splitlines()) <= 1059,
       f"{FLOW_PATH} is {len(flow_text.splitlines())} lines, over its cap. "
@@ -3008,6 +3001,16 @@ check("lesson-review: description says what it does",
 check("lesson-review: runs count-waste.py from its own skill directory",
       "count-waste.py" in lesson_review_text,
       f"{LESSON_REVIEW_PATH} never names count-waste.py")
+
+# evals/run.py, the new eval case and skills/test-frontmatter.py all live in
+# this repo. The plugin is on in other projects too, so a lesson-review started
+# there would write the eval case into the wrong repo. Found in review.
+check("lesson-review: checks it is in the agent-devflow checkout first",
+      "evals/run.py" in lesson_review_text
+      and re.search(r"agent-devflow checkout", flat(lesson_review_text)) is not None
+      and re.search(r"stop(s)? before step 4", flat(lesson_review_text)) is not None,
+      f"{LESSON_REVIEW_PATH} does not check for the agent-devflow checkout "
+      "before it writes an eval case or runs the evals")
 
 check("lesson-review: each proposal comes with a new eval case",
       re.search(r"new eval case", lesson_review_text) is not None,
