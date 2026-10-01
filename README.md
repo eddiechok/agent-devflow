@@ -6,7 +6,7 @@ It sizes the work. It writes the test first. It proves the code runs. Then it op
 
 It asks you as little as possible.
 
-This is **Phase 1**. It is small on purpose. See [What is not here yet](#what-is-not-here-yet).
+This is **Phase 1**. It is small on purpose.
 
 ## The three rules
 
@@ -277,14 +277,6 @@ wrong.
 | [docs/provenance.md](docs/provenance.md) | Where every idea came from. Every bug that shaped a rule. Full credits. |
 
 Working on the plugin? The checks are in [CLAUDE.md](CLAUDE.md). `claude plugin validate .` prints exactly one warning, about `version`. That is on purpose.
-
-## What is not here yet
-
-Phase 1 is the smallest useful thing. These stay out on purpose:
-
-- A sweep for leftover folder copies. A worktree `ship` kept because it held work, or one from a session `ship` never ran in, stays on disk until you remove it.
-
-Add each one when two weeks of real use shows you need it. Not before.
 
 ## Borrowed from
 
