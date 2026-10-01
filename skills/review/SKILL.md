@@ -44,6 +44,8 @@ If both come back empty, stop. There is no review to run:
 
 ## 2. Find the spec
 
+A `no-behaviour:` line skips this step — see the next section.
+
 In this order, first hit wins:
 
 0. **A plan issue** — only if the project's `CLAUDE.md` has a `## Plans` block saying `github`. List them: `gh api 'repos/{owner}/{repo}/issues?labels=devflow:plan&state=open' --jq '.[] | select(.pull_request | not) | {number, title}'`, or whatever GitHub access this environment has. If `gh` cannot fill `{owner}/{repo}` from the git remote, write the owner and repo in yourself. With no `gh` installed, list them with `curl -sS --fail-with-body -H "Authorization: token $GH_TOKEN" "https://api.github.com/repos/<owner>/<repo>/issues?labels=devflow:plan&state=open"`, reading `<owner>/<repo>` from `git remote get-url origin`, and skip entries with a `pull_request` key. If the remote does not name a GitHub repo, write them in yourself. Never print `$GH_TOKEN`, and send it to `api.github.com` and no other host. Pick the one whose subject is this work and read its body — `gh api repos/{owner}/{repo}/issues/<n> --jq .body` — it has the shape of a plan file. If `gh` cannot answer, say so and go on to the file — the same job may have fallen back to one.
@@ -56,13 +58,17 @@ In this order, first hit wins:
 
 ## No behaviour to review
 
-If `$ARGUMENTS` carries a line beginning `no-behaviour:`, **spawn no agent**. Print one line and go straight to step 4:
+If `$ARGUMENTS` carries a line beginning `no-behaviour:`, **spawn `devflow:reviewer` alone** — not `spec-reviewer`, not `security-reviewer`, not `hardcase`. Print one line:
 
 ```
-– **review** skipped, no behaviour: <reason>
+– **review** no behaviour — reviewer reads the words alone
 ```
 
-In the step 4 report, write `skipped — no behaviour` under each of **Built right**, **Challenged**, **Security** and **Right thing**, and against all three lines of **Worst of each**.
+Give it the fixed point, the file list and a **200 word ceiling**, and one more line: nothing here runs, so read the words against the repo — every link and anchor still lands, no section other files point to is gone, and no claim names a feature that is not there or contradicts a skill or agent. A failing case is the link that lands nowhere, the feature nothing builds, or the line that says the opposite.
+
+If the harness will not let you spawn it, do what step 3's last subsection says.
+
+Either way, go to step 4 next. There, write `skipped — no behaviour` under **Challenged**, **Security** and **Right thing**, and against the Security and Right thing lines of **Worst of each**.
 
 **`no-behaviour:` is a line `submit` passes down, and never something `review` works out from the diff.** It carries the reason `build` gave at its own gate for writing no test, word for word.
 
@@ -121,7 +127,7 @@ If that answer does not come, the axis **did not run**. Print `– **review** ag
 
 ```markdown
 ## Built right
-<reviewer's report, or: NOT RUN — <why, in one line>, or: skipped — no behaviour>
+<reviewer's report, or: NOT RUN — <why, in one line>>
 
 ## Challenged
 <hardcase's report, or: nothing to challenge — the first axis was clean,
@@ -136,7 +142,7 @@ If that answer does not come, the axis **did not run**. Print `– **review** ag
  or: skipped — no behaviour>
 
 ## Worst of each
-- Built right: <the one finding that matters most, or none, or NOT RUN, or skipped — no behaviour>
+- Built right: <the one finding that matters most, or none, or NOT RUN>
 - Security: <the one finding that matters most, or none, or skipped — no security item touched, or NOT RUN, or skipped — no behaviour>
 - Right thing: <the one finding that matters most, or none, or NOT RUN, or skipped — no behaviour>
 ```

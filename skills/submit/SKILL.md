@@ -128,7 +128,7 @@ git merge-base HEAD <default branch ref>
 
 **Pass it the request text too, if you were given one.** `flow` hands it over at its step 5 as `request: <text>`, word for word; hand it to `review` in the same form, after the fixed point. If you were invoked directly and have no request, say so in one line and let the axis skip — do not write one from memory of the diff.
 
-**Pass `no-behaviour: <reason>` too, when `build` said there was nothing to test.** `build` has one gate for that, and it prints `– **no-behaviour** <reason> — running the checks instead`. Hand that reason on **as its own line**, `no-behaviour: <reason>`, after the fixed point and the request — `review` recognises it only at a line start. `review` then starts no agent and reports all three sections as `skipped — no behaviour`, which you read as **nothing to fix**: no findings, no rounds, nothing for **Known issues**, and `Review: skipped, no behaviour` under **Evidence** at step 8.
+**Pass `no-behaviour: <reason>` too, when `build` said there was nothing to test.** `build` has one gate for that, and it prints `– **no-behaviour** <reason> — running the checks instead`. Hand that reason on **as its own line**, `no-behaviour: <reason>`, after the fixed point and the request — `review` recognises it only at a line start. `review` then runs `reviewer` alone, to check the words still match the repo, and reports **Challenged**, **Security** and **Right thing** as `skipped — no behaviour`. Act on its findings like any others below; the skipped sections are nothing to fix. Under **Evidence** at step 8 write `Review: reviewer only, no behaviour`.
 
 Only `build` decides this, and only for the change in front of it. If `build` ran the gates, the axes run — never reach for the exit yourself because the diff looks small or because it is all markdown.
 
@@ -165,7 +165,7 @@ The review reports; it never edits. The fixes are yours. Once it is settled, pri
 or, when `build` said there was nothing to test:
 
 ```
-– **review** skipped, no behaviour
+✓ **review** reviewer only, no behaviour — 0 found
 ```
 
 ## 6. Update the docs the change made stale
@@ -403,7 +403,7 @@ I checked this locally before pushing. I stopped my own server; step 5 is for yo
 - Tests: 48 passed, exit 0
 - Typecheck: clean
 - Live check: done, works
-- Review: all three ran — is it built right, is it safe from an attacker, and is it the right thing, naming which were `NOT RUN` and which were `skipped` (or: security-reviewer skipped — no security item touched, right thing NOT RUN — no spec; or: skipped, no behaviour)
+- Review: all three ran — is it built right, is it safe from an attacker, and is it the right thing, naming which were `NOT RUN` and which were `skipped` (or: security-reviewer skipped — no security item touched, right thing NOT RUN — no spec; or: reviewer only, no behaviour)
 
 ## Known issues
 - (only if the review left something unresolved)

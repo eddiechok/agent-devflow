@@ -3493,6 +3493,64 @@ check("build: three guessed attempts point at debug, not a fourth guess",
       f"instead of a fourth guess")
 
 
+# ------------------------------- a no-behaviour change still gets one reader
+#
+# #78. A `no-behaviour` change used to start no agent at all. On #74 a README
+# section and its anchor were removed, and nothing but the session that wrote
+# it ever checked the anchor. Words can be wrong without being code: a link to
+# a section that is gone, a claim a skill contradicts. So `reviewer` reads it
+# alone. Not `spec-reviewer` -- it judges against the request, and a broken
+# link is not a missing requirement. And never keyed on file types: in this
+# repo a `.md` skill file is behaviour.
+
+NO_BEHAVIOUR_LINE = "– **review** no behaviour — reviewer reads the words alone"
+
+check("review: a no-behaviour change spawns reviewer alone",
+      "spawn `devflow:reviewer` alone" in flat(review_skill_text),
+      f"{REVIEW_PATH} never says a no-behaviour change starts reviewer alone")
+
+check("review: a no-behaviour change no longer starts no agent",
+      "spawn no agent" not in flat(review_skill_text),
+      f"{REVIEW_PATH} still says a no-behaviour change spawns no agent")
+
+check("review: prints the no-behaviour line",
+      NO_BEHAVIOUR_LINE in review_skill_text,
+      f"{REVIEW_PATH} never prints {NO_BEHAVIOUR_LINE!r}")
+
+check("review: Built right is never skipped for no behaviour",
+      not any(line.startswith("<reviewer's report") and "no behaviour" in line
+              for line in review_skill_text.split("\n")),
+      f"{REVIEW_PATH}: the Built right template still offers "
+      f"'skipped — no behaviour'")
+
+check("review: the no-behaviour look is short and unchallenged",
+      "a **200 word ceiling**" in review_skill_text
+      and "not `security-reviewer`, not `hardcase`" in flat(review_skill_text),
+      f"{REVIEW_PATH}: the no-behaviour look should be reviewer alone, "
+      f"200 words, no hardcase -- the issue asked for a short look")
+
+check("submit: a no-behaviour review runs reviewer alone",
+      "`review` then runs `reviewer` alone" in flat(submit_text)
+      and "starts no agent" not in submit_text,
+      f"{SUBMIT_PATH} still reads a no-behaviour review as no agent at all")
+
+check("submit: prints what the no-behaviour review found",
+      "– **review** skipped, no behaviour" not in submit_text,
+      f"{SUBMIT_PATH} still prints the review as skipped on no behaviour")
+
+with open(os.path.join(REPO_ROOT, "docs", "review.md"), encoding="utf-8") as fh:
+    docs_review_text = fh.read()
+
+check("docs/review: no change gets no review any more",
+      "The one change that gets no review" not in docs_review_text
+      and "## A change with no behaviour gets one reader" in docs_review_text,
+      "docs/review.md still says a no-behaviour change gets no review")
+
+check("README: the review row no longer says it is skipped",
+      "Skipped only when `submit` passes down" not in readme_text,
+      f"{README_PATH}: the review row still says no behaviour skips it")
+
+
 # ------------------------------ the size budget is a check, not a courtesy
 #
 # skill-creator's own advice is "Keep SKILL.md under 500 lines" -- a skill

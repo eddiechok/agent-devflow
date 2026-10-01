@@ -37,13 +37,17 @@ The three ranked axes pin the **same** pair on purpose. Their reports are never 
 
 `hardcase` pins it for a different reason. A refuter that cannot follow the code refutes nothing. It prints a clean sheet that reads like agreement.
 
-## The one change that gets no review
+## A change with no behaviour gets one reader
 
-`submit` can hand `review` a line `no-behaviour: <reason>`. Then no agent starts at all, and all four sections of the report read `skipped — no behaviour`.
+`submit` can hand `review` a line `no-behaviour: <reason>`. Then only `reviewer` starts, with a 200 word ceiling, and `Challenged`, `Security` and `Right thing` read `skipped — no behaviour`.
 
-The reason comes from `build`, which has a gate for the change that no test can catch. Carrying that answer forward is cheaper than paying up to four Opus agents to rediscover it, and it is the only place in the plugin where a review is skipped outright rather than merely finding nothing.
+The reason comes from `build`, which has a gate for the change that no test can catch. Carrying that answer forward is cheaper than paying up to four Opus agents to rediscover it.
 
-It is a **third state**. `NOT RUN` is an axis that should have run and could not — a finding for the PR. `none` is an axis that ran and found nothing. `skipped — no behaviour` is an axis that was never owed a run, and `submit` reads it as nothing to fix.
+It used to start no agent at all. Then on #74 a README section and its anchor were removed, and only the session that wrote it checked the anchor. Words can be wrong without being code: a link to a section that is gone, a page that claims a feature that is not there, a line a skill contradicts. Nobody independent had read them.
+
+`reviewer` is the one that reads them, because each of those has a failing case — the link that lands nowhere, the line that says the opposite. `spec-reviewer` judges the change against the request, and a broken link is not a missing requirement. Nothing here can be attacked, so `security-reviewer` stays out too. `hardcase` stays out because a docs finding is cheap to check by hand: the anchor is there or it is not.
+
+`skipped — no behaviour` is a **third state**. `NOT RUN` is an axis that should have run and could not — a finding for the PR. `none` is an axis that ran and found nothing. `skipped — no behaviour` is an axis that was never owed a run, and `submit` reads it as nothing to fix.
 
 `review` never works it out for itself. Deciding it here would mean reading the change in order to judge whether the change is worth reading, and file types cannot stand in for that judgement — in this repo a `.md` skill file is behaviour. A rule keyed on the extension would skip the review on exactly the changes that most need one.
 
