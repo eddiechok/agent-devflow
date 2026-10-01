@@ -181,8 +181,11 @@ everywhere in a checkout and differ everywhere in a worktree.
 
 **Second: is this folder on the default branch?** The `Branch` and `Default branch ref`
 Context lines already answer it, with the `origin/` dropped, the same comparison `build`
-makes. If they match, the folder is parked where new work is cut from and **nothing
-changes** — go to step 1, and print nothing.
+makes. A `Branch` of `HEAD` is a detached folder, and it counts as on the default branch
+only when `git rev-parse HEAD <default branch ref>` prints one commit twice. If it is on
+the default branch, the folder is parked where new work is cut from and **nothing
+changes** — go to step 1, and print nothing. A detached HEAD anywhere else is somebody's
+work.
 
 Only when both answers are no does anything happen here, and then this folder is parked on
 a branch that is somebody's work. Taking it is what this step exists to stop, so say what
