@@ -1365,12 +1365,64 @@ check("flow: names EnterWorktree as the tool that moves the session",
 # when another worktree holds `main`. Seen 1 Oct 2026, filed as #76. The fix is
 # to compare commits, not names, so the command and both halves of the rule are
 # pinned: the tip counts as parked, and any other detached commit does not.
+#
+# The tip was too narrow (#79). `ship` parks a folder with `git checkout
+# --detach <default branch ref>`, remote-tracking refs are shared across
+# worktrees, and the next fetch anywhere moves `origin/main` on. An exact
+# `git rev-parse HEAD <default branch ref>` match then fails, and a folder
+# nobody is in takes a worktree -- or, with no EnterWorktree, stops the run.
+# So a clean detached HEAD that the default branch already contains is parked.
+# `build` cuts where a detached HEAD stands, which behind the tip is a stale
+# base, so flow has to tell it this is new work.
 
-check("flow: compares a detached HEAD to the default branch by commit",
+check("flow: a detached HEAD the default branch contains is parked",
+      "git merge-base --is-ancestor HEAD <default branch ref>" in flow_text,
+      f"{FLOW_PATH} never runs 'git merge-base --is-ancestor HEAD <default "
+      f"branch ref>'. A folder ship parked goes stale after any fetch, and "
+      f"step 0c then calls it somebody's work")
+
+# The exact tip stays parked whatever the reflog says. Round 2 of the #79
+# review: a folder at the tip by hash -- `git bisect reset` from a parked
+# folder writes `moving from <sha> to <tip sha>` -- read as somebody's work,
+# and `git checkout --detach origin/main` did not repair it, because git writes
+# no reflog entry when the commit does not change.
+
+check("flow: a detached HEAD at the exact tip is still parked",
       "git rev-parse HEAD <default branch ref>" in flow_text,
       f"{FLOW_PATH} never runs 'git rev-parse HEAD <default branch ref>'. "
-      f"A detached HEAD reads `HEAD`, so a name comparison calls the parked "
-      f"tip of the default branch somebody's work")
+      f"A folder at the tip by hash then fails the reflog test, and checking "
+      f"out the ref again writes no reflog line to repair it")
+
+check("flow: a parked detached folder has to be clean",
+      re.search(r"detached folder.{0,120}git status --porcelain",
+                flat(flow_text), re.S) is not None,
+      f"{FLOW_PATH} counts a detached folder as parked without checking "
+      f"'git status --porcelain'. Uncommitted changes there are somebody's "
+      f"work, the same test ship's deploy step uses for a free folder")
+
+# Ancestor-and-clean alone also matches a folder somebody moved back on
+# purpose: `git bisect`, or `git checkout <old sha>` to reproduce a bug. Both
+# leave a clean tree on a commit the default branch contains, and `build` would
+# then move the folder out from under them. Found by the review of #79. What
+# tells them apart is how HEAD got there: parking writes `checkout: moving from
+# <x> to origin/main` into the reflog, and bisect or a hand checkout writes a
+# hash or `HEAD~3`.
+
+check("flow: a parked detached folder got there by checking out the ref",
+      "git reflog -1 --format=%gs HEAD" in flow_text
+      and re.search(r"reflog -1 --format=%gs HEAD`.{0,40}ends.{0,10}"
+                    r"`to <default branch ref>`", flat(flow_text), re.S)
+          is not None,
+      f"{FLOW_PATH} never asks 'git reflog -1 --format=%gs HEAD' whether the "
+      f"last move went to the default branch ref. A bisect or an old commit "
+      f"checked out by hand then reads as parked, and build moves it")
+
+check("flow: a parked detached folder tells build it is new work",
+      re.search(r"reflog -1.{0,200}new work.{0,120}not from where the "
+                r"folder stands", flat(flow_text), re.S) is not None,
+      f"{FLOW_PATH} lets a detached folder behind the tip through without "
+      f"telling build it is new work, so build cuts the branch from a "
+      f"stale commit")
 
 check("flow: a detached HEAD anywhere else is somebody's work",
       "A detached HEAD anywhere else is somebody's work" in flat(flow_text),
