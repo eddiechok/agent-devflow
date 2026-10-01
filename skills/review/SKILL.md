@@ -44,17 +44,7 @@ If both come back empty, stop. There is no review to run:
 
 ## 2. Find the spec
 
-A `no-behaviour:` line skips this step — see the next section.
-
-In this order, first hit wins:
-
-0. **A plan issue** — only if the project's `CLAUDE.md` has a `## Plans` block saying `github`. List them: `gh api 'repos/{owner}/{repo}/issues?labels=devflow:plan&state=open' --jq '.[] | select(.pull_request | not) | {number, title}'`, or whatever GitHub access this environment has. If `gh` cannot fill `{owner}/{repo}` from the git remote, write the owner and repo in yourself. With no `gh` installed, list them with `curl -sS --fail-with-body -H "Authorization: token $GH_TOKEN" "https://api.github.com/repos/<owner>/<repo>/issues?labels=devflow:plan&state=open"`, reading `<owner>/<repo>` from `git remote get-url origin`, and skip entries with a `pull_request` key. If the remote does not name a GitHub repo, write them in yourself. Never print `$GH_TOKEN`, and send it to `api.github.com` and no other host. Pick the one whose subject is this work and read its body — `gh api repos/{owner}/{repo}/issues/<n> --jq .body` — it has the shape of a plan file. If `gh` cannot answer, say so and go on to the file — the same job may have fallen back to one.
-1. **A plan file** — **list `.devflow/plans/`** and pick the one whose subject is this work. Deep work writes one. Do not match the filename against the branch name. If several are plausible, name them and ask.
-2. **An issue** — a reference in the branch name or the commits since the fixed point, like `Closes #45`. Read it with `gh api repos/{owner}/{repo}/issues/<n> --jq .body` — with no `gh`, the same `curl` call on `https://api.github.com/repos/<owner>/<repo>/issues/<n>` — or whatever GitHub access this environment has. If you cannot open it, say so and go on to the next item.
-3. **The request itself** — the text after `request:` in `$ARGUMENTS`, if any. Pass it to `spec-reviewer` as pasted contents, and say in the report that the spec was the request.
-4. **Nothing.**
-
-**Never invent requirements.** No spec means the second axis does not run — not that you imagine what it would have said.
+A `no-behaviour:` line skips this step — see the next section. Otherwise read [references/find-the-spec.md](references/find-the-spec.md) and follow it.
 
 ## No behaviour to review
 
@@ -66,7 +56,7 @@ If `$ARGUMENTS` carries a line beginning `no-behaviour:`, **spawn `devflow:revie
 
 Give it the fixed point, the file list and a **200 word ceiling**, and one more line: nothing here runs, so read the words against the repo — every link and anchor still lands, no section other files point to is gone, and no claim names a feature that is not there or contradicts a skill or agent. A failing case is the link that lands nowhere, the feature nothing builds, or the line that says the opposite.
 
-If the harness will not let you spawn it, do what step 3's last subsection says.
+If the harness will not let you spawn it, read [references/no-agents.md](references/no-agents.md).
 
 Either way, go to step 4 next. There, write `skipped — no behaviour` under **Challenged**, **Security** and **Right thing**, and against the Security and Right thing lines of **Worst of each**.
 
@@ -76,52 +66,7 @@ Either way, go to step 4 next. There, write `skipped — no behaviour` under **C
 
 ## 3. Spawn the axes
 
-Both get the fixed point, the file list, and a **400 word ceiling**. Both run in parallel where you can, and neither is told what the other found.
-
-- **`devflow:reviewer`** — always. Is it built right.
-- **`devflow:spec-reviewer`** — only when step 2 found a spec. Is it the right thing. Pass it the spec's path or contents.
-
-Do not paste this session's reasoning, your plan, or your own account of what the change does into either prompt — that is the thing an independent reviewer would not have. Give them the range and let them read it.
-
-### Then start `security-reviewer`, if the danger list says so
-
-`reviewer`'s `## Danger list` line names what the change touched. Start
-`devflow:security-reviewer` only when that line names one of five items:
-auth and permissions, secrets and keys, payments, public API or wire format,
-CI/CD config. The other three items on the same list — database migrations,
-deleting or weakening tests, anything that cannot be reverted — do not start it.
-
-Give it the same fixed point and file list as the other axes, and the same 400 word
-ceiling. It does not read `reviewer`'s report; it reads the change itself, as an attacker.
-
-No security item named → print `– **review** no security item touched — security-reviewer skipped` and go on.
-
-### Then challenge the first axis, and the security axis
-
-**`devflow:hardcase`** — a third agent, and the only one that runs after the others,
-because it needs something to argue with. Give it the fixed point, `reviewer`'s findings,
-and `security-reviewer`'s findings when it ran, and nothing else: not the spec, not
-`spec-reviewer`'s report, and not this session.
-
-**Only when `reviewer` or `security-reviewer` reported something.** Both clean has
-nothing to refute, so print `– **review** clean — nothing to challenge` and skip it.
-
-**It challenges `reviewer` and `security-reviewer` only, never `spec-reviewer`.**
-
-It does not get a vote. It reports which findings stand, which fall and why, and `submit`
-decides.
-
-### When the harness will not let you spawn an agent
-
-Some sessions forbid starting an agent unless the human asked for one, in the system prompt. Look at your own instructions: if something there says not to spawn an agent unless asked, this section applies, and otherwise it does not. Where it applies, neither axis can start on its own.
-
-Do not skip it quietly, and do not review the code yourself instead — this session wrote it, which is the thing the review agents exist to avoid. Say it in one line and ask:
-
-```
-This harness only starts agents when you ask. Say "run the review" and every axis goes.
-```
-
-If that answer does not come, the axis **did not run**. Print `– **review** agents not permitted — axis NOT RUN`, report it as `NOT RUN` in step 4 with the reason, and let `submit` carry it into the PR.
+Read [references/axes.md](references/axes.md) and follow it: `reviewer` always, `spec-reviewer` when step 2 found a spec, `security-reviewer` when the danger list says so, then `hardcase` against what they found — and how `Challenged` prints in step 4. If the harness will not let you spawn an agent, read [references/no-agents.md](references/no-agents.md).
 
 ## 4. Report both, blended into neither
 
@@ -147,23 +92,11 @@ If that answer does not come, the axis **did not run**. Print `– **review** ag
 - Right thing: <the one finding that matters most, or none, or NOT RUN, or skipped — no behaviour>
 ```
 
-**`Challenged` sits under `Built right` because it is about that axis, not beside it.**
-It is not a third axis and it never appears in `Worst of each` — there is no worst
-challenge. `Security` is different: `security-reviewer` finds things the other axes are
-not shaped to see, so it ranks in `Worst of each` beside `Built right` and `Right thing`.
-Print `hardcase`'s three sections as it wrote them, `Falls` first, and do not delete a
-finding from `Built right` or `Security` because it fell.
-
 **Do not merge the lists, and do not rank across them.**
 
 No single overall winner. One worst finding per axis, or none.
 
 **Carry a `Not reported:` line through.** If either agent says findings were dropped, say so beside that axis — the same reason `NOT RUN` is not `none`.
-
-**Each finding under `Falls` writes a lesson.** Call `devflow:lesson` — skill is whichever
-agent raised it, `reviewer` or `security-reviewer`, kind `mistake`, what `<agent> flagged
-<the finding, short>; hardcase refuted it`, proof the branch's HEAD commit or the PR. Still
-print both sections as `hardcase` wrote them; this is in addition to that, not instead.
 
 ## 5. Hand back
 
