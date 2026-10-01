@@ -1358,6 +1358,26 @@ check("flow: names EnterWorktree as the tool that moves the session",
       "EnterWorktree" in flow_text,
       f"{FLOW_PATH} never names the EnterWorktree tool")
 
+# A detached HEAD prints `HEAD` on the Branch line, which never matches the
+# default branch's name. Read word for word, step 0c then called a folder
+# detached at the tip of `origin/main` somebody's work and sent the run to
+# EnterWorktree -- yet that is the parked state this repo's own sessions use
+# when another worktree holds `main`. Seen 1 Oct 2026, filed as #76. The fix is
+# to compare commits, not names, so the command and both halves of the rule are
+# pinned: the tip counts as parked, and any other detached commit does not.
+
+check("flow: compares a detached HEAD to the default branch by commit",
+      "git rev-parse HEAD <default branch ref>" in flow_text,
+      f"{FLOW_PATH} never runs 'git rev-parse HEAD <default branch ref>'. "
+      f"A detached HEAD reads `HEAD`, so a name comparison calls the parked "
+      f"tip of the default branch somebody's work")
+
+check("flow: a detached HEAD anywhere else is somebody's work",
+      "A detached HEAD anywhere else is somebody's work" in flat(flow_text),
+      f"{FLOW_PATH} never says a detached HEAD off the default tip is "
+      f"somebody's work. Without it a detached commit mid-feature reads as "
+      f"parked, and new work branches in that folder")
+
 check("flow: is itself the project instruction EnterWorktree asks for",
       "project instruction that tool asks for" in flat(flow_text),
       f"{FLOW_PATH} never says it is the instruction EnterWorktree requires. "
@@ -1890,6 +1910,21 @@ check("build: no longer uses the bare test label for the green gate",
       "✓ **test** green" not in build_text,
       f"{BUILD_PATH} still prints '✓ **test** green' instead of the "
       f"red/green label split")
+
+# `flow` step 0c now lets a folder detached at the default tip through as
+# parked (#76). `build` then reads `HEAD` from `git rev-parse --abbrev-ref`,
+# which does not match the default branch's name, and its own rule was "you
+# are already on a branch -- keep it, whatever it is called". A detached HEAD
+# is no branch, so the run would edit and commit on no branch at all. Found by
+# reading the two steps side by side while reviewing the #76 fix.
+
+with open(BUILD_PATH, encoding="utf-8") as f:
+    build_raw = f.read()
+
+check("build: a detached HEAD is no branch, so it cuts one",
+      "A `HEAD` here is no branch at all" in flat(build_raw),
+      f"{BUILD_PATH} never says a detached HEAD gets a branch cut. Its "
+      f"'keep it, whatever it is called' rule would keep no branch at all")
 
 
 # -------------------------------- one fixed label list for every shaped line

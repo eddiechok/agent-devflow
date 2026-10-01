@@ -71,6 +71,7 @@ git checkout -b <type>/<short-name>
 ```
 
 If they do not match you are already on a branch — **keep it, whatever it is called.**
+A `HEAD` here is no branch at all: cut one where you stand, with the command above.
 
 **One exception, and it is narrow: you were told this is new work.** `flow` decides that,
 and only `flow` can. When you were told, cut a fresh branch **from the default branch
