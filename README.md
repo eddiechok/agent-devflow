@@ -240,7 +240,7 @@ auth and permissions · secrets and keys · payments · public API or wire forma
 | `debug` | A bug nobody can point at, before `build` sees it: builds a red-capable loop, ranks 3 to 5 falsifiable causes, and hands the confirmed one to `build` as its first failing test. Called by `flow`, or start it by hand |
 | `plan` | Deep work only: writes the plan, revises it, resumes it, and runs one builder per chain. Called by `flow`, or start it by hand — it writes or revises the plan and stops, then tells you `/devflow:flow` builds it |
 | `build` | Test first. Watch it fail for the right reason. Then make it pass |
-| `review` | Ranked axes in fresh agents: is it built right, is it safe from an attacker, is it the right thing. Reported side by side, never blended. The security axis runs only when the danger list calls for it. Skipped only when `submit` passes down that `build` found no behaviour to test |
+| `review` | Ranked axes in fresh agents: is it built right, is it safe from an attacker, is it the right thing. Reported side by side, never blended. The security axis runs only when the danger list calls for it. When `build` found no behaviour to test, only the built-right axis runs, to check the words still match the repo |
 | `submit` | Runs the checks fresh. Runs the app. Calls `review`. Commits. Opens the PR, or updates the one already open. **Never merges** |
 | `tend` | After the PR is open. Works out what a red check or a review comment is really saying. Checks whether this branch caused it. Then fixes it and re-submits |
 | `ship` | Merges it. Watches the deploy. Checks it is really live. Cleans up. **Only you can start it** |
@@ -266,7 +266,7 @@ wrong.
 | [docs/plan.md](docs/plan.md) | Why `plan`'s steps are what they are. Where a Deep plan goes and how revising one works. One builder per chain, in parallel worktrees. Plans kept as GitHub issues. Starting `plan` by hand. |
 | [docs/build.md](docs/build.md) | Why `build`'s gates are what they are. Running the checks bare. Where the expected value comes from. Watching it fail. When there is nothing a test could catch. |
 | [docs/submit.md](docs/submit.md) | Why `submit`'s steps are what they are. Checks that postdate the last edit. The live check. The commit and the PR body. |
-| [docs/review.md](docs/review.md) | Why `review`'s steps are what they are. The four agents. Why the axes are separate and ranked apart. Why `hardcase` defaults to *falls*. The one change that gets no review. |
+| [docs/review.md](docs/review.md) | Why `review`'s steps are what they are. The four agents. Why the axes are separate and ranked apart. Why `hardcase` defaults to *falls*. Why a change with no behaviour gets one reader. |
 | [docs/ship.md](docs/ship.md) | Why `ship`'s steps are what they are. The boundary only a human crosses. Choosing a method the branch can take. The three real merge-error runs. The deploy block. |
 | [docs/tend.md](docs/tend.md) | Why `tend`'s steps are what they are. Getting on the PR's branch first. Triage before anything is changed. |
 | [docs/setup.md](docs/setup.md) | Why `setup`'s steps are what they are. Everything downstream trusts the `## Checks` block. Running each command before writing it down. |
