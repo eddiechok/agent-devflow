@@ -173,19 +173,19 @@ step 0 does, and say so:
 
 Nothing is lost: those commits stay on `<branch>`. Then go to step 1.
 
-**`--path-format=absolute` is the whole command, not decoration.** Ask for those two
-without it and git answers one of them relative to the current directory, so in a plain
-checkout entered anywhere below the root — `docs/`, a monorepo package — they differ and
-this step waves through the very folder it exists to protect. Absolute, they match
-everywhere in a checkout and differ everywhere in a worktree.
+**`--path-format=absolute` is the whole command, not decoration.** Without it git answers
+one of the two relative to the current directory, so below the root of a plain checkout
+they differ and this step waves through the very folder it exists to protect.
 
 **Second: is this folder on the default branch?** The `Branch` and `Default branch ref`
 Context lines already answer it, with the `origin/` dropped, the same comparison `build`
-makes. A `Branch` of `HEAD` is a detached folder, and it counts as on the default branch
-only when `git rev-parse HEAD <default branch ref>` prints one commit twice. If it is on
-the default branch, the folder is parked where new work is cut from and **nothing
-changes** — go to step 1, and print nothing. A detached HEAD anywhere else is somebody's
-work.
+makes. A `Branch` of `HEAD` is a detached folder, on it when `git status --porcelain`
+prints nothing and either `git rev-parse HEAD <default branch ref>` prints one commit
+twice, or `git merge-base --is-ancestor HEAD <default branch ref>` exits 0 and
+`git reflog -1 --format=%gs HEAD` ends `to <default branch ref>`. Then tell `build` this is
+new work, so it cuts from the ref and not from where the folder stands. If it is on the
+default branch, the folder is parked where new work is cut from and **nothing changes** —
+go to step 1, and print nothing. A detached HEAD anywhere else is somebody's work.
 
 Only when both answers are no does anything happen here, and then this folder is parked on
 a branch that is somebody's work. Taking it is what this step exists to stop, so say what
