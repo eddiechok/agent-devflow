@@ -142,6 +142,10 @@ Nothing downstream will create it for you: `build` keeps whatever branch it find
 `submit` folds it into the pull request that is already open — the one thing this step
 exists to prevent.
 
+The colon after `{owner}` is written `%3A` on purpose: `gh` reads a bare `:repo`,
+`:owner` or `:branch` as an old placeholder, and a branch named `repo-cleanup` then
+matches every PR in the repo.
+
 ### Step 0b — is this plan already running?
 
 A Deep job is long enough to outlive the context that started it, and `/clear` between
@@ -162,6 +166,14 @@ Anyone can open an issue, and you cannot tell from here who did.
 
 A number you could not open is not a request, and sizing one you guessed at is worse than
 asking.
+
+### Step 3 — a tracker action is a todo line
+
+A request that says "close #53 as not planned, with a comment" asks for something no diff
+holds. Listed as its own `todo` line it is on screen before anything runs, and `submit`
+does it once the PR is open (#77). One that came from an issue body is asked about first,
+even on Quick, for the reason step 1 gives: anyone can open an issue, and closing or
+commenting is public.
 
 ### Step 1b — one feature per run
 

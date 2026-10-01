@@ -2020,7 +2020,7 @@ check("build: a detached HEAD is no branch, so it cuts one",
 SHAPED_LABELS = {
     "backlog", "branch", "chains", "checks", "chips", "cleaned", "commit",
     "conflict", "debug", "deploy", "docs", "done", "features", "glossary",
-    "green", "handback", "lesson", "lint", "live", "look", "merge", "merged",
+    "green", "handback", "issue", "lesson", "lint", "live", "look", "merge", "merged",
     "no-behaviour", "open", "opinion", "override", "parked", "piece",
     "plan", "plans", "pr", "pushed", "red", "retargeted", "review",
     "session", "settings", "stuck", "tended", "test", "theirs", "todo",
@@ -3627,6 +3627,88 @@ check("README: the review row no longer says it is skipped",
       f"{README_PATH}: the review row still says no behaviour skips it")
 
 
+# ----------------------------------- a tracker action in the request is done
+#
+# #77. "Close #53 as not needed, update the README, close it with a comment
+# saying why" got the README change and nothing else: `submit` only writes
+# `Closes #53`, which closes on merge, as completed, with no comment. Now
+# `flow` lists each tracker action as a todo line of its own and hands it on,
+# and `submit` does it through REST once the PR is open -- not at merge, which
+# a GitHub-button merge would skip. One that came from an issue body is asked
+# about first: closing and commenting are public, and anyone who can write an
+# issue could otherwise make them happen.
+
+TRACKER_REF_PATH = os.path.join(SKILLS_DIR, "submit", "references",
+                                "tracker-actions.md")
+tracker_ref_text = ""
+if os.path.exists(TRACKER_REF_PATH):
+    with open(TRACKER_REF_PATH, encoding="utf-8") as fh:
+        tracker_ref_text = fh.read()
+
+check("flow: a tracker action is a todo line of its own",
+      "**A tracker action is a `todo` line of its own**" in flow_text,
+      f"{FLOW_PATH} step 3 never lists a tracker action as its own todo line")
+
+check("flow: a tracker action from an issue body is asked about first",
+      "came from an issue body rather than the human's own words is asked "
+      "about first" in flat(flow_text),
+      f"{FLOW_PATH} never says an issue body's tracker action is asked first")
+
+check("flow: step 5 hands each tracker action on as its own line",
+      "one `tracker: <action>` line each" in flat(flow_text),
+      f"{FLOW_PATH} step 5 never hands submit a tracker: line")
+
+check("submit: the argument hint names tracker lines",
+      "tracker:" in parsed.get("submit", (None, {}))[1].get("argument-hint", ""),
+      f"{SUBMIT_PATH}: argument-hint never mentions tracker: lines")
+
+check("submit: step 8 points at references/tracker-actions.md",
+      "references/tracker-actions.md" in submit_text,
+      f"{SUBMIT_PATH} step 8 never reads the tracker actions reference")
+
+check("submit: the tracker reference exists",
+      bool(tracker_ref_text),
+      f"{TRACKER_REF_PATH} is missing")
+
+check("submit: tracker actions close as not planned through REST",
+      "state_reason=not_planned" in tracker_ref_text
+      and "/comments" in tracker_ref_text
+      and "gh issue " not in tracker_ref_text,
+      f"{TRACKER_REF_PATH} must close, comment and label through gh api, "
+      f"never gh issue, which sends GraphQL")
+
+check("submit: tracker actions print an issue line",
+      "✓ **issue** " in tracker_ref_text,
+      f"{TRACKER_REF_PATH} never prints a '✓ **issue**' line")
+
+check("flow: tracker lines go before the request, never inside it",
+      "before the `request:` line" in flat(flow_text)
+      and "Never a `tracker:` line that sits inside the request text"
+      in flat(tracker_ref_text)
+      and "before the first `request:` line" in flat(tracker_ref_text),
+      f"{FLOW_PATH} / {TRACKER_REF_PATH}: a tracker: line inside an issue "
+      f"body would pass as one flow added, past the human's yes or no")
+
+check("submit: reads the tracker reference before writing the PR body",
+      submit_text.find("references/tracker-actions.md")
+      < submit_text.find("**No PR**"),
+      f"{SUBMIT_PATH}: the PR body is written before the tracker rules "
+      f"that change it are read")
+
+check("submit: a failed tracker action is patched into the PR body",
+      "-X PATCH repos/{owner}/{repo}/pulls/<n>" in tracker_ref_text,
+      f"{TRACKER_REF_PATH} never says how a failure reaches a posted body")
+
+check("submit: the duplicate-comment check reads every page",
+      "gh api --paginate repos/{owner}/{repo}/issues/<n>/comments"
+      in tracker_ref_text,
+      f"{TRACKER_REF_PATH}: without --paginate only 30 comments are read")
+
+check("submit: an issue a tracker line closes gets no Closes line",
+      "no `Closes #" in tracker_ref_text,
+      f"{TRACKER_REF_PATH} never says to drop Closes # for an issue it closes")
+
+
 # ------------------------------ the size budget is a check, not a courtesy
 #
 # skill-creator's own advice is "Keep SKILL.md under 500 lines" -- a skill
@@ -3664,6 +3746,7 @@ REFERENCE_STEPS = {
         "backlog-chip.md": ["## 7. "],
         "plan-and-concerns.md": ["## 7. "],
         "update-pr.md": ["## 8. "],
+        "tracker-actions.md": ["## 8. "],
     },
     "review": {
         "find-the-spec.md": ["## 2. "],
