@@ -82,41 +82,9 @@ Once it returns nothing:
 
 ## 4. Run the app — the live check
 
-Pick whichever of these the project actually is:
-
-- **Something that has to be launched** — a web app, a server, a desktop app. **Use the built-in `run` skill if this environment has it.** If it does not, launch the app the way the project's own README or scripts say to, under the rules below. Do not invent a launcher when the project already documents one.
-- **Something you just execute** — a CLI, a script, a one-shot command. **Run it directly**, with the arguments the change affects, and show the output.
-
-Either way the rule is the same: exercise the change the way a user would, and put the output on screen.
-
-### What counts as proof
-
-**The test is one question: would this have been true before the change?** If yes, it
-proves nothing.
-
-- **First-hand** — the thing you are claiming, observed. The response body with the new
-  field in it. The page text showing the new label. The CLI's actual stdout for the flag
-  you added. A screenshot of the layout you fixed.
-- **Second-hand** — true either way. A `200`. A green pipeline. "Server started". An exit
-  code. "Tests passed" — step 2 already ran those, and a suite that never covered this
-  change passes just as loudly.
-
-**Only first-hand ends this step.** Go and look at the thing itself.
-
-Rules, when you launched something:
-- **Put a time limit on it.** If the app never becomes ready, that is a finding to report, not something to sit through.
-- **Stop the server when you are done.** Stop only the process you started. Never kill "whatever is on port 3000" — that may be something the human is running.
-- **Screenshots and artifacts go to a temp directory**, never into the repo.
-
-**If it does not work**, either way: fix it and try again, **at most twice**. If it still does not work, print `✗ **live** <what failed>` and **do not open a PR that looks fine**.
-
 Only skip when there is genuinely nothing to exercise — a library with no entry point, a pure refactor with no observable change. Print `– **live** nothing to exercise — <reason>`. Do not invent a fake check, and do not call a passing test suite a live check; step 2 already ran that.
 
-Otherwise, once you have looked at the thing itself:
-
-```
-✓ **live** POST /settings returns the new field
-```
+Otherwise read [references/live-check.md](references/live-check.md) and follow it: how to launch or run the change, what counts as proof, and what to do when it does not work.
 
 ## 5. Review the change
 
@@ -134,27 +102,9 @@ Only `build` decides this, and only for the change in front of it. If `build` ra
 
 Do not do the review here — a session reviewing the code it just wrote carries every assumption that produced it.
 
-Then act on what comes back:
+Then act on what comes back. **A finding, an axis `NOT RUN`, or a `Not reported:` line** → read [references/findings.md](references/findings.md) first: what to fix, what you may reject, and how round 2 runs. A clean report has nothing to act on.
 
-- **Blocking**, **Exploitable**, **Missing** and **Built wrong** — fix, then review again. At most **2 rounds**. `Exploitable` is `security-reviewer`'s own bar, and it is fixed on the same footing as `Blocking`, not weighed as a lesser finding.
-- **Round 2 is scoped, not a fresh review.** It goes to the axis agent directly — `devflow:reviewer` for its own findings, `devflow:security-reviewer` for its own, or `devflow:spec-reviewer` for its own — with the fixed point, round 1's findings in the agent's own words, and the files changed since.
-- **The last read decides the security pass, not the first.** Before the commit, read the whole diff once more against the five security items — auth and permissions, secrets and keys, payments, public API or wire format, CI/CD config. It is a list to check, not a review. If one is touched and `security-reviewer` has not read the lines that touch it — it never ran, or they arrived after it did — start it on those lines, scoped like a round 2. A fix is the likeliest place for a permission check to arrive.
-- **One bug, one fix.** When `reviewer` and `security-reviewer` name the same line for the same flaw, it is one finding: fix it once and list it once.
-- **Nobody asked for this** — either take it out, or keep it and say why in the PR under **Assumptions**. Silently keeping it is not an option.
-- Anything still standing after 2 rounds goes in the PR under **Known issues**, not hidden and not looped on forever.
-- **The last review must postdate the last edit.** A fix you make after the last round is an edit nobody has read, and so is a doc fix at step 6. Both get one short look at step 7, before the commit. It is a look, not a round.
-- **`NOT RUN`** — an axis that could not start is not a passing axis. Name it under **Known issues**, and say in **Evidence** which axes ran, which were `NOT RUN`, and which were `skipped` — `security-reviewer` skipped for no security item touched reads the same way `skipped — no behaviour` does, and neither is a finding. Never write "reviewed" over a review that did not happen.
-- **`Not reported: N further findings`** — the axis ran out of room. Those findings exist and you have not seen them. **Run that axis again, scoped to what it did not reach**, and if the second run is also truncated, say so under **Known issues** with the count.
-
-**A finding can be wrong, and you are allowed to say so.** Check it against the code first, then reject it in one line with the technical reason, and put the rejection in the PR under **Known issues** so the call is visible to whoever merges. Never reject a finding you have not checked, and never reject one silently — an unread finding quietly dropped is worse than a false positive fixed.
-
-**The `Challenged` section is help with exactly that call, not a decision already made.**
-
-- **Falls** — `hardcase` found the line that refutes it. **Check that line yourself**, then reject the finding with its reason.
-- **Stands** — a finding that survived an agent whose whole job was to break it. Fix it. Rejecting one of these takes more than a one-line reason, and you had better be able to say what both of them missed.
-- **Could not check** — the challenge did not happen for that finding. Treat it exactly as if there had been no challenge at all. It is not a `Falls`.
-
-Never write "challenged" over a `hardcase` that did not run, and never let a `Falls` you did not verify take a fix off the list.
+**The last read decides the security pass, not the first.** Before the commit, read the whole diff once more against the five security items — auth and permissions, secrets and keys, payments, public API or wire format, CI/CD config. It is a list to check, not a review. If one is touched and `security-reviewer` has not read the lines that touch it — it never ran, or they arrived after it did — start it on those lines, scoped like a round 2. A fix is the likeliest place for a permission check to arrive.
 
 The review reports; it never edits. The fixes are yours. Once it is settled, print one line that names what was found:
 
@@ -188,112 +138,17 @@ And say so when nothing was, in those words, rather than going quiet:
 
 **A step that prints nothing cannot be told from a step that was skipped** — not in the transcript, not in the commit, not by whoever reads the pull request, and not by you on a second pass through this skill. Every other step here leaves a line for that reason. This one is the step most easily lost on a follow-up, because the docs were already right the first time round.
 
-### A fact worth keeping is not always about devflow
-
-Two kinds of lesson, and this run is the only one that can tell them apart — no subagent
-does this sort, because a fresh agent was not there for the mistake.
-
-**A fact about this project** — "the tests need the sandbox key", something the next run
-on this repo would need and `CLAUDE.md` does not already say — gets **add one line for it
-to the project's CLAUDE.md**, in this same commit, so the human approves it with the work
-rather than discovering it cold on a later run. List it under **What** in the PR body too.
-Print:
-
-```
-✓ **lesson** added to CLAUDE.md — the tests need the sandbox key
-```
-
-Nothing to add → print nothing. This is not step 6's `docs` line, and does not replace it.
-
-**A fact about devflow itself** — `flow` sized something wrong, a review finding fell,
-a deploy's `Verify` failed — never goes into `CLAUDE.md`. Call `devflow:lesson` instead;
-`flow`, `review` and `ship` already call it on their own clear signs, so this is only for
-one your own run noticed that none of them did.
+**If this run learned a fact worth keeping** — about this project, or about devflow itself — read [references/lessons.md](references/lessons.md). Nothing learned → print nothing.
 
 ## 7. Commit
 
 **If any file changed since step 2's run, run the checks again first.** Same rule as step 2: the checks must postdate the last edit. Bare, one per call, output on screen.
 
-**If any file changed since the last review that read it, one short look first.** Round 2 counts as a read of the lines it was scoped to. `devflow:reviewer` only, scoped to the lines that changed, a **200 word ceiling**, and no `hardcase`. Then step 5's last security read, before the commit.
+**If any file changed since the last review that read it, one short look first.** Read [references/look.md](references/look.md) and follow it. When nothing changed, there is no look to run: print `– **look** nothing changed since the last review`.
 
-**If the look finds something new, it gets at most 3 bounded fixes, one per look.** Two conditions on each fix, and both have to hold:
+**If anything is going under Known issues**, read [references/known-issues.md](references/known-issues.md) before the commit: it sorts them, and parks each leftover bug so its backlog item ships in this PR.
 
-- **Small** — a few lines, the kind of fix that takes a minute.
-- **In a file already changed on this branch.**
-
-Both hold → fix it, run the `## Checks` block again — bare, one per call, as at step 2 — then **look again**, scoped to only the lines that fix changed, same agent, same ceiling. Hand that look a finding that fix did not cover too — a look can find two things — so the next fix takes it, or Known issues does once the cap is spent. Either fails — a bigger fix, or a file the branch did not touch — → **stop editing**, and put it under **Known issues** with every finding still waiting for a fix. Print what each look did, one line each:
-
-```
-✓ **look** fixed in place — skills/ship/SKILL.md, 2 lines
-```
-
-```
-– **look** known issue — docs/pipeline.md, not on this branch
-```
-
-```
-✓ **look** clean — the fix to skills/ship/SKILL.md reads right
-```
-
-**The last look only reports.** After the third fix, the look that reads it cannot fix anything: what it finds goes under **Known issues**, and a leftover bug is parked below. So the run always ends on a read, never on an edit. The loop stays bounded: review, round 2, look, at most 3 small fixes each read by its own look, done.
-
-When nothing changed since the last review, there is no look to run:
-
-```
-– **look** nothing changed since the last review
-```
-
-**Then sort what is going under Known issues.** Each item is one of three kinds:
-
-- **A rejected finding** — a finding you checked and refused, with its reason.
-- **A test gap** — something this run could not prove: no live check, no eval case, an axis `NOT RUN`, a review cut short.
-- **A leftover bug** — a real flaw nobody fixed: a finding still standing after 2 rounds, something a look found that was too big, outside the branch, or found by the last look, or a bug that was already there and turned up in passing.
-
-**Only a leftover bug is parked.** The other two are notes for whoever merges, and they stay in the PR body alone. A leftover bug is work, and a merged PR body is where work goes to be forgotten. **Park them before the commit**, so a backlog file ships in this PR. Park each one the way `flow` step 1b parks a feature — look for a `## Plans` block in `CLAUDE.md`.
-
-**Never park the same bug twice.** An earlier run on this branch may have parked it and then stopped before a PR body could link it. So first list what is already parked — the open issues, through the `curl` form in `flow`'s `references/curl-fallback.md` when there is no `gh`, and the files under `.devflow/backlog/`:
-
-```
-gh api --paginate 'repos/{owner}/{repo}/issues?labels=devflow:backlog&state=open' --jq '.[] | select(.pull_request | not) | {number, title, body}'
-```
-
-Read every page: a bug parked from another branch is likely an old one. With `curl`, add `&per_page=100&page=<n>` and read until a page comes back short.
-
-One whose body names this bug is already its link, whichever branch its `Found on:` line names — most likely `Found on: <this branch>`, but a bug that was already there may have been parked from another. Use it, and file nothing.
-
-**`## Plans` says `github`:** make the label if it is missing ("already exists" is fine), then file one issue per leftover bug. With no `gh`, use the `curl` form in `flow`'s `references/curl-fallback.md` for both.
-
-```
-gh label create devflow:backlog --description "A devflow parked feature" --color 5319E7
-```
-
-```
-gh api repos/{owner}/{repo}/issues -f title="<the bug>" -F body=@<body file> -f 'labels[]=devflow:backlog' --jq .number
-```
-
-Write each body to a fresh file outside the repo — never a fixed path, which another session can reach first:
-
-```
-mktemp "${TMPDIR:-/tmp}/devflow-backlog.XXXXXX"
-```
-
-The path it prints is `<body file>`. The body says what is wrong, where, and the fix if you know it, plus one line `Found on: <this branch>`. Remove the file after its issue is filed.
-
-**No block, `local`, or a `gh` failure:** write `.devflow/backlog/<short-name>.md` instead, the same shape, under a name `flow`'s `references/split-and-park.md` name check allows. It is committed with the rest of the branch.
-
-The bug's Known issues line then ends with where it went — `— parked as #48`, or `— parked as .devflow/backlog/<short-name>.md`. **On an update, a bug the PR body already links is not parked again**; it keeps its link. One that has been fixed since comes out of Known issues: add `Closes #48` under **Why**, or delete its backlog file in this branch.
-
-**A backlog file is an edit**, written or deleted, and step 7's checks ran before it: run the `## Checks` block again — bare, one per call — before the commit.
-
-Print one line when anything was parked:
-
-```
-✓ **parked** #48 look found stale docs/pipeline.md, not on this branch
-```
-
-```
-✗ **parked** github asked, wrote .devflow/backlog/<name>.md — gh said <the error>
-```
+**A bug an earlier run parked, which this branch has since fixed**, comes out of Known issues on every run, clean or not: add `Closes #48` under **Why**, or delete its backlog file in this branch. A deleted backlog file is an edit: run the `## Checks` block again — bare, one per call — before the commit.
 
 Conventional commits, so `git log` doubles as a changelog:
 
@@ -305,13 +160,9 @@ Conventional commits, so `git log` doubles as a changelog:
 
 Types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `perf`, `build`, `ci`. `build` uses this same list for plan pieces; the two have to stay in step.
 
-**A request with an `Also parked as .devflow/backlog/<name>.md` line** came from a `flow`
-chip. End the commit body with `Backlog: .devflow/backlog/<name>.md`, and put the same line
-under **What** in the PR body — whether or not the file was in this checkout. With nothing
-to commit, the PR body alone carries it. It is what a later `flow` run looks for before
-building that file, so a feature ships once.
+**A request with an `Also parked as` line** came from a `flow` chip — read [references/backlog-chip.md](references/backlog-chip.md).
 
-**A Deep branch may already be committed.** If there is nothing to commit, print `– **commit** nothing to commit — already committed by build` and go on. Never make an empty commit to have something to show for the step.
+**A Deep branch, or a `devflow:plan` issue** — read [references/plan-and-concerns.md](references/plan-and-concerns.md) now: it covers this commit and the PR body at step 8.
 
 Otherwise, once the commit is in:
 
@@ -348,24 +199,7 @@ Then print:
 ✓ **pr** opened #14
 ```
 
-**A PR already open** — push to the same branch, then **update that PR**. Never open a second one for a branch that has one, and report the number you updated rather than announcing a new one. Read the body that is there first — `gh api repos/{owner}/{repo}/pulls/<n> --jq .body` — then write the new one back:
-
-```
-gh api -X PATCH repos/{owner}/{repo}/pulls/<n> -F body=@<body file> --jq .html_url
-```
-
-What moves and what does not:
-
-- **Evidence** — rewritten. It describes the checks *this* run made, not the ones the first run made.
-- **Known issues** — worked out again from this run's review. Anything fixed since comes out.
-- **What** and **Why** — extended if the change grew. Do not rewrite the original reason to match a follow-up.
-- **Assumptions** — appended to, never replaced.
-
-Then one line on what moved:
-
-```
-✓ **pr** updated #12 — 2 commits, evidence refreshed, 1 known issue cleared
-```
+**A PR already open** — push to the same branch, then update that PR, never a second one: read [references/update-pr.md](references/update-pr.md).
 
 **Opening it is what you were asked for.** Invoking this skill *is* the request; it says so in its own description, and so does `flow`. Do not stop here to ask again.
 
@@ -409,19 +243,6 @@ I checked this locally before pushing. I stopped my own server; step 5 is for yo
 - (only if the review left something unresolved)
 - step 7 of ship has no line for retargeted PRs — parked as #48
 ```
-
-**A plan issue closes with the PR.** Only if the project's `## Plans` block says `github` and this work has a `devflow:plan` issue. Then name it under **What** — `Plan: #45` — and add `Closes #45` under **Why**, beside the request issue if there is one. Find the number on the `✓ **plan** #N` line `flow` printed, or by listing open `devflow:plan` issues and matching the subject. Do not guess a number, and write nothing about a plan issue on a project that keeps plans in files.
-
-**A Deep branch carries assumptions in its commits too.** Each `builder` writes any doubt
-it had about a finished piece as a `Concern:` line in that piece's commit body, because
-the session that printed it may have been cleared since. Read them out:
-
-```
-git log <default branch ref>..HEAD --format='%h %s%n%b'
-```
-
-Every `Concern:` line goes under **Assumptions**, one bullet each, with the subject of the
-commit it sits under.
 
 **An empty Assumptions section is a claim.** It reads as "nothing was assumed". If it is empty because the context holding the answers is gone rather than because there were none, say that in one line instead of omitting the section.
 

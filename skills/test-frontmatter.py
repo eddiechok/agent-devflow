@@ -61,6 +61,26 @@ def flat(text):
     return " ".join(text.split())
 
 
+def references_of(slug):
+    """Every file under a skill's references/, sorted by name."""
+    ref_dir = os.path.join(SKILLS_DIR, slug, "references")
+    if not os.path.isdir(ref_dir):
+        return []
+    return sorted(os.path.join(ref_dir, name) for name in os.listdir(ref_dir)
+                  if name.endswith(".md"))
+
+
+def with_references(slug):
+    """A skill's SKILL.md, then its references. A pin on text that moved to a
+    reference still finds it; the pins that SKILL.md links each reference are
+    what keep that text reachable."""
+    parts = []
+    for path in [os.path.join(SKILLS_DIR, slug, "SKILL.md")] + references_of(slug):
+        with open(path, encoding="utf-8") as fh:
+            parts.append(fh.read())
+    return "\n".join(parts)
+
+
 def frontmatter(text):
     m = re.match(r"\A---\n(.*?)\n---\n", text, re.S)
     return m.group(1) if m else None
@@ -817,8 +837,9 @@ check("ship: retargets stacked PRs before deleting the branch",
 # report-only rule live only in the prompt, so they are pinned here.
 
 SUBMIT_PATH = os.path.join(SKILLS_DIR, "submit", "SKILL.md")
+submit_text = with_references("submit")
 with open(SUBMIT_PATH, encoding="utf-8") as fh:
-    submit_text = fh.read()
+    submit_skill_md = fh.read()
 
 # The writer half of the Backlog: line -- see step 1b's chip checks above.
 
@@ -1151,7 +1172,7 @@ check("submit: step 6 says why it prints at all",
       f"step rather than a decoration, so it is pinned with the line")
 
 check("submit: the Rules list carries the step 6 line",
-      re.search(r"## Rules.*`docs`", submit_text, re.S) is not None,
+      re.search(r"## Rules.*`docs`", submit_skill_md, re.S) is not None,
       f"{SUBMIT_PATH}'s Rules list never mentions the `docs` line, so the one "
       f"step that had no output stays the one step with no rule either")
 
@@ -1988,7 +2009,10 @@ check("label scanner: finds a label that is not lowercase letters",
       {"Merged", "pr2", "final look"} <= shaped_labels_in(
           "✓ **Merged** #2\n✓ **pr2** #3\n– **final look** nothing new"))
 
-for slug, text in human_facing_text.items():
+# A reference prints lines too, so these scans read each skill with its
+# references -- the Output section above stays a SKILL.md pin.
+for slug in human_facing_text:
+    text = with_references(slug)
     unlisted = sorted(shaped_labels_in(text) - SHAPED_LABELS)
     check(f"{slug}: every shaped line uses a label from the fixed list",
           not unlisted,
@@ -2036,7 +2060,8 @@ check("line-length scanner: a <placeholder> counts as written",
 check("line-length scanner: finds a line over 80 columns",
       visible_length("✓ **label** " + ("x" * 80)) > 80)
 
-for slug, text in human_facing_text.items():
+for slug in human_facing_text:
+    text = with_references(slug)
     too_long = sorted(
         (visible_length(example), example)
         for example in shaped_example_lines(text)
@@ -2229,8 +2254,7 @@ check("agents/reviewer: danger list keeps the three non-security items",
       f"{NON_SECURITY_ITEMS!r}")
 
 REVIEW_SKILL_PATH = os.path.join(SKILLS_DIR, "review", "SKILL.md")
-with open(REVIEW_SKILL_PATH, encoding="utf-8") as fh:
-    review_skill_text = fh.read()
+review_skill_text = with_references("review")
 
 check("review: starts security-reviewer only on the five security items",
       ("Start `devflow:security-reviewer` only when that line names one of "
@@ -2314,7 +2338,7 @@ check("README: the agents paragraph names security-reviewer",
       f"{README_PATH} never names security-reviewer among the review agents")
 
 for slug in HUMAN_FACING_SKILLS:
-    text = human_facing_text[slug]
+    text = with_references(slug)
     check(f"{slug}: never tells the human to run /security-review",
           "/security-review" not in text,
           f"{slug}/SKILL.md still names /security-review")
@@ -2373,7 +2397,7 @@ check("review: its description names the security pass",
 # `gh label create`. Tested in a cloud session on 24 Sep 2026.
 
 REVIEW_PATH = os.path.join(SKILLS_DIR, "review", "SKILL.md")
-review_skill_text = human_facing_text["review"]
+review_skill_text = with_references("review")
 
 PLAN_LIST_REST = "issues?labels=devflow:plan&state=open"
 
@@ -2670,7 +2694,7 @@ check("docs/submit: says why leftover bugs are parked, citing #24, #26, #33",
 # a `-f` value, which is why the search query sits in the path.
 
 tend_text = human_facing_text["tend"]
-submit_text = human_facing_text["submit"]
+submit_text = with_references("submit")
 TEND_PATH = os.path.join(SKILLS_DIR, "tend", "SKILL.md")
 
 PR_BY_HEAD = "gh api 'repos/{owner}/{repo}/pulls?head={owner}%3A<branch>&state="
@@ -3563,6 +3587,93 @@ check("README: the review row no longer says it is skipped",
 # from quietly needing one again.
 
 SKILL_SIZE_CAP = 500
+
+# ------------------- a Quick job reads only the paths it can reach (#75)
+#
+# On #74 a 9-line README cut loaded 481 lines of `submit` and 189 of `review`,
+# most of it for steps that did nothing on that job. So each skill keeps the
+# path every job walks, and the rest -- round 2, hardcase, security-reviewer,
+# the look loop, parking, updating an open PR -- sits in references/, read
+# only when a step needs it. The pins above read SKILL.md and its references
+# together; these keep each reference reachable, keep the no-behaviour path
+# in SKILL.md itself, and hold the two skills to the size that saves.
+
+SLIM_CAPS = {"submit": 311, "review": 130}
+
+# Which step reads each reference. A link anywhere in SKILL.md is not enough:
+# the step that needs the text has to be the one that sends the run there.
+REFERENCE_STEPS = {
+    "submit": {
+        "live-check.md": ["## 4. "],
+        "findings.md": ["## 5. "],
+        "lessons.md": ["## 6. "],
+        "look.md": ["## 7. "],
+        "known-issues.md": ["## 7. "],
+        "backlog-chip.md": ["## 7. "],
+        "plan-and-concerns.md": ["## 7. "],
+        "update-pr.md": ["## 8. "],
+    },
+    "review": {
+        "find-the-spec.md": ["## 2. "],
+        "axes.md": ["## 3. "],
+        "no-agents.md": ["## No behaviour", "## 3. "],
+    },
+}
+
+
+def section(text, heading):
+    """From the line starting with `heading` to the next `## ` heading."""
+    m = re.search(r"^" + re.escape(heading) + r".*?(?=^## |\Z)", text, re.M | re.S)
+    return m.group(0) if m else ""
+
+for slug, cap in SLIM_CAPS.items():
+    skill_only = human_facing_text[slug]
+    refs = references_of(slug)
+    check(f"{slug}: keeps its rare paths in references/",
+          len(refs) > 0,
+          f"skills/{slug}/references/ has no .md file")
+    for ref in refs:
+        rel = "references/" + os.path.basename(ref)
+        steps = REFERENCE_STEPS[slug].get(os.path.basename(ref))
+        check(f"{slug}: {rel} has a step that reads it",
+              steps is not None,
+              f"REFERENCE_STEPS names no step of skills/{slug}/SKILL.md "
+              f"for {rel}")
+        for heading in steps or []:
+            check(f"{slug}: {heading.strip()} points at {rel}",
+                  f"]({rel})" in section(skill_only, heading),
+                  f"skills/{slug}/SKILL.md section {heading!r} never links "
+                  f"{rel}, so the step that needs its text never reads it")
+    check(f"{slug}: SKILL.md stays at or under {cap} lines",
+          len(skill_only.splitlines()) <= cap,
+          f"skills/{slug}/SKILL.md is {len(skill_only.splitlines())} lines, "
+          f"over {cap}. Move a path most jobs never reach to a reference")
+
+review_skill_only = human_facing_text["review"]
+submit_skill_only = human_facing_text["submit"]
+
+check("review: the no-behaviour path stays in SKILL.md",
+      NO_BEHAVIOUR_LINE in review_skill_only
+      and "a **200 word ceiling**" in review_skill_only
+      and "## Built right" in review_skill_only
+      and "## Worst of each" in review_skill_only,
+      f"{REVIEW_PATH}: a no-behaviour review should need no reference -- "
+      f"its line, its ceiling and the step 4 report all live in SKILL.md")
+
+check("submit: step 7 closes a parked bug this branch fixed, on every run",
+      "has since fixed" in flat(section(submit_skill_only, "## 7. "))
+      and "`Closes #48`" in section(submit_skill_only, "## 7. "),
+      f"{SUBMIT_PATH}: a bug an earlier run parked and this branch fixed "
+      f"gets its Closes line only inside known-issues.md, which a clean "
+      f"run never reads -- so the parked issue stays open after the merge")
+
+check("submit: the path a Quick job walks stays in SKILL.md",
+      "no-behaviour: <reason>" in submit_skill_only
+      and "gh api repos/{owner}/{repo}/pulls -f title=" in submit_skill_only
+      and "## How to check this yourself" in submit_skill_only
+      and SUBMIT_RECAP_LINE in flat(submit_skill_only),
+      f"{SUBMIT_PATH}: the no-behaviour hand-off, opening the PR, its body "
+      f"and the recap should need no reference")
 
 for slug in skills:
     skill_path = os.path.join(SKILLS_DIR, slug, "SKILL.md")
