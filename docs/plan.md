@@ -52,8 +52,9 @@ one wrong fact feeds up to 4 builders. A finding that names its source can be ch
 built wrong, without reopening the sources.
 
 Why Sonnet and not Haiku: a cheaper model needs evidence first. That is this repo's rule
-for a weaker model — [docs/provenance.md](provenance.md) keeps it as "deliberately later,
-with evidence" — and it bites harder here than on a builder, because the researcher's
+for a weaker model — "One builder per chain" below names it, and
+[docs/provenance.md](provenance.md) keeps it as "deliberately later, with evidence" — and
+it bites harder here than on a builder, because the researcher's
 output is a fact other agents then build on. Haiku can be tried later with an eval. Until
 one says it is safe, Sonnet.
 
