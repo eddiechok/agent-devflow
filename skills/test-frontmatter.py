@@ -4010,6 +4010,29 @@ check("plan research reference: the output lines",
       f"{PLAN_RESEARCH_REF_PATH} never shows the research output lines")
 
 
+# ------------------------------------- spec-reviewer judges against Findings
+#
+# Issue #89: a Deep plan may carry `## Findings`, each line naming its source.
+# `spec-reviewer` treats built code that goes against one as "built wrong" and
+# quotes the finding; it never opens the sources again, because re-researching
+# is not its axis and would make every review as slow as the research was.
+
+SPEC_REVIEWER_PATH = os.path.join(AGENTS_DIR, "spec-reviewer.md")
+with open(SPEC_REVIEWER_PATH, encoding="utf-8") as fh:
+    spec_reviewer_text = flat(fh.read())
+
+check("agents/spec-reviewer: code against a plan's Findings is built wrong",
+      "Code that goes against a line of the plan's `## Findings` is built wrong"
+      in spec_reviewer_text
+      and "quote that finding" in spec_reviewer_text,
+      f"{SPEC_REVIEWER_PATH} never says code that goes against a Findings "
+      f"line is built wrong, quoting the finding")
+
+check("agents/spec-reviewer: does not open a finding's sources again",
+      "do not open its sources again" in spec_reviewer_text,
+      f"{SPEC_REVIEWER_PATH} never says the Findings sources are not reopened")
+
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")
