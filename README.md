@@ -110,8 +110,9 @@ There are two exceptions. `ship` is the one skill nothing else can call. `flow` 
       └── Deep ──────────┴──► ask, once ────┤                │
                               [YOU] answer, │                │
                               or take the   │                │
-                              recs. Then    │                │
-                              plan writes it│                │
+                              recs. Plan    │                │
+                              researches,   │                │
+                              then writes it│                │
                                             ▼                │
                     ┌───────────────────► build              │
                     │                     write the test     │
