@@ -1438,6 +1438,21 @@ check("flow: a parked detached folder got there by checking out the ref",
       f"last move went to the default branch ref. A bisect or an old commit "
       f"checked out by hand then reads as parked, and build moves it")
 
+# The reflog test alone still lets one bisect through (#82). A human bisecting
+# who runs `git checkout origin/main` to retest the tip writes exactly the line
+# parking writes, and after a fetch that commit is an ancestor of the tip. Git
+# keeps `BISECT_START` in the folder's own git dir for as long as a bisect
+# runs, so a folder where that file exists is never parked.
+
+check("flow: a folder mid-bisect is never parked",
+      re.search(r"detached folder.{0,300}git rev-parse --git-path "
+                r"BISECT_START`.{0,40}no file", flat(flow_text), re.S)
+          is not None,
+      f"{FLOW_PATH} never checks 'git rev-parse --git-path BISECT_START' "
+      f"before calling a detached folder parked. A bisect that checked out "
+      f"the default branch ref by name then reads as parked after a fetch, "
+      f"and build cuts a branch mid-bisect")
+
 check("flow: a parked detached folder tells build it is new work",
       re.search(r"reflog -1.{0,200}new work.{0,120}not from where the "
                 r"folder stands", flat(flow_text), re.S) is not None,
