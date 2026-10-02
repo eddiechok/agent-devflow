@@ -157,12 +157,10 @@ the way `build` does — `git remote show origin` names it — and count
 default branch to cut from, so nothing changes; go to step 1 and print nothing.
 
 A count above `0` means this branch already carries commits, and step 0 has already said
-none of them are this request's: this step only runs for new work. Do not
-try to work out where they came from — a branch the worktree was cut from may since have
-been merged and deleted, or rebased, and then its commits look like the worktree's own. It
-does not matter: they predate this request either way. Tell `build` in as many words that
-**this is new work and needs a fresh branch cut from the default branch ref**, exactly as
-step 0 does, and say so:
+none of them are this request's: this step only runs for new work. Do not try to work out
+where they came from; they predate this request either way. Tell `build` in as many words
+that **this is new work and needs a fresh branch cut from the default branch ref**, exactly
+as step 0 does, and say so:
 
 ```
 ✓ **worktree** <branch> carries commits — build re-cuts from <default branch ref>
@@ -173,8 +171,9 @@ Nothing is lost: those commits stay on `<branch>`. Then go to step 1.
 **Second: is this folder on the default branch?** The `Branch` and `Default branch ref`
 Context lines already answer it, with the `origin/` dropped, the same comparison `build`
 makes. A `Branch` of `HEAD` is a detached folder, on it when `git status --porcelain`
-prints nothing and either `git rev-parse HEAD <default branch ref>` prints one commit
-twice, or `git merge-base --is-ancestor HEAD <default branch ref>` exits 0 and
+prints nothing, `git rev-parse --git-path BISECT_START` names no file that exists, and
+either `git rev-parse HEAD <default branch ref>` prints one commit twice, or
+`git merge-base --is-ancestor HEAD <default branch ref>` exits 0 and
 `git reflog -1 --format=%gs HEAD` ends `to <default branch ref>`. Then tell `build` this is
 new work, so it cuts from the ref and not from where the folder stands. If it is on the
 default branch, the folder is parked where new work is cut from and **nothing changes** —
