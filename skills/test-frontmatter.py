@@ -3933,6 +3933,83 @@ check("agents/researcher: never edits",
       f"{RESEARCHER_PATH} never says it does not edit")
 
 
+# ---------------------------------------------- plan runs research on Deep work
+#
+# Issue #89: before `plan` writes the pieces of a new Deep plan, one
+# `devflow:researcher` per open question (at most 3, and 0 is allowed) answers
+# what the plan depends on and cannot yet name. SKILL.md carries only the short
+# step; how to pick the questions, what each agent is given, the fallback and
+# the output lines live in references/research.md. The plan shape gains
+# `## Findings`, each line naming its source, so spec-reviewer can check the
+# built code against it. Pinned here so a trim of the step cannot quietly
+# remove the cap, the zero case or the resume and revise rules.
+
+PLAN_RESEARCH = section(plan_text, "## Research")
+PLAN_RESEARCH_REF_PATH = os.path.join(SKILLS_DIR, "plan", "references", "research.md")
+plan_research_ref = ""
+if os.path.isfile(PLAN_RESEARCH_REF_PATH):
+    with open(PLAN_RESEARCH_REF_PATH, encoding="utf-8") as fh:
+        plan_research_ref = flat(fh.read())
+
+check("plan: a research step sits before the plan is written",
+      PLAN_RESEARCH != "" and plan_text.find("## Research") < plan_text.find("## Write the plan"),
+      f"{PLAN_PATH} has no '## Research' step ahead of '## Write the plan'")
+
+check("plan: research starts one devflow:researcher per open question",
+      "one `devflow:researcher`" in flat(PLAN_RESEARCH)
+      and "per open question" in flat(PLAN_RESEARCH),
+      f"{PLAN_PATH}'s research step never says one devflow:researcher per open question")
+
+check("plan: research is capped at 3 agents",
+      "at most 3" in flat(PLAN_RESEARCH),
+      f"{PLAN_PATH}'s research step never caps the agents at 3")
+
+check("plan: research may run no agent, and says so in one line",
+      "\u2013 **research** no open question" in PLAN_RESEARCH
+      and "no `## Findings`" in PLAN_RESEARCH,
+      f"{PLAN_PATH}'s research step never prints '- **research** no open "
+      f"question' or says the plan then has no ## Findings")
+
+check("plan: research is for a new plan, a resume skips it",
+      "A resume skips research" in PLAN_RESEARCH,
+      f"{PLAN_PATH}'s research step never says a resume skips research")
+
+check("plan: a revise researches only a new open question",
+      "only when the revise brings a new open question" in flat(PLAN_RESEARCH),
+      f"{PLAN_PATH}'s research step never limits a revise to a new open question")
+
+check("plan: the plan shape carries ## Findings, each line naming its source",
+      plan_text.find("## Findings", plan_text.find("## Write the plan")) != -1
+      and plan_text.find("## Findings", plan_text.find("## Write the plan"))
+          < plan_text.find("## Pieces", plan_text.find("## Write the plan"))
+      and "naming its source" in flat(plan_text),
+      f"{PLAN_PATH}'s plan shape has no '## Findings' ahead of '## Pieces', "
+      f"or never says each line names its source")
+
+check("plan: research points at references/research.md, which exists",
+      "references/research.md" in PLAN_RESEARCH and plan_research_ref != "",
+      f"{PLAN_PATH}'s research step never links references/research.md, or "
+      f"{PLAN_RESEARCH_REF_PATH} does not exist")
+
+check("plan research reference: how to pick the questions and what each agent gets",
+      "open question" in plan_research_ref
+      and "What each agent is given" in plan_research_ref
+      and "one question" in plan_research_ref,
+      f"{PLAN_RESEARCH_REF_PATH} never says how the questions are picked or "
+      f"what each agent is given")
+
+check("plan research reference: the fallback when agents are not permitted",
+      "answers the open questions itself" in plan_research_ref
+      and "same rules" in plan_research_ref,
+      f"{PLAN_RESEARCH_REF_PATH} never says the plan session answers the open "
+      f"questions itself, under the same rules, when agents are not permitted")
+
+check("plan research reference: the output lines",
+      "\u2713 **research**" in plan_research_ref
+      and "\u2013 **research** no open question" in plan_research_ref,
+      f"{PLAN_RESEARCH_REF_PATH} never shows the research output lines")
+
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")
