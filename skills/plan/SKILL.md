@@ -38,6 +38,9 @@ does.
 **Zero is a real answer.** When those already answer everything, start none, print
 `– **research** no open question`, and the plan has no `## Findings`.
 
+**On a `github` tracker, match an open plan issue first**, with the lookup "Write the
+plan" uses. A match is a resume, and research run before it is paid for and thrown away.
+
 **A resume skips research** — the plan already holds its findings. **A revise runs it
 only when the revise brings a new open question**, and adds lines to `## Findings`
 without rewriting one.

@@ -3974,6 +3974,11 @@ check("plan: research is for a new plan, a resume skips it",
       "A resume skips research" in PLAN_RESEARCH,
       f"{PLAN_PATH}'s research step never says a resume skips research")
 
+check("plan: an open plan issue is matched before any researcher starts",
+      "match an open plan issue first" in flat(PLAN_RESEARCH),
+      f"{PLAN_PATH}'s research step can start researchers before 'Write the "
+      f"plan' finds an open devflow:plan issue, and their findings are lost")
+
 check("plan: a revise researches only a new open question",
       "only when the revise brings a new open question" in flat(PLAN_RESEARCH),
       f"{PLAN_PATH}'s research step never limits a revise to a new open question")
