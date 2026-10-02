@@ -4033,6 +4033,56 @@ check("agents/spec-reviewer: does not open a finding's sources again",
       f"{SPEC_REVIEWER_PATH} never says the Findings sources are not reopened")
 
 
+# ------------------------------------- why research, and the star rule, written down
+#
+# Issue #89: the reasons live in docs, not in the skill the model reads on every
+# run. docs/plan.md says why research exists, why it is Sonnet and not Haiku
+# (a cheaper model needs evidence first, and one wrong fact feeds up to 4
+# builders) and why only Deep work gets it. docs/provenance.md carries the star
+# rule at its top, where a person deciding whether to credit a source reads it
+# first, and a row for the step and for the agent. README names the agent.
+
+DOCS_PLAN_RESEARCH_PATH = os.path.join(REPO_ROOT, "docs", "plan.md")
+with open(DOCS_PLAN_RESEARCH_PATH, encoding="utf-8") as fh:
+    docs_plan_research = flat(fh.read())
+provenance_flat = flat(docs_provenance_text)
+provenance_head = provenance_flat[:provenance_flat.find("**The labels:**")]
+with open(os.path.join(REPO_ROOT, "README.md"), encoding="utf-8") as fh:
+    readme_research = flat(fh.read())
+
+check("docs/plan: says why research uses Sonnet, not Haiku",
+      "a cheaper model needs evidence first" in docs_plan_research
+      and "Sonnet" in docs_plan_research
+      and "one wrong fact feeds up to 4 builders" in docs_plan_research,
+      f"{DOCS_PLAN_RESEARCH_PATH} never gives the reason research is Sonnet: "
+      f"a cheaper model needs evidence first, and one wrong fact feeds up to "
+      f"4 builders")
+
+check("docs/plan: says why research is Deep only",
+      "Deep work only" in docs_plan_research and "#84" in docs_plan_research,
+      f"{DOCS_PLAN_RESEARCH_PATH} never says why only Deep work is researched (#84)")
+
+check("docs/provenance: the star rule sits above the labels",
+      "may read any source" in provenance_head
+      and "always credited with its license" in provenance_head
+      and "1,000-star bar applies only to" in provenance_head
+      and "known pattern" in provenance_head,
+      f"{DOCS_PROVENANCE_PATH} has no star rule above '**The labels:**' -- "
+      f"read any source, credit copied text with its license, 1,000 stars "
+      f"only to claim weight")
+
+check("docs/provenance: a row for the research step and one for the researcher agent",
+      "Deep work researches its open questions before the pieces are written"
+      in provenance_flat
+      and "## `researcher` agent" in docs_provenance_text,
+      f"{DOCS_PROVENANCE_PATH} has no row for the research step in `plan`, or "
+      f"no '`researcher` agent' table")
+
+check("README: names researcher among the agents",
+      "`researcher`" in readme_research,
+      "README.md never names the researcher agent")
+
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")

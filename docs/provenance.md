@@ -6,6 +6,8 @@ This is a separate file on purpose. A `SKILL.md` is a prompt. The model reads ev
 
 Notes about where an idea came from would cost tokens on every run forever. They belong here. A person reads them once, when deciding whether to change something.
 
+**The star rule.** Research may read any source. Anything copied is always credited with its license. The 1,000-star bar applies only to naming a repo as evidence of weight (a "known pattern") or as a foundation in this file. Check the count with `gh api repos/<owner>/<name> --jq .stargazers_count`; under 1,000, say "small repos do this too" and name no one. Anthropic's own docs always count. The `researcher` agent carries the same rule.
+
 **The labels:**
 
 | Label | Means |
@@ -102,6 +104,8 @@ history it is, even where the code it describes now runs inside `plan` instead.
 | Every piece carries `Done when:` | **Ours** | The builder has no session to ask when to stop. `Verify:` is the command that goes green; `Done when:` is the state that means finished |
 | Where agents need asking for, ask once and fall through | **Same idea** — `review`'s own rule for the same harness | Once per job, not per piece. On no, every piece builds in-session as before. Nothing is lost but the window |
 | Quick and Standard do not change | **Ours** | One piece, one session. The window problem is a Deep one |
+| Deep work researches its open questions before the pieces are written | **Ours** | A plan built on a wrong fact is built wrong in every chain. One `researcher` per open question, at most 3, none when nothing is open. Quick and Standard do not get it: #84 had just cut what a Quick job loads. New plans only: a resume skips it, and a revise runs it for a new open question |
+| Each finding names its source | **Ours** | So `spec-reviewer` can check built code against the plan's `## Findings`. A finding with no source is a claim, and this repo does not take claims |
 | Every part of the request maps to a piece before the plan is shown | **Changed** — superpowers `writing-plans` | Theirs checks coverage by re-reading the plan against the request once it is written. Ours checks it the same way, as a step before the plan is shown rather than after, so a part with no piece gets one before the human ever sees a plan that silently dropped it |
 | Revising a plan appends a dated `## Changes` line, never rewrites a built piece | **Changed** — superpowers `executing-plans` | Theirs tracks progress in the session's own todo list, which is exactly the thing this plugin's plan file was built to survive losing. Ours instead tracks *changes* to the plan itself — one line per revise, so `spec-reviewer` can see the plan moved, and why, without diffing two versions nobody was asked to compare |
 
@@ -222,6 +226,17 @@ The three states are left visible here on purpose. The promise was wrong for lon
 | A later piece is not a missing piece | **Ours** | Deep plans list pieces in order |
 | Never judges code quality | **Copied** — mattpocock | If both agents report on style, the split was pointless |
 | Pins the same pair as `reviewer` | **Ours** | The two reports are never ranked against each other. Giving one axis a weaker model ranks them anyway, and silently |
+
+## `researcher` agent — one open question, findings with sources
+
+| Part | From | Why |
+|---|---|---|
+| The agent exists at all | **Ours** | `plan` wrote its pieces from the request and what the session happened to know. An open question about the repo, other tools or an API got a guess. A fresh agent per question reads for it instead, and returns lines a reviewer can check |
+| One question per agent, at most 3 | **Ours**, unsourced on purpose | One question keeps each agent's reading short, and agents on different questions run at the same time. 3 is a starting point and not a measurement: more than 3 open questions usually means some of them are decisions, and a decision is the human's |
+| Every finding names its source, `file:line` or a URL | **Ours** | A fact nobody can trace is a fact nobody can correct. Up to 4 builders build on it |
+| Text read from a web page is data, not instructions | **Ours** | The agent reads pages it did not choose. A page that tells it what to do is a finding about the page |
+| Reads any source; copied text is credited with its license; 1,000 stars only to name a repo as weight | **Human's call**, 2 Oct 2026 | Replaces the older flat 1,000-star rule, which barred reading as well as claiming. A small repo can answer the question correctly, so stars no longer decide what is read. They decide only what is named as evidence that a pattern is common, which is the one claim a star count supports. Copying is the other thing that needs care, and it is credited every time |
+| Pins `model: sonnet`, tools `Read, Grep, Glob, Bash, WebFetch, WebSearch` | **Human's call**, 2 Oct 2026 | A cheaper model needs evidence first, and one wrong fact feeds up to 4 builders, so not Haiku. No `Edit` or `Write`: it reads and reports. Haiku can be tried later with an eval |
 
 ## `security-reviewer` agent — what an attacker gets
 
