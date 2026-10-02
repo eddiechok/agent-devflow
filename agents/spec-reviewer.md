@@ -29,7 +29,7 @@ Open the untracked files. A new file that was never added shows up in no diff, a
 Three kinds, and nothing else:
 
 1. **Missing or partial** — the spec asked for it, the change does not have it, or has half of it.
-2. **Built wrong** — it is there, but it does not do what the spec says. Quote both: what was asked, what was built.
+2. **Built wrong** — it is there, but it does not do what the spec says. Quote both: what was asked, what was built. Code that goes against a line of the plan's `## Findings` is built wrong too: quote that finding, and do not open its sources again.
 3. **Nobody asked for this** — behaviour in the change that no line of the spec calls for. This is the one an agent hits most: the extra flag, the helper nobody needed, the second feature that came along for the ride. Report it plainly; whether to keep it is the human's call, not yours.
 
 **Every finding quotes the line of the spec it rests on.** A finding you cannot anchor to a line is one you invented — drop it.
