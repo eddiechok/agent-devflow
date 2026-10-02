@@ -11,7 +11,7 @@ gh api -X PATCH repos/{owner}/{repo}/pulls/<n> -F body=@<body file> --jq .html_u
 What moves and what does not:
 
 - **Evidence** — rewritten. It describes the checks *this* run made, not the ones the first run made.
-- **Known issues** — worked out again from this run's review. Anything fixed since comes out.
+- **Known issues** — worked out again from this run's review. Anything fixed since comes out. **A failed tracker action stays**, command and all: it is not a review finding, so no review brings it back. Read its issue as [tracker-actions.md](tracker-actions.md) does; the line comes out only once the issue shows the action done.
 - **What** and **Why** — extended if the change grew. Do not rewrite the original reason to match a follow-up.
 - **Assumptions** — appended to, never replaced.
 

@@ -3723,6 +3723,40 @@ check("submit: an issue a tracker line closes gets no Closes line",
       "no `Closes #" in tracker_ref_text,
       f"{TRACKER_REF_PATH} never says to drop Closes # for an issue it closes")
 
+# #85. A failed tracker action sits under Known issues, but an update worked
+# Known issues out again from that run's review alone, so the next run with
+# no tracker: lines -- tend fixing a red check -- dropped it, and the issue
+# stayed open after the merge with nothing on the PR to say so. It is not a
+# review finding, so an update carries it over until the issue shows it done.
+
+UPDATE_PR_PATH = os.path.join(SKILLS_DIR, "submit", "references",
+                              "update-pr.md")
+update_pr_text = ""
+if os.path.exists(UPDATE_PR_PATH):
+    with open(UPDATE_PR_PATH, encoding="utf-8") as fh:
+        update_pr_text = fh.read()
+
+check("submit: an update keeps a failed tracker action in Known issues",
+      "A failed tracker action stays" in flat(update_pr_text)
+      and "it is not a review finding" in flat(update_pr_text),
+      f"{UPDATE_PR_PATH}: Known issues is rebuilt from the review alone, so "
+      f"a failed tracker action drops out on the next update")
+
+check("submit: a kept tracker action comes out only once the issue shows it",
+      "[tracker-actions.md](tracker-actions.md)" in update_pr_text
+      and "comes out only once the issue shows" in flat(update_pr_text),
+      f"{UPDATE_PR_PATH} never says to read the issue before dropping a "
+      f"failed tracker action")
+
+# The update writes the body before this run's actions, so a retry that
+# works found the issue still open and kept the line. The action that works
+# has to take it out itself, through the same PATCH a failure uses.
+check("submit: a retried tracker action that works clears its kept line",
+      "An action that works where an earlier run's failed"
+      in flat(tracker_ref_text),
+      f"{TRACKER_REF_PATH}: a retry that works leaves the old failed line "
+      f"in Known issues, because the body was written before it ran")
+
 
 # ------------------------------ the size budget is a check, not a courtesy
 #

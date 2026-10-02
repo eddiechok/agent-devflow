@@ -63,7 +63,9 @@ One line per issue, after the `pr` line:
 ```
 
 A failed action goes under **Known issues** in the PR body, with the command that failed,
-so the human can run it. The body is posted by then, so write the new one and send it:
+so the human can run it. An action that works where an earlier run's failed takes that
+run's line out of Known issues; the update kept it, because the issue was not done yet.
+Either way the body is posted by then, so write the new one and send it:
 
 ```
 gh api -X PATCH repos/{owner}/{repo}/pulls/<n> -F body=@<body file> --jq .html_url
