@@ -97,6 +97,7 @@ sequenceDiagram
     actor You
     participant flow
     participant plan
+    participant researcher
     participant builder
     participant build
     participant review
@@ -108,7 +109,11 @@ sequenceDiagram
     flow->>You: one round of questions, each with a recommendation
     You-->>flow: answers, or "yes to all"
     flow->>plan: request, answers
-    plan->>plan: writes .devflow/plans/email-alerts.md
+    opt one per open question, at most 3, often 1, maybe none
+        plan->>researcher: one open question
+        researcher-->>plan: findings, each naming its source
+    end
+    plan->>plan: writes .devflow/plans/email-alerts.md, with a Findings section
 
     par chain A, in its own worktree on its own branch
         plan->>builder: the plan body, chain A, clean or dirty

@@ -27,6 +27,29 @@ runs that check itself first, the same lookup `flow`'s own
 subject matches. A match means revise; no match means write a new one. See "Started by
 hand" below for what happens once it is written.
 
+## Research first
+
+On a **new** plan, before the pieces are written, answer what is still open: start one
+`devflow:researcher` per open question, **at most 3**, and often just 1. An open question
+is something the pieces will depend on that the request, the agreed answers and the repo
+do not already settle — what the repo has now, how others solve it, what an API really
+does.
+
+**Zero is a real answer.** When those already answer everything, start none, print
+`– **research** no open question`, and the plan has no `## Findings`.
+
+**On a `github` tracker, match an open plan issue first**, with the lookup "Write the
+plan" uses. A match is a resume, and research run before it is paid for and thrown away.
+
+**A resume skips research** — the plan already holds its findings. **A revise runs it
+only when the revise brings a new open question**, and adds lines to `## Findings`
+without rewriting one.
+
+What comes back goes into the plan as `## Findings`, one line each, every line naming its
+source. Read [references/research.md](references/research.md) before starting one: how to
+pick the questions, what each agent is given, what to do where agents are not permitted,
+and the output lines.
+
 ## Write the plan
 
 Split the work into pieces. Each piece must be:
@@ -98,6 +121,9 @@ Branch: <type>/<short-name> (written once the branch is cut)
 
 ## Assumptions
 - Took the recommendation on X because no answer was given
+
+## Findings
+- The settings API reads every flag in one place — src/api/settings.ts:42
 
 ## Pieces
 1. [independent: no] chain: A — Add the storage column and migration

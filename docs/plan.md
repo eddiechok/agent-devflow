@@ -38,6 +38,38 @@ rather than discovering it by diffing two versions nobody was asked to compare. 
 of tracking a plan's own change history this way, distinct from the build log that tracks
 which pieces exist, is the same shape as superpowers' `executing-plans` skill.
 
+## Research before the pieces
+
+A new plan answers what it does not yet know before it writes the pieces. One
+`researcher` agent takes one open question — what the repo has now, how others solve it,
+what an API really does — at most 3, often just 1, and none when the repo and the round of
+questions already answer everything. What comes back lands in the plan as `## Findings`,
+every line naming its source, a file and line or a URL.
+
+Why it is there: every piece trusts the plan, and up to 4 chains build from it at once, so
+one wrong fact feeds up to 4 builders. A finding that names its source can be checked.
+`spec-reviewer` holds built code against it, and calls code that goes against a finding
+built wrong, without reopening the sources.
+
+Why Sonnet and not Haiku: a cheaper model needs evidence first. That is this repo's rule
+for a weaker model — "One builder per chain" below names it, and
+[docs/provenance.md](provenance.md) keeps it as "deliberately later, with evidence" — and
+it bites harder here than on a builder, because the researcher's
+output is a fact other agents then build on. Haiku can be tried later with an eval. Until
+one says it is safe, Sonnet.
+
+Why Deep work only: Quick and Standard have no plan to put findings in, and #84 just cut
+what a Quick job loads. A step every job paid for would undo that. Research is Deep work
+only, and on a new plan only: a resume skips it because the plan already holds its
+findings, and a revise runs it only when the revise brings a new open question.
+
+The star rule: research may read any source, because a small repo can be right. Anything
+copied is always credited with its license. The 1,000-star bar applies only to naming a
+repo as evidence of weight — a "known pattern" — or as a foundation in
+[docs/provenance.md](provenance.md). It used to bar reading as well, which cost answers
+and bought nothing: a source's stars say how many people trust it, not whether it answers
+the question.
+
 ## One builder per chain
 
 The session that wrote the plan does not build it. The plan groups its pieces into
