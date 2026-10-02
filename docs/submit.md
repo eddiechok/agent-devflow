@@ -201,3 +201,20 @@ The `security-reviewer` plan, 24 Sep 2026, retired the offer rather than patchin
 ### The recap
 
 Nine steps each print one shaped line, but they print it between whatever tool output that step produced, so a finished run is a needle-in-haystack read for anyone who was not watching live. The recap repeats those lines — and `flow`'s and `build`'s before them, when they ran first — once, in one block, at the end, leaving out the routine ones whose result is the same every run — the run's whole shape in the last screenful, right before the link the human actually came for.
+
+## Step 8 — tracker actions
+
+A request can ask for more than code: "close #53 as not needed, update the README, close
+it with a comment saying why". Before #77, `submit` handled the README and wrote
+`Closes #53`. That closes the issue only when the PR merges, as completed, and with no
+comment, so the session had to close it by hand.
+
+**The action runs once the PR is open, not at merge.** Merging is often a button on
+GitHub, and then `ship` never runs. And "close as not planned" is the human's decision,
+already made in the request; it does not wait on the code. Doing it after the PR exists
+also lets the comment link it.
+
+**Only the lines `flow` passed.** `flow` asks the human before it keeps an action that came
+from an issue body, because closing and commenting are public, and anyone who can write an
+issue could otherwise make them happen. A `submit` that went looking for actions itself
+would skip that question.

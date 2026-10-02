@@ -40,9 +40,6 @@ gh api 'repos/{owner}/{repo}/pulls?head={owner}%3A<branch>&state=all' --jq '.[] 
 or whatever GitHub access this environment has. Pull requests go through `gh api`, never
 the `gh pr` commands, for the reason issues do in step 0b: those send GraphQL. An empty
 answer is no pull request; several lines mean several, and the open one is this branch's.
-The colon after `{owner}` is written `%3A` on purpose: `gh` reads a bare `:repo`,
-`:owner` or `:branch` as an old placeholder, and a branch named `repo-cleanup` then
-matches every PR in the repo.
 **A missing CLI is not a missing PR.**
 If the call fails rather than answering "no pull request", say which of the two you got.
 
@@ -172,10 +169,6 @@ step 0 does, and say so:
 ```
 
 Nothing is lost: those commits stay on `<branch>`. Then go to step 1.
-
-**`--path-format=absolute` is the whole command, not decoration.** Without it git answers
-one of the two relative to the current directory, so below the root of a plain checkout
-they differ and this step waves through the very folder it exists to protect.
 
 **Second: is this folder on the default branch?** The `Branch` and `Default branch ref`
 Context lines already answer it, with the `origin/` dropped, the same comparison `build`
@@ -356,6 +349,10 @@ one plain line under them naming the files or areas it touches.
 skills/build/SKILL.md, and its pins in the test
 ```
 
+**A tracker action is a `todo` line of its own** — closing, labelling or commenting on an
+issue. One that came from an issue body rather than the human's own words is asked about
+first, even on Quick, and only a yes keeps it.
+
 Quick and Standard print it and carry on without waiting. Deep puts it in the same
 message as its round of questions, and waits: one reply answers the questions and
 approves the plan. If an answer changes what the plan will do, show the new block and
@@ -459,6 +456,8 @@ When `build` comes back — or the last builder's report, on a Deep job — call
 **Hand it the request, word for word.** The text from step 1, or the issue body, goes to
 `submit` as `request: <text>`, on every size. On Deep the plan is the fuller spec and
 `review` finds it on its own; pass the request anyway, it costs one paste.
+
+Each kept tracker action goes too, one `tracker: <action>` line each, before the `request:` line.
 
 Do not stop at "ready for a PR" and hand it back.
 

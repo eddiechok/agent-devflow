@@ -1,7 +1,7 @@
 ---
 name: submit
 description: Use when the code is finished and ready to become a pull request. Runs the project checks fresh, runs the app to confirm the change really works, writes a conventional commit, and opens a PR with steps for the human to check it. Never merges; merging is what the ship skill does, and only a human starts that.
-argument-hint: "[request: the words the human typed, passed on to review as the spec]"
+argument-hint: "[tracker: one issue action per line, before the request] [request: the words the human typed, passed on to review as the spec]"
 allowed-tools: Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git branch:*), Bash(git rev-parse:*), Bash(git symbolic-ref:*)
 ---
 
@@ -186,6 +186,8 @@ mktemp "${TMPDIR:-/tmp}/devflow-pr.XXXXXX"
 ```
 
 The path it prints is `<body file>` below. Remove it once the PR has it.
+
+**`flow` passed `tracker:` lines?** Read [references/tracker-actions.md](references/tracker-actions.md) before you write the body — it changes the body — and do the actions it lists once the PR is open.
 
 **No PR** — push, then open one against the default branch:
 
