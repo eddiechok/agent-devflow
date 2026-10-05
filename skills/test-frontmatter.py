@@ -2262,7 +2262,7 @@ SHAPED_LABELS = {
     "conflict", "debug", "deploy", "docs", "done", "features", "glossary",
     "green", "handback", "issue", "lesson", "lint", "live", "look", "merge", "merged",
     "no-behaviour", "open", "opinion", "override", "parked", "piece",
-    "pieces", "plan", "plans", "pr", "pushed", "red", "retargeted", "review",
+    "pieces", "plan", "plans", "pr", "pushed", "red", "research", "retargeted", "review",
     "see", "session", "settings", "stuck", "tended", "test", "theirs", "todo",
     "typecheck",
     "worktree", "yours",
@@ -4496,6 +4496,239 @@ check("docs/plan: says why the pieces are checked against the todo  <-- #94",
 check("docs/flow: says why the summary is a table  <-- #94",
       "every other line of the run" in flat(docs_flow_text),
       f"{DOCS_FLOW_PATH} never says why the summary became a table")
+
+
+# ---------------------------------------- flow researches during its rounds
+#
+# Issue #92: `plan` researched only after the rounds were over, so a question
+# that hung on a fact outside the repo went to the human. On Deep, `flow` now
+# starts a `devflow:researcher` for such a fact itself, automatically, and does
+# not wait for it. It links plan's references/research.md rather than copying
+# it, caps itself at 3 across all its rounds, and hands what came back to
+# `plan` as `findings:`. "no research" in the request skips it.
+
+flow_flat = flat(flow_text)
+FLOW_FACTS = flat(re.search(r"#### Facts are your job.*?(?=^#### )", flow_text, re.M | re.S).group(0)
+                  if re.search(r"#### Facts are your job", flow_text) else "")
+FLOW_RESEARCH = flat(re.search(r"#### Research on Deep.*?(?=^#### |^## )", flow_text, re.M | re.S).group(0)
+                     if re.search(r"#### Research on Deep", flow_text) else "")
+
+check("flow: Deep starts one devflow:researcher per fact nobody has read",
+      "one `devflow:researcher`" in FLOW_RESEARCH
+      and "per fact" in FLOW_RESEARCH
+      and "Deep" in FLOW_RESEARCH,
+      f"{FLOW_PATH} has no '#### Research on Deep' that starts one "
+      f"devflow:researcher per fact nobody has read")
+
+check("flow: research starts automatically, with no question to the human",
+      "automatically" in FLOW_RESEARCH
+      and "no question to the human" in FLOW_RESEARCH,
+      f"{FLOW_PATH}'s research never says it starts automatically with no "
+      f"question to the human")
+
+check("flow: research does not wait, the dependent questions hold for the next round",
+      "Do not wait" in FLOW_RESEARCH
+      and "ask the questions that do not need" in FLOW_RESEARCH
+      and "next round" in FLOW_RESEARCH,
+      f"{FLOW_PATH}'s research never says to ask the independent questions now "
+      f"and hold the dependent ones for the next round")
+
+check("flow: at most 3 researchers, counted across every round",
+      "At most 3" in FLOW_RESEARCH
+      and "every round" in FLOW_RESEARCH,
+      f"{FLOW_PATH}'s research never caps flow at 3 researchers across every round")
+
+check("flow: a fact is something found out in the repo or outside it",
+      "in the repo or outside it" in FLOW_FACTS
+      and "How others solve it" in FLOW_FACTS,
+      f"{FLOW_PATH}'s 'Facts are your job' never says a fact can be outside the repo")
+
+check("flow: 'no research' in the request skips it, with the skip line",
+      "\"no research\"" in FLOW_RESEARCH
+      and "– **research** skipped — the request said no research" in FLOW_RESEARCH,
+      f"{FLOW_PATH}'s research never gives the 'no research' skip phrase and line")
+
+check("flow: research follows plan's references/research.md, linked, not copied",
+      "plan/references/research.md" in FLOW_RESEARCH
+      and os.path.isfile(PLAN_RESEARCH_REF_PATH),
+      f"{FLOW_PATH}'s research never links plan/references/research.md")
+
+check("flow: Quick and Standard start no researcher",
+      "Quick and Standard start no researcher" in FLOW_RESEARCH,
+      f"{FLOW_PATH}'s research never says Quick and Standard start no researcher")
+
+_flow_step4 = flat(section(flow_text, "## Step 4"))
+check("flow: step 4 hands what came back to plan as findings:",
+      "`findings:`" in _flow_step4,
+      f"{FLOW_PATH}'s step 4 never hands research to plan as `findings:`")
+
+check("flow: a Rules line for research",
+      "Never start more than 3 researchers" in flat(section(flow_text, "## Rules")),
+      f"{FLOW_PATH}'s Rules has no line for research")
+
+
+
+# --------------------------- plan takes flow's findings, researches the rest
+#
+# Issue #92: `flow` now researches during its rounds and hands what came back
+# to `plan` as `findings:`. `plan` writes them into `## Findings` as they are,
+# source kept, and does not re-check them. It does not research a question
+# `flow` already researched, only what the answers opened up. The cap is 3 for
+# each step, 6 in a run. Started by hand there is no `findings:`, so all of its
+# own research stays. "no research" in the request skips it here too.
+
+PLAN_GIVEN = flat(section(plan_text, "## What you are given"))
+PLAN_RESEARCH_FLAT = flat(PLAN_RESEARCH)
+plan_fields = dict(fields(frontmatter(plan_text) or ""))
+
+check("plan: argument-hint names findings: from flow",
+      "findings:" in plan_fields.get("argument-hint", ""),
+      f"{PLAN_PATH}'s argument-hint never names `findings:`")
+
+check("plan: findings: from flow go into ## Findings as they are, source kept",
+      "`findings:`" in PLAN_GIVEN
+      and "word for word" in PLAN_GIVEN
+      and "source" in PLAN_GIVEN
+      and "does not re-check" in PLAN_GIVEN,
+      f"{PLAN_PATH}'s 'What you are given' never says flow's `findings:` go "
+      f"into ## Findings word for word, source kept, and are not re-checked")
+
+check("plan: a question flow already researched is not researched again",
+      "already researched is not researched again" in PLAN_RESEARCH_FLAT
+      and "only what the answers opened up" in PLAN_RESEARCH_FLAT,
+      f"{PLAN_PATH}'s research never says a question flow already researched "
+      f"is skipped, and only what the answers opened up is researched")
+
+check("plan: the cap is 3 for each step and 6 in a run",
+      "3 for each step" in PLAN_RESEARCH_FLAT
+      and "6" in PLAN_RESEARCH_FLAT
+      and "at most 3" in PLAN_RESEARCH_FLAT,
+      f"{PLAN_PATH}'s research never says the cap is 3 for each step, 6 in a run")
+
+check("plan: started by hand, research keeps all of it",
+      "Started by hand" in PLAN_RESEARCH_FLAT
+      and "all of its research" in PLAN_RESEARCH_FLAT,
+      f"{PLAN_PATH}'s research never says a by-hand run keeps all of its research")
+
+check("plan: 'no research' in the request skips research here too",
+      "\"no research\"" in PLAN_RESEARCH_FLAT,
+      f"{PLAN_PATH}'s research never gives the 'no research' skip")
+
+check("plan research reference: flow's findings, no second research, the cap of 6",
+      "findings:" in plan_research_ref
+      and "already researched" in plan_research_ref
+      and "6 at most in a run" in plan_research_ref
+      and "3 for each step" in plan_research_ref,
+      f"{PLAN_RESEARCH_REF_PATH} never covers flow's findings, a question "
+      f"already researched, or the cap of 3 for each step and 6 in a run")
+
+
+
+# --------------------------- the researcher is started by flow and by plan
+#
+# Issue #92: `flow` starts researchers during its rounds on Deep, `plan` starts
+# them before its pieces. So the agent's description and its "What you were
+# given" name both, and neither says `plan` alone any more.
+
+researcher_given = flat(section(researcher_text, "## What you were given"))
+researcher_desc = researcher_fields.get("description", "")
+
+check("agents/researcher: the description names flow and plan as its starters",
+      "flow skill" in researcher_desc and "plan skill" in researcher_desc
+      and "Started by the plan skill," not in researcher_desc,
+      f"{RESEARCHER_PATH}'s description never names both the flow skill and "
+      f"the plan skill as starters, or still says only 'Started by the plan skill'")
+
+check("agents/researcher: 'What you were given' names flow as well as plan",
+      "`flow`" in researcher_given and "`plan`" in researcher_given
+      and "in the words `plan` wrote it" not in researcher_given,
+      f"{RESEARCHER_PATH}'s 'What you were given' never names both `flow` and "
+      f"`plan`, or still says 'in the words `plan` wrote it'")
+
+
+
+# ------------------------------ the docs say why flow researches in its rounds
+#
+# Issue #92: the reasons live in docs, not in the skills the model rereads on
+# every run. docs/flow.md says why research runs during the rounds, why it is
+# automatic and not a popup, why it does not wait and why only Deep gets it.
+# docs/plan.md says the flow/plan split and why the cap is 3 for each step.
+# docs/provenance.md credits grilling's do-not-wait line and lists the GSD
+# popup and flag as not taken. README and pipeline name flow as a starter.
+
+def _doc_section(text, heading):
+    m = re.search(r"^" + re.escape(heading) + r".*?(?=^#{1,3} |\Z)", text, re.M | re.S)
+    return flat(m.group(0)) if m else ""
+
+with open(os.path.join(REPO_ROOT, "docs", "flow.md"), encoding="utf-8") as fh:
+    _flow_doc_raw = fh.read()
+_flow_research_doc = _doc_section(_flow_doc_raw, "### Step 4 — research during the rounds")
+check("docs/flow: says why research runs during the rounds, not after  <-- #92",
+      _flow_research_doc != ""
+      and "during the rounds" in _flow_research_doc
+      and "outside the repo" in _flow_research_doc,
+      f"{DOCS_FLOW_PATH} has no '### Step 4 — research during the rounds' that "
+      f"says why")
+
+check("docs/flow: says why research is automatic and not a popup  <-- #92",
+      "automatic" in _flow_research_doc
+      and "GSD" in _flow_research_doc
+      and "not the human's call" in _flow_research_doc,
+      f"{DOCS_FLOW_PATH} never says research is automatic because finding "
+      f"facts is not the human's call, against GSD asking")
+
+check("docs/flow: says why research does not wait  <-- #92",
+      "does not wait" in _flow_research_doc
+      and "grilling" in _flow_research_doc,
+      f"{DOCS_FLOW_PATH} never says why research does not wait, crediting grilling")
+
+check("docs/flow: says why research is Deep only  <-- #92",
+      "Deep only" in _flow_research_doc,
+      f"{DOCS_FLOW_PATH} never says why only Deep gets research")
+
+check("docs/plan: says the flow/plan split and the cap of 3 for each step  <-- #92",
+      "3 for each step" in docs_plan_research
+      and "`flow`" in _doc_section(open(DOCS_PLAN_RESEARCH_PATH, encoding="utf-8").read(),
+                                    "## Research before the pieces")
+      and "merge and drop questions" in docs_plan_research,
+      f"{DOCS_PLAN_RESEARCH_PATH} never says what flow researches and what "
+      f"plan researches, or why the cap is 3 for each step")
+
+check("docs/plan: the todo sentence no longer says research runs before the questions",
+      "once research runs before the questions" not in docs_plan_research
+      and "(#92)" in docs_plan_research,
+      f"{DOCS_PLAN_RESEARCH_PATH} still says research runs before the questions")
+
+check("docs/provenance: a Copied row for grilling's do-not-wait line  <-- #92",
+      "only the questions downstream of it wait for the sub-agent to report"
+      in provenance_flat
+      and "mattpocock's `grilling`: \"a running exploration is an unsettled "
+          "prerequisite" in provenance_flat,
+      f"{DOCS_PROVENANCE_PATH} has no row crediting grilling's do-not-wait line")
+
+check("docs/provenance: GSD's research popup and flag are not taken  <-- #92",
+      "workflow.research_before_questions" in provenance_flat
+      and "Research first (Recommended)" in provenance_flat
+      and provenance_flat.find("Research first (Recommended)")
+          > provenance_flat.find("## Read, and not used on purpose"),
+      f"{DOCS_PROVENANCE_PATH} never lists GSD's research popup and "
+      f"research_before_questions flag under what was not taken")
+
+check("docs/provenance: the research row's cap is 3 for each step  <-- #92",
+      "3 for each step" in provenance_flat
+      and "at most 3 for each step" in provenance_flat,
+      f"{DOCS_PROVENANCE_PATH}'s research row never says the cap is 3 for each step")
+
+with open(os.path.join(REPO_ROOT, "docs", "pipeline.md"), encoding="utf-8") as fh:
+    _pipeline_doc = fh.read()
+check("docs/pipeline: flow starts researcher too  <-- #92",
+      "flow->>researcher" in _pipeline_doc,
+      "docs/pipeline.md never shows flow starting a researcher")
+
+check("README: flow starts researcher too  <-- #92",
+      "`flow` and `plan` start one" in readme_research,
+      "README.md never says flow starts a researcher as well as plan")
+
 
 # --------------------------------------------------------------------- report
 
