@@ -4646,6 +4646,90 @@ check("agents/researcher: 'What you were given' names flow as well as plan",
       f"`plan`, or still says 'in the words `plan` wrote it'")
 
 
+
+# ------------------------------ the docs say why flow researches in its rounds
+#
+# Issue #92: the reasons live in docs, not in the skills the model rereads on
+# every run. docs/flow.md says why research runs during the rounds, why it is
+# automatic and not a popup, why it does not wait and why only Deep gets it.
+# docs/plan.md says the flow/plan split and why the cap is 3 for each step.
+# docs/provenance.md credits grilling's do-not-wait line and lists the GSD
+# popup and flag as not taken. README and pipeline name flow as a starter.
+
+def _doc_section(text, heading):
+    m = re.search(r"^" + re.escape(heading) + r".*?(?=^#{1,3} |\Z)", text, re.M | re.S)
+    return flat(m.group(0)) if m else ""
+
+with open(os.path.join(REPO_ROOT, "docs", "flow.md"), encoding="utf-8") as fh:
+    _flow_doc_raw = fh.read()
+_flow_research_doc = _doc_section(_flow_doc_raw, "### Step 4 — research during the rounds")
+check("docs/flow: says why research runs during the rounds, not after  <-- #92",
+      _flow_research_doc != ""
+      and "during the rounds" in _flow_research_doc
+      and "outside the repo" in _flow_research_doc,
+      f"{DOCS_FLOW_PATH} has no '### Step 4 — research during the rounds' that "
+      f"says why")
+
+check("docs/flow: says why research is automatic and not a popup  <-- #92",
+      "automatic" in _flow_research_doc
+      and "GSD" in _flow_research_doc
+      and "not the human's call" in _flow_research_doc,
+      f"{DOCS_FLOW_PATH} never says research is automatic because finding "
+      f"facts is not the human's call, against GSD asking")
+
+check("docs/flow: says why research does not wait  <-- #92",
+      "does not wait" in _flow_research_doc
+      and "grilling" in _flow_research_doc,
+      f"{DOCS_FLOW_PATH} never says why research does not wait, crediting grilling")
+
+check("docs/flow: says why research is Deep only  <-- #92",
+      "Deep only" in _flow_research_doc,
+      f"{DOCS_FLOW_PATH} never says why only Deep gets research")
+
+check("docs/plan: says the flow/plan split and the cap of 3 for each step  <-- #92",
+      "3 for each step" in docs_plan_research
+      and "`flow`" in _doc_section(open(DOCS_PLAN_RESEARCH_PATH, encoding="utf-8").read(),
+                                    "## Research before the pieces")
+      and "merge and drop questions" in docs_plan_research,
+      f"{DOCS_PLAN_RESEARCH_PATH} never says what flow researches and what "
+      f"plan researches, or why the cap is 3 for each step")
+
+check("docs/plan: the todo sentence no longer says research runs before the questions",
+      "once research runs before the questions" not in docs_plan_research
+      and "(#92)" in docs_plan_research,
+      f"{DOCS_PLAN_RESEARCH_PATH} still says research runs before the questions")
+
+check("docs/provenance: a Copied row for grilling's do-not-wait line  <-- #92",
+      "only the questions downstream of it wait for the sub-agent to report"
+      in provenance_flat
+      and "mattpocock's `grilling`: \"a running exploration is an unsettled "
+          "prerequisite" in provenance_flat,
+      f"{DOCS_PROVENANCE_PATH} has no row crediting grilling's do-not-wait line")
+
+check("docs/provenance: GSD's research popup and flag are not taken  <-- #92",
+      "workflow.research_before_questions" in provenance_flat
+      and "Research first (Recommended)" in provenance_flat
+      and provenance_flat.find("Research first (Recommended)")
+          > provenance_flat.find("## Read, and not used on purpose"),
+      f"{DOCS_PROVENANCE_PATH} never lists GSD's research popup and "
+      f"research_before_questions flag under what was not taken")
+
+check("docs/provenance: the research row's cap is 3 for each step  <-- #92",
+      "3 for each step" in provenance_flat
+      and "at most 3 for each step" in provenance_flat,
+      f"{DOCS_PROVENANCE_PATH}'s research row never says the cap is 3 for each step")
+
+with open(os.path.join(REPO_ROOT, "docs", "pipeline.md"), encoding="utf-8") as fh:
+    _pipeline_doc = fh.read()
+check("docs/pipeline: flow starts researcher too  <-- #92",
+      "flow->>researcher" in _pipeline_doc,
+      "docs/pipeline.md never shows flow starting a researcher")
+
+check("README: flow starts researcher too  <-- #92",
+      "`flow` and `plan` start one" in readme_research,
+      "README.md never says flow starts a researcher as well as plan")
+
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")

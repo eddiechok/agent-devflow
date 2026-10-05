@@ -106,10 +106,14 @@ sequenceDiagram
 
     You->>flow: /devflow:flow add email alerts
     flow->>You: "Deep — new subsystem." one line, first
+    opt a fact nobody has read, at most 3 across the rounds, maybe none
+        flow->>researcher: one open question, without waiting for it
+        researcher-->>flow: findings, each naming its source
+    end
     flow->>You: rounds of popup questions, each with a recommendation
     You-->>flow: answers, which approve the todo block
-    flow->>plan: request, answers
-    opt one per open question, at most 3, often 1, maybe none
+    flow->>plan: request, answers, findings
+    opt one per open question the answers opened up, at most 3, maybe none
         plan->>researcher: one open question
         researcher-->>plan: findings, each naming its source
     end

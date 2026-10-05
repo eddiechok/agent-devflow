@@ -46,6 +46,14 @@ what an API really does — at most 3, often just 1, and none when the repo and 
 questions already answer everything. What comes back lands in the plan as `## Findings`,
 every line naming its source, a file and line or a URL.
 
+`flow` researches too, during its rounds, and hands what came back to `plan` as `findings:`.
+`plan` writes those lines in word for word and does not research a question `flow` already
+did. It researches only what the answers opened up, and a plan started by hand keeps all of
+its own research, since no `flow` ran before it. The cap is 3 for each step, so 6 at most in a
+run. It is not higher because the cap is what makes the agent merge and drop questions: more
+than 3 open questions usually means some are decisions, and a higher number would let them
+all through.
+
 Why it is there: every piece trusts the plan, and up to 4 chains build from it at once, so
 one wrong fact feeds up to 4 builders. A finding that names its source can be checked.
 `spec-reviewer` holds built code against it, and calls code that goes against a finding
@@ -349,8 +357,8 @@ unchanged.
 `flow` hands `plan` the todo block the human approved on Deep, and `plan` checks its pieces
 against it before the first builder (#94). For one commit the pieces were a second stop of
 their own. The human chose the todo as the one approval instead: it says what changes in
-their words, where a piece name is for the builder, and once research runs before the
-questions (#92) it is no longer a guess. A plan can still drift from it, since research
+their words, where a piece name is for the builder, and now that `flow` researches during
+its rounds (#92) the todo is no longer a guess. A plan can still drift from it, since research
 inside `plan` can find something new, so a drift — a row added, dropped or changed — shows
 the new todo and waits for go again. A match shows the pieces and goes on. A resume does
 not stop, because it was approved when it was written, and the by-hand path already stops
