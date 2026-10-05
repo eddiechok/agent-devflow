@@ -4208,6 +4208,62 @@ check("plan: its link to flow's asking section resolves to the heading",
       f"{PLAN_PATH} links to an anchor that is not "
       f"{github_anchor(_flow_asking_heading)!r}, flow's asking heading today")
 
+# ------------------------------- the docs describe popup rounds, not one round
+#
+# docs/flow.md, plan.md, pipeline.md, lessons.md, provenance.md and README.md
+# said "one round of questions, two at most", "one batch" and "two is the
+# ceiling". They describe popup rounds until no answer would change the build
+# now, and docs/provenance.md credits superpowers brainstorming for asking a
+# question at a time with choices, and says grilling's loop of rounds is taken.
+
+DOCS_ASKING_PATHS = [os.path.join(REPO_ROOT, "docs", name) for name in
+                     ("flow.md", "plan.md", "pipeline.md", "lessons.md",
+                      "provenance.md")] + [README_PATH]
+_old_round_rule = re.compile(
+    r"\bone\*{0,2}\s+(numbered\s+)?round|two at most|two is the ceiling"
+    r"|\bsecond round|\bone\s+batch|\bin\s+one\s+batch|\bone more round",
+    re.I)
+for _path in DOCS_ASKING_PATHS:
+    with open(_path, encoding="utf-8") as fh:
+        _doc = flat(fh.read())
+    _hit = _old_round_rule.search(_doc)
+    check(f"{os.path.relpath(_path, REPO_ROOT)}: no line says one round or two at most",
+          _hit is None,
+          f"{_path} still says {_hit.group(0)!r}" if _hit else "")
+
+for _name in ("flow.md", "plan.md", "pipeline.md", "lessons.md"):
+    with open(os.path.join(REPO_ROOT, "docs", _name), encoding="utf-8") as fh:
+        _doc = flat(fh.read())
+    check(f"docs/{_name}: says rounds, popups or what the old rule became",
+          "popup" in _doc or "rounds of questions" in _doc,
+          f"docs/{_name} never describes the popup rounds")
+
+check("README: Deep's questions are rounds, until nothing would change the build",
+      "rounds" in flat(readme_text) and "popup" in flat(readme_text)
+      and "until no open question could change" in flat(readme_text),
+      f"{README_PATH} never describes popup rounds until nothing would change "
+      f"the build")
+
+with open(DOCS_PROVENANCE_PATH, encoding="utf-8") as fh:
+    _prov = flat(fh.read())
+check("docs/provenance: a row copied from superpowers brainstorming, quoting it",
+      "superpowers' `brainstorming`" in _prov
+      and "ask questions one at a time" in _prov
+      and "Prefer multiple choice questions" in _prov
+      and "Only one question per message" in _prov,
+      "docs/provenance.md never credits superpowers brainstorming with the "
+      "three quoted lines")
+check("docs/provenance: the grilling loop of rounds is now taken",
+      "loop of rounds is now taken" in _prov
+      and "One round only, then take the recommendations" not in _prov
+      and "capped at one" not in _prov
+      and "Two is the ceiling" not in _prov,
+      "docs/provenance.md still carries the one-round or two-is-the-ceiling "
+      "rows, or never says the loop of rounds is now taken")
+check("docs/provenance: the old 'was not taken' note on the loop is gone",
+      "loop of rounds until nothing is left was **not** taken" not in _prov,
+      "docs/provenance.md credits still say the loop of rounds was not taken")
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")

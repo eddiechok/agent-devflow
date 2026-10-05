@@ -266,7 +266,7 @@ shape as superpowers' `writing-plans` skill.
 
 `/devflow:plan` run directly — without `flow` — does its own version of `flow`'s step 0b
 match check first: a file under `.devflow/plans/`, or an open `devflow:plan` issue whose
-subject matches. Then it asks its one round of questions, using `flow`'s own rules rather
+subject matches. Then it asks its rounds of questions, using `flow`'s own rules rather
 than a second copy of them, writes the plan or the revision, and **stops**. It does not run
 the chains — only `flow` sizes the work, checks the folder, and calls `submit` when they
 are done, so the by-hand path prints the plan's number or path and the `/devflow:flow`
