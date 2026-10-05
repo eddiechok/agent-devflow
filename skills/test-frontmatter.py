@@ -4548,6 +4548,12 @@ check("flow: 'no research' in the request skips it, with the skip line",
       and "– **research** skipped — the request said no research" in FLOW_RESEARCH,
       f"{FLOW_PATH}'s research never gives the 'no research' skip phrase and line")
 
+check("flow: research keeps the reference's intake, so a line with no source is dropped  <-- review of #92",
+      "what to do with what comes back" in FLOW_RESEARCH,
+      f"{FLOW_PATH}'s research follows the reference for the question and the "
+      f"output lines but not 'what to do with what comes back', so a finding "
+      f"with no source reaches plan, which writes it word for word")
+
 check("flow: research follows plan's references/research.md, linked, not copied",
       "plan/references/research.md" in FLOW_RESEARCH
       and os.path.isfile(PLAN_RESEARCH_REF_PATH),

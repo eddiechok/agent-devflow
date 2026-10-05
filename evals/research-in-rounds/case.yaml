@@ -1,0 +1,92 @@
+schema_version: "1.1"
+name: research-in-rounds
+description: A Deep request whose question needs a fact from outside the repo starts a devflow:researcher during flow's rounds, on its own, and still asks its questions.
+tags: [flow, research, agents]
+
+context:
+  scaffold_script: ./scaffold.sh
+
+execution:
+  # The same Deep request as sizing-deep, with one fact the repo cannot
+  # answer: how ESLint loads its plugins. flow's "Research on Deep" says a
+  # fact nobody has read gets a researcher, started automatically.
+  prompt: "/devflow:flow add a plugin system so other packages can register their own greeting styles, loaded the same way ESLint loads its plugins"
+  max_turns: 20
+  timeout_seconds: 600
+  # Agent is the point. Without it the harness refuses the researcher and the
+  # case measures the in-session fallback instead.
+  allowed_tools: [Bash, Read, Edit, Glob, Grep, Skill, Agent, WebFetch, WebSearch]
+
+runs: 3
+
+graders:
+  - type: regex
+    name: announces-deep
+    target: trace
+    pattern: "Deep\\s*[—–-]"
+    match: contains
+    weight: 2
+
+  # The reason this case exists. Issue #92.
+  - type: tool_used
+    name: starts-a-researcher
+    tool: Agent
+    input_match: "devflow:researcher"
+    min: 1
+    weight: 3
+
+  # At most 3 in flow, counted across every round. The run stops at the
+  # questions, so plan never starts its own here.
+  - type: tool_used
+    name: at-most-3-researchers
+    tool: Agent
+    input_match: "devflow:researcher"
+    max: 3
+    session_only: true
+    weight: 2
+
+  # Finding facts is not the human's call: no "should I research?" question.
+  - type: regex
+    name: never-asks-whether-to-research
+    target: trace
+    pattern: "(?i)(should|shall|may) I (first )?(do (some |any )?)?research|(do you )?want me to (first )?research|would you like me to (first )?research|research (it )?first\\?|research first \\(recommended\\)"
+    match: not_contains
+    weight: 2
+
+  # Research does not replace the round: the questions still come, each with
+  # a recommendation. sizing-deep's pattern, plus bold marks before the
+  # number: paid run 1 asked "**1. How does a user pick a style ...?**".
+  - type: regex
+    name: asks-a-recommended-question
+    target: trace
+    pattern: '(?ims)(?:"question": "|^[ \t]*(?:\*\*)?\d+[.)][ \t](?=[^\n]*\?)).*?ecommend'
+    match: contains
+    weight: 2
+
+  # The pattern above only needs one recommended question somewhere, and a
+  # researcher's report can say "recommended" too. This one fails any question
+  # that reaches the next question, or the end, with no recommendation --
+  # sizing-deep's companion, with the bold marks allowed before the number.
+  - type: regex
+    name: no-question-lacks-a-recommendation
+    target: trace
+    pattern: '(?ms)(?:"question": "|^[ \t]*(?:\*\*)?\d+[.)][ \t](?=[^\n]*\?))(?:(?!ecommend)(?!"question": ")(?!^[ \t]*(?:\*\*)?\d+[.)][ \t](?=[^\n]*\?)).)*(?:"question": "|^[ \t]*(?:\*\*)?\d+[.)][ \t](?=[^\n]*\?)|\Z)'
+    match: not_contains
+    weight: 2
+
+  - type: llm
+    name: does-not-wait-for-research
+    focus: trace
+    criteria: >
+      flow starts the researcher and does not wait for it: the questions that
+      do not need the researched fact are asked in the same round, and only
+      the ones that depend on it are held for a later round. PASS if a round of
+      questions appears while or after the researcher was started, without the
+      session stalling on the researcher before asking anything. FAIL if it
+      asked the human whether to research, or asked nothing until the
+      researcher came back when some questions did not depend on it.
+
+expected_outcome: >
+  Announces "Deep — ...", starts one to three devflow:researcher agents on its
+  own for how ESLint loads plugins, never asks whether to research, and asks a
+  round of questions with a recommendation on each.
