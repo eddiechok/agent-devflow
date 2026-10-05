@@ -1185,6 +1185,15 @@ check("report: Needs you leaves out a ✗ a later line settled  <-- #95 review",
       and "a later line this run settled" in flat(report_done),
       f"{REPORT_PATH}'s Needs you would list failures the run already fixed")
 
+# A finding the review rejected goes under Known issues so whoever merges can
+# see the call, but it asks nothing of the human. Listed under Needs you, it
+# made a clean run look unfinished. Found on #100's own Done report.
+check("report: Needs you leaves out a rejected finding  <-- #95 follow-up",
+      "a finding the review rejected" in flat(report_done)
+      and "stays in the PR body alone" in flat(report_done),
+      f"{REPORT_PATH}'s Needs you would list rejected findings that need "
+      f"nothing from the human")
+
 check("report: Done has no size line  <-- #95",
       "**Size:**" not in _done_example,
       f"{REPORT_PATH}'s Done report repeats the size, which the plan said")

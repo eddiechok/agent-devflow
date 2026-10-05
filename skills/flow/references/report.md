@@ -119,5 +119,6 @@ this branch changed, each `✓`.
 - **Needs you** — every `✗` and `→` line this run printed that is still open, from the
   first, `flow`'s or `build`'s when they ran before `submit`, and every item under the PR
   body's Known issues, and nothing else. A `✗` that a later line this run settled — a
-  check that went green again, a finding that was fixed — is left out. A clean run has no
-  Needs you.
+  check that went green again, a finding that was fixed — is left out, and so is a
+  finding the review rejected: it asks nothing of the human, so it stays in the PR body
+  alone. A clean run has no Needs you.
