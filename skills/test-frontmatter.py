@@ -4567,6 +4567,62 @@ check("flow: a Rules line for research",
       f"{FLOW_PATH}'s Rules has no line for research")
 
 
+
+# --------------------------- plan takes flow's findings, researches the rest
+#
+# Issue #92: `flow` now researches during its rounds and hands what came back
+# to `plan` as `findings:`. `plan` writes them into `## Findings` as they are,
+# source kept, and does not re-check them. It does not research a question
+# `flow` already researched, only what the answers opened up. The cap is 3 for
+# each step, 6 in a run. Started by hand there is no `findings:`, so all of its
+# own research stays. "no research" in the request skips it here too.
+
+PLAN_GIVEN = flat(section(plan_text, "## What you are given"))
+PLAN_RESEARCH_FLAT = flat(PLAN_RESEARCH)
+plan_fields = dict(fields(frontmatter(plan_text) or ""))
+
+check("plan: argument-hint names findings: from flow",
+      "findings:" in plan_fields.get("argument-hint", ""),
+      f"{PLAN_PATH}'s argument-hint never names `findings:`")
+
+check("plan: findings: from flow go into ## Findings as they are, source kept",
+      "`findings:`" in PLAN_GIVEN
+      and "word for word" in PLAN_GIVEN
+      and "source" in PLAN_GIVEN
+      and "does not re-check" in PLAN_GIVEN,
+      f"{PLAN_PATH}'s 'What you are given' never says flow's `findings:` go "
+      f"into ## Findings word for word, source kept, and are not re-checked")
+
+check("plan: a question flow already researched is not researched again",
+      "already researched is not researched again" in PLAN_RESEARCH_FLAT
+      and "only what the answers opened up" in PLAN_RESEARCH_FLAT,
+      f"{PLAN_PATH}'s research never says a question flow already researched "
+      f"is skipped, and only what the answers opened up is researched")
+
+check("plan: the cap is 3 for each step and 6 in a run",
+      "3 for each step" in PLAN_RESEARCH_FLAT
+      and "6" in PLAN_RESEARCH_FLAT
+      and "at most 3" in PLAN_RESEARCH_FLAT,
+      f"{PLAN_PATH}'s research never says the cap is 3 for each step, 6 in a run")
+
+check("plan: started by hand, research keeps all of it",
+      "Started by hand" in PLAN_RESEARCH_FLAT
+      and "all of its research" in PLAN_RESEARCH_FLAT,
+      f"{PLAN_PATH}'s research never says a by-hand run keeps all of its research")
+
+check("plan: 'no research' in the request skips research here too",
+      "\"no research\"" in PLAN_RESEARCH_FLAT,
+      f"{PLAN_PATH}'s research never gives the 'no research' skip")
+
+check("plan research reference: flow's findings, no second research, the cap of 6",
+      "findings:" in plan_research_ref
+      and "already researched" in plan_research_ref
+      and "6 at most in a run" in plan_research_ref
+      and "3 for each step" in plan_research_ref,
+      f"{PLAN_RESEARCH_REF_PATH} never covers flow's findings, a question "
+      f"already researched, or the cap of 3 for each step and 6 in a run")
+
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")
