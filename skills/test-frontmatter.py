@@ -2262,7 +2262,7 @@ SHAPED_LABELS = {
     "conflict", "debug", "deploy", "docs", "done", "features", "glossary",
     "green", "handback", "issue", "lesson", "lint", "live", "look", "merge", "merged",
     "no-behaviour", "open", "opinion", "override", "parked", "piece",
-    "pieces", "plan", "plans", "pr", "pushed", "red", "retargeted", "review",
+    "pieces", "plan", "plans", "pr", "pushed", "red", "research", "retargeted", "review",
     "see", "session", "settings", "stuck", "tended", "test", "theirs", "todo",
     "typecheck",
     "worktree", "yours",
@@ -4496,6 +4496,76 @@ check("docs/plan: says why the pieces are checked against the todo  <-- #94",
 check("docs/flow: says why the summary is a table  <-- #94",
       "every other line of the run" in flat(docs_flow_text),
       f"{DOCS_FLOW_PATH} never says why the summary became a table")
+
+
+# ---------------------------------------- flow researches during its rounds
+#
+# Issue #92: `plan` researched only after the rounds were over, so a question
+# that hung on a fact outside the repo went to the human. On Deep, `flow` now
+# starts a `devflow:researcher` for such a fact itself, automatically, and does
+# not wait for it. It links plan's references/research.md rather than copying
+# it, caps itself at 3 across all its rounds, and hands what came back to
+# `plan` as `findings:`. "no research" in the request skips it.
+
+flow_flat = flat(flow_text)
+FLOW_FACTS = flat(re.search(r"#### Facts are your job.*?(?=^#### )", flow_text, re.M | re.S).group(0)
+                  if re.search(r"#### Facts are your job", flow_text) else "")
+FLOW_RESEARCH = flat(re.search(r"#### Research on Deep.*?(?=^#### |^## )", flow_text, re.M | re.S).group(0)
+                     if re.search(r"#### Research on Deep", flow_text) else "")
+
+check("flow: Deep starts one devflow:researcher per fact nobody has read",
+      "one `devflow:researcher`" in FLOW_RESEARCH
+      and "per fact" in FLOW_RESEARCH
+      and "Deep" in FLOW_RESEARCH,
+      f"{FLOW_PATH} has no '#### Research on Deep' that starts one "
+      f"devflow:researcher per fact nobody has read")
+
+check("flow: research starts automatically, with no question to the human",
+      "automatically" in FLOW_RESEARCH
+      and "no question to the human" in FLOW_RESEARCH,
+      f"{FLOW_PATH}'s research never says it starts automatically with no "
+      f"question to the human")
+
+check("flow: research does not wait, the dependent questions hold for the next round",
+      "Do not wait" in FLOW_RESEARCH
+      and "ask the questions that do not need" in FLOW_RESEARCH
+      and "next round" in FLOW_RESEARCH,
+      f"{FLOW_PATH}'s research never says to ask the independent questions now "
+      f"and hold the dependent ones for the next round")
+
+check("flow: at most 3 researchers, counted across every round",
+      "At most 3" in FLOW_RESEARCH
+      and "every round" in FLOW_RESEARCH,
+      f"{FLOW_PATH}'s research never caps flow at 3 researchers across every round")
+
+check("flow: a fact is something found out in the repo or outside it",
+      "in the repo or outside it" in FLOW_FACTS
+      and "How others solve it" in FLOW_FACTS,
+      f"{FLOW_PATH}'s 'Facts are your job' never says a fact can be outside the repo")
+
+check("flow: 'no research' in the request skips it, with the skip line",
+      "\"no research\"" in FLOW_RESEARCH
+      and "– **research** skipped — the request said no research" in FLOW_RESEARCH,
+      f"{FLOW_PATH}'s research never gives the 'no research' skip phrase and line")
+
+check("flow: research follows plan's references/research.md, linked, not copied",
+      "plan/references/research.md" in FLOW_RESEARCH
+      and os.path.isfile(PLAN_RESEARCH_REF_PATH),
+      f"{FLOW_PATH}'s research never links plan/references/research.md")
+
+check("flow: Quick and Standard start no researcher",
+      "Quick and Standard start no researcher" in FLOW_RESEARCH,
+      f"{FLOW_PATH}'s research never says Quick and Standard start no researcher")
+
+_flow_step4 = flat(section(flow_text, "## Step 4"))
+check("flow: step 4 hands what came back to plan as findings:",
+      "`findings:`" in _flow_step4,
+      f"{FLOW_PATH}'s step 4 never hands research to plan as `findings:`")
+
+check("flow: a Rules line for research",
+      "Never start more than 3 researchers" in flat(section(flow_text, "## Rules")),
+      f"{FLOW_PATH}'s Rules has no line for research")
+
 
 # --------------------------------------------------------------------- report
 
