@@ -76,6 +76,8 @@ A good run writes nothing. Lines come from three places.
   whatever line it cannot make sense of and counts the skips rather than guessing a shape —
   plus each session's subagent transcripts, saved beside it. Per devflow skill, it counts:
   - how often the human answered "yes to all", charged to whichever skill's command was open
+    — a popup answer where every pick was the "(Recommended)" option counts as one too,
+    so the signal survives `flow` asking in popups
   - permission prompts — but the session file only ever records a *denial*
     (`toolDenialKind`); an approved prompt leaves no trace at all, so approvals print as
     `"not recorded"` rather than a guess

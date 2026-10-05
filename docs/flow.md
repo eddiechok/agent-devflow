@@ -20,7 +20,7 @@ The request may turn out to be new work rather than a change to that PR. Then `f
 
 ## Where a Deep plan goes, and who builds it
 
-`flow` sizes the work and asks its one round of questions, then Deep work is
+`flow` sizes the work and asks its rounds of questions, then Deep work is
 `devflow:plan`'s from there — writing the plan, running one builder per chain, and
 reporting back so `flow` can call `submit`. See [docs/plan.md](plan.md) for all of it: the
 plan's shape, the chains, the worktrees, resuming after a `/clear`, and plans kept as
@@ -191,6 +191,27 @@ This is the one file devflow writes that a later run reads. A plan is for one jo
 
 ### Step 4 — asking questions
 
+`flow` asks in popups, with the `AskUserQuestion` tool. A round is up to 4 questions, the
+tool's own limit, shown one at a time, each with 2 to 4 options and the recommended one
+first, labelled "(Recommended)". The tool adds "Other" itself. Rounds go on until no open
+question could change a todo line, a plan piece, or what the user sees, and there is no cap on them: a later
+round holds only what the earlier answers opened up, so a question whose premise is not
+settled waits for the answer that settles it instead of taking its recommendation. Standard
+asks the same way, only when something is genuinely unclear, and Quick asks nothing. On
+Deep the `todo` block is printed above the popup, and answering the popup approves it, as
+`yes to all` used to; Other is how you change it. Answer a question with "explain this" and
+you get it in plain words, then that one question again. Where there is no popup tool —
+evals, `claude -p` — it falls back to the numbered list with a recommendation on each, and
+`yes to all` still works there.
+
+It used to ask a single numbered list, with one more list on Deep for a held question. A held
+question now waits for the round its answer opens instead of taking its recommendation, so
+the stop rule moved from a count to a test: would any answer change the build.
+
+The test first read "a todo line or a plan piece", and that was too coarse. The error text,
+or what happens on empty input, changes neither, so those questions were skipped into
+**Assumptions** and seen only at merge. The human widened it to what the user sees.
+
 The human answers from memory. The code cannot be wrong about itself.
 
 This is also what makes `yes to all` safe. A recommendation on a decision is an opinion. A
@@ -204,7 +225,7 @@ notifications store it" is a fact, so it was looked up and handed over.
 
 ### Step 4 — Deep calls devflow:plan
 
-Writing the plan, one builder per chain, and everything past the round of questions is
+Writing the plan, one builder per chain, and everything past the rounds of questions is
 `devflow:plan`'s job now, not this skill's — see [docs/plan.md](plan.md) for why its rules
 are what they are.
 

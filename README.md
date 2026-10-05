@@ -166,7 +166,7 @@ Here is what the chart leaves out. All of it stops the flow rather than bending 
 |---|---|---|
 | **Quick** | Typos, chores, most bug fixes | Straight to building. No questions. |
 | **Standard** | Changing existing behaviour | Questions only if genuinely unclear. |
-| **Deep** | New features, wide refactors | One round of questions, two at most. Then a written plan, and one builder agent per chain of pieces, several chains at once in their own worktrees. |
+| **Deep** | New features, wide refactors | Rounds of popup questions until no answer would change the plan. Then a written plan, and one builder agent per chain of pieces, several chains at once in their own worktrees. |
 
 It announces the size in one line before doing anything. That way you can disagree straight away.
 
@@ -202,13 +202,13 @@ A fact about your project is not a devflow lesson. `submit` puts that in the pro
 
 **Direction.** Deep jobs always ask. Standard asks only when genuinely unclear. Quick never asks.
 
-All questions come at once, each with a recommended answer. `yes to all` is a valid reply. Anything you skip takes the recommendation, and appears in the PR under **Assumptions**.
+Questions come as popups, up to 4 a round, shown one at a time, each with 2 to 4 options and the recommended one first. Pick it, or pick Other and type your own. Rounds go on until no open question could change a todo line, a plan piece, or what the user sees, and there is no cap on them. Ask for an explanation and you get it in plain words, then the same question again. On Deep the todo block sits above the popup, and answering approves it. Where there is no popup tool, in evals and `claude -p`, it asks a numbered list instead, and `yes to all` is a valid reply there. Anything you skip takes the recommendation, and appears in the PR under **Assumptions**.
 
-Two rules decide what gets into that round.
+Two rules decide what gets into a round.
 
 **Facts are the plugin's job. Decisions are yours.** If the repo already holds the answer, it reads the repo. It does not ask you. You would answer from memory. The code cannot be wrong about itself.
 
-**It asks only what is answerable now.** A question that another question decides is held back. Held questions take the recommendation. Deep may ask one more round, for a held question the plan needs. Two is the ceiling.
+**It asks only what is answerable now.** A question that another question decides is held back, and asked in the next round if the answer that settles it opens it. A question no answer to which could change the build is not asked: it takes the recommendation.
 
 **Merge.** Always yours. `submit` opens the PR and stops. `/devflow:ship` does everything after it.
 
@@ -237,7 +237,7 @@ auth and permissions · secrets and keys · payments · public API or wire forma
 | Skill | What it does |
 |---|---|
 | `setup` | Once per project. Finds and verifies the check commands. You invoke it yourself, so it costs nothing at runtime |
-| `flow` | Sizes the request. Routes it. Asks any questions in one batch |
+| `flow` | Sizes the request. Routes it. Asks any questions in popup rounds |
 | `debug` | A bug nobody can point at, before `build` sees it: builds a red-capable loop, ranks 3 to 5 falsifiable causes, and hands the confirmed one to `build` as its first failing test. Called by `flow`, or start it by hand |
 | `plan` | Deep work only: writes the plan, revises it, resumes it, and runs one builder per chain. Called by `flow`, or start it by hand — it writes or revises the plan and stops, then tells you `/devflow:flow` builds it |
 | `build` | Test first. Watch it fail for the right reason. Then make it pass |

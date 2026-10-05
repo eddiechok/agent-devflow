@@ -1,6 +1,6 @@
 schema_version: "1.1"
 name: sizing-deep
-description: A new subsystem is sized Deep and gets one batch of questions, each with a recommendation.
+description: A new subsystem is sized Deep and asks its questions in rounds, each question with a recommendation.
 tags: [sizing, flow]
 
 context:
@@ -31,17 +31,42 @@ graders:
     match: not_contains
     weight: 2
 
+  # Deep asks in popup rounds, or -- where there is no popup tool, which is
+  # every `claude -p` run -- in a numbered list. Both shapes are read here: a
+  # popup question is an AskUserQuestion input in the trace, a fallback
+  # question is a numbered line with a "?" on it. The two graders below need no
+  # judge, and test-run.py pins them against both shapes. The marker stops at
+  # the number, so a recommendation inside the question's own line is on it.
+  - type: regex
+    name: asks-a-recommended-question
+    target: trace
+    pattern: '(?ims)(?:"question": "|^[ \t]*\d+[.)][ \t](?=[^\n]*\?)).*?ecommend'
+    match: contains
+    weight: 3
+
+  # A question that reaches the next question, or the end of the trace, with
+  # no "ecommend" in between has no recommendation on it.
+  - type: regex
+    name: no-question-lacks-a-recommendation
+    target: trace
+    pattern: '(?ms)(?:"question": "|^[ \t]*\d+[.)][ \t](?=[^\n]*\?))(?:(?!ecommend)(?!"question": ")(?!^[ \t]*\d+[.)][ \t](?=[^\n]*\?)).)*(?:"question": "|^[ \t]*\d+[.)][ \t](?=[^\n]*\?)|\Z)'
+    match: not_contains
+    weight: 2
+
   - type: llm
-    name: one-batch-with-recommendations
+    name: asks-in-rounds-with-recommendations
     focus: trace
     criteria: >
-      Deep work asks once, not repeatedly. PASS only if BOTH hold: (a) every
-      question the assistant asked arrived together in a single numbered list,
-      rather than one question at a time across several turns; and (b) each
-      question carries a recommended answer. FAIL if it asked nothing at all,
-      if questions were drip-fed across turns, or if any question was posed
-      without a recommendation attached.
+      Deep work asks in rounds of up to 4 questions, each round shown as a
+      popup (AskUserQuestion) or, where there is no popup tool, as one
+      numbered list. PASS only if BOTH hold: (a) the questions arrived in
+      rounds, not one question per turn when several were open at once; and
+      (b) each question carries a recommended answer, first among its options
+      and labelled "(Recommended)" in a popup. FAIL if it asked nothing at
+      all, if open questions were drip-fed one at a time, or if any question
+      was posed without a recommendation attached. A later round is fine
+      only when earlier answers opened it up.
 
 expected_outcome: >
-  Announces "Deep — ..." naming why, then asks one numbered batch of questions
-  with a recommendation on each and stops for the answers.
+  Announces "Deep — ..." naming why, then asks a round of questions, in a popup
+  or a numbered list, with a recommendation on each, and stops for the answers.
