@@ -408,43 +408,43 @@ Three rules:
 - **Meaning only.** No file paths. No function names. No design choices. Those rot. A meaning does not.
 - **Lazily.** No settled word, no file.
 
-### Asking questions — one round, only what is answerable
+### Asking questions — rounds, until no answer would change the build
 
-Ask everything that is answerable now, in one numbered list. Never one question per turn.
+Ask in popups with the `AskUserQuestion` tool. A round is up to 4 questions, the tool's limit,
+shown one at a time, each with 2 to 4 options. Put the recommended option first and end its
+label with " (Recommended)". The tool adds "Other" itself, so do not write one.
+
+Keep asking rounds until no open question could change a todo line or a plan piece. There is
+no cap on rounds. A later round holds only the questions the earlier answers opened up.
+
+If the human answers a question with a request to explain it, such as "explain this" in
+Other, explain it in plain words, then ask that one question again in a popup. On Deep the
+`todo` block is printed above the popup: answering approves it, and Other changes it.
 
 #### Facts are your job. Decisions are the human's
 
-Sort each question into one of the two before you write the list.
-
+Sort each question into one of the two before you write the round.
 A **fact** is already in the repo. How the flag is stored. What imports this module. Go and read it. Do not ask.
-
 A **decision** is a call only the human can make. Taste. Product. Priority. Ask those.
 
 #### Drop what another question decides
 
-A question is answerable only when its premise is settled. "Where does the cache live?" waits for "should there be a cache?". Do not ask both at once.
+A question is answerable only when its premise is settled. "Where does the cache live?" waits for "should there be a cache?". Do not ask both in the same round. Hold it back for the next round, which the answer that settles it opens. A question whose answer could not change a todo line or a plan piece is not asked at all: it takes its recommendation and goes into **Assumptions**.
 
-Hold it back. On Quick and Standard it takes its recommendation and goes into **Assumptions**.
+#### Where there is no popup tool
 
-**Deep may ask one second round.** Only for a held question the plan cannot be written without. Say it is the last round. Two is the ceiling.
-
-#### Give every question a recommended answer
+Evals, `claude -p` and any harness without `AskUserQuestion` have no popup tool. There,
+ask each round as one numbered list, a recommendation on each, and take "yes to all":
 
 ```
 1. Should this replace the existing export, or sit alongside it?
    -> Recommend: replace. Nothing else imports it.
 
-2. Store the flag per-user or globally?
-   -> Recommend: per-user. Checked: notifications already store per-user.
-
 Reply "yes to all" to take every recommendation.
 ```
 
 On Deep the `todo` block sits above the questions, so the last line says so:
-
-```
-Reply "yes to all" to take every recommendation and approve the todo block.
-```
+`Reply "yes to all" to take every recommendation and approve the todo block.`
 
 Anything the human does not answer takes the recommendation, and **goes into the PR body under "Assumptions"** so it can be checked at merge time instead of blocking now.
 

@@ -4088,6 +4088,68 @@ check("README: names researcher among the agents",
       "README.md never names the researcher agent")
 
 
+# ------------------------------------- flow asks in popups, round after round
+#
+# flow used to ask one numbered list, with one held-back second round on Deep
+# and "two is the ceiling". It now asks with the AskUserQuestion popup, up to
+# 4 questions a round, and keeps asking rounds until no open question could
+# change a todo line or a plan piece. The numbered list and "yes to all" stay,
+# but only where there is no popup tool (evals, `claude -p`). These pins stand
+# in for the old one-round rule, which was never pinned by wording.
+
+FLOW_ASKING_HEADING = "### Asking questions"
+_asking_start = flow_text.find(FLOW_ASKING_HEADING)
+_asking_end = flow_text.find("\n## ", _asking_start)
+flow_asking = flat(flow_text[_asking_start:_asking_end]) if _asking_start >= 0 else ""
+
+check("flow: the asking section is there",
+      _asking_start >= 0 and _asking_end > _asking_start,
+      f"{FLOW_PATH} has no '{FLOW_ASKING_HEADING}' section ending at the next step")
+
+check("flow: asks in AskUserQuestion popups, up to 4 questions a round",
+      "AskUserQuestion" in flow_asking
+      and "up to 4 questions" in flow_asking
+      and "2 to 4 options" in flow_asking,
+      f"{FLOW_PATH}'s asking section never says a round is up to 4 popup "
+      f"questions of 2 to 4 options")
+
+check("flow: the recommended option goes first, labelled (Recommended)",
+      "recommended option first" in flow_asking
+      and "(Recommended)" in flow_asking,
+      f"{FLOW_PATH}'s asking section never puts the recommended option first "
+      f"with a (Recommended) label -- the waste counter reads that label")
+
+check("flow: keeps asking rounds until no open question could change the build",
+      "until no open question could change a todo line or a plan piece"
+      in flow_asking,
+      f"{FLOW_PATH}'s asking section has no stop rule tied to the todo lines "
+      f"and plan pieces")
+
+check("flow: has no cap on rounds",
+      "no cap on rounds" in flow_asking.lower()
+      and "Two is the ceiling" not in flow_text
+      and "one second round" not in flow_text
+      and "Never one question per turn" not in flow_text,
+      f"{FLOW_PATH} still carries the old one-round rule or never says there "
+      f"is no cap on rounds")
+
+check("flow: a later round holds only what earlier answers opened up",
+      "only the questions the earlier answers opened up" in flow_asking,
+      f"{FLOW_PATH}'s asking section never says what a later round holds")
+
+check("flow: a request to explain gets plain words, then the question again",
+      "plain words" in flow_asking and "that one question again" in flow_asking,
+      f"{FLOW_PATH}'s asking section never answers an 'explain this' and asks "
+      f"the question again")
+
+check("flow: the numbered list and yes to all stay where there is no popup tool",
+      "no popup tool" in flow_asking
+      and "numbered list" in flow_asking
+      and '"yes to all"' in flow_asking
+      and flow_asking.find("no popup tool") < flow_asking.find('"yes to all"'),
+      f"{FLOW_PATH}'s asking section never keeps the numbered list and "
+      f"\"yes to all\" for harnesses without a popup tool")
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")
