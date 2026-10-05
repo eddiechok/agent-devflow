@@ -262,16 +262,11 @@ If a check goes red on the PR after this, or a reviewer asks for something, that
 
 Never suggest throwing work away. If discarding a branch or force-pushing genuinely comes up, the human must type the word `discard` — "sure", "ok" and "go ahead" do not count.
 
-**Then what changed**, in one to three `done` lines — what this branch now does, in
-words a user of it would know, not the file list:
-
-```
-✓ **done** build prints red and green as their own lines
-```
-
-It goes right above the recap, and the recap leaves it out.
-
-**Then the recap.** Before the PR link, repeat the lines this run printed — from the first, `flow`'s or `build`'s when they ran before you, through this one — in the order they were printed, in one block. Leave out the routine ones, whose result is the same on almost every run: `– **pr** none found`, `✓ **branch**`, a green `✓ **checks**`, `✓ **debug** none found`, `– **look** nothing changed`, `✓ **handback**`. Every `✗` and `→` line stays. A report — the block between two `---` rules that `flow` or `plan` printed — is repeated as its title alone, in bold, with `### ` and `— waiting for your go` taken off: the go came. Add nothing to it — no summary, no new line, nothing this run has not already said once. It is the one place a human can read the whole run without scrolling back through the tool output sitting between the steps.
+**Then the Done report**, right before the PR link: the plan's rows, each marked done or
+not, then what the user will see, the check steps, assumptions, tracker actions, and what
+needs the human. Its shape is the Done section of
+[flow's references/report.md](../flow/references/report.md). It is the one place a human can read the whole run without scrolling back
+through the tool output sitting between the steps.
 
 Then, as the last thing this skill prints, the PR's link:
 

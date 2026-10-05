@@ -920,30 +920,25 @@ check("docs/submit: says why the look gets one fix, citing #23, #25 and #26",
       f"one-line Known issue the look could have fixed")
 
 
-# ----------------------------- submit ends with a recap of the run's own lines
+# --------------------------------- submit ends with a Done report  <-- #95
 #
 # The step lines a run prints are scattered between whatever tool output sits
-# between them, so a run is hard to read back once it is finished -- the
-# reader has to scroll past every command's output to find the eight or nine
-# lines that actually say what happened. The recap fixes that by repeating
-# them, once, in one block, at the very end, right before the PR's link.
+# between them, so a run was hard to read back. A recap repeated them at the
+# end, and `done` lines above it said what changed. The human wanted a
+# picture instead: the plan they said go to, with each row marked done or
+# not, in the same report shape as the Plan and Pieces reports. The recap
+# shrank to the lines that need the human -- every ✗ and → -- and moved into
+# the report as its last section. A clean run ends with no such section.
 
-SUBMIT_RECAP_LINE = (
-    "Before the PR link, repeat the lines this run printed — from the first, "
-    "`flow`'s or `build`'s when they ran before you, through this one — in "
-    "the order they were printed"
+SUBMIT_DONE_REPORT_LINE = (
+    "**Then the Done report**, right before the PR link"
 )
 
-check("submit: step 9 prints a recap of the run's step lines before the PR link",
-      SUBMIT_RECAP_LINE in flat(submit_text),
-      f"no line {SUBMIT_RECAP_LINE!r} in {SUBMIT_PATH}. Without it the step "
-      f"lines stay scattered between tool output, and a finished run is hard "
-      f"to read back")
-
-check("submit: the recap adds nothing new",
-      "Add nothing to it" in submit_text,
-      f"{SUBMIT_PATH} never says the recap adds no new text -- without that "
-      f"rule it drifts into a second, competing summary of the run")
+check("submit: step 9 prints the Done report before the PR link  <-- #95",
+      SUBMIT_DONE_REPORT_LINE in flat(submit_text)
+      and "(../flow/references/report.md)" in submit_text,
+      f"no line {SUBMIT_DONE_REPORT_LINE!r} in {SUBMIT_PATH}, or no link to "
+      f"the report shape -- the run would end without saying what was done")
 
 
 # ------------------------- a summary before the build, and one after the submit
@@ -953,9 +948,9 @@ check("submit: the recap adds nothing new",
 # prints a short `todo` block right after the size line. Deep, where a wrong
 # plan costs the most, prints that block above its popup and waits, so
 # answering the popup (or "yes to all" where there is no popup tool) approves
-# the plan -- one stop, not two. At the other end the recap says how each step went but not
-# what changed, which only the PR body said; submit prints a `done` block
-# right above the recap.
+# the plan -- one stop, not two. At the other end the recap said how each step went but not
+# what changed, which only the PR body said; submit printed a `done` block
+# right above the recap. #95 folded both into the Done report.
 #
 # #94: Standard printed its todo block and went straight on, so the human saw
 # the plan only as it was being built. Standard now waits for go too, and only
@@ -1077,19 +1072,10 @@ check("report: the plan title says it is waiting for go  <-- #94",
       and "leaves off `— waiting for your go`" in flat(flow_text),
       f"{REPORT_PATH}'s title never says it waits, or Quick claims to")
 
-# The recap repeats what the run printed after the go was given, so a title
-# that said "waiting for your go" told the human the run was still waiting,
-# above the PR link. Found by review. A report comes back as its title alone,
-# without those words -- the human asked for the recap to stay short.
-check("submit: the recap repeats a report as its title alone  <-- #94 review",
-      "repeated as its title alone" in flat(submit_text)
-      and "`— waiting for your go` taken off" in flat(submit_text),
-      f"{SUBMIT_PATH}'s recap would repeat a whole report, or a stale "
-      f"'waiting for your go'")
-
-# The recap strips only a line that ENDS `— waiting for your go`. The first
-# drift header said "— changed after planning, waiting for your go" and slipped
-# past it. Found by review. So every use in every skill is checked, not one.
+# Quick drops only a title that ENDS `— waiting for your go`. The first drift
+# header said "— changed after planning, waiting for your go" and slipped past
+# the rule that stripped it. Found by review. So every use in every skill is
+# checked, not one.
 _bad_waits = []
 for _root, _dirs, _files in os.walk(SKILLS_DIR):
     for _name in sorted(_files):
@@ -1100,7 +1086,7 @@ for _root, _dirs, _files in os.walk(SKILLS_DIR):
             for _m in re.finditer(r"(.{0,2})waiting for your go", fh.read()):
                 if _m.group(1) != "— ":
                     _bad_waits.append(f"{_path}: ...{_m.group(0)}")
-check("skills: every 'waiting for your go' follows '— ', so the recap strips it",
+check("skills: every 'waiting for your go' follows '— ', so Quick can drop it",
       not _bad_waits,
       f"these do not end '— waiting for your go': {_bad_waits}")
 
@@ -1115,8 +1101,6 @@ check("plan: a rule forbids a builder on drifted pieces before go  <-- #94",
 
 FLOW_TODO_DEEP_WAITS = "Deep prints it above its popup and waits"
 FLOW_TODO_REDO = "show the new block and wait once more"
-SUBMIT_DONE_LINE = "✓ **done**"
-SUBMIT_DONE_ABOVE_RECAP = "right above the recap, and the recap leaves it out"
 
 check("flow: prints a todo block after the size line",
       FLOW_TODO_LINE in report_text and "as a report" in flat(flow_text),
@@ -1153,15 +1137,78 @@ check("flow: Deep's reply line tells the human it approves the plan too",
       f"no line {FLOW_DEEP_REPLY_LINE!r} in {FLOW_PATH}. The model knows one "
       f"reply approves the plan; the human replying would not")
 
-check("submit: prints a done block of what changed",
-      SUBMIT_DONE_LINE in submit_text,
-      f"no {SUBMIT_DONE_LINE!r} line in {SUBMIT_PATH}. The recap says how the "
-      f"steps went, not what changed")
+# #95: the end of the run is a report too. Its rows are the plan's rows, so
+# the human reads what was said next to what was done. The `done` lines became
+# its "What you will see" section; the recap became "Needs you", which keeps
+# only the lines a human must act on. The PR's own check steps and
+# assumptions are repeated, so nothing needs the PR opened to be read.
+REPORT_DONE_SECTIONS = [
+    "#### What changed", "#### What you will see", "#### Check it yourself",
+    "#### Assumptions", "#### Tracker", "#### Needs you",
+]
+_done_start = report_text.find("## Done")
+report_done = report_text[_done_start:] if _done_start != -1 else ""
+_done_example = report_done.split("```")[1] if report_done.count("```") >= 2 else ""
 
-check("submit: the done block sits above the recap, not inside it",
-      SUBMIT_DONE_ABOVE_RECAP in flat(submit_text),
-      f"{SUBMIT_PATH} never places the done block above the recap -- the recap "
-      f"would repeat it, or the reader would find it after the link")
+check("report: the Done report has a title and its six sections, in order  <-- #95",
+      "### ✅ Done\n" in _done_example
+      and all(h in _done_example for h in REPORT_DONE_SECTIONS)
+      and [_done_example.find(h) for h in REPORT_DONE_SECTIONS]
+      == sorted(_done_example.find(h) for h in REPORT_DONE_SECTIONS),
+      f"{REPORT_PATH}'s Done example lacks the title or one of "
+      f"{REPORT_DONE_SECTIONS}, or has them out of order")
+
+check("report: Done lists the plan's rows with a mark each  <-- #95",
+      "| # | Change | Where | |" in _done_example
+      and "the plan's rows" in flat(report_done)
+      and "**Not done:**" in _done_example,
+      f"{REPORT_PATH}'s Done table is not the plan's rows with a ✓ or ✗ "
+      f"column, or a ✗ row never says why")
+
+check("report: Done says where the rows come from with no plan this run  <-- #95",
+      "No plan printed this run" in flat(report_done),
+      f"{REPORT_PATH} never says what Done's rows are when submit runs "
+      f"without a plan before it -- tend, or submit started by hand")
+
+# Found by review: Quick prints a plan and never waits for go, so "the plan
+# the human said go to" named no rows on Quick -- or, on a Quick follow-up,
+# the earlier Standard run's rows.
+check("report: Done's rows come from Quick's plan too  <-- #95 review",
+      "Quick's, which needs no go" in flat(report_done),
+      f"{REPORT_PATH} gives a Quick run no plan rows to mark")
+
+# Found by review: tend prints ✗ lines, fixes them, then calls submit. Taking
+# every ✗ line put fixed failures under Needs you, so a fixed run never ended
+# clean.
+check("report: Needs you leaves out a ✗ a later line settled  <-- #95 review",
+      "still open" in flat(report_done)
+      and "a later line this run settled" in flat(report_done),
+      f"{REPORT_PATH}'s Needs you would list failures the run already fixed")
+
+check("report: Done has no size line  <-- #95",
+      "**Size:**" not in _done_example,
+      f"{REPORT_PATH}'s Done report repeats the size, which the plan said")
+
+check("report: Done shows the check steps, not the live check  <-- #95",
+      "How to check this yourself" in flat(report_done)
+      and "**live**" in flat(report_done) and "not shown" in flat(report_done),
+      f"{REPORT_PATH} never says Check it yourself repeats the PR's steps and "
+      f"leaves the live line out")
+
+check("report: Needs you keeps every ✗ and → line, and Known issues  <-- #95",
+      "every `✗` and `→` line" in flat(report_done)
+      and "Known issues" in flat(report_done),
+      f"{REPORT_PATH}'s Needs you could drop a failure or a line waiting on "
+      f"the human")
+
+check("submit: no done lines and no loose recap are left  <-- #95",
+      "✓ **done**" not in submit_text and "**Then the recap.**" not in submit_text,
+      f"{SUBMIT_PATH} still prints the done lines or the old recap beside "
+      f"the Done report -- the run would say the same thing twice")
+
+check("submit: the PR link is the last thing printed  <-- #95",
+      "as the last thing this skill prints, the PR's link" in flat(submit_text),
+      f"{SUBMIT_PATH} no longer ends on the PR link")
 
 
 # ------------------------------- a line that is not a result takes the `→` mark
@@ -2318,8 +2365,8 @@ for slug in human_facing_text:
 # `✓ **red** fails for the right reason` read the rule back to the human and
 # told them nothing about this run; so did `✓ **checks** build's run stands`
 # and `✓ **review** both axes ran`. Each now leads with the result. And the
-# recap, which repeated all ~32 lines of a run, now leaves out the routine
-# ones whose result is the same on almost every run, so what is left is news.
+# recap, which repeated all ~32 lines of a run, first left out the routine
+# ones; since #95 the Done report's Needs you keeps only ✗ and → lines.
 
 check("build: the red line no longer reads the rule back",
       "✓ **red** fails for the right reason" not in build_text,
@@ -2348,19 +2395,10 @@ check("submit: prints no second branch line after build's",
       "unless `build` printed one this run" in flat(submit_text),
       f"{SUBMIT_PATH} prints '✓ **branch**' again after build already did")
 
-SUBMIT_RECAP_ROUTINE = [
-    "`– **pr** none found`", "`✓ **branch**`", "a green `✓ **checks**`",
-    "`✓ **debug** none found`", "`– **look** nothing changed`",
-    "`✓ **handback**`",
-]
-check("submit: the recap leaves out the routine lines",
-      all(item in submit_text for item in SUBMIT_RECAP_ROUTINE),
-      f"{SUBMIT_PATH} never names every routine line the recap leaves out: "
-      f"{SUBMIT_RECAP_ROUTINE}")
-
-check("submit: the recap keeps every ✗ and → line",
-      "Every `✗` and `→` line stays" in submit_text,
-      f"{SUBMIT_PATH} never says the recap keeps every ✗ and → line")
+check("report: Needs you keeps only ✗ and → lines, nothing routine  <-- #95",
+      "and nothing else" in flat(report_done),
+      f"{REPORT_PATH}'s Needs you could fill up with ✓ and – lines again, "
+      f"so a clean run would not end clean")
 
 
 # ------------------------------------------- cross-check against a real parser
@@ -4025,9 +4063,9 @@ check("submit: the path a Quick job walks stays in SKILL.md",
       "no-behaviour: <reason>" in submit_skill_only
       and "gh api repos/{owner}/{repo}/pulls -f title=" in submit_skill_only
       and "## How to check this yourself" in submit_skill_only
-      and SUBMIT_RECAP_LINE in flat(submit_skill_only),
+      and SUBMIT_DONE_REPORT_LINE in flat(submit_skill_only),
       f"{SUBMIT_PATH}: the no-behaviour hand-off, opening the PR, its body "
-      f"and the recap should need no reference")
+      f"and the call to print the Done report should need no reference")
 
 for slug in skills:
     skill_path = os.path.join(SKILLS_DIR, slug, "SKILL.md")

@@ -196,9 +196,9 @@ looked like every other line of the run. A table did not stand out enough, and n
 a table in a quote box: the human did not read it as a report. So it is one — a rule above
 and below, a title, and a heading per section — and its shape lives in one reference,
 `references/report.md`, that `flow` and `plan` both link, so the two cannot drift apart. A
-title that waits ends `— waiting for your go`, and `submit`'s recap repeats each report as
-its title alone, without those words, because by then the go came. The Pieces title does
-not wait, so it never says it does.
+title that waits ends `— waiting for your go`, and Quick, which does not wait, leaves those
+words off. The Pieces title does not wait, so it never says it does. `submit` ends the run
+with a Done report in the same shape, whose rows are the plan's rows marked done or not.
 
 ### Step 1b — one feature per run
 

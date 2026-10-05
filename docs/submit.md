@@ -198,9 +198,11 @@ This step used to work the danger list out from the diff a second time and offer
 
 The `security-reviewer` plan, 24 Sep 2026, retired the offer rather than patching the survival problem again. `security-reviewer` now runs inside step 5, on `reviewer`'s own read of the danger list, whenever a human would have — and unlike the offer, it cannot be forgotten, because nobody has to remember to type it. So step 9 hands off with nothing left to offer.
 
-### The recap
+### The Done report
 
-Nine steps each print one shaped line, but they print it between whatever tool output that step produced, so a finished run is a needle-in-haystack read for anyone who was not watching live. The recap repeats those lines — and `flow`'s and `build`'s before them, when they ran first — once, in one block, at the end, leaving out the routine ones whose result is the same every run — the run's whole shape in the last screenful, right before the link the human actually came for.
+Nine steps each print one shaped line, but they print it between whatever tool output that step produced, so a finished run is a needle-in-haystack read for anyone who was not watching live. A recap fixed that by repeating those lines at the end, and one to three `done` lines above it said what changed. #95 asked for a picture instead of a list of sentences, so the end of the run is now a report in the same shape as the Plan and Pieces reports.
+
+Its table holds the plan's own rows, each marked `✓` or `✗`, so the human reads what was promised next to what was done. The `done` lines became its "What you will see" section. The PR body's check steps and assumptions are repeated in it, so nothing needs the PR opened to be read; the live check line is not, because a passing one says nothing new and a failing one is a `✗` line already. The recap shrank to "Needs you": only the `✗` and `→` lines still open and the Known issues — the lines a human has to act on — so a clean run ends with no such section at all. A `✗` the run later fixed is left out, or a `tend` run that fixed every failure would never end clean. Quick prints a plan but never waits for go, so its rows are the plan it printed.
 
 ## Step 8 — tracker actions
 
