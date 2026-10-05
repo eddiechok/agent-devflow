@@ -4180,6 +4180,34 @@ check("flow: Rules say never stop while an open question could change the build"
       in flat(flow_text),
       f"{FLOW_PATH} Rules never say to keep asking while a question is open")
 
+# ------------------------------------------- plan follows flow's popup rounds
+#
+# plan said "one round of questions" in its description, argument-hint, "What
+# you are given" and "Started by hand", and linked to flow's asking section by
+# an anchor that is a copy of the heading. Both follow flow now: rounds of
+# questions, and the link resolves to whatever the heading is today.
+
+def github_anchor(heading):
+    """GitHub's slug for a heading: lower case, punctuation dropped, each
+    space a hyphen. An em dash drops out and leaves its two spaces."""
+    text = heading.lstrip("#").strip().lower()
+    text = re.sub(r"[^\w\s-]", "", text)
+    return text.replace(" ", "-")
+
+_flow_asking_heading = next(
+    line for line in flow_text.splitlines() if line.startswith(FLOW_ASKING_HEADING))
+plan_flat = flat(plan_text)
+
+check("plan: says rounds of questions, never one round",
+      re.search(r"\bone\*{0,2}\s+round", plan_text, re.I) is None
+      and "rounds of questions" in plan_flat,
+      f"{PLAN_PATH} still says 'one round' or never says 'rounds of questions'")
+
+check("plan: its link to flow's asking section resolves to the heading",
+      "flow/SKILL.md#" + github_anchor(_flow_asking_heading) + ")" in plan_text,
+      f"{PLAN_PATH} links to an anchor that is not "
+      f"{github_anchor(_flow_asking_heading)!r}, flow's asking heading today")
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")
