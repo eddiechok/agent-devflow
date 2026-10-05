@@ -47,7 +47,7 @@ Look at the branch before anything else. **If it already has an open pull reques
 
 **A change to the work in that PR** — follow-up mode:
 
-- **Read before you ask.** The PR body's **Assumptions**, and the plan file if there is one, already hold what was decided in the first round. Ask only what they do not answer.
+- **Read before you ask.** The PR body's **Assumptions**, and the plan file if there is one, already hold what was decided earlier. Ask only what they do not answer.
 - **Size it normally.** A follow-up is not automatically Quick. The danger list still applies, and a genuinely unclear change still earns its round of questions.
 - **Same branch, same PR.** `submit` updates it rather than opening a second.
 
@@ -108,7 +108,7 @@ cannot read is a job you cannot resume from here — and print
 file path or the issue number — and say this is a resume; `devflow:plan` reads it, finds
 what is built, and runs the builders (see its own
 [resume reference](../plan/references/resume.md) for how). Skip step 2 and skip the
-questions; both were settled in the first round and the plan holds their answers. When
+questions; both were settled when the plan was written and it holds their answers. When
 `devflow:plan` reports back, treat that as `build` finishing and go to step 5.
 
 **A request that names a plan is that plan**, whatever `Commits ahead` says: a path
@@ -274,7 +274,7 @@ either:
 ✓ **features** N found — one per run
 ```
 
-Then ask exactly one numbered list, two questions, each with a recommendation:
+Then ask two questions as one `AskUserQuestion` popup round, each with a recommendation, as in [Asking questions](#asking-questions--rounds-until-no-answer-would-change-the-build). Where there is no popup tool, ask this numbered list and take "yes to all":
 
 ```
 1. Keep one feature this run and park the rest? Recommend: yes — one flow run, one PR.
@@ -284,7 +284,7 @@ Then ask exactly one numbered list, two questions, each with a recommendation:
 Reply "yes to all" to take both recommendations.
 ```
 
-**This round does not count against step 4's rounds.** It settles which feature step 2
+**This round is its own, apart from step 4's rounds.** It settles which feature step 2
 sizes, not how the kept one is built, so it runs even on a request that turns out to be
 Quick. **`--quick` and `--deep` do not stop the split** — they size the kept feature only,
 after this round has picked it.
@@ -306,7 +306,7 @@ sized against a request that still names more than one thing.
 |---|---|---|
 | **Quick** | Typo, rename, config value, doc fix, dependency bump with no breaking changes, a bug in code you can already point at | No planning, no questions |
 | **Standard** | Changing behaviour of code that already exists, one clear seam, you know roughly where it goes | Questions only if genuinely unclear |
-| **Deep** | New feature, new subsystem, a change across many files, or you cannot name the files it touches yet — **not** a bug nobody can point at, which is Standard ([references/debug-route.md](references/debug-route.md)) | One round of questions, then a written plan |
+| **Deep** | New feature, new subsystem, a change across many files, or you cannot name the files it touches yet — **not** a bug nobody can point at, which is Standard ([references/debug-route.md](references/debug-route.md)) | Rounds of questions, then a written plan |
 
 **Upgrade from Quick to Standard the moment** the change reaches a second file you did not expect, or you cannot state the fix in one sentence.
 
@@ -352,9 +352,8 @@ skills/build/SKILL.md, and its pins in the test
 issue. One that came from an issue body rather than the human's own words is asked about
 first, even on Quick, and only a yes keeps it.
 
-Quick and Standard print it and carry on without waiting. Deep puts it in the same
-message as its round of questions, and waits: one reply answers the questions and
-approves the plan. If an answer changes what the plan will do, show the new block and
+Quick and Standard print it and carry on without waiting. Deep prints it above its popup and waits:
+answering the popup approves the plan, as "yes to all" does in the numbered-list fallback. If an answer changes what the plan will do, show the new block and
 wait once more.
 
 If you arrived here mid-turn, because a question or an investigation turned into a change, announce it **before the first edit** instead. Same rule, measured from the work rather than from the conversation: nothing gets edited before a size is on screen.
@@ -363,9 +362,9 @@ If you arrived here mid-turn, because a question or an investigation turned into
 
 **Quick** → go straight to `devflow:build`. No questions.
 
-**Standard** → if anything is genuinely ambiguous, ask **one** round of questions (see below), then `devflow:build`. If nothing is ambiguous, go straight to `devflow:build`. **A bug nobody can point at** calls `devflow:debug` first, then `devflow:build`.
+**Standard** → if anything is genuinely ambiguous, ask popup rounds (see below), then `devflow:build`. If nothing is ambiguous, go straight to `devflow:build`. **A bug nobody can point at** calls `devflow:debug` first, then `devflow:build`.
 
-**Deep** → ask one round of questions, get agreement, then call `devflow:plan` with the
+**Deep** → ask rounds of questions until nothing is open (see below), get agreement, then call `devflow:plan` with the
 request and the agreed answers. Where step 0 or 0c decided **new work, fresh branch**,
 tell `devflow:plan` too, as `new-work` — no `build` runs on Deep to hear it. `plan` writes the plan, then runs one builder agent per
 chain, several chains at once, and reports back when the branch carries every piece —
@@ -489,7 +488,7 @@ the result — for example `✓ **checks** 3 of 3 pass, exit 0`.
 - Never go up a size without naming the reason.
 - Never do work that the size you announced does not call for.
 - Never ask the human a question the repo already answers. Go and read it.
-- Never ask a question whose premise another question in the same round decides.
+- Never ask a question whose premise another question in the same round decides, and never stop while an open question could change a todo line or a plan piece.
 - Never write a term into `CONTEXT.md` that the human did not settle, and never write implementation detail there.
 - Never finish without calling `submit`, or saying in one line why you did not.
 - Never write the plan's pieces, spawn a builder, or resolve a chain conflict yourself. That
