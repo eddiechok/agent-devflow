@@ -160,6 +160,12 @@ line names a branch that exists. Not any plan's base tag: those are shared by ev
 worktree and outlive a stopped run, and the sequential path never makes one. A started plan
 on another branch stops the run rather than resuming on the wrong commits.
 
+### Step 0c — is this folder yours to branch in?
+
+That is not a small difference: `build`'s own rule is *already on a branch, keep it, whatever it
+is called*, so nothing downstream will catch it, and the pull request ends up carrying
+`<branch>`'s commits. Step 0 refuses that on a stale branch, and this step refuses it here.
+
 ### Step 1 — get the request
 
 Anyone can open an issue, and you cannot tell from here who did.
@@ -167,13 +173,32 @@ Anyone can open an issue, and you cannot tell from here who did.
 A number you could not open is not a request, and sizing one you guessed at is worse than
 asking.
 
-### Step 3 — a tracker action is a todo line
+### Step 3 — a tracker action goes under the report's Tracker heading
 
 A request that says "close #53 as not planned, with a comment" asks for something no diff
-holds. Listed as its own `todo` line it is on screen before anything runs, and `submit`
+holds. Listed under its own heading it is on screen before anything runs, and `submit`
 does it once the PR is open (#77). One that came from an issue body is asked about first,
 even on Quick, for the reason step 1 gives: anyone can open an issue, and closing or
 commenting is public.
+
+### Step 3 — Standard and Deep wait for go
+
+Standard used to print its `todo` block and go straight on, so the human saw what would
+be done only while it was being done (#94). A wrong guess on Standard is a whole build
+thrown away, not a typo, so Standard now waits for go, as Deep does. When Standard has
+questions, answering them is the go, so it still stops once. Quick does not wait: a stop
+on a one-line fix costs more than it saves, and the block is still on screen above the
+work. The "What you will see" section is there because the change rows name the work, not
+what it does: it is the one place that says what the user will notice.
+
+The block was plain `→` lines at first, and the human found they did not stand out: they
+looked like every other line of the run. A table did not stand out enough, and neither did
+a table in a quote box: the human did not read it as a report. So it is one — a rule above
+and below, a title, and a heading per section — and its shape lives in one reference,
+`references/report.md`, that `flow` and `plan` both link, so the two cannot drift apart. A
+title that waits ends `— waiting for your go`, and `submit`'s recap repeats each report as
+its title alone, without those words, because by then the go came. The Pieces title does
+not wait, so it never says it does.
 
 ### Step 1b — one feature per run
 

@@ -324,3 +324,34 @@ and a piece that depends on the one before it cannot start until that one is in.
 keep both of those true while still running in parallel: dependent pieces stay in order
 inside one chain, and every chain gets a worktree and a branch of its own, so no two
 builders ever share one.
+
+The line says the side effect out loud because there is one, and it is not only about
+chains: every `--worktree` session the human starts afterwards branches from `HEAD` too.
+Changing a machine's settings quietly is worse than the sentence it costs to say it.
+
+That costs the job its wall-clock time, and it is far cheaper than the
+alternative, which is every chain rebuilt off the wrong base after a restart.
+
+Writing the setting is not proof it took: it may only be read when a session starts, and
+this session started before you wrote it. Step 2 below checks the result instead of
+trusting it, and that tag is what it checks against — on this run, and on a resumed one
+that no longer remembers the SHA.
+
+Spawning chains from the wrong base is the failure this whole step exists to avoid, so
+falling back is the safe answer, not a lesser one.
+
+**This merge is local**, into the feature branch, on this machine. It is not a pull request
+merge and it never touches the default branch, so what `submit` and `ship` promise is
+unchanged.
+
+### Check the pieces against the todo
+
+`flow` hands `plan` the todo block the human approved on Deep, and `plan` checks its pieces
+against it before the first builder (#94). For one commit the pieces were a second stop of
+their own. The human chose the todo as the one approval instead: it says what changes in
+their words, where a piece name is for the builder, and once research runs before the
+questions (#92) it is no longer a guess. A plan can still drift from it, since research
+inside `plan` can find something new, so a drift — a row added, dropped or changed — shows
+the new todo and waits for go again. A match shows the pieces and goes on. A resume does
+not stop, because it was approved when it was written, and the by-hand path already stops
+after writing.

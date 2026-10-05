@@ -956,22 +956,177 @@ check("submit: the recap adds nothing new",
 # the plan -- one stop, not two. At the other end the recap says how each step went but not
 # what changed, which only the PR body said; submit prints a `done` block
 # right above the recap.
+#
+# #94: Standard printed its todo block and went straight on, so the human saw
+# the plan only as it was being built. Standard now waits for go too, and only
+# Quick carries on. The block gains a `see` line -- what the user will see
+# change -- because todo lines name the work, not what it does.
 
-FLOW_TODO_LINE = "→ **todo**"
-FLOW_TODO_CARRY_ON = "Quick and Standard print it and carry on without waiting"
+FLOW_TODO_LINE = "### 📋 Plan"
+REPORT_PATH = os.path.join(SKILLS_DIR, "flow", "references", "report.md")
+report_text = ""
+if os.path.isfile(REPORT_PATH):
+    with open(REPORT_PATH, encoding="utf-8") as fh:
+        report_text = fh.read()
+FLOW_TODO_CARRY_ON = "Quick prints it and carries on without waiting"
+FLOW_STANDARD_WAITS = "Standard and Deep print it and wait for go before the first edit"
+FLOW_SEE_LINE = "#### What you will see"
+FLOW_SEE_NOTHING = "- nothing changes for the user"
+FLOW_STANDARD_REPLY = 'Reply "go" to start, or say what to change.'
+
+check("flow: Standard waits for go after its todo block  <-- #94",
+      FLOW_STANDARD_WAITS in flat(flow_text),
+      f"{FLOW_PATH} never says Standard waits for go -- the human sees the "
+      f"plan only once it is being built")
+
+check("flow: Standard with no questions asks one go popup  <-- #94",
+      "with none, it asks one popup — go, or change something" in flat(flow_text),
+      f"{FLOW_PATH} never says what Standard asks when it has no questions")
+
+check("flow: Standard's fallback reply line says go  <-- #94",
+      FLOW_STANDARD_REPLY in flow_text,
+      f"no line {FLOW_STANDARD_REPLY!r} in {FLOW_PATH}. Where there is no "
+      f"popup tool the human would not know what to reply")
+
+check("flow: the todo block says what the user will see change  <-- #94",
+      FLOW_SEE_LINE in report_text and FLOW_SEE_NOTHING in report_text,
+      f"{REPORT_PATH} has no {FLOW_SEE_LINE!r} section, or no line for a change "
+      f"nobody can see")
+
+check("flow: a rule forbids editing before go on Standard and Deep  <-- #94",
+      "Never edit on Standard or Deep before the human says go." in flow_text,
+      f"{FLOW_PATH}'s Rules never forbid an edit before go")
+
+# Deep approves the todo block once, with its questions, and flow hands that
+# block to plan. plan checks its pieces against it: a match shows the pieces
+# and starts the builders without waiting; a drift shows a new todo block and
+# waits for go again. The pieces alone were the approval for one commit, and
+# the human chose the todo instead: it is in their words, and after #92 it
+# rests on research too. A resume does not stop: it was approved already.
+
+check("flow: Deep hands plan the approved todo block  <-- #94",
+      "the approved todo block, as `todo:`" in flat(flow_text)
+      and "[todo: " in plan_text,
+      f"{FLOW_PATH} never passes the approved todo to plan, or plan never "
+      f"takes it")
+
+check("plan: checks the pieces against the approved todo  <-- #94",
+      "## Check the pieces against the todo" in plan_text,
+      f"{PLAN_PATH} has no step that checks the pieces against the todo")
+
+check("plan: matching pieces start the builders without waiting  <-- #94",
+      "### 🧩 Pieces — starting the builders\n" in report_text
+      and "start the builders without waiting" in flat(plan_text),
+      f"{PLAN_PATH} still stops on pieces that match the approved todo")
+
+check("plan: drifted pieces show a new todo and wait  <-- #94",
+      "### 📋 Plan, changed after planning — waiting for your go" in report_text
+      and "drift report" in flat(plan_text),
+      f"{PLAN_PATH} never shows the drifted todo or waits for go on it")
+
+check("plan: the fallback reply line says go  <-- #94",
+      'Reply "go" to start the builders, or say what to change.' in flat(plan_text),
+      f"{PLAN_PATH} has no reply line for a harness without a popup")
+
+check("plan: a resume does not stop at the pieces again  <-- #94",
+      "A resume does not stop here" in flat(plan_text),
+      f"{PLAN_PATH} would re-ask a resume to approve pieces already approved")
+
+# The first cut of the pieces section deleted the paragraph that sends a resume
+# to references/resume.md, and every pin still passed. Found by review.
+check("plan: a resume is sent to references/resume.md  <-- #94 review",
+      "[references/resume.md](references/resume.md) before resuming anything"
+      in flat(plan_text),
+      f"{PLAN_PATH} no longer links its resume reference")
+
+# Plain `→` lines looked like every other line of the run, and the summary did
+# not stand out, so it became a table, then a table in a quote box. The human
+# still did not read the box as a report, so it is one: a title heading,
+# sections with their own headings, and a rule above and below. Its shape
+# lives in one reference that flow and plan both link, so the two cannot drift
+# and both skills stay under the size cap.
+FLOW_TODO_TABLE = "| # | Change | Where |"
+PLAN_PIECES_TABLE = "| # | Chain | Piece |"
+
+check("flow and plan: both link the report reference  <-- #94",
+      "[references/report.md](references/report.md)" in flow_text
+      and "(../flow/references/report.md)" in plan_text,
+      f"{FLOW_PATH} or {PLAN_PATH} never links the report shape")
+
+check("report: the plan is a table, one row per change  <-- #94",
+      FLOW_TODO_TABLE in report_text and "one row per change" in flat(flow_text),
+      f"{REPORT_PATH} has no change table, or flow never says one row each")
+
+check("report: a rule above and below, a title, section headings  <-- #94",
+      report_text.count("\n---\n") >= 4 and "#### What changes" in report_text,
+      f"{REPORT_PATH} has no rules framing its reports, or no section headings")
+
+check("report: a section with nothing in it is left out  <-- #94",
+      "A section with nothing in it is left out" in flat(report_text),
+      f"{REPORT_PATH} never says empty sections are dropped")
+
+check("flow: a tracker action goes under the Tracker heading  <-- #94",
+      "**A tracker action goes under the report's Tracker heading**" in flow_text
+      and "#### Tracker" in report_text,
+      f"{FLOW_PATH} step 3 never puts a tracker action under its own heading")
+
+# The human's mockup titled the report "waiting for your go". Quick prints the
+# same report and does not wait, so it leaves the words off.
+check("report: the plan title says it is waiting for go  <-- #94",
+      "### 📋 Plan — waiting for your go" in report_text
+      and "leaves off `— waiting for your go`" in flat(flow_text),
+      f"{REPORT_PATH}'s title never says it waits, or Quick claims to")
+
+# The recap repeats what the run printed after the go was given, so a title
+# that said "waiting for your go" told the human the run was still waiting,
+# above the PR link. Found by review. A report comes back as its title alone,
+# without those words -- the human asked for the recap to stay short.
+check("submit: the recap repeats a report as its title alone  <-- #94 review",
+      "repeated as its title alone" in flat(submit_text)
+      and "`— waiting for your go` taken off" in flat(submit_text),
+      f"{SUBMIT_PATH}'s recap would repeat a whole report, or a stale "
+      f"'waiting for your go'")
+
+# The recap strips only a line that ENDS `— waiting for your go`. The first
+# drift header said "— changed after planning, waiting for your go" and slipped
+# past it. Found by review. So every use in every skill is checked, not one.
+_bad_waits = []
+for _root, _dirs, _files in os.walk(SKILLS_DIR):
+    for _name in sorted(_files):
+        if not _name.endswith(".md"):
+            continue
+        _path = os.path.join(_root, _name)
+        with open(_path, encoding="utf-8") as fh:
+            for _m in re.finditer(r"(.{0,2})waiting for your go", fh.read()):
+                if _m.group(1) != "— ":
+                    _bad_waits.append(f"{_path}: ...{_m.group(0)}")
+check("skills: every 'waiting for your go' follows '— ', so the recap strips it",
+      not _bad_waits,
+      f"these do not end '— waiting for your go': {_bad_waits}")
+
+check("report: the pieces are a table  <-- #94",
+      PLAN_PIECES_TABLE in report_text,
+      f"{REPORT_PATH} does not show the pieces as a table")
+
+check("plan: a rule forbids a builder on drifted pieces before go  <-- #94",
+      "Never start a builder on pieces that drifted from the approved todo "
+      "before the human says go." in flat(plan_text),
+      f"{PLAN_PATH}'s Rules never forbid a builder on drifted pieces")
+
 FLOW_TODO_DEEP_WAITS = "Deep prints it above its popup and waits"
 FLOW_TODO_REDO = "show the new block and wait once more"
 SUBMIT_DONE_LINE = "✓ **done**"
 SUBMIT_DONE_ABOVE_RECAP = "right above the recap, and the recap leaves it out"
 
 check("flow: prints a todo block after the size line",
-      FLOW_TODO_LINE in flow_text,
-      f"no {FLOW_TODO_LINE!r} line in {FLOW_PATH}. The size line alone never "
+      FLOW_TODO_LINE in report_text and "as a report" in flat(flow_text),
+      f"no {FLOW_TODO_LINE!r} report in {REPORT_PATH}, or flow never prints "
+      f"one. The size line alone never "
       f"says what the change will touch")
 
-check("flow: Quick and Standard show the todo block without stopping",
+check("flow: Quick shows the todo block without stopping",
       FLOW_TODO_CARRY_ON in flat(flow_text),
-      f"{FLOW_PATH} never says Quick and Standard carry on past the todo block")
+      f"{FLOW_PATH} never says Quick carries on past the todo block")
 
 check("flow: Deep shows the todo block with its questions and waits",
       FLOW_TODO_DEEP_WAITS in flat(flow_text),
@@ -2051,8 +2206,8 @@ SHAPED_LABELS = {
     "conflict", "debug", "deploy", "docs", "done", "features", "glossary",
     "green", "handback", "issue", "lesson", "lint", "live", "look", "merge", "merged",
     "no-behaviour", "open", "opinion", "override", "parked", "piece",
-    "plan", "plans", "pr", "pushed", "red", "retargeted", "review",
-    "session", "settings", "stuck", "tended", "test", "theirs", "todo",
+    "pieces", "plan", "plans", "pr", "pushed", "red", "retargeted", "review",
+    "see", "session", "settings", "stuck", "tended", "test", "theirs", "todo",
     "typecheck",
     "worktree", "yours",
 }
@@ -2061,7 +2216,7 @@ SHAPED_LABELS = {
 # and that is not a printed line, so `→` counts only where it opens a line or a
 # backtick citation. The other three marks still count anywhere.
 SHAPED_LINE_LABEL = re.compile(
-    r"(?:[✓✗–]|(?:^|`)[ \t]*→) \*\*([^*\n]+)\*\*", re.M)
+    r"(?:[✓✗–]|(?:^|`)[ \t>]*→) \*\*([^*\n]+)\*\*", re.M)
 
 
 def shaped_labels_in(text):
@@ -2078,6 +2233,10 @@ check("label scanner: finds a label that is not on the list",
 check("label scanner: a list item or quote with an old mark is still scanned",
       {"madeup", "other"} <= shaped_labels_in(
           "- ✓ **madeup** x\n> ✗ **other** y"))
+
+check("label scanner: finds a waiting line inside a quote box  <-- #94",
+      {"todo", "pieces"} <= shaped_labels_in(
+          "> → **todo** 2 changes\n>\n> → **pieces** 3 in 2 chains"))
 
 check("label scanner: a prose arrow before bold text is not a label",
       not shaped_labels_in("Either fails → **stop editing** and say so"))
@@ -3674,9 +3833,6 @@ if os.path.exists(TRACKER_REF_PATH):
     with open(TRACKER_REF_PATH, encoding="utf-8") as fh:
         tracker_ref_text = fh.read()
 
-check("flow: a tracker action is a todo line of its own",
-      "**A tracker action is a `todo` line of its own**" in flow_text,
-      f"{FLOW_PATH} step 3 never lists a tracker action as its own todo line")
 
 check("flow: a tracker action from an issue body is asked about first",
       "came from an issue body rather than the human's own words is asked "
@@ -4278,6 +4434,21 @@ check("docs/provenance: the grilling loop of rounds is now taken",
 check("docs/provenance: the old 'was not taken' note on the loop is gone",
       "loop of rounds until nothing is left was **not** taken" not in _prov,
       "docs/provenance.md credits still say the loop of rounds was not taken")
+
+# #94: the why for both stops lives in the docs, not in the skills.
+check("docs/flow: says why Standard and Deep wait for go  <-- #94",
+      "### Step 3 — Standard and Deep wait for go" in docs_flow_text,
+      f"{DOCS_FLOW_PATH} never says why Standard now waits")
+
+with open(DOCS_PLAN_RESEARCH_PATH, encoding="utf-8") as fh:
+    _docs_plan = fh.read()
+check("docs/plan: says why the pieces are checked against the todo  <-- #94",
+      "### Check the pieces against the todo" in _docs_plan,
+      f"{DOCS_PLAN_RESEARCH_PATH} never says why plan stops before builders")
+
+check("docs/flow: says why the summary is a table  <-- #94",
+      "every other line of the run" in flat(docs_flow_text),
+      f"{DOCS_FLOW_PATH} never says why the summary became a table")
 
 # --------------------------------------------------------------------- report
 

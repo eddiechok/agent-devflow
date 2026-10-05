@@ -1,7 +1,7 @@
 ---
 name: plan
 description: "Use for Deep work - a new feature, a new subsystem, a change across many files, or anything you cannot yet name the files for. Writes the plan down as reviewable pieces with chain letters, or revises one already written, then runs one builder agent per chain until the branch carries every piece. Called by flow after its rounds of questions on Deep work, and after flow's own step 0b on a resume. Also safe to start by hand as /devflow:plan, which does flow's step 0b check itself, then writes or revises the plan and stops - flow builds it from there."
-argument-hint: "[request: the words the human typed] [answers: the agreed rounds of questions] [resume: <#n or .devflow/plans/path>, if flow already found a match] [new-work, if flow decided a fresh branch]"
+argument-hint: "[request: the words the human typed] [answers: the agreed rounds of questions] [resume: <#n or .devflow/plans/path>, if flow already found a match] [new-work, if flow decided a fresh branch] [todo: the approved todo block]"
 allowed-tools: Bash(git status:*), Bash(git branch:*), Bash(git checkout -b:*), Bash(git worktree:*), Bash(git rev-parse:*), Bash(git symbolic-ref:*), Bash(git merge-base:*), Bash(git merge:*), Bash(git tag:*), Bash(git log:*)
 ---
 
@@ -207,6 +207,15 @@ The mechanics of telling a started chain from a finished one, a whole chain from
 one, and a dirty tree from a clean resume are worked examples, not summarised here — read
 [references/resume.md](references/resume.md) before resuming anything.
 
+## Check the pieces against the todo
+
+**On a new plan from `flow`, check the pieces against `todo:`, the block the human
+approved.** Every row maps to a piece and no piece does what no row says: print the Pieces
+report and start the builders without waiting. A row added, dropped or changed is a drift:
+print the drift report, and ask one popup: go, or change something. No popup tool: `Reply
+"go" to start the builders, or say what to change.` A change is a revise. A resume does not
+stop here. Both reports are in [flow's report reference](../flow/references/report.md).
+
 ## Run one builder per chain
 
 **This session coordinates. It does not build.** So each chain goes to a fresh
@@ -235,16 +244,10 @@ one line:
 chain worktrees branch from here, and so will your own --worktree sessions
 ```
 
-The line says the side effect out loud because there is one, and it is not only about
-chains: every `--worktree` session the human starts afterwards branches from `HEAD` too.
-Changing a machine's settings quietly is worse than the sentence it costs to say it.
-
 **Never write `.claude/settings.json`.** That one is committed, and this is a preference
 about this machine, not a change to the project. If the write fails — no permission, a file
 that is not valid JSON — print `✗ **settings** <why> — building the chains one at a time`
-and take the sequential path below. Spawning
-chains from the wrong base is the failure this whole step exists to avoid, so falling back
-is the safe answer, not a lesser one.
+and take the sequential path below.
 
 **A setting written in this run is not in force in this run.** Settings are read when a
 session starts, and this session started before you wrote the file. So the run that writes
@@ -259,9 +262,8 @@ branch anyway, and the check below would catch that only after four builders had
 Then build this job on the sequential path — the one under "Where the harness cannot give
 a builder its own worktree" below: one builder per **chain**, in plan order, one at a time,
 spawned **without** `isolation` on the Agent call, so it commits on this branch and there
-is no merge step. That costs the job its wall-clock time, and it is far cheaper than the
-alternative, which is every chain rebuilt off the wrong base after a restart. The run that
-finds the setting already there is the run that spawns chains.
+is no merge step. The run that finds the setting already there is the run that spawns
+chains.
 
 **The check below still runs on the runs that do spawn.** A settings file that says
 `"head"` is not proof the value reached this session either — one edited by hand a minute
@@ -299,11 +301,8 @@ print `✗ **plan** could not write Branch: to #<n> — <the error>` and carry o
 git tag devflow/<plan short-name>/base HEAD
 ```
 
-Writing the setting is not proof it took: it may only be read when a session starts, and
-this session started before you wrote it. Step 2 below checks the result instead of
-trusting it, and that tag is what it checks against — on this run, and on a resumed one
-that no longer remembers the SHA. A local tag, never pushed; step 6 deletes it. If the tag
-already exists, this is a resume: leave it, it is the base the started chains were cut from.
+A local tag, never pushed; step 6 deletes it. If the tag already exists, this is a resume:
+leave it, it is the base the started chains were cut from.
 
 The loop, from the plan's chains — right after the plan is written, or wherever "Resume it"
 said you are picking up:
@@ -395,9 +394,7 @@ said you are picking up:
    ```
 
    `--no-ff` always, so every chain leaves one merge commit naming it and the builders'
-   own SHAs stay exactly as they reported them. **This merge is local**, into the feature
-   branch, on this machine. It is not a pull request merge and it never touches the
-   default branch, so what `submit` and `ship` promise is unchanged.
+   own SHAs stay exactly as they reported them.
 6. **Remove each merged chain's worktree and branch.** `git worktree list` says where they
    are:
 
@@ -485,6 +482,7 @@ the result — for example `✓ **plan** #45`.
   before that chain counts as done; fewer is `stuck`.
 - Never build a Deep piece in-session while agents are available. Only when the harness
   refused, and say so.
+- Never start a builder on pieces that drifted from the approved todo before the human says go.
 - Never rewrite a piece already built. A change to it is a new piece, not an edit.
 - Never revise without appending a `## Changes` line — date, what changed, why.
 - Never call `devflow:submit`, `devflow:review` or `devflow:ship` from the by-hand path.

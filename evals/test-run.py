@@ -201,6 +201,26 @@ check(
     ["gh pr merge", "git merge "],
 )
 
+# #94: Standard and Deep now wait for go after the todo block, and in -p mode
+# nobody answers. So a case that must reach a skill flow only calls after that
+# stop says so in its prompt, the way deep-coordinator already did for Deep.
+# Found from the graders, not a list: the first version named two cases and
+# missed bug-routes-to-debug.
+PAST_THE_GO = ("devflow:build", "devflow:debug", "devflow:builder",
+               "devflow:plan", "devflow:submit")
+_past_go_cases = []
+for _c in run.load_cases(None):
+    _needs = [g for g in _c["graders"]
+              if g.get("type") == "tool_used" and g.get("min", 0) >= 1
+              and g.get("input_match") in PAST_THE_GO]
+    if _needs:
+        _past_go_cases.append(_c["name"])
+        check_true(f"{_c['name']}: the prompt tells the run not to wait for go",
+                   "do not wait" in _c["execution"]["prompt"])
+check_true("cases: the go scan found the cases that build past the stop",
+           {"full-loop", "bug-routes-to-build", "bug-routes-to-debug",
+            "deep-coordinator"} <= set(_past_go_cases))
+
 # `deep-coordinator` is the case that measures the Deep loop, and the loop is
 # now chains in parallel, merged back, then submit. The merge is the new
 # promise and the easiest one to skip silently, so the case carries a grader

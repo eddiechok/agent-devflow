@@ -14,7 +14,8 @@ execution:
   # receives that character, and one that spots and confirms it while sizing
   # may go to build, which debug-route.md allows -- this case would score that
   # correct run as a fail. bug-routes-to-build is the other half.
-  prompt: "/devflow:flow `node src/cli.js --batch-file team.txt` is supposed to greet each person once, but alice gets greeted twice. team.txt looks fine to me and so does the code. I have no idea what's causing it or where to even look."
+  # The last sentence is for #94: Standard waits for go, and nobody answers.
+  prompt: "/devflow:flow `node src/cli.js --batch-file team.txt` is supposed to greet each person once, but alice gets greeted twice. team.txt looks fine to me and so does the code. I have no idea what's causing it or where to even look. Nobody is here to answer: take every recommendation, go, and do not wait."
   max_turns: 12
   timeout_seconds: 300
   allowed_tools: [Bash, Read, Edit, Glob, Grep, Skill]
