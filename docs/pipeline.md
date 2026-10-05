@@ -106,8 +106,8 @@ sequenceDiagram
 
     You->>flow: /devflow:flow add email alerts
     flow->>You: "Deep — new subsystem." one line, first
-    flow->>You: one round of questions, each with a recommendation
-    You-->>flow: answers, or "yes to all"
+    flow->>You: rounds of popup questions, each with a recommendation
+    You-->>flow: answers, or "yes to all" where there is no popup
     flow->>plan: request, answers
     opt one per open question, at most 3, often 1, maybe none
         plan->>researcher: one open question
@@ -155,7 +155,7 @@ this. That is enforced in the harness, not asked for in prose.
 
 | Moment | Why it is yours |
 |---|---|
-| Answering `flow`'s questions | Skippable. "yes to all" takes every recommendation. Each one lands in the PR under **Assumptions** |
+| Answering `flow`'s questions | Skippable. Pick each popup's recommended option, or "yes to all" where there is no popup. Each one lands in the PR under **Assumptions** |
 | Reading the PR | The artefact the whole loop exists to put in front of you |
 | Typing `/devflow:ship` | The only skill that merges. Also the only one nothing else can call |
 | Saying "run the review" | Some harnesses block agents unless asked. There, this is the one thing that unblocks every review agent |
