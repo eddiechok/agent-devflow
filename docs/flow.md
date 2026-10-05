@@ -194,7 +194,7 @@ This is the one file devflow writes that a later run reads. A plan is for one jo
 `flow` asks in popups, with the `AskUserQuestion` tool. A round is up to 4 questions, the
 tool's own limit, shown one at a time, each with 2 to 4 options and the recommended one
 first, labelled "(Recommended)". The tool adds "Other" itself. Rounds go on until no open
-question could change a todo line or a plan piece, and there is no cap on them: a later
+question could change a todo line, a plan piece, or what the user sees, and there is no cap on them: a later
 round holds only what the earlier answers opened up, so a question whose premise is not
 settled waits for the answer that settles it instead of taking its recommendation. Standard
 asks the same way, only when something is genuinely unclear, and Quick asks nothing. On
@@ -207,6 +207,10 @@ evals, `claude -p` — it falls back to the numbered list with a recommendation 
 It used to ask a single numbered list, with one more list on Deep for a held question. A held
 question now waits for the round its answer opens instead of taking its recommendation, so
 the stop rule moved from a count to a test: would any answer change the build.
+
+The test first read "a todo line or a plan piece", and that was too coarse. The error text,
+or what happens on empty input, changes neither, so those questions were skipped into
+**Assumptions** and seen only at merge. The human widened it to what the user sees.
 
 The human answers from memory. The code cannot be wrong about itself.
 

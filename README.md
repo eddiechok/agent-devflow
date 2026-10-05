@@ -202,7 +202,7 @@ A fact about your project is not a devflow lesson. `submit` puts that in the pro
 
 **Direction.** Deep jobs always ask. Standard asks only when genuinely unclear. Quick never asks.
 
-Questions come as popups, up to 4 a round, shown one at a time, each with 2 to 4 options and the recommended one first. Pick it, or pick Other and type your own. Rounds go on until no open question could change a todo line or a plan piece, and there is no cap on them. Ask for an explanation and you get it in plain words, then the same question again. On Deep the todo block sits above the popup, and answering approves it. Where there is no popup tool, in evals and `claude -p`, it asks a numbered list instead, and `yes to all` is a valid reply there. Anything you skip takes the recommendation, and appears in the PR under **Assumptions**.
+Questions come as popups, up to 4 a round, shown one at a time, each with 2 to 4 options and the recommended one first. Pick it, or pick Other and type your own. Rounds go on until no open question could change a todo line, a plan piece, or what the user sees, and there is no cap on them. Ask for an explanation and you get it in plain words, then the same question again. On Deep the todo block sits above the popup, and answering approves it. Where there is no popup tool, in evals and `claude -p`, it asks a numbered list instead, and `yes to all` is a valid reply there. Anything you skip takes the recommendation, and appears in the PR under **Assumptions**.
 
 Two rules decide what gets into a round.
 

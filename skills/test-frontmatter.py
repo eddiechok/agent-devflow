@@ -4107,7 +4107,7 @@ check("README: names researcher among the agents",
 # flow used to ask one numbered list, with one held-back second round on Deep
 # and "two is the ceiling". It now asks with the AskUserQuestion popup, up to
 # 4 questions a round, and keeps asking rounds until no open question could
-# change a todo line or a plan piece. The numbered list and "yes to all" stay,
+# change a todo line, a plan piece, or what the user sees. The numbered list and "yes to all" stay,
 # but only where there is no popup tool (evals, `claude -p`). These pins stand
 # in for the old one-round rule, which was never pinned by wording.
 
@@ -4134,10 +4134,18 @@ check("flow: the recommended option goes first, labelled (Recommended)",
       f"with a (Recommended) label -- the waste counter reads that label")
 
 check("flow: keeps asking rounds until no open question could change the build",
-      "until no open question could change a todo line or a plan piece"
-      in flow_asking,
-      f"{FLOW_PATH}'s asking section has no stop rule tied to the todo lines "
-      f"and plan pieces")
+      "until no open question could change a todo line, a plan piece, or what "
+      "the user sees" in flow_asking,
+      f"{FLOW_PATH}'s asking section has no stop rule tied to the todo lines, "
+      f"the plan pieces and what the user sees")
+
+# The stop rule was "a todo line or a plan piece" alone. Behaviour inside one
+# piece -- the error text, what happens on empty input -- changes neither, so
+# those questions were skipped into Assumptions. The human widened it.
+check("flow: a question is skipped only when it cannot change what the user sees",
+      "could not change a todo line, a plan piece, or what the user sees is not "
+      "asked at all" in flow_asking,
+      f"{FLOW_PATH} still skips a question that could change what the user sees")
 
 check("flow: has no cap on rounds",
       "no cap on rounds" in flow_asking.lower()
@@ -4176,8 +4184,8 @@ check("flow: step 4 asks rounds on Standard and Deep",
       f"{FLOW_PATH} step 4 never routes Standard and Deep through rounds")
 
 check("flow: Rules say never stop while an open question could change the build",
-      "never stop while an open question could change a todo line or a plan piece"
-      in flat(flow_text),
+      "never stop while an open question could change a todo line, a plan piece, "
+      "or what the user sees" in flat(flow_text),
       f"{FLOW_PATH} Rules never say to keep asking while a question is open")
 
 # ------------------------------------------- plan follows flow's popup rounds
@@ -4238,9 +4246,16 @@ for _name in ("flow.md", "plan.md", "pipeline.md", "lessons.md"):
           "popup" in _doc or "rounds of questions" in _doc,
           f"docs/{_name} never describes the popup rounds")
 
+with open(os.path.join(REPO_ROOT, "docs", "flow.md"), encoding="utf-8") as fh:
+    _flow_doc = flat(fh.read())
+check("docs/flow: records why what the user sees is in the stop rule",
+      "what the user sees" in _flow_doc and "too coarse" in _flow_doc,
+      f"docs/flow.md never says why the stop rule covers what the user sees")
+
 check("README: Deep's questions are rounds, until nothing would change the build",
       "rounds" in flat(readme_text) and "popup" in flat(readme_text)
-      and "until no open question could change" in flat(readme_text),
+      and "until no open question could change a todo line, a plan piece, or "
+          "what the user sees" in flat(readme_text),
       f"{README_PATH} never describes popup rounds until nothing would change "
       f"the build")
 

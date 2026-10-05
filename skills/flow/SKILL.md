@@ -413,8 +413,8 @@ Ask in popups with the `AskUserQuestion` tool. A round is up to 4 questions, the
 shown one at a time, each with 2 to 4 options. Put the recommended option first and end its
 label with " (Recommended)". The tool adds "Other" itself, so do not write one.
 
-Keep asking rounds until no open question could change a todo line or a plan piece. There is
-no cap on rounds. A later round holds only the questions the earlier answers opened up.
+Keep asking rounds until no open question could change a todo line, a plan piece, or what the
+user sees. There is no cap on rounds. A later round holds only the questions the earlier answers opened up.
 
 If the human answers a question with a request to explain it, such as "explain this" in
 Other, explain it in plain words, then ask that one question again in a popup. On Deep the
@@ -428,7 +428,7 @@ A **decision** is a call only the human can make. Taste. Product. Priority. Ask 
 
 #### Drop what another question decides
 
-A question is answerable only when its premise is settled. "Where does the cache live?" waits for "should there be a cache?". Do not ask both in the same round. Hold it back for the next round, which the answer that settles it opens. A question whose answer could not change a todo line or a plan piece is not asked at all: it takes its recommendation and goes into **Assumptions**.
+A question is answerable only when its premise is settled. "Where does the cache live?" waits for "should there be a cache?". Do not ask both in the same round. Hold it back for the next round, which the answer that settles it opens. A question whose answer could not change a todo line, a plan piece, or what the user sees is not asked at all: it takes its recommendation and goes into **Assumptions**.
 
 #### Where there is no popup tool
 
@@ -488,7 +488,7 @@ the result — for example `✓ **checks** 3 of 3 pass, exit 0`.
 - Never go up a size without naming the reason.
 - Never do work that the size you announced does not call for.
 - Never ask the human a question the repo already answers. Go and read it.
-- Never ask a question whose premise another question in the same round decides, and never stop while an open question could change a todo line or a plan piece.
+- Never ask a question whose premise another question in the same round decides, and never stop while an open question could change a todo line, a plan piece, or what the user sees.
 - Never write a term into `CONTEXT.md` that the human did not settle, and never write implementation detail there.
 - Never finish without calling `submit`, or saying in one line why you did not.
 - Never write the plan's pieces, spawn a builder, or resolve a chain conflict yourself. That
