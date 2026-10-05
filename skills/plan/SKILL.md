@@ -39,7 +39,7 @@ do not already settle — what the repo has now, how others solve it, what an AP
 does.
 
 **Zero is a real answer.** When those already answer everything, start none, print
-`– **research** no open question`, and the plan has no `## Findings`.
+`– **research** no open question`, and the plan has no `## Findings` unless `flow` passed `findings:`.
 
 **On a `github` tracker, match an open plan issue first**, with the lookup "Write the
 plan" uses. A match is a resume, and research run before it is paid for and thrown away.

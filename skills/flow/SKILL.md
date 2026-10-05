@@ -419,7 +419,7 @@ A **decision** is a call only the human can make. Taste. Product. Priority. Ask 
 
 #### Research on Deep
 
-On Deep, a fact nobody has read gets one `devflow:researcher` per fact, started automatically, with no question to the human. Follow [the plan skill's research reference](../plan/references/research.md) for the question, what each agent is given, the fallback and the output lines. At most 3 in `flow`, counted across every round. Do not wait for it: ask the questions that do not need the fact now, and hold the dependent ones for the next round. "no research" anywhere in the request starts none: print `– **research** skipped — the request said no research`. Quick and Standard start no researcher; the session reads the fact itself.
+On Deep, a fact nobody has read gets one `devflow:researcher` per fact, started automatically, with no question to the human. Follow [the plan skill's research reference](../plan/references/research.md) for the question, what each agent is given, the fallback and the output lines. At most 3 in `flow`, counted across every round. Do not wait for it: ask the questions that do not need the fact now, and hold the dependent ones for the next round. "no research" anywhere in the request starts none: print `– **research** skipped — the request said no research`. Quick and Standard start no researcher; the session reads the fact itself, under the same source rules.
 
 #### Drop what another question decides
 

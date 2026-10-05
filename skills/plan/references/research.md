@@ -32,7 +32,7 @@ assumption for `## Assumptions`. Research finds facts. It does not choose.
 the ones the plan can be written without. Often one question is all there is.
 
 **None open** — print `– **research** no open question` and write the plan with no
-`## Findings`. Do not invent a question to have something to run.
+`## Findings` unless `flow` passed `findings:`. Do not invent a question to have something to run.
 
 ## What each agent is given
 

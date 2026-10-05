@@ -4554,7 +4554,8 @@ check("flow: research follows plan's references/research.md, linked, not copied"
       f"{FLOW_PATH}'s research never links plan/references/research.md")
 
 check("flow: Quick and Standard start no researcher",
-      "Quick and Standard start no researcher" in FLOW_RESEARCH,
+      "Quick and Standard start no researcher" in FLOW_RESEARCH
+      and "reads the fact itself, under the same source rules" in FLOW_RESEARCH,
       f"{FLOW_PATH}'s research never says Quick and Standard start no researcher")
 
 _flow_step4 = flat(section(flow_text, "## Step 4"))
@@ -4613,6 +4614,12 @@ check("plan: started by hand, research keeps all of it",
 check("plan: 'no research' in the request skips research here too",
       "\"no research\"" in PLAN_RESEARCH_FLAT,
       f"{PLAN_PATH}'s research never gives the 'no research' skip")
+
+check("plan: the zero case keeps flow's findings  <-- review of #92",
+      "unless `flow` passed `findings:`" in PLAN_RESEARCH_FLAT
+      and "unless `flow` passed `findings:`" in plan_research_ref,
+      f"{PLAN_PATH} or {PLAN_RESEARCH_REF_PATH} says a plan with no open "
+      f"question has no ## Findings, which drops what flow's researchers found")
 
 check("plan research reference: flow's findings, no second research, the cap of 6",
       "findings:" in plan_research_ref
