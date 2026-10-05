@@ -563,6 +563,84 @@ check(
 )
 
 
+# --------------------------------------------- sizing-deep asks in rounds
+#
+# Deep asks in popup rounds, or -- where there is no popup tool, which is every
+# `claude -p` run -- in a numbered list. Either way every question carries a
+# recommendation. The case grades that with two scorable regex graders so the
+# runner can say pass or fail without a judge: one wants at least one question
+# with a recommendation after it, the other forbids a question that reaches the
+# next question (or the end) with none. The `llm` grader stays for the rest.
+with open(os.path.join(HERE, "sizing-deep", "case.yaml")) as fh:
+    sizing_deep = run.parse_yaml(fh.read())
+_sd = {g["name"]: g for g in sizing_deep["graders"]}
+
+check_true("sizing-deep: the asks-a-recommended-question grader is there",
+           "asks-a-recommended-question" in _sd)
+check_true("sizing-deep: the no-question-lacks-a-recommendation grader is there",
+           "no-question-lacks-a-recommendation" in _sd)
+
+
+def sizing_deep_passes(said, popup=None):
+    """True when both scorable question graders pass on a run that said `said`
+    and, if `popup` is a list of (question, [labels]), called AskUserQuestion."""
+    blocks = [{"type": "text", "text": said}] if said else []
+    if popup is not None:
+        blocks.append({"type": "tool_use", "id": "q1", "name": "AskUserQuestion",
+                       "input": {"questions": [
+                           {"question": q, "header": "Ask",
+                            "options": [{"label": l, "description": "d"} for l in labels],
+                            "multiSelect": False}
+                           for q, labels in popup]}})
+    c = ctx([{"type": "assistant", "message": {"content": blocks}}])
+    return all(
+        verdict(_sd[n], c) == "pass"
+        for n in ("asks-a-recommended-question", "no-question-lacks-a-recommendation")
+        if n in _sd
+    )
+
+
+_ANNOUNCE = "Deep — a plugin system cannot be named in files up front.\n\n"
+
+check("sizing-deep: a numbered list with a recommendation on each passes",
+      sizing_deep_passes(_ANNOUNCE +
+          "1. Where do styles register? Recommended: a registry in src/styles.js\n"
+          "2. Can a style be async? Recommended: no, keep it sync\n"),
+      True)
+
+check("sizing-deep: a popup whose every question leads with (Recommended) passes",
+      sizing_deep_passes(_ANNOUNCE,
+          popup=[("Where do styles register?", ["A registry (Recommended)", "A config file"]),
+                 ("Can a style be async?", ["No (Recommended)", "Yes"])]),
+      True)
+
+check("sizing-deep: a numbered list with no recommendation fails",
+      sizing_deep_passes(_ANNOUNCE +
+          "1. Where do styles register?\n2. Can a style be async?\n"),
+      False)
+
+check("sizing-deep: a numbered list where only the first has one fails",
+      sizing_deep_passes(_ANNOUNCE +
+          "1. Where do styles register? Recommended: a registry\n"
+          "2. Can a style be async?\n"),
+      False)
+
+check("sizing-deep: a popup question with no recommendation fails",
+      sizing_deep_passes(_ANNOUNCE,
+          popup=[("Where do styles register?", ["A registry (Recommended)", "A config file"]),
+                 ("Can a style be async?", ["No", "Yes"])]),
+      False)
+
+check("sizing-deep: a run that asked nothing fails",
+      sizing_deep_passes(_ANNOUNCE + "I will start building now."),
+      False)
+
+check("sizing-deep: a todo list without question marks is not read as questions",
+      sizing_deep_passes(_ANNOUNCE +
+          "1. add the registry\n2. add the loader\n"
+          "3. Where do styles register? Recommended: a registry\n"),
+      True)
+
 # --------------------------------------------------------------- the scoring
 
 RESULTS = [

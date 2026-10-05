@@ -30,7 +30,7 @@ python3 evals/run.py --case sizing-* --runs 1
 python3 evals/run.py --dry-run                # parse and print, run nothing
 ```
 
-It scores **58 of the 70 graders** — every `regex`, `tool_used`, `tool_order`
+It scores **60 of the 72 graders** — every `regex`, `tool_used`, `tool_order`
 and `file_exists`. The twelve `llm` graders come back `skip`, stay out of the
 denominator, and are counted in the summary. **A skip is never a pass**, the
 same way `NOT RUN` is never `none`.

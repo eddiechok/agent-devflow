@@ -14,7 +14,7 @@ context:
   scaffold_script: ./scaffold.sh
 
 execution:
-  # Pre-answered on purpose. Deep asks one round and waits, and in -p mode
+  # Pre-answered on purpose. Deep asks in rounds and waits, and in -p mode
   # nobody answers, so the session ends at the questions and never reaches
   # the plan. Saying "yes to all" up front is a valid reply per flow.
   # The request fits the greeter: two pieces, no web stack to invent.
