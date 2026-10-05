@@ -681,6 +681,98 @@ check("sizing-deep: a todo list without question marks is not read as questions"
           "3. Where do styles register? Recommended: a registry\n"),
       True)
 
+# --------------------------------------- research-in-rounds starts a researcher
+#
+# Issue #92: on Deep, `flow` starts a `devflow:researcher` on its own when a
+# question needs a fact nobody has read, and never asks whether to research.
+# The case asks for plugins "the way ESLint loads its plugins" -- a fact outside
+# the repo. Its graders are pinned both ways here, so none of them reads as
+# coverage while being unable to fail.
+_rr_path = os.path.join(HERE, "research-in-rounds", "case.yaml")
+research_rounds = {}
+if os.path.isfile(_rr_path):
+    with open(_rr_path) as fh:
+        research_rounds = run.parse_yaml(fh.read())
+_rr = {g["name"]: g for g in research_rounds.get("graders", [])}
+
+check_true("research-in-rounds: the case exists", research_rounds != {})
+check_true("research-in-rounds: the prompt needs a fact from outside the repo",
+           "ESLint" in research_rounds.get("execution", {}).get("prompt", ""))
+check_true("research-in-rounds: Agent is allowed, or no researcher can start",
+           "Agent" in research_rounds.get("execution", {}).get("allowed_tools", []))
+for _n in ("announces-deep", "starts-a-researcher", "at-most-3-researchers",
+           "never-asks-whether-to-research", "asks-a-recommended-question"):
+    check_true("research-in-rounds: the %s grader is there" % _n, _n in _rr)
+
+
+def research_rounds_verdict(name, said="", agents=()):
+    """The verdict of one research-in-rounds grader on a run that said `said`
+    and started one Agent per entry in `agents`, each a subagent_type."""
+    if name not in _rr:
+        return None
+    blocks = [{"type": "text", "text": said}] if said else []
+    for i, kind in enumerate(agents):
+        blocks.append({"type": "tool_use", "id": "a%d" % i, "name": "Agent",
+                       "input": {"subagent_type": kind, "prompt": "q",
+                                 "description": "d"}})
+    return verdict(_rr[name], ctx([{"type": "assistant", "message": {"content": blocks}}]))
+
+
+_RR_SAID = ("Deep — a plugin system, files not nameable yet.\n\n"
+            "1. Should plugins be npm packages? Recommended: yes\n")
+
+check("research-in-rounds: one researcher passes starts-a-researcher",
+      research_rounds_verdict("starts-a-researcher", _RR_SAID, ["devflow:researcher"]),
+      "pass")
+check("research-in-rounds: no agent fails starts-a-researcher",
+      research_rounds_verdict("starts-a-researcher", _RR_SAID), "fail")
+check("research-in-rounds: a builder is not a researcher",
+      research_rounds_verdict("starts-a-researcher", _RR_SAID, ["devflow:builder"]),
+      "fail")
+check("research-in-rounds: 3 researchers is within the cap",
+      research_rounds_verdict("at-most-3-researchers", _RR_SAID,
+                              ["devflow:researcher"] * 3), "pass")
+check("research-in-rounds: 4 researchers breaks the cap",
+      research_rounds_verdict("at-most-3-researchers", _RR_SAID,
+                              ["devflow:researcher"] * 4), "fail")
+# The first paid run asked "**1. How does a user pick a style ...?**" with
+# "→ Recommend:" under it, and the grader missed it: the bold marks sat
+# before the number, where the question marker wanted the line to start.
+check("research-in-rounds: a bold-numbered question with a recommendation passes",
+      research_rounds_verdict("asks-a-recommended-question",
+          "**1. How does a user pick a style when they run the CLI?**\n"
+          "   → Recommend: a `--style <name>` flag\n"), "pass")
+check("research-in-rounds: a bold-numbered question with none still fails",
+      research_rounds_verdict("asks-a-recommended-question",
+          "**1. How does a user pick a style when they run the CLI?**\n"), "fail")
+
+check("research-in-rounds: plain questions do not ask whether to research",
+      research_rounds_verdict("never-asks-whether-to-research", _RR_SAID), "pass")
+check("research-in-rounds: 'Should I research ... first?' is caught",
+      research_rounds_verdict("never-asks-whether-to-research", _RR_SAID +
+          "2. Should I research how ESLint loads plugins first? Recommended: yes\n"),
+      "fail")
+check("research-in-rounds: 'Would you like me to research' is caught",
+      research_rounds_verdict("never-asks-whether-to-research",
+          "Would you like me to research how ESLint loads plugins?"), "fail")
+check("research-in-rounds: a 'Research first (Recommended)' option is caught",
+      research_rounds_verdict("never-asks-whether-to-research",
+          '"label": "Research first (Recommended)"'), "fail")
+check_true("research-in-rounds: the no-question-lacks-a-recommendation grader is there",
+      "no-question-lacks-a-recommendation" in _rr)
+check("research-in-rounds: a question with no recommendation fails, even with one later",
+      research_rounds_verdict("no-question-lacks-a-recommendation",
+          "1. Should plugins be npm packages?\n"
+          "2. Where do they live? Recommended: node_modules\n"), "fail")
+check("research-in-rounds: bold-numbered questions, each recommended, pass",
+      research_rounds_verdict("no-question-lacks-a-recommendation",
+          "**1. How does a user pick a style?**\n   → Recommend: a flag\n"
+          "**2. Where do plugins live?**\n   → Recommend: node_modules\n"), "pass")
+check("research-in-rounds: 'Do you want me to research' is caught",
+      research_rounds_verdict("never-asks-whether-to-research",
+          "Do you want me to research ESLint's loader before we go on?"),
+      "fail")
+
 # --------------------------------------------------------------- the scoring
 
 RESULTS = [

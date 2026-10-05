@@ -248,6 +248,27 @@ More than two is a design session, not a change.
 Question 2 shows the split. "Per-user or global" is a decision, so it is asked. "How
 notifications store it" is a fact, so it was looked up and handed over.
 
+### Step 4 — research during the rounds
+
+On Deep, `flow` starts a `researcher` for a fact nobody has read, during the rounds and not
+after them (#92). `plan` used to research only once the rounds were over, so a question that
+hung on something outside the repo — how others solve it, what an API really does — went to
+the human, who answers from memory. "Facts are your job" now covers facts outside the repo
+too: a fact is anything you can find out. The researcher is `plan`'s own agent, so `flow`
+follows `plan`'s research reference and links it rather than copying it.
+
+Why it is automatic and not a popup: GSD's plan-phase asks "Research first (Recommended)" or
+"Skip research". Finding facts is not the human's call, so a popup would spend a stop on a
+question with one sensible answer. The human can still say "no research" in the request.
+
+Why it does not wait: mattpocock's `grilling` sends a sub-agent for a fact and keeps asking
+the questions that do not depend on it, so only the dependent ones wait. `flow` does the
+same, and holds those for the next round by the premise rule it already has.
+
+Why Deep only: Quick and Standard have no plan to put findings in, and a step every job paid
+for would undo what #84 cut. They read the fact themselves. The cap is 3 in `flow`, counted
+across every round, and `plan` adds its own 3 for what the answers opened up.
+
 ### Step 4 — Deep calls devflow:plan
 
 Writing the plan, one builder per chain, and everything past the rounds of questions is

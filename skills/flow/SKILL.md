@@ -356,7 +356,7 @@ If you arrived here mid-turn, because a question or an investigation turned into
 **Standard** → if anything is genuinely ambiguous, ask popup rounds (see below), then `devflow:build`. If nothing is ambiguous, the go popup from step 3 is the only stop, then `devflow:build`. **A bug nobody can point at** calls `devflow:debug` first, then `devflow:build`.
 
 **Deep** → ask rounds of questions until nothing is open (see below), get agreement, then call `devflow:plan` with the
-request, the agreed answers and the approved todo block, as `todo:`. Where step 0 or 0c decided **new work, fresh branch**,
+request, the agreed answers, what the researchers returned as `findings:`, and the approved todo block, as `todo:`. Where step 0 or 0c decided **new work, fresh branch**,
 tell `devflow:plan` too, as `new-work` — no `build` runs on Deep to hear it. `plan` writes the plan, checks its pieces against that todo, then runs one builder agent per
 chain, several chains at once, and reports back when the branch carries every piece —
 treat that report the way you would `build` finishing.
@@ -414,8 +414,12 @@ Other, explain it in plain words, then ask that one question again in a popup. O
 #### Facts are your job. Decisions are the human's
 
 Sort each question into one of the two before you write the round.
-A **fact** is already in the repo. How the flag is stored. What imports this module. Go and read it. Do not ask.
+A **fact** is something you can find out, in the repo or outside it. How the flag is stored. What imports this module. How others solve it. Go and read it, or research it. Do not ask.
 A **decision** is a call only the human can make. Taste. Product. Priority. Ask those.
+
+#### Research on Deep
+
+On Deep, a fact nobody has read gets one `devflow:researcher` per fact, started automatically, with no question to the human. Follow [the plan skill's research reference](../plan/references/research.md) for the question, what each agent is given, what to do with what comes back, the fallback and the output lines. At most 3 in `flow`, counted across every round. Do not wait for it: ask the questions that do not need the fact now, and hold the dependent ones for the next round. "no research" anywhere in the request starts none: print `– **research** skipped — the request said no research`. Quick and Standard start no researcher; the session reads the fact itself, under the same source rules.
 
 #### Drop what another question decides
 
@@ -481,6 +485,7 @@ the result — for example `✓ **checks** 3 of 3 pass, exit 0`.
 - Never edit on Standard or Deep before the human says go.
 - Never ask the human a question the repo already answers. Go and read it.
 - Never ask a question whose premise another question in the same round decides, and never stop while an open question could change a todo line, a plan piece, or what the user sees.
+- Never start more than 3 researchers in `flow`, or any on Quick or Standard, and never ask the human whether to research.
 - Never write a term into `CONTEXT.md` that the human did not settle, and never write implementation detail there.
 - Never finish without calling `submit`, or saying in one line why you did not.
 - Never write the plan's pieces, spawn a builder, or resolve a chain conflict yourself. That

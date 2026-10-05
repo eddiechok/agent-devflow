@@ -1,7 +1,7 @@
 ---
 name: plan
 description: "Use for Deep work - a new feature, a new subsystem, a change across many files, or anything you cannot yet name the files for. Writes the plan down as reviewable pieces with chain letters, or revises one already written, then runs one builder agent per chain until the branch carries every piece. Called by flow after its rounds of questions on Deep work, and after flow's own step 0b on a resume. Also safe to start by hand as /devflow:plan, which does flow's step 0b check itself, then writes or revises the plan and stops - flow builds it from there."
-argument-hint: "[request: the words the human typed] [answers: the agreed rounds of questions] [resume: <#n or .devflow/plans/path>, if flow already found a match] [new-work, if flow decided a fresh branch] [todo: the approved todo block]"
+argument-hint: "[request: the words the human typed] [answers: the agreed rounds of questions] [resume: <#n or .devflow/plans/path>, if flow already found a match] [new-work, if flow decided a fresh branch] [todo: the approved todo block] [findings: what flow's researchers returned, each line with its source]"
 allowed-tools: Bash(git status:*), Bash(git branch:*), Bash(git checkout -b:*), Bash(git worktree:*), Bash(git rev-parse:*), Bash(git symbolic-ref:*), Bash(git merge-base:*), Bash(git merge:*), Bash(git tag:*), Bash(git log:*)
 ---
 
@@ -20,6 +20,9 @@ the request and the agreed answers; on a resume, after its own step 0b already f
 match, with which plan it is. Either way `flow` calls `submit` itself once this skill
 reports back — this skill never calls `submit`.
 
+`flow` may also pass `findings:`, what its own researchers found during the rounds. They go
+into `## Findings` word for word, source kept. This skill does not re-check them.
+
 **Started by hand — `/devflow:plan`** — nothing has checked for a match yet, so this skill
 runs that check itself first, the same lookup `flow`'s own
 [step 0b](../flow/SKILL.md#step-0b--is-this-plan-already-running) uses: a file under
@@ -36,10 +39,15 @@ do not already settle — what the repo has now, how others solve it, what an AP
 does.
 
 **Zero is a real answer.** When those already answer everything, start none, print
-`– **research** no open question`, and the plan has no `## Findings`.
+`– **research** no open question`, and the plan has no `## Findings` unless `flow` passed `findings:`.
 
 **On a `github` tracker, match an open plan issue first**, with the lookup "Write the
 plan" uses. A match is a resume, and research run before it is paid for and thrown away.
+
+**A question `flow` already researched is not researched again**: start only what the
+answers opened up. The cap is 3 for each step, so 6 at most in a run. Started by hand,
+there is no `findings:`, so `plan` keeps all of its research. "no research" anywhere in
+the request starts none, here too.
 
 **A resume skips research** — the plan already holds its findings. **A revise runs it
 only when the revise brings a new open question**, and adds lines to `## Findings`
