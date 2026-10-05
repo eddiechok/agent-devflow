@@ -207,6 +207,21 @@ The mechanics of telling a started chain from a finished one, a whole chain from
 one, and a dirty tree from a clean resume are worked examples, not summarised here — read
 [references/resume.md](references/resume.md) before resuming anything.
 
+## Show the pieces, and wait
+
+**On a new plan from `flow`, stop once before the first builder.** Show the pieces:
+
+```
+→ **pieces** 3 in 2 chains — A and B at once
+1 A — Add the storage column and migration
+2 A — Read it in the settings API
+3 B — Rate-limit the public search endpoint
+```
+
+Then ask one popup: go, or change something. No popup tool: `Reply "go" to start the
+builders, or say what to change.` A change is a revise, and the pieces show again. A resume
+does not stop here: its pieces were approved when it was written.
+
 ## Run one builder per chain
 
 **This session coordinates. It does not build.** So each chain goes to a fresh
@@ -235,10 +250,6 @@ one line:
 chain worktrees branch from here, and so will your own --worktree sessions
 ```
 
-The line says the side effect out loud because there is one, and it is not only about
-chains: every `--worktree` session the human starts afterwards branches from `HEAD` too.
-Changing a machine's settings quietly is worse than the sentence it costs to say it.
-
 **Never write `.claude/settings.json`.** That one is committed, and this is a preference
 about this machine, not a change to the project. If the write fails — no permission, a file
 that is not valid JSON — print `✗ **settings** <why> — building the chains one at a time`
@@ -259,9 +270,8 @@ branch anyway, and the check below would catch that only after four builders had
 Then build this job on the sequential path — the one under "Where the harness cannot give
 a builder its own worktree" below: one builder per **chain**, in plan order, one at a time,
 spawned **without** `isolation` on the Agent call, so it commits on this branch and there
-is no merge step. That costs the job its wall-clock time, and it is far cheaper than the
-alternative, which is every chain rebuilt off the wrong base after a restart. The run that
-finds the setting already there is the run that spawns chains.
+is no merge step. The run that finds the setting already there is the run that spawns
+chains.
 
 **The check below still runs on the runs that do spawn.** A settings file that says
 `"head"` is not proof the value reached this session either — one edited by hand a minute
@@ -299,11 +309,8 @@ print `✗ **plan** could not write Branch: to #<n> — <the error>` and carry o
 git tag devflow/<plan short-name>/base HEAD
 ```
 
-Writing the setting is not proof it took: it may only be read when a session starts, and
-this session started before you wrote it. Step 2 below checks the result instead of
-trusting it, and that tag is what it checks against — on this run, and on a resumed one
-that no longer remembers the SHA. A local tag, never pushed; step 6 deletes it. If the tag
-already exists, this is a resume: leave it, it is the base the started chains were cut from.
+A local tag, never pushed; step 6 deletes it. If the tag already exists, this is a resume:
+leave it, it is the base the started chains were cut from.
 
 The loop, from the plan's chains — right after the plan is written, or wherever "Resume it"
 said you are picking up:
@@ -485,6 +492,7 @@ the result — for example `✓ **plan** #45`.
   before that chain counts as done; fewer is `stuck`.
 - Never build a Deep piece in-session while agents are available. Only when the harness
   refused, and say so.
+- Never start a builder on a new plan before the human says go to its pieces.
 - Never rewrite a piece already built. A change to it is a new piece, not an edit.
 - Never revise without appending a `## Changes` line — date, what changed, why.
 - Never call `devflow:submit`, `devflow:review` or `devflow:ship` from the by-hand path.

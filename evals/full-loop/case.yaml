@@ -7,7 +7,9 @@ context:
   scaffold_script: ./scaffold.sh
 
 execution:
-  prompt: "/devflow:flow add a --loud flag to the CLI that uppercases the greeting"
+  # The last sentence is for #94: Standard waits for go after its todo block,
+  # and in -p mode nobody answers. deep-coordinator says the same for Deep.
+  prompt: "/devflow:flow add a --loud flag to the CLI that uppercases the greeting. Nobody is here to answer: take every recommendation, go, and do not wait."
   max_turns: 40
   timeout_seconds: 900
   allowed_tools: [Bash, Read, Write, Edit, Glob, Grep, Skill, TodoWrite]

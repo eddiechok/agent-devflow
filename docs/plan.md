@@ -324,3 +324,24 @@ and a piece that depends on the one before it cannot start until that one is in.
 keep both of those true while still running in parallel: dependent pieces stay in order
 inside one chain, and every chain gets a worktree and a branch of its own, so no two
 builders ever share one.
+
+The line says the side effect out loud because there is one, and it is not only about
+chains: every `--worktree` session the human starts afterwards branches from `HEAD` too.
+Changing a machine's settings quietly is worse than the sentence it costs to say it.
+
+That costs the job its wall-clock time, and it is far cheaper than the
+alternative, which is every chain rebuilt off the wrong base after a restart.
+
+Writing the setting is not proof it took: it may only be read when a session starts, and
+this session started before you wrote it. Step 2 below checks the result instead of
+trusting it, and that tag is what it checks against — on this run, and on a resumed one
+that no longer remembers the SHA.
+
+### Show the pieces, and wait
+
+`flow`'s stop on Deep comes before research and before any piece is written, so it
+approves the shape of the job, not the pieces. The pieces and their chains are what the
+builders will actually do, and a builder is the most costly thing in the loop to undo: it
+commits in its own worktree. So a new plan stops once more, after it is written and before
+the first builder (#94). A resume does not, because its pieces were approved when it was
+written, and the by-hand path already stops after writing.

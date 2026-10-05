@@ -956,9 +956,72 @@ check("submit: the recap adds nothing new",
 # the plan -- one stop, not two. At the other end the recap says how each step went but not
 # what changed, which only the PR body said; submit prints a `done` block
 # right above the recap.
+#
+# #94: Standard printed its todo block and went straight on, so the human saw
+# the plan only as it was being built. Standard now waits for go too, and only
+# Quick carries on. The block gains a `see` line -- what the user will see
+# change -- because todo lines name the work, not what it does.
 
 FLOW_TODO_LINE = "→ **todo**"
-FLOW_TODO_CARRY_ON = "Quick and Standard print it and carry on without waiting"
+FLOW_TODO_CARRY_ON = "Quick prints it and carries on without waiting"
+FLOW_STANDARD_WAITS = "Standard and Deep print it and wait for go before the first edit"
+FLOW_SEE_LINE = "→ **see**"
+FLOW_SEE_NOTHING = "– **see** nothing changes for the user"
+FLOW_STANDARD_REPLY = 'Reply "go" to start, or say what to change.'
+
+check("flow: Standard waits for go after its todo block  <-- #94",
+      FLOW_STANDARD_WAITS in flat(flow_text),
+      f"{FLOW_PATH} never says Standard waits for go -- the human sees the "
+      f"plan only once it is being built")
+
+check("flow: Standard with no questions asks one go popup  <-- #94",
+      "with none, it asks one popup — go, or change something" in flat(flow_text),
+      f"{FLOW_PATH} never says what Standard asks when it has no questions")
+
+check("flow: Standard's fallback reply line says go  <-- #94",
+      FLOW_STANDARD_REPLY in flow_text,
+      f"no line {FLOW_STANDARD_REPLY!r} in {FLOW_PATH}. Where there is no "
+      f"popup tool the human would not know what to reply")
+
+check("flow: the todo block says what the user will see change  <-- #94",
+      FLOW_SEE_LINE in flow_text and FLOW_SEE_NOTHING in flow_text,
+      f"{FLOW_PATH} has no {FLOW_SEE_LINE!r} line, or no line for a change "
+      f"nobody can see")
+
+check("flow: a rule forbids editing before go on Standard and Deep  <-- #94",
+      "Never edit on Standard or Deep before the human says go." in flow_text,
+      f"{FLOW_PATH}'s Rules never forbid an edit before go")
+
+# Deep's first stop comes before research and before the pieces exist, so it
+# approves the shape, not the pieces. plan shows the pieces and their chains
+# and waits once more before any builder starts. A resume does not: its
+# pieces were approved when the plan was written.
+
+check("plan: shows the pieces and waits before the first builder  <-- #94",
+      "stop once before the first builder" in flat(plan_text)
+      and "→ **pieces**" in plan_text,
+      f"{PLAN_PATH} never shows the pieces and waits before the builders")
+
+check("plan: the fallback reply line says go  <-- #94",
+      'Reply "go" to start the builders, or say what to change.' in flat(plan_text),
+      f"{PLAN_PATH} has no reply line for a harness without a popup")
+
+check("plan: a resume does not stop at the pieces again  <-- #94",
+      "A resume does not stop here" in flat(plan_text),
+      f"{PLAN_PATH} would re-ask a resume to approve pieces already approved")
+
+# The first cut of the pieces section deleted the paragraph that sends a resume
+# to references/resume.md, and every pin still passed. Found by review.
+check("plan: a resume is sent to references/resume.md  <-- #94 review",
+      "[references/resume.md](references/resume.md) before resuming anything"
+      in flat(plan_text),
+      f"{PLAN_PATH} no longer links its resume reference")
+
+check("plan: a rule forbids a builder before go  <-- #94",
+      "Never start a builder on a new plan before the human says go to its pieces."
+      in flat(plan_text),
+      f"{PLAN_PATH}'s Rules never forbid a builder before go")
+
 FLOW_TODO_DEEP_WAITS = "Deep prints it above its popup and waits"
 FLOW_TODO_REDO = "show the new block and wait once more"
 SUBMIT_DONE_LINE = "✓ **done**"
@@ -969,9 +1032,9 @@ check("flow: prints a todo block after the size line",
       f"no {FLOW_TODO_LINE!r} line in {FLOW_PATH}. The size line alone never "
       f"says what the change will touch")
 
-check("flow: Quick and Standard show the todo block without stopping",
+check("flow: Quick shows the todo block without stopping",
       FLOW_TODO_CARRY_ON in flat(flow_text),
-      f"{FLOW_PATH} never says Quick and Standard carry on past the todo block")
+      f"{FLOW_PATH} never says Quick carries on past the todo block")
 
 check("flow: Deep shows the todo block with its questions and waits",
       FLOW_TODO_DEEP_WAITS in flat(flow_text),
@@ -2051,8 +2114,8 @@ SHAPED_LABELS = {
     "conflict", "debug", "deploy", "docs", "done", "features", "glossary",
     "green", "handback", "issue", "lesson", "lint", "live", "look", "merge", "merged",
     "no-behaviour", "open", "opinion", "override", "parked", "piece",
-    "plan", "plans", "pr", "pushed", "red", "retargeted", "review",
-    "session", "settings", "stuck", "tended", "test", "theirs", "todo",
+    "pieces", "plan", "plans", "pr", "pushed", "red", "retargeted", "review",
+    "see", "session", "settings", "stuck", "tended", "test", "theirs", "todo",
     "typecheck",
     "worktree", "yours",
 }
@@ -4278,6 +4341,17 @@ check("docs/provenance: the grilling loop of rounds is now taken",
 check("docs/provenance: the old 'was not taken' note on the loop is gone",
       "loop of rounds until nothing is left was **not** taken" not in _prov,
       "docs/provenance.md credits still say the loop of rounds was not taken")
+
+# #94: the why for both stops lives in the docs, not in the skills.
+check("docs/flow: says why Standard and Deep wait for go  <-- #94",
+      "### Step 3 — Standard and Deep wait for go" in docs_flow_text,
+      f"{DOCS_FLOW_PATH} never says why Standard now waits")
+
+with open(DOCS_PLAN_RESEARCH_PATH, encoding="utf-8") as fh:
+    _docs_plan = fh.read()
+check("docs/plan: says why the pieces get a stop of their own  <-- #94",
+      "### Show the pieces, and wait" in _docs_plan,
+      f"{DOCS_PLAN_RESEARCH_PATH} never says why plan stops before builders")
 
 # --------------------------------------------------------------------- report
 

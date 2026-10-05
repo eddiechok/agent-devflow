@@ -201,10 +201,7 @@ as step 0 does. Inside the worktree that `checkout -b` reaches nobody.
 
 **The branch `EnterWorktree` opens is not your feature branch, and it is the easy mistake
 here.** It is named after the worktree, it is cut from `HEAD` — `<branch>` — and it looks
-deliberate, so a session that reads it as the feature branch stops and builds on it. That
-is not a small difference: `build`'s own rule is *already on a branch, keep it, whatever it
-is called*, so nothing downstream will catch it, and the pull request ends up carrying
-`<branch>`'s commits. Step 0 refuses that on a stale branch, and this step refuses it here.
+deliberate, so a session that reads it as the feature branch stops and builds on it.
 
 So say what is still owed, in the same breath as arriving:
 
@@ -339,11 +336,15 @@ Deep — new subsystem, touches auth (danger list).
 
 Eight words of reason or fewer. Then continue without waiting.
 
-**Then say what you will change**, before the first edit: one `todo` line per thing, and
-one plain line under them naming the files or areas it touches.
+**Then say what you will change**, before the first edit: one `todo` line per thing, one
+`see` line for what the user will see change, and one plain line under them naming the
+files or areas it touches. A change nobody can see says so:
+`– **see** nothing changes for the user`.
 
 ```
 → **todo** build prints red and green as their own lines
+
+→ **see** a failing test shows its red line before any code is written
 
 skills/build/SKILL.md, and its pins in the test
 ```
@@ -352,9 +353,8 @@ skills/build/SKILL.md, and its pins in the test
 issue. One that came from an issue body rather than the human's own words is asked about
 first, even on Quick, and only a yes keeps it.
 
-Quick and Standard print it and carry on without waiting. Deep prints it above its popup and waits:
-answering the popup approves the plan, as "yes to all" does in the numbered-list fallback. If an answer changes what the plan will do, show the new block and
-wait once more.
+Quick prints it and carries on without waiting. Standard and Deep print it and wait for go before the first edit. Deep prints it above its popup and waits: answering the popup approves the plan, as "yes to all" does in the numbered-list fallback. Standard does the same when it has questions; with none, it asks one popup — go, or change something. Where there is no popup tool, that is one line:
+`Reply "go" to start, or say what to change.` If an answer changes what the plan will do, show the new block and wait once more.
 
 If you arrived here mid-turn, because a question or an investigation turned into a change, announce it **before the first edit** instead. Same rule, measured from the work rather than from the conversation: nothing gets edited before a size is on screen.
 
@@ -362,11 +362,11 @@ If you arrived here mid-turn, because a question or an investigation turned into
 
 **Quick** → go straight to `devflow:build`. No questions.
 
-**Standard** → if anything is genuinely ambiguous, ask popup rounds (see below), then `devflow:build`. If nothing is ambiguous, go straight to `devflow:build`. **A bug nobody can point at** calls `devflow:debug` first, then `devflow:build`.
+**Standard** → if anything is genuinely ambiguous, ask popup rounds (see below), then `devflow:build`. If nothing is ambiguous, the go popup from step 3 is the only stop, then `devflow:build`. **A bug nobody can point at** calls `devflow:debug` first, then `devflow:build`.
 
 **Deep** → ask rounds of questions until nothing is open (see below), get agreement, then call `devflow:plan` with the
 request and the agreed answers. Where step 0 or 0c decided **new work, fresh branch**,
-tell `devflow:plan` too, as `new-work` — no `build` runs on Deep to hear it. `plan` writes the plan, then runs one builder agent per
+tell `devflow:plan` too, as `new-work` — no `build` runs on Deep to hear it. `plan` writes the plan, shows its pieces and waits for go, then runs one builder agent per
 chain, several chains at once, and reports back when the branch carries every piece —
 treat that report the way you would `build` finishing.
 
@@ -487,6 +487,7 @@ the result — for example `✓ **checks** 3 of 3 pass, exit 0`.
 - Never fix what a PR is reporting without going through `tend` first. Attribution comes before the fix.
 - Never go up a size without naming the reason.
 - Never do work that the size you announced does not call for.
+- Never edit on Standard or Deep before the human says go.
 - Never ask the human a question the repo already answers. Go and read it.
 - Never ask a question whose premise another question in the same round decides, and never stop while an open question could change a todo line, a plan piece, or what the user sees.
 - Never write a term into `CONTEXT.md` that the human did not settle, and never write implementation detail there.

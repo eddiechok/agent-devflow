@@ -8,7 +8,9 @@ context:
 
 execution:
   # The prompt that exposed the problem, kept deliberately identical to
-  # `full-loop`'s. Adding a flag is behaviour change across two source files
+  # `full-loop`'s request. full-loop adds one sentence so a Standard run does
+  # not wait for go (#94); this case stops at the size line, so it needs none.
+  # Adding a flag is behaviour change across two source files
   # and a test -- Standard by flow's own table, which reserves Quick for
   # typos, renames, config values, doc fixes and bugs you can already point at.
   #

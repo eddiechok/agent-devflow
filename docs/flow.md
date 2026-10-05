@@ -160,6 +160,12 @@ line names a branch that exists. Not any plan's base tag: those are shared by ev
 worktree and outlive a stopped run, and the sequential path never makes one. A started plan
 on another branch stops the run rather than resuming on the wrong commits.
 
+### Step 0c — is this folder yours to branch in?
+
+That is not a small difference: `build`'s own rule is *already on a branch, keep it, whatever it
+is called*, so nothing downstream will catch it, and the pull request ends up carrying
+`<branch>`'s commits. Step 0 refuses that on a stale branch, and this step refuses it here.
+
 ### Step 1 — get the request
 
 Anyone can open an issue, and you cannot tell from here who did.
@@ -174,6 +180,16 @@ holds. Listed as its own `todo` line it is on screen before anything runs, and `
 does it once the PR is open (#77). One that came from an issue body is asked about first,
 even on Quick, for the reason step 1 gives: anyone can open an issue, and closing or
 commenting is public.
+
+### Step 3 — Standard and Deep wait for go
+
+Standard used to print its `todo` block and go straight on, so the human saw what would
+be done only while it was being done (#94). A wrong guess on Standard is a whole build
+thrown away, not a typo, so Standard now waits for go, as Deep does. When Standard has
+questions, answering them is the go, so it still stops once. Quick does not wait: a stop
+on a one-line fix costs more than it saves, and the block is still on screen above the
+work. The `see` line is there because `todo` lines name the work, not what it does: it is
+the one line that says what the user will notice.
 
 ### Step 1b — one feature per run
 

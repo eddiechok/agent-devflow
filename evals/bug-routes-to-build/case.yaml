@@ -10,7 +10,8 @@ execution:
   # The other half of bug-routes-to-debug. This prompt names the file and the
   # symptom, and the code shows the cause on one read, so there is no cause
   # left to find: debug-route.md sends a bug you can point at to build.
-  prompt: "/devflow:flow in src/cli.js, batch mode counts wrong: `node src/cli.js --batch alice bob carol` prints #1, #3, #5 instead of #1, #2, #3."
+  # The last sentence is for #94: Standard waits for go, and nobody answers.
+  prompt: "/devflow:flow in src/cli.js, batch mode counts wrong: `node src/cli.js --batch alice bob carol` prints #1, #3, #5 instead of #1, #2, #3. Nobody is here to answer: take every recommendation, go, and do not wait."
   max_turns: 12
   timeout_seconds: 300
   allowed_tools: [Bash, Read, Edit, Glob, Grep, Skill]
