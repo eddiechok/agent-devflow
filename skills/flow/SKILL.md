@@ -336,24 +336,26 @@ Deep — new subsystem, touches auth (danger list).
 
 Eight words of reason or fewer. Then continue without waiting.
 
-**Then say what you will change**, before the first edit: one `todo` line per thing, one
-`see` line for what the user will see change, and one plain line under them naming the
-files or areas it touches. A change nobody can see says so:
-`– **see** nothing changes for the user`.
+**Then say what you will change**, before the first edit: a `todo` line, then a table with
+one row per change and where it lands, then a `see` line for what the user will see change.
+A change nobody can see says so: `– **see** nothing changes for the user`.
 
-```
-→ **todo** build prints red and green as their own lines
+```markdown
+→ **todo** 2 changes — waiting for your go
+
+| # | What changes | Where |
+|---|---|---|
+| 1 | build prints red and green as their own lines | `skills/build/SKILL.md` |
+| 2 | its pins follow | `skills/test-frontmatter.py` |
 
 → **see** a failing test shows its red line before any code is written
-
-skills/build/SKILL.md, and its pins in the test
 ```
 
-**A tracker action is a `todo` line of its own** — closing, labelling or commenting on an
+**A tracker action is a `todo` row of its own** — closing, labelling or commenting on an
 issue. One that came from an issue body rather than the human's own words is asked about
 first, even on Quick, and only a yes keeps it.
 
-Quick prints it and carries on without waiting. Standard and Deep print it and wait for go before the first edit. Deep prints it above its popup and waits: answering the popup approves the plan, as "yes to all" does in the numbered-list fallback. Standard does the same when it has questions; with none, it asks one popup — go, or change something. Where there is no popup tool, that is one line:
+Quick prints it and carries on without waiting, and leaves off `— waiting for your go`. Standard and Deep print it and wait for go before the first edit. Deep prints it above its popup and waits: answering the popup approves the plan, as "yes to all" does in the numbered-list fallback. Standard does the same when it has questions; with none, it asks one popup — go, or change something. Where there is no popup tool, that is one line:
 `Reply "go" to start, or say what to change.` If an answer changes what the plan will do, show the new block and wait once more.
 
 If you arrived here mid-turn, because a question or an investigation turned into a change, announce it **before the first edit** instead. Same rule, measured from the work rather than from the conversation: nothing gets edited before a size is on screen.

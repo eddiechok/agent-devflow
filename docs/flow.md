@@ -173,10 +173,10 @@ Anyone can open an issue, and you cannot tell from here who did.
 A number you could not open is not a request, and sizing one you guessed at is worse than
 asking.
 
-### Step 3 — a tracker action is a todo line
+### Step 3 — a tracker action is a todo row
 
 A request that says "close #53 as not planned, with a comment" asks for something no diff
-holds. Listed as its own `todo` line it is on screen before anything runs, and `submit`
+holds. Listed as its own `todo` row it is on screen before anything runs, and `submit`
 does it once the PR is open (#77). One that came from an issue body is asked about first,
 even on Quick, for the reason step 1 gives: anyone can open an issue, and closing or
 commenting is public.
@@ -190,6 +190,13 @@ questions, answering them is the go, so it still stops once. Quick does not wait
 on a one-line fix costs more than it saves, and the block is still on screen above the
 work. The `see` line is there because `todo` lines name the work, not what it does: it is
 the one line that says what the user will notice.
+
+The block was plain `→` lines at first, and the human found they did not stand out: they
+looked like every other line of the run. So the changes are a table under the `todo` line,
+and `plan`'s pieces are a table under the `pieces` line. The shaped line stays above each
+table, so each stop still opens with a line of the usual shape. Standard and Deep end that
+line `— waiting for your go`, and `submit`'s recap repeats it without those words, because
+by then the go came.
 
 ### Step 1b — one feature per run
 

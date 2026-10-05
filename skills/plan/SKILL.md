@@ -211,11 +211,14 @@ one, and a dirty tree from a clean resume are worked examples, not summarised he
 
 **On a new plan from `flow`, stop once before the first builder.** Show the pieces:
 
-```
-→ **pieces** 3 in 2 chains — A and B at once
-1 A — Add the storage column and migration
-2 A — Read it in the settings API
-3 B — Rate-limit the public search endpoint
+```markdown
+→ **pieces** 3 in 2 chains, A and B at once — waiting for your go
+
+| # | Chain | Piece |
+|---|---|---|
+| 1 | A | Add the storage column and migration |
+| 2 | A | Read it in the settings API |
+| 3 | B | Rate-limit the public search endpoint |
 ```
 
 Then ask one popup: go, or change something. No popup tool: `Reply "go" to start the
@@ -253,9 +256,7 @@ chain worktrees branch from here, and so will your own --worktree sessions
 **Never write `.claude/settings.json`.** That one is committed, and this is a preference
 about this machine, not a change to the project. If the write fails — no permission, a file
 that is not valid JSON — print `✗ **settings** <why> — building the chains one at a time`
-and take the sequential path below. Spawning
-chains from the wrong base is the failure this whole step exists to avoid, so falling back
-is the safe answer, not a lesser one.
+and take the sequential path below.
 
 **A setting written in this run is not in force in this run.** Settings are read when a
 session starts, and this session started before you wrote the file. So the run that writes
@@ -402,9 +403,7 @@ said you are picking up:
    ```
 
    `--no-ff` always, so every chain leaves one merge commit naming it and the builders'
-   own SHAs stay exactly as they reported them. **This merge is local**, into the feature
-   branch, on this machine. It is not a pull request merge and it never touches the
-   default branch, so what `submit` and `ship` promise is unchanged.
+   own SHAs stay exactly as they reported them.
 6. **Remove each merged chain's worktree and branch.** `git worktree list` says where they
    are:
 

@@ -337,6 +337,13 @@ this session started before you wrote it. Step 2 below checks the result instead
 trusting it, and that tag is what it checks against — on this run, and on a resumed one
 that no longer remembers the SHA.
 
+Spawning chains from the wrong base is the failure this whole step exists to avoid, so
+falling back is the safe answer, not a lesser one.
+
+**This merge is local**, into the feature branch, on this machine. It is not a pull request
+merge and it never touches the default branch, so what `submit` and `ship` promise is
+unchanged.
+
 ### Show the pieces, and wait
 
 `flow`'s stop on Deep comes before research and before any piece is written, so it

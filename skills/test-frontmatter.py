@@ -1017,6 +1017,43 @@ check("plan: a resume is sent to references/resume.md  <-- #94 review",
       in flat(plan_text),
       f"{PLAN_PATH} no longer links its resume reference")
 
+# #94 follow-up: plain `→` lines looked like every other line of the run, and
+# the summary did not stand out. Both stops now show a table under their
+# shaped line, so the recap still has a line to repeat.
+FLOW_TODO_TABLE = "| # | What changes | Where |"
+PLAN_PIECES_TABLE = "| # | Chain | Piece |"
+
+check("flow: the todo block is a table, one row per change  <-- #94",
+      FLOW_TODO_TABLE in flow_text and "one row per change" in flat(flow_text),
+      f"{FLOW_PATH} step 3 does not show the todo block as a table")
+
+check("flow: a tracker action is a row of its own  <-- #94",
+      "**A tracker action is a `todo` row of its own**" in flow_text,
+      f"{FLOW_PATH} step 3 never gives a tracker action its own row")
+
+# The human's mockup headed both tables "waiting for your go". Quick prints
+# the same block and does not wait, so it leaves the words off.
+check("flow: the todo line says it is waiting for go  <-- #94",
+      "→ **todo** 2 changes — waiting for your go" in flow_text
+      and "leaves off `— waiting for your go`" in flat(flow_text),
+      f"{FLOW_PATH}'s todo line never says it waits, or Quick claims to")
+
+check("plan: the pieces line says it is waiting for go  <-- #94",
+      "→ **pieces** 3 in 2 chains, A and B at once — waiting for your go"
+      in plan_text,
+      f"{PLAN_PATH}'s pieces line never says it waits")
+
+# The recap repeats every `→` line after the go was given, so a line that said
+# "waiting for your go" told the human the run was still waiting, above the PR
+# link. Found by review. The recap drops those words; nothing else changes.
+check("submit: the recap drops 'waiting for your go'  <-- #94 review",
+      "repeated without `— waiting for your go`" in flat(submit_text),
+      f"{SUBMIT_PATH}'s recap would repeat a stale 'waiting for your go'")
+
+check("plan: the pieces are a table under the pieces line  <-- #94",
+      PLAN_PIECES_TABLE in plan_text and "→ **pieces**" in plan_text,
+      f"{PLAN_PATH} does not show the pieces as a table")
+
 check("plan: a rule forbids a builder before go  <-- #94",
       "Never start a builder on a new plan before the human says go to its pieces."
       in flat(plan_text),
@@ -3737,9 +3774,6 @@ if os.path.exists(TRACKER_REF_PATH):
     with open(TRACKER_REF_PATH, encoding="utf-8") as fh:
         tracker_ref_text = fh.read()
 
-check("flow: a tracker action is a todo line of its own",
-      "**A tracker action is a `todo` line of its own**" in flow_text,
-      f"{FLOW_PATH} step 3 never lists a tracker action as its own todo line")
 
 check("flow: a tracker action from an issue body is asked about first",
       "came from an issue body rather than the human's own words is asked "
@@ -4352,6 +4386,10 @@ with open(DOCS_PLAN_RESEARCH_PATH, encoding="utf-8") as fh:
 check("docs/plan: says why the pieces get a stop of their own  <-- #94",
       "### Show the pieces, and wait" in _docs_plan,
       f"{DOCS_PLAN_RESEARCH_PATH} never says why plan stops before builders")
+
+check("docs/flow: says why the summary is a table  <-- #94",
+      "every other line of the run" in flat(docs_flow_text),
+      f"{DOCS_FLOW_PATH} never says why the summary became a table")
 
 # --------------------------------------------------------------------- report
 
