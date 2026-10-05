@@ -635,6 +635,26 @@ check("sizing-deep: a run that asked nothing fails",
       sizing_deep_passes(_ANNOUNCE + "I will start building now."),
       False)
 
+# A recommendation on the question's own line, before its "?", is still on
+# that question. The question marker once swallowed the whole line up to the
+# "?", so these failed a run that had recommended every time.
+check("sizing-deep: a recommendation inside the question line passes",
+      sizing_deep_passes(_ANNOUNCE +
+          "1. Registry (Recommended) or a config file?\n"
+          "2. Sync (Recommended) or async?\n"),
+      True)
+
+check("sizing-deep: a recommendation before a second ? on the line passes",
+      sizing_deep_passes(_ANNOUNCE +
+          "1. Where do styles register? Recommend: a registry — fine?\n"),
+      True)
+
+check("sizing-deep: an inline one on the first does not cover the second",
+      sizing_deep_passes(_ANNOUNCE +
+          "1. Registry (Recommended) or a config file?\n"
+          "2. Sync or async?\n"),
+      False)
+
 check("sizing-deep: a todo list without question marks is not read as questions",
       sizing_deep_passes(_ANNOUNCE +
           "1. add the registry\n2. add the loader\n"

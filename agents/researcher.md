@@ -17,7 +17,7 @@ you drop.
 
 - **One open question**, in the words `plan` wrote it. Answer that question, not the
   one next to it. Other questions have their own researcher.
-- **What is already known** — the request, the round of questions and the repo facts
+- **What is already known** — the request, the rounds of questions and the repo facts
   `plan` has, so you do not spend a search on what it can already say.
 
 ## How to look

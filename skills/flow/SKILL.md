@@ -48,7 +48,7 @@ Look at the branch before anything else. **If it already has an open pull reques
 **A change to the work in that PR** — follow-up mode:
 
 - **Read before you ask.** The PR body's **Assumptions**, and the plan file if there is one, already hold what was decided earlier. Ask only what they do not answer.
-- **Size it normally.** A follow-up is not automatically Quick. The danger list still applies, and a genuinely unclear change still earns its round of questions.
+- **Size it normally.** A follow-up is not automatically Quick. The danger list still applies, and a genuinely unclear change still earns its rounds of questions.
 - **Same branch, same PR.** `submit` updates it rather than opening a second.
 
 **Something the PR itself is reporting** — a check went red, a reviewer left comments, a review asked for changes. **Hand it to `devflow:tend` and stop.** Do not take it into `build` from here.

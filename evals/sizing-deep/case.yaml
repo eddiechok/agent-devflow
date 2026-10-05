@@ -34,12 +34,13 @@ graders:
   # Deep asks in popup rounds, or -- where there is no popup tool, which is
   # every `claude -p` run -- in a numbered list. Both shapes are read here: a
   # popup question is an AskUserQuestion input in the trace, a fallback
-  # question is a numbered line ending in "?". The two graders below need no
-  # judge, and test-run.py pins them against both shapes.
+  # question is a numbered line with a "?" on it. The two graders below need no
+  # judge, and test-run.py pins them against both shapes. The marker stops at
+  # the number, so a recommendation inside the question's own line is on it.
   - type: regex
     name: asks-a-recommended-question
     target: trace
-    pattern: '(?ims)(?:"question": "|^[ \t]*\d+[.)][ \t][^\n]*\?).*?ecommend'
+    pattern: '(?ims)(?:"question": "|^[ \t]*\d+[.)][ \t](?=[^\n]*\?)).*?ecommend'
     match: contains
     weight: 3
 
@@ -48,7 +49,7 @@ graders:
   - type: regex
     name: no-question-lacks-a-recommendation
     target: trace
-    pattern: '(?ms)(?:"question": "|^[ \t]*\d+[.)][ \t][^\n]*\?)(?:(?!ecommend)(?!"question": ")(?!^[ \t]*\d+[.)][ \t][^\n]*\?).)*(?:"question": "|^[ \t]*\d+[.)][ \t][^\n]*\?|\Z)'
+    pattern: '(?ms)(?:"question": "|^[ \t]*\d+[.)][ \t](?=[^\n]*\?))(?:(?!ecommend)(?!"question": ")(?!^[ \t]*\d+[.)][ \t](?=[^\n]*\?)).)*(?:"question": "|^[ \t]*\d+[.)][ \t](?=[^\n]*\?)|\Z)'
     match: not_contains
     weight: 2
 
