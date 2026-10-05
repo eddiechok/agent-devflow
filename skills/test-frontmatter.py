@@ -962,11 +962,16 @@ check("submit: the recap adds nothing new",
 # Quick carries on. The block gains a `see` line -- what the user will see
 # change -- because todo lines name the work, not what it does.
 
-FLOW_TODO_LINE = "→ **todo**"
+FLOW_TODO_LINE = "### 📋 Plan"
+REPORT_PATH = os.path.join(SKILLS_DIR, "flow", "references", "report.md")
+report_text = ""
+if os.path.isfile(REPORT_PATH):
+    with open(REPORT_PATH, encoding="utf-8") as fh:
+        report_text = fh.read()
 FLOW_TODO_CARRY_ON = "Quick prints it and carries on without waiting"
 FLOW_STANDARD_WAITS = "Standard and Deep print it and wait for go before the first edit"
-FLOW_SEE_LINE = "→ **see**"
-FLOW_SEE_NOTHING = "– **see** nothing changes for the user"
+FLOW_SEE_LINE = "#### What you will see"
+FLOW_SEE_NOTHING = "- nothing changes for the user"
 FLOW_STANDARD_REPLY = 'Reply "go" to start, or say what to change.'
 
 check("flow: Standard waits for go after its todo block  <-- #94",
@@ -984,8 +989,8 @@ check("flow: Standard's fallback reply line says go  <-- #94",
       f"popup tool the human would not know what to reply")
 
 check("flow: the todo block says what the user will see change  <-- #94",
-      FLOW_SEE_LINE in flow_text and FLOW_SEE_NOTHING in flow_text,
-      f"{FLOW_PATH} has no {FLOW_SEE_LINE!r} line, or no line for a change "
+      FLOW_SEE_LINE in report_text and FLOW_SEE_NOTHING in report_text,
+      f"{REPORT_PATH} has no {FLOW_SEE_LINE!r} section, or no line for a change "
       f"nobody can see")
 
 check("flow: a rule forbids editing before go on Standard and Deep  <-- #94",
@@ -1010,13 +1015,13 @@ check("plan: checks the pieces against the approved todo  <-- #94",
       f"{PLAN_PATH} has no step that checks the pieces against the todo")
 
 check("plan: matching pieces start the builders without waiting  <-- #94",
-      "> → **pieces** 3 in 2 chains, A and B at once\n" in plan_text
+      "### 🧩 Pieces — starting the builders\n" in report_text
       and "start the builders without waiting" in flat(plan_text),
       f"{PLAN_PATH} still stops on pieces that match the approved todo")
 
 check("plan: drifted pieces show a new todo and wait  <-- #94",
-      "> → **todo** 3 changes, changed after planning — waiting for your go"
-      in plan_text,
+      "### 📋 Plan, changed after planning — waiting for your go" in report_text
+      and "drift report" in flat(plan_text),
       f"{PLAN_PATH} never shows the drifted todo or waits for go on it")
 
 check("plan: the fallback reply line says go  <-- #94",
@@ -1035,53 +1040,73 @@ check("plan: a resume is sent to references/resume.md  <-- #94 review",
       f"{PLAN_PATH} no longer links its resume reference")
 
 # Plain `→` lines looked like every other line of the run, and the summary did
-# not stand out, so it is a table. The table did not stand out enough either,
-# so the whole block sits in a quote box. The shaped line stays at its top.
-FLOW_TODO_TABLE = "> | # | What changes | Where |"
-PLAN_PIECES_TABLE = "> | # | Chain | Piece |"
+# not stand out, so it became a table, then a table in a quote box. The human
+# still did not read the box as a report, so it is one: a title heading,
+# sections with their own headings, and a rule above and below. Its shape
+# lives in one reference that flow and plan both link, so the two cannot drift
+# and both skills stay under the size cap.
+FLOW_TODO_TABLE = "| # | Change | Where |"
+PLAN_PIECES_TABLE = "| # | Chain | Piece |"
 
-check("flow: the todo block is a boxed table, one row per change  <-- #94",
-      FLOW_TODO_TABLE in flow_text and "one row per change" in flat(flow_text)
-      and "in a quote box" in flat(flow_text),
-      f"{FLOW_PATH} step 3 does not show the todo block as a table in a box")
+check("flow and plan: both link the report reference  <-- #94",
+      "[references/report.md](references/report.md)" in flow_text
+      and "(../flow/references/report.md)" in plan_text,
+      f"{FLOW_PATH} or {PLAN_PATH} never links the report shape")
 
-check("flow: a tracker action is a row of its own  <-- #94",
-      "**A tracker action is a `todo` row of its own**" in flow_text,
-      f"{FLOW_PATH} step 3 never gives a tracker action its own row")
+check("report: the plan is a table, one row per change  <-- #94",
+      FLOW_TODO_TABLE in report_text and "one row per change" in flat(flow_text),
+      f"{REPORT_PATH} has no change table, or flow never says one row each")
 
-# The human's mockup headed the table "waiting for your go". Quick prints the
-# same block and does not wait, so it leaves the words off.
-check("flow: the todo line says it is waiting for go  <-- #94",
-      "> → **todo** 2 changes — waiting for your go" in flow_text
+check("report: a rule above and below, a title, section headings  <-- #94",
+      report_text.count("\n---\n") >= 4 and "#### What changes" in report_text,
+      f"{REPORT_PATH} has no rules framing its reports, or no section headings")
+
+check("report: a section with nothing in it is left out  <-- #94",
+      "A section with nothing in it is left out" in flat(report_text),
+      f"{REPORT_PATH} never says empty sections are dropped")
+
+check("flow: a tracker action goes under the Tracker heading  <-- #94",
+      "**A tracker action goes under the report's Tracker heading**" in flow_text
+      and "#### Tracker" in report_text,
+      f"{FLOW_PATH} step 3 never puts a tracker action under its own heading")
+
+# The human's mockup titled the report "waiting for your go". Quick prints the
+# same report and does not wait, so it leaves the words off.
+check("report: the plan title says it is waiting for go  <-- #94",
+      "### 📋 Plan — waiting for your go" in report_text
       and "leaves off `— waiting for your go`" in flat(flow_text),
-      f"{FLOW_PATH}'s todo line never says it waits, or Quick claims to")
+      f"{REPORT_PATH}'s title never says it waits, or Quick claims to")
 
-# The recap repeats every `→` line after the go was given, so a line that said
-# "waiting for your go" told the human the run was still waiting, above the PR
-# link. Found by review. The recap drops those words; nothing else changes.
-check("submit: the recap drops 'waiting for your go'  <-- #94 review",
-      "repeated without `— waiting for your go`" in flat(submit_text),
-      f"{SUBMIT_PATH}'s recap would repeat a stale 'waiting for your go'")
+# The recap repeats what the run printed after the go was given, so a title
+# that said "waiting for your go" told the human the run was still waiting,
+# above the PR link. Found by review. A report comes back as its title alone,
+# without those words -- the human asked for the recap to stay short.
+check("submit: the recap repeats a report as its title alone  <-- #94 review",
+      "repeated as its title alone" in flat(submit_text)
+      and "`— waiting for your go` taken off" in flat(submit_text),
+      f"{SUBMIT_PATH}'s recap would repeat a whole report, or a stale "
+      f"'waiting for your go'")
 
 # The recap strips only a line that ENDS `— waiting for your go`. The first
 # drift header said "— changed after planning, waiting for your go" and slipped
 # past it. Found by review. So every use in every skill is checked, not one.
 _bad_waits = []
-for _slug in sorted(os.listdir(SKILLS_DIR)):
-    _path = os.path.join(SKILLS_DIR, _slug, "SKILL.md")
-    if not os.path.isfile(_path):
-        continue
-    with open(_path, encoding="utf-8") as fh:
-        for _m in re.finditer(r"(.{0,2})waiting for your go", fh.read()):
-            if _m.group(1) != "— ":
-                _bad_waits.append(f"{_slug}: ...{_m.group(0)}")
+for _root, _dirs, _files in os.walk(SKILLS_DIR):
+    for _name in sorted(_files):
+        if not _name.endswith(".md"):
+            continue
+        _path = os.path.join(_root, _name)
+        with open(_path, encoding="utf-8") as fh:
+            for _m in re.finditer(r"(.{0,2})waiting for your go", fh.read()):
+                if _m.group(1) != "— ":
+                    _bad_waits.append(f"{_path}: ...{_m.group(0)}")
 check("skills: every 'waiting for your go' follows '— ', so the recap strips it",
       not _bad_waits,
       f"these do not end '— waiting for your go': {_bad_waits}")
 
-check("plan: the pieces are a boxed table under the pieces line  <-- #94",
-      PLAN_PIECES_TABLE in plan_text,
-      f"{PLAN_PATH} does not show the pieces as a table in a box")
+check("report: the pieces are a table  <-- #94",
+      PLAN_PIECES_TABLE in report_text,
+      f"{REPORT_PATH} does not show the pieces as a table")
 
 check("plan: a rule forbids a builder on drifted pieces before go  <-- #94",
       "Never start a builder on pieces that drifted from the approved todo "
@@ -1094,8 +1119,9 @@ SUBMIT_DONE_LINE = "✓ **done**"
 SUBMIT_DONE_ABOVE_RECAP = "right above the recap, and the recap leaves it out"
 
 check("flow: prints a todo block after the size line",
-      FLOW_TODO_LINE in flow_text,
-      f"no {FLOW_TODO_LINE!r} line in {FLOW_PATH}. The size line alone never "
+      FLOW_TODO_LINE in report_text and "as a report" in flat(flow_text),
+      f"no {FLOW_TODO_LINE!r} report in {REPORT_PATH}, or flow never prints "
+      f"one. The size line alone never "
       f"says what the change will touch")
 
 check("flow: Quick shows the todo block without stopping",

@@ -202,7 +202,7 @@ A fact about your project is not a devflow lesson. `submit` puts that in the pro
 
 **Direction.** Deep jobs always ask. Standard asks only when genuinely unclear. Quick never asks.
 
-**Go.** Standard and Deep show what they will change in a quote box — a table of the changes and where each lands, and a `see` line for what you will notice — then wait for your go before the first edit. On Deep that comes with the questions. After the plan is written, Deep shows its pieces and goes on; it asks for your go again only if the pieces drifted from what you approved. Quick shows the same box and carries on.
+**Go.** Standard and Deep show what they will change as a short report — the size, a table of the changes and where each lands, what you will see, and any tracker actions — then wait for your go before the first edit. On Deep that comes with the questions. After the plan is written, Deep shows a report of its pieces and goes on; it asks for your go again only if the pieces drifted from what you approved. Quick shows the same report and carries on.
 
 Questions come as popups, up to 4 a round, shown one at a time, each with 2 to 4 options and the recommended one first. Pick it, or pick Other and type your own. Rounds go on until no open question could change a todo line, a plan piece, or what the user sees, and there is no cap on them. Ask for an explanation and you get it in plain words, then the same question again. On Standard and Deep the todo block sits above the popup, and answering approves it. Where there is no popup tool, in evals and `claude -p`, it asks a numbered list instead, and `yes to all` is a valid reply there. Anything you skip takes the recommendation, and appears in the PR under **Assumptions**.
 

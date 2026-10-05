@@ -210,20 +210,11 @@ one, and a dirty tree from a clean resume are worked examples, not summarised he
 ## Check the pieces against the todo
 
 **On a new plan from `flow`, check the pieces against `todo:`, the block the human
-approved.** Every row maps to a piece and no piece does what no row says: show the pieces
-in a quote box and start the builders without waiting.
-
-```markdown
-> → **pieces** 3 in 2 chains, A and B at once
->
-> | # | Chain | Piece |
-> |---|---|---|
-> | 1 | A | Add the storage column and migration |
-> | 2 | A | Read it in the settings API |
-> | 3 | B | Rate-limit the public search endpoint |
-```
-
-A row added, dropped or changed is a drift: show the new todo box, headed `> → **todo** 3 changes, changed after planning — waiting for your go`, say what changed, and ask one popup: go, or change something. No popup tool: `Reply "go" to start the builders, or say what to change.` A change is a revise. A resume does not stop here.
+approved.** Every row maps to a piece and no piece does what no row says: print the Pieces
+report and start the builders without waiting. A row added, dropped or changed is a drift:
+print the drift report, and ask one popup: go, or change something. No popup tool: `Reply
+"go" to start the builders, or say what to change.` A change is a revise. A resume does not
+stop here. Both reports are in [flow's report reference](../flow/references/report.md).
 
 ## Run one builder per chain
 
