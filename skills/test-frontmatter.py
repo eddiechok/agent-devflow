@@ -467,7 +467,7 @@ check("plan: resume reference discounts the untracked backlog directory too",
 # A request that names three features either ends as one PR carrying all
 # three, or a plan that mixes them. Step 1b asks, before the size line,
 # because the size depends on which feature is kept -- and the round is
-# free, so it must not count against step 4's question budget. The
+# its own, apart from the rounds step 4 asks about how it is built. The
 # `features:` line is pinned so flow never opens the split with a bare
 # question, the same reason the size line always comes first.
 
@@ -491,13 +491,23 @@ check("flow: asks which feature to keep first, with a recommendation",
       "Which first" in flow_text,
       f"{FLOW_PATH} step 1b never asks which feature to build first")
 
-check("flow: accepts 'yes to all' on the split round",
-      flow_text.count('"yes to all"') >= 2,
-      f"{FLOW_PATH} step 1b never accepts \"yes to all\" like step 4's round does")
+_split_start = flow_text.find("## Step 1b")
+_split_end = flow_text.find("\n## ", _split_start + 1)
+flow_split = flat(flow_text[_split_start:_split_end]) if _split_start >= 0 else ""
 
-check("flow: says the split round does not count against step 4's rounds",
-      re.search(r"does not count against step 4", flow_text) is not None,
-      f"{FLOW_PATH} never says the step 1b round is free")
+check("flow: asks the split round as popups",
+      "popup" in flow_split and "AskUserQuestion" in flow_split,
+      f"{FLOW_PATH} step 1b never asks its two questions as a popup round")
+
+check("flow: accepts 'yes to all' on the split round where there is no popup tool",
+      "no popup tool" in flow_split
+      and flow_split.find("no popup tool") < flow_split.find('"yes to all"'),
+      f"{FLOW_PATH} step 1b never keeps the numbered list and \"yes to all\" "
+      f"for harnesses without a popup tool")
+
+check("flow: says the split round is its own, apart from step 4's rounds",
+      "This round is its own" in flow_split and "step 4" in flow_split,
+      f"{FLOW_PATH} never says the step 1b round is separate from step 4's")
 
 check("flow: says --quick/--deep size only the kept feature",
       re.search(r"size the kept feature", flow_text) is not None,
@@ -941,17 +951,15 @@ check("submit: the recap adds nothing new",
 # The size line says how big the work is, not what it will touch, so on Quick
 # and Standard the human saw nothing of the change until it was built. flow now
 # prints a short `todo` block right after the size line. Deep, where a wrong
-# plan costs the most, puts that block in its one round of questions and waits,
-# so a single "yes to all" answers the questions and approves the plan -- one
-# stop, not two. At the other end the recap says how each step went but not
+# plan costs the most, prints that block above its popup and waits, so
+# answering the popup (or "yes to all" where there is no popup tool) approves
+# the plan -- one stop, not two. At the other end the recap says how each step went but not
 # what changed, which only the PR body said; submit prints a `done` block
 # right above the recap.
 
 FLOW_TODO_LINE = "→ **todo**"
 FLOW_TODO_CARRY_ON = "Quick and Standard print it and carry on without waiting"
-FLOW_TODO_DEEP_WAITS = (
-    "Deep puts it in the same message as its round of questions, and waits"
-)
+FLOW_TODO_DEEP_WAITS = "Deep prints it above its popup and waits"
 FLOW_TODO_REDO = "show the new block and wait once more"
 SUBMIT_DONE_LINE = "✓ **done**"
 SUBMIT_DONE_ABOVE_RECAP = "right above the recap, and the recap leaves it out"
@@ -967,8 +975,14 @@ check("flow: Quick and Standard show the todo block without stopping",
 
 check("flow: Deep shows the todo block with its questions and waits",
       FLOW_TODO_DEEP_WAITS in flat(flow_text),
-      f"{FLOW_PATH} never puts Deep's todo block in its question round -- "
+      f"{FLOW_PATH} never puts Deep's todo block above its popup -- "
       f"without it Deep either builds unchecked or stops twice")
+
+check("flow: answering Deep's popup approves the todo block",
+      "answering the popup approves the plan" in flat(flow_text)
+      and '"yes to all" does in the numbered-list fallback' in flat(flow_text),
+      f"{FLOW_PATH} never says answering the popup (or 'yes to all' in the "
+      f"fallback) approves Deep's todo block")
 
 check("flow: a changed answer shows the todo block again",
       FLOW_TODO_REDO in flat(flow_text),
@@ -4087,6 +4101,112 @@ check("README: names researcher among the agents",
       "`researcher`" in readme_research,
       "README.md never names the researcher agent")
 
+
+# ------------------------------------- flow asks in popups, round after round
+#
+# flow used to ask one numbered list, with one held-back second round on Deep
+# and "two is the ceiling". It now asks with the AskUserQuestion popup, up to
+# 4 questions a round, and keeps asking rounds until no open question could
+# change a todo line or a plan piece. The numbered list and "yes to all" stay,
+# but only where there is no popup tool (evals, `claude -p`). These pins stand
+# in for the old one-round rule, which was never pinned by wording.
+
+FLOW_ASKING_HEADING = "### Asking questions"
+_asking_start = flow_text.find(FLOW_ASKING_HEADING)
+_asking_end = flow_text.find("\n## ", _asking_start)
+flow_asking = flat(flow_text[_asking_start:_asking_end]) if _asking_start >= 0 else ""
+
+check("flow: the asking section is there",
+      _asking_start >= 0 and _asking_end > _asking_start,
+      f"{FLOW_PATH} has no '{FLOW_ASKING_HEADING}' section ending at the next step")
+
+check("flow: asks in AskUserQuestion popups, up to 4 questions a round",
+      "AskUserQuestion" in flow_asking
+      and "up to 4 questions" in flow_asking
+      and "2 to 4 options" in flow_asking,
+      f"{FLOW_PATH}'s asking section never says a round is up to 4 popup "
+      f"questions of 2 to 4 options")
+
+check("flow: the recommended option goes first, labelled (Recommended)",
+      "recommended option first" in flow_asking
+      and "(Recommended)" in flow_asking,
+      f"{FLOW_PATH}'s asking section never puts the recommended option first "
+      f"with a (Recommended) label -- the waste counter reads that label")
+
+check("flow: keeps asking rounds until no open question could change the build",
+      "until no open question could change a todo line or a plan piece"
+      in flow_asking,
+      f"{FLOW_PATH}'s asking section has no stop rule tied to the todo lines "
+      f"and plan pieces")
+
+check("flow: has no cap on rounds",
+      "no cap on rounds" in flow_asking.lower()
+      and "Two is the ceiling" not in flow_text
+      and "one second round" not in flow_text
+      and "Never one question per turn" not in flow_text,
+      f"{FLOW_PATH} still carries the old one-round rule or never says there "
+      f"is no cap on rounds")
+
+check("flow: a later round holds only what earlier answers opened up",
+      "only the questions the earlier answers opened up" in flow_asking,
+      f"{FLOW_PATH}'s asking section never says what a later round holds")
+
+check("flow: a request to explain gets plain words, then the question again",
+      "plain words" in flow_asking and "that one question again" in flow_asking,
+      f"{FLOW_PATH}'s asking section never answers an 'explain this' and asks "
+      f"the question again")
+
+check("flow: the numbered list and yes to all stay where there is no popup tool",
+      "no popup tool" in flow_asking
+      and "numbered list" in flow_asking
+      and '"yes to all"' in flow_asking
+      and flow_asking.find("no popup tool") < flow_asking.find('"yes to all"'),
+      f"{FLOW_PATH}'s asking section never keeps the numbered list and "
+      f"\"yes to all\" for harnesses without a popup tool")
+
+# step 4 and the size table used to say "one round". No line may cap the rounds.
+check("flow: no line says one round or caps the rounds",
+      re.search(r"\bone\*{0,2}\s+round|\bsecond round|\btwo rounds",
+                flow_text, re.I) is None,
+      f"{FLOW_PATH} still says 'one round' somewhere")
+
+check("flow: step 4 asks rounds on Standard and Deep",
+      "ask popup rounds" in flat(flow_text)
+      and "ask rounds of questions until nothing is open" in flat(flow_text),
+      f"{FLOW_PATH} step 4 never routes Standard and Deep through rounds")
+
+check("flow: Rules say never stop while an open question could change the build",
+      "never stop while an open question could change a todo line or a plan piece"
+      in flat(flow_text),
+      f"{FLOW_PATH} Rules never say to keep asking while a question is open")
+
+# ------------------------------------------- plan follows flow's popup rounds
+#
+# plan said "one round of questions" in its description, argument-hint, "What
+# you are given" and "Started by hand", and linked to flow's asking section by
+# an anchor that is a copy of the heading. Both follow flow now: rounds of
+# questions, and the link resolves to whatever the heading is today.
+
+def github_anchor(heading):
+    """GitHub's slug for a heading: lower case, punctuation dropped, each
+    space a hyphen. An em dash drops out and leaves its two spaces."""
+    text = heading.lstrip("#").strip().lower()
+    text = re.sub(r"[^\w\s-]", "", text)
+    return text.replace(" ", "-")
+
+_flow_asking_heading = next(
+    line for line in flow_text.splitlines() if line.startswith(FLOW_ASKING_HEADING))
+plan_flat = flat(plan_text)
+
+check("plan: says rounds of questions, never one round",
+      re.search(r"\bone\*{0,2}\s+round", plan_text, re.I) is None
+      and "rounds of questions" in plan_flat,
+      f"{PLAN_PATH} still says 'one round' or never says 'rounds of questions'")
+
+check("plan: its link to flow's asking section resolves to the heading",
+      "flow/SKILL.md#" + github_anchor(_flow_asking_heading) + ")" in plan_text,
+      f"{PLAN_PATH} links to an anchor that is not "
+      f"{github_anchor(_flow_asking_heading)!r}, flow's asking heading today")
 
 # --------------------------------------------------------------------- report
 

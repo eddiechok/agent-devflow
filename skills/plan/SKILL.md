@@ -1,7 +1,7 @@
 ---
 name: plan
-description: "Use for Deep work - a new feature, a new subsystem, a change across many files, or anything you cannot yet name the files for. Writes the plan down as reviewable pieces with chain letters, or revises one already written, then runs one builder agent per chain until the branch carries every piece. Called by flow after its round of questions on Deep work, and after flow's own step 0b on a resume. Also safe to start by hand as /devflow:plan, which does flow's step 0b check itself, then writes or revises the plan and stops - flow builds it from there."
-argument-hint: "[request: the words the human typed] [answers: the agreed round of questions] [resume: <#n or .devflow/plans/path>, if flow already found a match] [new-work, if flow decided a fresh branch]"
+description: "Use for Deep work - a new feature, a new subsystem, a change across many files, or anything you cannot yet name the files for. Writes the plan down as reviewable pieces with chain letters, or revises one already written, then runs one builder agent per chain until the branch carries every piece. Called by flow after its rounds of questions on Deep work, and after flow's own step 0b on a resume. Also safe to start by hand as /devflow:plan, which does flow's step 0b check itself, then writes or revises the plan and stops - flow builds it from there."
+argument-hint: "[request: the words the human typed] [answers: the agreed rounds of questions] [resume: <#n or .devflow/plans/path>, if flow already found a match] [new-work, if flow decided a fresh branch]"
 allowed-tools: Bash(git status:*), Bash(git branch:*), Bash(git checkout -b:*), Bash(git worktree:*), Bash(git rev-parse:*), Bash(git symbolic-ref:*), Bash(git merge-base:*), Bash(git merge:*), Bash(git tag:*), Bash(git log:*)
 ---
 
@@ -15,7 +15,7 @@ rule looks wrong.
 
 ## What you are given
 
-`flow` calls this skill for Deep work: on new work, after its one round of questions, with
+`flow` calls this skill for Deep work: on new work, after its rounds of questions, with
 the request and the agreed answers; on a resume, after its own step 0b already found the
 match, with which plan it is. Either way `flow` calls `submit` itself once this skill
 reports back — this skill never calls `submit`.
@@ -201,7 +201,7 @@ pieces are, the log says which are built, and the branches and worktrees say whi
 were started. **Announce where you are picking up** —
 `Deep — resuming email-alerts, chain A merged, chain B started` — then go straight to "Run
 one builder per chain" with the chains that are not done, skipping the questions: they
-were settled in the first round and the plan holds their answers.
+were settled when the plan was written and it holds their answers.
 
 The mechanics of telling a started chain from a finished one, a whole chain from a stopped
 one, and a dirty tree from a clean resume are worked examples, not summarised here — read
@@ -450,10 +450,10 @@ but the window. Ask once for the whole job, not once per chain.
 
 ## Started by hand
 
-`/devflow:plan` run directly — not called by `flow` — still needs one round of questions
-before it writes a new plan, or before it revises one whose held-back question the plan
-cannot be written without. Ask that round by the rules in flow's
-["Asking questions" section](../flow/SKILL.md#asking-questions--one-round-only-what-is-answerable),
+`/devflow:plan` run directly — not called by `flow` — still needs rounds of questions
+before it writes a new plan, or before it revises one whose open question the plan
+cannot be written without. Ask them by the rules in flow's
+["Asking questions" section](../flow/SKILL.md#asking-questions--rounds-until-no-answer-would-change-the-build),
 not copied here.
 
 Then write the plan, or revise it, and **stop.** Do not run "Run one builder per chain" —
@@ -489,4 +489,4 @@ the result — for example `✓ **plan** #45`.
 - Never revise without appending a `## Changes` line — date, what changed, why.
 - Never call `devflow:submit`, `devflow:review` or `devflow:ship` from the by-hand path.
   Only `flow` calls `submit`, and only a human starts `ship`.
-- Never ask a question `flow`'s round already settled. A resume skips the questions.
+- Never ask a question `flow`'s rounds already settled. A resume skips the questions.
