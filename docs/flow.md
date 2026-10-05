@@ -193,10 +193,12 @@ the one line that says what the user will notice.
 
 The block was plain `→` lines at first, and the human found they did not stand out: they
 looked like every other line of the run. So the changes are a table under the `todo` line,
-and `plan`'s pieces are a table under the `pieces` line. The shaped line stays above each
-table, so each stop still opens with a line of the usual shape. Standard and Deep end that
-line `— waiting for your go`, and `submit`'s recap repeats it without those words, because
-by then the go came.
+and `plan`'s pieces are a table under the `pieces` line. A table alone still did not stand
+out, so each block sits in a quote box. The shaped line stays at the top of each box, so
+each box still opens with a line of the usual shape. A line that waits — the `todo` line on
+Standard and Deep, and `plan`'s drift line — ends `— waiting for your go`, and `submit`'s
+recap repeats it without those words, because by then the go came. The pieces line does
+not wait, so it never says it does.
 
 ### Step 1b — one feature per run
 

@@ -1,7 +1,7 @@
 ---
 name: plan
 description: "Use for Deep work - a new feature, a new subsystem, a change across many files, or anything you cannot yet name the files for. Writes the plan down as reviewable pieces with chain letters, or revises one already written, then runs one builder agent per chain until the branch carries every piece. Called by flow after its rounds of questions on Deep work, and after flow's own step 0b on a resume. Also safe to start by hand as /devflow:plan, which does flow's step 0b check itself, then writes or revises the plan and stops - flow builds it from there."
-argument-hint: "[request: the words the human typed] [answers: the agreed rounds of questions] [resume: <#n or .devflow/plans/path>, if flow already found a match] [new-work, if flow decided a fresh branch]"
+argument-hint: "[request: the words the human typed] [answers: the agreed rounds of questions] [resume: <#n or .devflow/plans/path>, if flow already found a match] [new-work, if flow decided a fresh branch] [todo: the approved todo block]"
 allowed-tools: Bash(git status:*), Bash(git branch:*), Bash(git checkout -b:*), Bash(git worktree:*), Bash(git rev-parse:*), Bash(git symbolic-ref:*), Bash(git merge-base:*), Bash(git merge:*), Bash(git tag:*), Bash(git log:*)
 ---
 
@@ -207,23 +207,23 @@ The mechanics of telling a started chain from a finished one, a whole chain from
 one, and a dirty tree from a clean resume are worked examples, not summarised here — read
 [references/resume.md](references/resume.md) before resuming anything.
 
-## Show the pieces, and wait
+## Check the pieces against the todo
 
-**On a new plan from `flow`, stop once before the first builder.** Show the pieces:
+**On a new plan from `flow`, check the pieces against `todo:`, the block the human
+approved.** Every row maps to a piece and no piece does what no row says: show the pieces
+in a quote box and start the builders without waiting.
 
 ```markdown
-→ **pieces** 3 in 2 chains, A and B at once — waiting for your go
-
-| # | Chain | Piece |
-|---|---|---|
-| 1 | A | Add the storage column and migration |
-| 2 | A | Read it in the settings API |
-| 3 | B | Rate-limit the public search endpoint |
+> → **pieces** 3 in 2 chains, A and B at once
+>
+> | # | Chain | Piece |
+> |---|---|---|
+> | 1 | A | Add the storage column and migration |
+> | 2 | A | Read it in the settings API |
+> | 3 | B | Rate-limit the public search endpoint |
 ```
 
-Then ask one popup: go, or change something. No popup tool: `Reply "go" to start the
-builders, or say what to change.` A change is a revise, and the pieces show again. A resume
-does not stop here: its pieces were approved when it was written.
+A row added, dropped or changed is a drift: show the new todo box, headed `> → **todo** 3 changes, changed after planning — waiting for your go`, say what changed, and ask one popup: go, or change something. No popup tool: `Reply "go" to start the builders, or say what to change.` A change is a revise. A resume does not stop here.
 
 ## Run one builder per chain
 
@@ -491,7 +491,7 @@ the result — for example `✓ **plan** #45`.
   before that chain counts as done; fewer is `stuck`.
 - Never build a Deep piece in-session while agents are available. Only when the harness
   refused, and say so.
-- Never start a builder on a new plan before the human says go to its pieces.
+- Never start a builder on pieces that drifted from the approved todo before the human says go.
 - Never rewrite a piece already built. A change to it is a new piece, not an edit.
 - Never revise without appending a `## Changes` line — date, what changed, why.
 - Never call `devflow:submit`, `devflow:review` or `devflow:ship` from the by-hand path.

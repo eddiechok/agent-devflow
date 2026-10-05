@@ -992,15 +992,32 @@ check("flow: a rule forbids editing before go on Standard and Deep  <-- #94",
       "Never edit on Standard or Deep before the human says go." in flow_text,
       f"{FLOW_PATH}'s Rules never forbid an edit before go")
 
-# Deep's first stop comes before research and before the pieces exist, so it
-# approves the shape, not the pieces. plan shows the pieces and their chains
-# and waits once more before any builder starts. A resume does not: its
-# pieces were approved when the plan was written.
+# Deep approves the todo block once, with its questions, and flow hands that
+# block to plan. plan checks its pieces against it: a match shows the pieces
+# and starts the builders without waiting; a drift shows a new todo block and
+# waits for go again. The pieces alone were the approval for one commit, and
+# the human chose the todo instead: it is in their words, and after #92 it
+# rests on research too. A resume does not stop: it was approved already.
 
-check("plan: shows the pieces and waits before the first builder  <-- #94",
-      "stop once before the first builder" in flat(plan_text)
-      and "→ **pieces**" in plan_text,
-      f"{PLAN_PATH} never shows the pieces and waits before the builders")
+check("flow: Deep hands plan the approved todo block  <-- #94",
+      "the approved todo block, as `todo:`" in flat(flow_text)
+      and "[todo: " in plan_text,
+      f"{FLOW_PATH} never passes the approved todo to plan, or plan never "
+      f"takes it")
+
+check("plan: checks the pieces against the approved todo  <-- #94",
+      "## Check the pieces against the todo" in plan_text,
+      f"{PLAN_PATH} has no step that checks the pieces against the todo")
+
+check("plan: matching pieces start the builders without waiting  <-- #94",
+      "> → **pieces** 3 in 2 chains, A and B at once\n" in plan_text
+      and "start the builders without waiting" in flat(plan_text),
+      f"{PLAN_PATH} still stops on pieces that match the approved todo")
+
+check("plan: drifted pieces show a new todo and wait  <-- #94",
+      "> → **todo** 3 changes, changed after planning — waiting for your go"
+      in plan_text,
+      f"{PLAN_PATH} never shows the drifted todo or waits for go on it")
 
 check("plan: the fallback reply line says go  <-- #94",
       'Reply "go" to start the builders, or say what to change.' in flat(plan_text),
@@ -1017,31 +1034,27 @@ check("plan: a resume is sent to references/resume.md  <-- #94 review",
       in flat(plan_text),
       f"{PLAN_PATH} no longer links its resume reference")
 
-# #94 follow-up: plain `→` lines looked like every other line of the run, and
-# the summary did not stand out. Both stops now show a table under their
-# shaped line, so the recap still has a line to repeat.
-FLOW_TODO_TABLE = "| # | What changes | Where |"
-PLAN_PIECES_TABLE = "| # | Chain | Piece |"
+# Plain `→` lines looked like every other line of the run, and the summary did
+# not stand out, so it is a table. The table did not stand out enough either,
+# so the whole block sits in a quote box. The shaped line stays at its top.
+FLOW_TODO_TABLE = "> | # | What changes | Where |"
+PLAN_PIECES_TABLE = "> | # | Chain | Piece |"
 
-check("flow: the todo block is a table, one row per change  <-- #94",
-      FLOW_TODO_TABLE in flow_text and "one row per change" in flat(flow_text),
-      f"{FLOW_PATH} step 3 does not show the todo block as a table")
+check("flow: the todo block is a boxed table, one row per change  <-- #94",
+      FLOW_TODO_TABLE in flow_text and "one row per change" in flat(flow_text)
+      and "in a quote box" in flat(flow_text),
+      f"{FLOW_PATH} step 3 does not show the todo block as a table in a box")
 
 check("flow: a tracker action is a row of its own  <-- #94",
       "**A tracker action is a `todo` row of its own**" in flow_text,
       f"{FLOW_PATH} step 3 never gives a tracker action its own row")
 
-# The human's mockup headed both tables "waiting for your go". Quick prints
-# the same block and does not wait, so it leaves the words off.
+# The human's mockup headed the table "waiting for your go". Quick prints the
+# same block and does not wait, so it leaves the words off.
 check("flow: the todo line says it is waiting for go  <-- #94",
-      "→ **todo** 2 changes — waiting for your go" in flow_text
+      "> → **todo** 2 changes — waiting for your go" in flow_text
       and "leaves off `— waiting for your go`" in flat(flow_text),
       f"{FLOW_PATH}'s todo line never says it waits, or Quick claims to")
-
-check("plan: the pieces line says it is waiting for go  <-- #94",
-      "→ **pieces** 3 in 2 chains, A and B at once — waiting for your go"
-      in plan_text,
-      f"{PLAN_PATH}'s pieces line never says it waits")
 
 # The recap repeats every `→` line after the go was given, so a line that said
 # "waiting for your go" told the human the run was still waiting, above the PR
@@ -1050,14 +1063,30 @@ check("submit: the recap drops 'waiting for your go'  <-- #94 review",
       "repeated without `— waiting for your go`" in flat(submit_text),
       f"{SUBMIT_PATH}'s recap would repeat a stale 'waiting for your go'")
 
-check("plan: the pieces are a table under the pieces line  <-- #94",
-      PLAN_PIECES_TABLE in plan_text and "→ **pieces**" in plan_text,
-      f"{PLAN_PATH} does not show the pieces as a table")
+# The recap strips only a line that ENDS `— waiting for your go`. The first
+# drift header said "— changed after planning, waiting for your go" and slipped
+# past it. Found by review. So every use in every skill is checked, not one.
+_bad_waits = []
+for _slug in sorted(os.listdir(SKILLS_DIR)):
+    _path = os.path.join(SKILLS_DIR, _slug, "SKILL.md")
+    if not os.path.isfile(_path):
+        continue
+    with open(_path, encoding="utf-8") as fh:
+        for _m in re.finditer(r"(.{0,2})waiting for your go", fh.read()):
+            if _m.group(1) != "— ":
+                _bad_waits.append(f"{_slug}: ...{_m.group(0)}")
+check("skills: every 'waiting for your go' follows '— ', so the recap strips it",
+      not _bad_waits,
+      f"these do not end '— waiting for your go': {_bad_waits}")
 
-check("plan: a rule forbids a builder before go  <-- #94",
-      "Never start a builder on a new plan before the human says go to its pieces."
-      in flat(plan_text),
-      f"{PLAN_PATH}'s Rules never forbid a builder before go")
+check("plan: the pieces are a boxed table under the pieces line  <-- #94",
+      PLAN_PIECES_TABLE in plan_text,
+      f"{PLAN_PATH} does not show the pieces as a table in a box")
+
+check("plan: a rule forbids a builder on drifted pieces before go  <-- #94",
+      "Never start a builder on pieces that drifted from the approved todo "
+      "before the human says go." in flat(plan_text),
+      f"{PLAN_PATH}'s Rules never forbid a builder on drifted pieces")
 
 FLOW_TODO_DEEP_WAITS = "Deep prints it above its popup and waits"
 FLOW_TODO_REDO = "show the new block and wait once more"
@@ -2161,7 +2190,7 @@ SHAPED_LABELS = {
 # and that is not a printed line, so `→` counts only where it opens a line or a
 # backtick citation. The other three marks still count anywhere.
 SHAPED_LINE_LABEL = re.compile(
-    r"(?:[✓✗–]|(?:^|`)[ \t]*→) \*\*([^*\n]+)\*\*", re.M)
+    r"(?:[✓✗–]|(?:^|`)[ \t>]*→) \*\*([^*\n]+)\*\*", re.M)
 
 
 def shaped_labels_in(text):
@@ -2178,6 +2207,10 @@ check("label scanner: finds a label that is not on the list",
 check("label scanner: a list item or quote with an old mark is still scanned",
       {"madeup", "other"} <= shaped_labels_in(
           "- ✓ **madeup** x\n> ✗ **other** y"))
+
+check("label scanner: finds a waiting line inside a quote box  <-- #94",
+      {"todo", "pieces"} <= shaped_labels_in(
+          "> → **todo** 2 changes\n>\n> → **pieces** 3 in 2 chains"))
 
 check("label scanner: a prose arrow before bold text is not a label",
       not shaped_labels_in("Either fails → **stop editing** and say so"))
@@ -4383,8 +4416,8 @@ check("docs/flow: says why Standard and Deep wait for go  <-- #94",
 
 with open(DOCS_PLAN_RESEARCH_PATH, encoding="utf-8") as fh:
     _docs_plan = fh.read()
-check("docs/plan: says why the pieces get a stop of their own  <-- #94",
-      "### Show the pieces, and wait" in _docs_plan,
+check("docs/plan: says why the pieces are checked against the todo  <-- #94",
+      "### Check the pieces against the todo" in _docs_plan,
       f"{DOCS_PLAN_RESEARCH_PATH} never says why plan stops before builders")
 
 check("docs/flow: says why the summary is a table  <-- #94",

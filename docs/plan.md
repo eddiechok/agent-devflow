@@ -344,11 +344,14 @@ falling back is the safe answer, not a lesser one.
 merge and it never touches the default branch, so what `submit` and `ship` promise is
 unchanged.
 
-### Show the pieces, and wait
+### Check the pieces against the todo
 
-`flow`'s stop on Deep comes before research and before any piece is written, so it
-approves the shape of the job, not the pieces. The pieces and their chains are what the
-builders will actually do, and a builder is the most costly thing in the loop to undo: it
-commits in its own worktree. So a new plan stops once more, after it is written and before
-the first builder (#94). A resume does not, because its pieces were approved when it was
-written, and the by-hand path already stops after writing.
+`flow` hands `plan` the todo block the human approved on Deep, and `plan` checks its pieces
+against it before the first builder (#94). For one commit the pieces were a second stop of
+their own. The human chose the todo as the one approval instead: it says what changes in
+their words, where a piece name is for the builder, and once research runs before the
+questions (#92) it is no longer a guess. A plan can still drift from it, since research
+inside `plan` can find something new, so a drift — a row added, dropped or changed — shows
+the new todo and waits for go again. A match shows the pieces and goes on. A resume does
+not stop, because it was approved when it was written, and the by-hand path already stops
+after writing.

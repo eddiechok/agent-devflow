@@ -336,19 +336,19 @@ Deep — new subsystem, touches auth (danger list).
 
 Eight words of reason or fewer. Then continue without waiting.
 
-**Then say what you will change**, before the first edit: a `todo` line, then a table with
-one row per change and where it lands, then a `see` line for what the user will see change.
-A change nobody can see says so: `– **see** nothing changes for the user`.
+**Then say what you will change**, before the first edit, in a quote box: a `todo` line, a
+table with one row per change and where it lands, then a `see` line for what the user will
+see change. A change nobody can see says so: `– **see** nothing changes for the user`.
 
 ```markdown
-→ **todo** 2 changes — waiting for your go
-
-| # | What changes | Where |
-|---|---|---|
-| 1 | build prints red and green as their own lines | `skills/build/SKILL.md` |
-| 2 | its pins follow | `skills/test-frontmatter.py` |
-
-→ **see** a failing test shows its red line before any code is written
+> → **todo** 2 changes — waiting for your go
+>
+> | # | What changes | Where |
+> |---|---|---|
+> | 1 | build prints red and green as their own lines | `skills/build/SKILL.md` |
+> | 2 | its pins follow | `skills/test-frontmatter.py` |
+>
+> → **see** a failing test shows its red line before any code is written
 ```
 
 **A tracker action is a `todo` row of its own** — closing, labelling or commenting on an
@@ -367,8 +367,8 @@ If you arrived here mid-turn, because a question or an investigation turned into
 **Standard** → if anything is genuinely ambiguous, ask popup rounds (see below), then `devflow:build`. If nothing is ambiguous, the go popup from step 3 is the only stop, then `devflow:build`. **A bug nobody can point at** calls `devflow:debug` first, then `devflow:build`.
 
 **Deep** → ask rounds of questions until nothing is open (see below), get agreement, then call `devflow:plan` with the
-request and the agreed answers. Where step 0 or 0c decided **new work, fresh branch**,
-tell `devflow:plan` too, as `new-work` — no `build` runs on Deep to hear it. `plan` writes the plan, shows its pieces and waits for go, then runs one builder agent per
+request, the agreed answers and the approved todo block, as `todo:`. Where step 0 or 0c decided **new work, fresh branch**,
+tell `devflow:plan` too, as `new-work` — no `build` runs on Deep to hear it. `plan` writes the plan, checks its pieces against that todo, then runs one builder agent per
 chain, several chains at once, and reports back when the branch carries every piece —
 treat that report the way you would `build` finishing.
 
