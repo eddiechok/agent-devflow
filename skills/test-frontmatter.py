@@ -4623,6 +4623,29 @@ check("plan research reference: flow's findings, no second research, the cap of 
       f"already researched, or the cap of 3 for each step and 6 in a run")
 
 
+
+# --------------------------- the researcher is started by flow and by plan
+#
+# Issue #92: `flow` starts researchers during its rounds on Deep, `plan` starts
+# them before its pieces. So the agent's description and its "What you were
+# given" name both, and neither says `plan` alone any more.
+
+researcher_given = flat(section(researcher_text, "## What you were given"))
+researcher_desc = researcher_fields.get("description", "")
+
+check("agents/researcher: the description names flow and plan as its starters",
+      "flow skill" in researcher_desc and "plan skill" in researcher_desc
+      and "Started by the plan skill," not in researcher_desc,
+      f"{RESEARCHER_PATH}'s description never names both the flow skill and "
+      f"the plan skill as starters, or still says only 'Started by the plan skill'")
+
+check("agents/researcher: 'What you were given' names flow as well as plan",
+      "`flow`" in researcher_given and "`plan`" in researcher_given
+      and "in the words `plan` wrote it" not in researcher_given,
+      f"{RESEARCHER_PATH}'s 'What you were given' never names both `flow` and "
+      f"`plan`, or still says 'in the words `plan` wrote it'")
+
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")
