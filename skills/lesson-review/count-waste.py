@@ -152,6 +152,34 @@ def read_jsonl(path):
             yield ("rec", rec)
 
 
+RECOMMENDED_SUFFIX = " (Recommended)"
+
+
+def is_all_recommended(result):
+    """True when a popup's `toolUseResult` picked the recommended option on
+    every question. A pick is the option's exact label; typed text is told
+    apart only by not matching one of the question's own labels. A multi-select
+    answer is not a string, so it is never one."""
+    if not isinstance(result, dict):
+        return False
+    questions = result.get("questions")
+    answers = result.get("answers")
+    if not isinstance(questions, list) or not questions or not isinstance(answers, dict):
+        return False
+    for q in questions:
+        if not isinstance(q, dict):
+            return False
+        answer = answers.get(q.get("question"))
+        options = q.get("options")
+        if not isinstance(answer, str) or not answer.endswith(RECOMMENDED_SUFFIX):
+            return False
+        if not isinstance(options, list):
+            return False
+        if not any(isinstance(o, dict) and o.get("label") == answer for o in options):
+            return False
+    return True
+
+
 def process_records(records, seed_skill=None, seen=None, waiting=None):
     """Walk one session's (or one subagent's) records in order and return
     its local tallies. `seed_skill` is the skill to charge events to before
@@ -262,6 +290,12 @@ def process_records(records, seed_skill=None, seen=None, waiting=None):
             origin = rec.get("origin") or {}
             if origin.get("kind") == "human" and is_devflow(current_skill):
                 stats["yes_to_all"][current_skill] = stats["yes_to_all"].get(current_skill, 0) + 1
+
+        # A popup answer has no `origin` and no string content; its answers
+        # are in `toolUseResult`. Every pick the recommended one is a yes.
+        if (rec.get("type") == "user" and not copied and is_devflow(current_skill)
+                and is_all_recommended(rec.get("toolUseResult"))):
+            stats["yes_to_all"][current_skill] = stats["yes_to_all"].get(current_skill, 0) + 1
 
         denial_kind = rec.get("toolDenialKind")
         if denial_kind and is_devflow(current_skill) and not copied:

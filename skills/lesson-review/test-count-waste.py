@@ -554,5 +554,41 @@ with tempfile.TemporaryDirectory() as root:
           resumed["review_runs"].get("devflow:review") == {"runs": 2, "no_findings": 1},
           resumed["review_runs"])
 
+# Issue #93. flow asks in popups now. A popup answer is a user record with no
+# `origin` and a structured `toolUseResult`: the answers by question text, and
+# a copy of the options. Picking the "(Recommended)" label on every question
+# is a yes to all. Any other label, or free text, is not -- and free text that
+# only looks like the label is told apart by not matching an option.
+with tempfile.TemporaryDirectory() as root:
+    proj = os.path.join(root, "-proj-popup")
+
+    def question(text, labels):
+        return {"question": text, "header": "Ask", "multiSelect": False,
+                "options": [{"label": lab, "description": "d"} for lab in labels]}
+
+    q_a = question("Which seam?", ["The API (Recommended)", "The page"])
+    q_b = question("On by default?", ["Yes (Recommended)", "No"])
+
+    def popup(uid, answers, questions):
+        return {"uuid": uid, "type": "user",
+                "message": {"content": [{"type": "tool_result", "tool_use_id": "t",
+                                         "content": "Your questions have been answered"}]},
+                "toolUseResult": {"questions": questions, "answers": answers}}
+
+    write_jsonl(os.path.join(proj, "99999999-0000-0000-0000-000000000009.jsonl"), [
+        {"uuid": "p0", "type": "user", "message": {"content": "<command-name>/devflow:flow</command-name>"}},
+        popup("p1", {"Which seam?": "The API (Recommended)", "On by default?": "Yes (Recommended)"},
+              [q_a, q_b]),
+        popup("p2", {"Which seam?": "The API (Recommended)", "On by default?": "No"}, [q_a, q_b]),
+        popup("p3", {"Which seam?": "explain this"}, [q_a]),
+        popup("p4", {"Which seam?": "The API (Recommended)"}, [question("Which seam?", ["A", "B"])]),
+        popup("p5", {"Which seam?": "The API (Recommended)", "On by default?": "Yes (Recommended)"},
+              [q_a, q_b]),
+    ])
+
+    popped = cw.scan(root, since=None)
+    check("a popup answer that picks the recommended label on every question counts, and no other does",
+          popped["yes_to_all"].get("devflow:flow") == 2, popped["yes_to_all"])
+
 print(f"\n{passed} passed, {failed} failed")
 sys.exit(1 if failed else 0)
