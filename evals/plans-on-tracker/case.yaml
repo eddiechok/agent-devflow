@@ -18,7 +18,7 @@ execution:
   # nobody answers, so the session ends at the questions and never reaches
   # the plan. Saying "yes to all" up front is a valid reply per flow.
   # The request fits the greeter: two pieces, no web stack to invent.
-  prompt: "/devflow:flow --deep add a shout option and a lang option (en, ms, zh) to greet(), each as its own piece. Nobody is here to answer questions: take every recommendation, yes to all, and do not wait."
+  prompt: "/devflow:flow --deep add a shout option and a lang option (en, ms, zh) to greet(), each as its own piece. Nobody is here to answer questions: take every recommendation, yes to all, go, and do not wait."
   max_turns: 40
   timeout_seconds: 1200
   allowed_tools: [Bash, Read, Write, Edit, Glob, Grep, Skill, Agent]

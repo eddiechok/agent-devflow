@@ -185,11 +185,19 @@ commenting is public.
 
 Standard used to print its `todo` block and go straight on, so the human saw what would
 be done only while it was being done (#94). A wrong guess on Standard is a whole build
-thrown away, not a typo, so Standard now waits for go, as Deep does. When Standard has
-questions, answering them is the go, so it still stops once. Quick does not wait: a stop
+thrown away, not a typo, so Standard now waits for go, as Deep does. Quick does not wait: a stop
 on a one-line fix costs more than it saves, and the block is still on screen above the
 work. The "What you will see" section is there because the change rows name the work, not
 what it does: it is the one place that says what the user will notice.
+
+The go is a text line under the report, never a popup (#110). A popup covers the text
+above it, so a go popup hid the very plan it asked the human to approve: in the desktop
+app the human answered one with "i cant see your plan". Questions still go in popups,
+because a question needs no plan above it, so the questions come first, then the report
+and the go line. On Deep that means answering a question no longer approves the `todo`
+block — go does — and Standard or Deep with questions stops twice, once for the answers
+and once for go. One popup with the plan in the "Go" option's `preview` field would have
+kept a single stop, but the plan sits in a small box there and a wide table may not fit.
 
 The block was plain `→` lines at first, and the human found they did not stand out: they
 looked like every other line of the run. A table did not stand out enough, and neither did
@@ -223,8 +231,7 @@ question could change a todo line, a plan piece, or what the user sees, and ther
 round holds only what the earlier answers opened up, so a question whose premise is not
 settled waits for the answer that settles it instead of taking its recommendation. Standard
 asks the same way, only when something is genuinely unclear, and Quick asks nothing. On
-Deep the `todo` block is printed above the popup, and answering the popup approves it, as
-`yes to all` used to; Other is how you change it. Answer a question with "explain this" and
+Deep the `todo` block comes after the last round, with the go line under it. Answer a question with "explain this" and
 you get it in plain words, then that one question again. Where there is no popup tool —
 evals, `claude -p` — it falls back to the numbered list with a recommendation on each, and
 `yes to all` still works there.

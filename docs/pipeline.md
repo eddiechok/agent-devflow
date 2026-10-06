@@ -111,7 +111,9 @@ sequenceDiagram
         researcher-->>flow: findings, each naming its source
     end
     flow->>You: rounds of popup questions, each with a recommendation
-    You-->>flow: answers, which approve the todo block
+    You-->>flow: answers
+    flow->>You: the todo block, then a go line, never a popup
+    You-->>flow: go
     flow->>plan: request, answers, findings
     opt one per open question the answers opened up, at most 3, maybe none
         plan->>researcher: one open question

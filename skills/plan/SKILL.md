@@ -220,8 +220,8 @@ one, and a dirty tree from a clean resume are worked examples, not summarised he
 **On a new plan from `flow`, check the pieces against `todo:`, the block the human
 approved.** Every row maps to a piece and no piece does what no row says: print the Pieces
 report and start the builders without waiting. A row added, dropped or changed is a drift:
-print the drift report, and ask one popup: go, or change something. No popup tool: `Reply
-"go" to start the builders, or say what to change.` A change is a revise. A resume does not
+print the drift report, and end it with the line `Reply "go" to start the builders, or say
+what to change.` A change is a revise. A resume does not
 stop here. Both reports are in [flow's report reference](../flow/references/report.md).
 
 ## Run one builder per chain

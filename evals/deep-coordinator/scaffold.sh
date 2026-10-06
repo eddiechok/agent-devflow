@@ -9,3 +9,11 @@ workspace="${1:-$PWD}"
 # origin/HEAD stays unset (see fixtures/greeter.sh) -- that is the state that
 # broke default-branch detection, and the fixture asserts it stayed unset.
 "$here/../fixtures/greeter.sh" "$workspace" --with-checks-block
+
+# plan starts parallel chains only when worktree.baseRef is already "head"
+# when the session starts. A setting it writes itself takes effect next
+# session, so without this the run builds one chain at a time and never
+# merges (#112). Excluded from git, so the tree stays clean.
+mkdir -p "$workspace/.claude"
+printf '{"worktree": {"baseRef": "head"}}\n' > "$workspace/.claude/settings.local.json"
+printf '.claude/settings.local.json\n' >> "$workspace/.git/info/exclude"

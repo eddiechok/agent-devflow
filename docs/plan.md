@@ -360,6 +360,8 @@ their own. The human chose the todo as the one approval instead: it says what ch
 their words, where a piece name is for the builder, and now that `flow` researches during
 its rounds (#92) the todo is no longer a guess. A plan can still drift from it, since research
 inside `plan` can find something new, so a drift — a row added, dropped or changed — shows
-the new todo and waits for go again. A match shows the pieces and goes on. A resume does
+the new todo and waits for go again. That go is a text line under the report, never a
+popup, because a popup covers the report it asks about (#110). A match shows the pieces
+and goes on. A resume does
 not stop, because it was approved when it was written, and the by-hand path already stops
 after writing.
