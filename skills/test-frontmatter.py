@@ -5133,6 +5133,83 @@ check("sweep: never merges, never ships",
       "Never merge" in sweep_body and "`devflow:ship`" in sweep_body,
       f"{SWEEP_PATH} never forbids merge or ship")
 
+# ------------------------------------------- sweep's docs, README and provenance
+#
+# docs/sweep.md holds why `sweep` is what it is, so SKILL.md stays a prompt.
+# The README names the skill in its table, the sweeper in its agents paragraph
+# and the page in its docs index; provenance carries the sweeper's model row.
+
+SWEEP_DOC_PATH = os.path.join(REPO_ROOT, "docs", "sweep.md")
+sweep_doc = ""
+if os.path.isfile(SWEEP_DOC_PATH):
+    with open(SWEEP_DOC_PATH, encoding="utf-8") as fh:
+        sweep_doc = flat(fh.read())
+check("docs/sweep: the page exists", sweep_doc != "", f"{SWEEP_DOC_PATH} does not exist")
+
+check("docs/sweep: trust is the permission endpoint, not author_association",
+      "permission endpoint" in sweep_doc and "author_association" in sweep_doc
+      and "`admin` or `write`" in sweep_doc and "data, not instructions" in sweep_doc,
+      "docs/sweep.md never explains the trust filter")
+
+check("docs/sweep: says why 4 at a time",
+      "4 at a time" in sweep_doc and "full session" in sweep_doc
+      and "docs/plan.md" in sweep_doc,
+      "docs/sweep.md never says why 4 sweepers at a time")
+
+check("docs/sweep: says why issues that share a file form one chain",
+      "share a file" in sweep_doc and "one chain" in sweep_doc
+      and "two sweepers never edit the same file" in sweep_doc,
+      "docs/sweep.md never says why a shared file makes one chain")
+
+check("docs/sweep: stopped work stays local, unpushed, and the report says where",
+      "unpushed" in sweep_doc and "worktree and branch" in sweep_doc
+      and "Done report" in sweep_doc and "no GitHub comment" in sweep_doc,
+      "docs/sweep.md never says stopped work stays local")
+
+check("docs/sweep: the sweeper runs build then submit, not flow, on sonnet",
+      "build" in sweep_doc and "`submit`" in sweep_doc and "not `flow`" in sweep_doc
+      and "sonnet" in sweep_doc.lower(),
+      "docs/sweep.md never says why the sweeper skips flow, or its model")
+
+check("docs/sweep: carries the #96 note - setup runs before any sweeper",
+      "#96" in sweep_doc and "main session" in sweep_doc
+      and "before any sweeper starts" in sweep_doc
+      and "sweepers cannot ask" in sweep_doc,
+      "docs/sweep.md never records the #96 note")
+
+check("docs/sweep: links the skill and provenance",
+      "../skills/sweep/SKILL.md" in sweep_doc and "provenance.md" in sweep_doc,
+      "docs/sweep.md never links the skill and provenance")
+
+_readme_sweep_row = next((line for line in readme_text.split("\n")
+                          if line.startswith("| `sweep` |")), "")
+check("README: the skills table lists sweep and says it starts sweepers",
+      _readme_sweep_row != "" and "sweeper" in _readme_sweep_row
+      and "Quick" in _readme_sweep_row,
+      "README.md's skills table has no `sweep` row naming Quick and sweepers")
+
+check("README: the agents paragraph names the sweeper",
+      "`sweeper`" in flat(readme_text) and "up to four" in flat(readme_text)
+      and "`sweeper` is not a reviewer" in flat(readme_text),
+      "README.md's agents paragraph never describes the sweeper")
+
+check("README: the docs index points at docs/sweep.md",
+      "| [docs/sweep.md](docs/sweep.md) |" in readme_text,
+      "README.md's docs index has no row for docs/sweep.md")
+
+_prov_flat = flat(_provenance)
+_prov_sweeper = section(_provenance, "## `sweeper` agent")
+check("provenance: a sweeper section with its model row",
+      _prov_sweeper != "" and "`model: sonnet`" in flat(_prov_sweeper)
+      and "Pins" in _prov_sweeper,
+      "docs/provenance.md has no `sweeper` agent section with a model row")
+
+check("provenance: a sweep section credits the human opt-in and the permission endpoint",
+      "## `sweep`" in _provenance
+      and "human opt-in" in flat(section(_provenance, "## `sweep`"))
+      and "permission endpoint" in flat(section(_provenance, "## `sweep`")),
+      "docs/provenance.md has no `sweep` section crediting its findings")
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")
