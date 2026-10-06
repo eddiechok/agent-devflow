@@ -981,6 +981,14 @@ check("flow: a report is never followed by a popup  <-- #110",
       and "the go popup" not in flat(flow_text),
       f"{FLOW_PATH} still asks go in a popup, which covers the report")
 
+# #106: a Deep run put the size only in its report, as `**Size: Deep** —`, and
+# never printed the bare line. The two lines looked like one, so it kept one.
+check("flow: the bare size line is not the report's size line  <-- #106",
+      "This line is not the report's `**Size:**` line" in flat(flow_text)
+      and "Print both" in flat(flow_text),
+      f"{FLOW_PATH} lets the report's size line stand in for the bare one, "
+      f"so a run can skip the line the graders look for")
+
 check("flow: questions come before the report  <-- #110",
       "Questions come first, then the report and the go line"
       in flat(flow_text),

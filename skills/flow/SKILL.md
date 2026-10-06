@@ -336,6 +336,9 @@ Deep — new subsystem, touches auth (danger list).
 
 Eight words of reason or fewer. Then continue without waiting.
 
+This line is not the report's `**Size:**` line. Print both: this one first, as plain
+text on its own line, and the report's later.
+
 **Then say what you will change**, before the first edit, as a report: the size, a table
 with one row per change and where it lands, what the user will see, and any tracker
 actions. Read [references/report.md](references/report.md) for its shape.
