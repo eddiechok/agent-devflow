@@ -37,19 +37,24 @@ graders:
   # question is a numbered line with a "?" on it. The two graders below need no
   # judge, and test-run.py pins them against both shapes. The marker stops at
   # the number, so a recommendation inside the question's own line is on it.
+  # Bold marks may come before the number: "**1. ...?**" (#105).
   - type: regex
     name: asks-a-recommended-question
     target: trace
-    pattern: '(?ims)(?:"question": "|^[ \t]*\d+[.)][ \t](?=[^\n]*\?)).*?ecommend'
+    pattern: '(?ims)(?:"question": "|^[ \t]*(?:\*\*)?\d+[.)][ \t](?=[^\n]*\?)).*?ecommend'
     match: contains
     weight: 3
 
-  # A question that reaches the next question, or the end of the trace, with
-  # no "ecommend" in between has no recommendation on it.
+  # A question that reaches the next question, the next tool call, or the end
+  # of the trace, with no "ecommend" in between has no recommendation on it.
+  # A tool call is a line that starts with {"; stopping there keeps a
+  # researcher's "eslint:recommended" off a question that has none (#104).
+  # flow's own 'Reply "yes to all" to take every recommendation' line is a
+  # stop too, or the last question would borrow its word.
   - type: regex
     name: no-question-lacks-a-recommendation
     target: trace
-    pattern: '(?ms)(?:"question": "|^[ \t]*\d+[.)][ \t](?=[^\n]*\?))(?:(?!ecommend)(?!"question": ")(?!^[ \t]*\d+[.)][ \t](?=[^\n]*\?)).)*(?:"question": "|^[ \t]*\d+[.)][ \t](?=[^\n]*\?)|\Z)'
+    pattern: '(?ms)(?:"question": "|^[ \t]*(?:\*\*)?\d+[.)][ \t](?=[^\n]*\?))(?:(?!ecommend)(?!"question": ")(?!^[ \t]*(?:\*\*)?\d+[.)][ \t](?=[^\n]*\?))(?!^\{")(?!^[ \t>*_-]*Reply(?![A-Za-z])).)*(?:"question": "|^[ \t]*(?:\*\*)?\d+[.)][ \t](?=[^\n]*\?)|^\{"|^[ \t>*_-]*Reply(?![A-Za-z])|\Z)'
     match: not_contains
     weight: 2
 

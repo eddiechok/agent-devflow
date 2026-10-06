@@ -65,12 +65,14 @@ graders:
 
   # The pattern above only needs one recommended question somewhere, and a
   # researcher's report can say "recommended" too. This one fails any question
-  # that reaches the next question, or the end, with no recommendation --
-  # sizing-deep's companion, with the bold marks allowed before the number.
+  # that reaches the next question, the next tool call, or the end, with no
+  # recommendation -- sizing-deep's companion, the same pattern. The tool call
+  # stop keeps the researcher's report out of the scan (#104), and the stop at
+  # flow's 'Reply "yes to all"' line keeps its "recommendation" out too.
   - type: regex
     name: no-question-lacks-a-recommendation
     target: trace
-    pattern: '(?ms)(?:"question": "|^[ \t]*(?:\*\*)?\d+[.)][ \t](?=[^\n]*\?))(?:(?!ecommend)(?!"question": ")(?!^[ \t]*(?:\*\*)?\d+[.)][ \t](?=[^\n]*\?)).)*(?:"question": "|^[ \t]*(?:\*\*)?\d+[.)][ \t](?=[^\n]*\?)|\Z)'
+    pattern: '(?ms)(?:"question": "|^[ \t]*(?:\*\*)?\d+[.)][ \t](?=[^\n]*\?))(?:(?!ecommend)(?!"question": ")(?!^[ \t]*(?:\*\*)?\d+[.)][ \t](?=[^\n]*\?))(?!^\{")(?!^[ \t>*_-]*Reply(?![A-Za-z])).)*(?:"question": "|^[ \t]*(?:\*\*)?\d+[.)][ \t](?=[^\n]*\?)|^\{"|^[ \t>*_-]*Reply(?![A-Za-z])|\Z)'
     match: not_contains
     weight: 2
 
