@@ -4,8 +4,8 @@ description: A Deep request with two independent pieces becomes two chains, one 
 tags: [flow, build, submit, agents, regression]
 
 context:
-  # Same greeter as full-loop, Checks block included. Two pieces fit it
-  # without inventing a web stack.
+  # Same greeter as full-loop, Checks block included, plus
+  # worktree.baseRef = head so plan may spawn chains on this run (#112).
   scaffold_script: ./scaffold.sh
 
 execution:
@@ -13,8 +13,10 @@ execution:
   # nobody answers. "yes to all" answers the questions and "go" approves the
   # plan, which yes to all no longer does (#110). --deep skips the
   # sizing step so the run spends its turns on the loop, which is what this
-  # case measures.
-  prompt: "/devflow:flow --deep add a shout option and a lang option (en, ms, zh) to greet(), each as its own piece. Nobody is here to answer questions: take every recommendation, yes to all, go, and do not wait."
+  # case measures. The two pieces live in different files, because plan
+  # never lets two chains share a file: shout and lang both edited greet.js
+  # and cli.js, so they became one chain and nothing merged (#112).
+  prompt: "/devflow:flow --deep add a shout option to greet() in src/greet.js, and a new farewell(name) function that returns \"Goodbye, <name>!\" in its own file src/farewell.js with its own test file test/farewell.test.js, each as its own piece, no CLI change. Nobody is here to answer questions: take every recommendation, yes to all, go, and do not wait."
   max_turns: 60
   timeout_seconds: 1800
   # Agent is the point. Without it the harness refuses the builders, flow

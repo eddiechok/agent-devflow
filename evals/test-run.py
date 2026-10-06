@@ -13,6 +13,8 @@ import io
 import json
 import os
 import re
+import shutil
+import subprocess
 import sys
 import tempfile
 
@@ -246,6 +248,45 @@ check_true(
      "builders-run-before-submit", "relays-the-builder-report",
      "agents-were-not-refused", "never-reaches-ship"} <= set(deep_graders),
 )
+
+# #112: the case could never reach two chains. Its two pieces both edited
+# src/greet.js and src/cli.js, and plan never lets two chains share a file, so
+# it made one chain. And the fixture had no worktree.baseRef, so plan wrote it
+# and, on that same run, built sequentially with no merge. Now the pieces live
+# in different files, and the scaffold sets the base before the session starts.
+_deep_prompt = deep["execution"]["prompt"]
+check_true("deep-coordinator: the two pieces live in different files  <-- #112",
+           "src/farewell.js" in _deep_prompt and "lang option" not in _deep_prompt
+           and "no CLI change" in _deep_prompt)
+
+# The real scaffold.sh runs beside a stub greeter.sh that only makes a repo:
+# the real one runs npm and node, and this test needs python3 and git alone.
+_tmp = tempfile.mkdtemp()
+try:
+    os.makedirs(os.path.join(_tmp, "case"))
+    os.makedirs(os.path.join(_tmp, "fixtures"))
+    shutil.copy(os.path.join(HERE, "deep-coordinator", "scaffold.sh"),
+                os.path.join(_tmp, "case", "scaffold.sh"))
+    with open(os.path.join(_tmp, "fixtures", "greeter.sh"), "w") as fh:
+        fh.write('#!/usr/bin/env bash\nset -e\nmkdir -p "$1"\ngit init -q "$1"\n')
+    os.chmod(os.path.join(_tmp, "fixtures", "greeter.sh"), 0o755)
+    _ws = os.path.join(_tmp, "ws")
+    _scaffold = subprocess.run(
+        ["bash", os.path.join(_tmp, "case", "scaffold.sh"), _ws],
+        capture_output=True, text=True)
+    _local = os.path.join(_ws, ".claude", "settings.local.json")
+    _base = None
+    if os.path.isfile(_local):
+        with open(_local) as fh:
+            _base = json.load(fh).get("worktree", {}).get("baseRef")
+    check("deep-coordinator: the scaffold sets worktree.baseRef = head  <-- #112",
+          [_scaffold.returncode, _base], [0, "head"])
+    check("deep-coordinator: the setting leaves the tree clean  <-- #112",
+          subprocess.run(["git", "-c", "core.excludesFile=/dev/null",
+                          "status", "--porcelain"], cwd=_ws,
+                         capture_output=True, text=True).stdout, "")
+finally:
+    shutil.rmtree(_tmp, ignore_errors=True)
 
 _merges = deep_graders.get("merges-the-chains", {})
 check(
