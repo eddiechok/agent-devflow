@@ -681,6 +681,74 @@ check("sizing-deep: a todo list without question marks is not read as questions"
           "3. Where do styles register? Recommended: a registry\n"),
       True)
 
+# Issue #105: a model often writes the number in bold, and the marker wanted
+# the line to start with the number, so it saw no question at all.
+check("sizing-deep: a bold-numbered question with a recommendation passes",
+      sizing_deep_passes(_ANNOUNCE +
+          "**1. How does a user pick a style?**\n   → Recommend: a flag\n"),
+      True)
+check("sizing-deep: a bold-numbered question with none fails",
+      sizing_deep_passes(_ANNOUNCE +
+          "**1. How does a user pick a style?** Recommend: a flag\n"
+          "**2. Can a style be async?**\n"),
+      False)
+
+
+def then_a_researcher(said):
+    """Events for a run that said `said`, then started a researcher whose
+    report says "recommended" -- ESLint's `eslint:recommended`, not a
+    recommendation on any question."""
+    return [
+        {"type": "assistant", "message": {"content": [
+            {"type": "text", "text": said},
+            {"type": "tool_use", "id": "r1", "name": "Agent",
+             "input": {"subagent_type": "devflow:researcher", "prompt": "q",
+                       "description": "d"}}]}},
+        {"type": "user", "message": {"content": [
+            {"type": "tool_result", "tool_use_id": "r1",
+             "content": "ESLint configs extend eslint:recommended."}]}},
+    ]
+
+
+# Issue #104: the trace holds what the researcher returned, so a question with
+# no recommendation once borrowed the researcher's "recommended". The scan
+# stops at the next tool call.
+check("sizing-deep: a researcher's 'recommended' does not cover a question",
+      verdict(_sd["no-question-lacks-a-recommendation"],
+              ctx(then_a_researcher(_ANNOUNCE + "1. Should plugins be npm packages?\n"))),
+      "fail")
+check("sizing-deep: a recommended question before a researcher passes",
+      verdict(_sd["no-question-lacks-a-recommendation"],
+              ctx(then_a_researcher(_ANNOUNCE +
+                  "1. Should plugins be npm packages? Recommended: yes\n"))),
+      "pass")
+
+# flow ends a numbered round with 'Reply "yes to all" to take every
+# recommendation', so the last question once borrowed that line's word. Found
+# re-grading a paid research-in-rounds trace with question 4's taken out.
+_REPLY = '\nReply **"yes to all"** to take every recommendation.\n'
+check("sizing-deep: the reply line does not cover the last question",
+      sizing_deep_passes(_ANNOUNCE +
+          "1. Where do styles register? Recommended: a registry\n"
+          "2. Can a style be async?\n" + _REPLY),
+      False)
+check("sizing-deep: every question recommended, then the reply line, passes",
+      sizing_deep_passes(_ANNOUNCE +
+          "1. Where do styles register? Recommended: a registry\n"
+          "2. Can a style be async? Recommended: no\n" + _REPLY),
+      True)
+check("sizing-deep: a marked-up reply line does not cover the last one",
+      [sizing_deep_passes(_ANNOUNCE +
+          "1. Where do styles register? Recommended: a registry\n"
+          "2. Can a style be async?\n" + reply)
+       for reply in ('\n**Reply "yes to all" to take every recommendation.**\n',
+                     '\n> Reply "yes to all" to take every recommendation.\n',
+                     '\n*Reply "yes to all" to take every recommendation.*\n',
+                     '\n_Reply "yes to all" to take every recommendation._\n',
+                     '\n__Reply__ "yes to all" to take every recommendation.\n',
+                     '\n- Reply "yes to all" to take every recommendation.\n')],
+      [False] * 6)
+
 # --------------------------------------- research-in-rounds starts a researcher
 #
 # Issue #92: on Deep, `flow` starts a `devflow:researcher` on its own when a
@@ -771,6 +839,41 @@ check("research-in-rounds: bold-numbered questions, each recommended, pass",
 check("research-in-rounds: 'Do you want me to research' is caught",
       research_rounds_verdict("never-asks-whether-to-research",
           "Do you want me to research ESLint's loader before we go on?"),
+      "fail")
+check("research-in-rounds: a researcher's 'recommended' does not cover a question",
+      verdict(_rr["no-question-lacks-a-recommendation"],
+              ctx(then_a_researcher("1. Should plugins be npm packages?\n"))),
+      "fail")
+check("research-in-rounds: a recommended question before a researcher passes",
+      verdict(_rr["no-question-lacks-a-recommendation"],
+              ctx(then_a_researcher(_RR_SAID))),
+      "pass")
+check("research-in-rounds: the reply line does not cover the last question",
+      research_rounds_verdict("no-question-lacks-a-recommendation",
+          _RR_SAID + "2. Where do they live?\n" + _REPLY), "fail")
+check("research-in-rounds: every question recommended, then the reply line, passes",
+      research_rounds_verdict("no-question-lacks-a-recommendation",
+          _RR_SAID + "2. Where do they live? Recommended: node_modules\n" + _REPLY),
+      "pass")
+# A popup's questions sit on one line of JSON, so the stop at the next tool
+# call must not cut a popup's own recommendation off.
+check("research-in-rounds: a recommended popup before a researcher passes",
+      verdict(_rr["no-question-lacks-a-recommendation"],
+              ctx([{"type": "assistant", "message": {"content": [
+                  {"type": "tool_use", "id": "q1", "name": "AskUserQuestion",
+                   "input": {"questions": [
+                       {"question": "Should plugins be npm packages?",
+                        "options": [{"label": "Yes (Recommended)"}, {"label": "No"}]}]}}]}}]
+                  + then_a_researcher("Starting a researcher.\n"))),
+      "pass")
+check("research-in-rounds: an unrecommended popup before a researcher fails",
+      verdict(_rr["no-question-lacks-a-recommendation"],
+              ctx([{"type": "assistant", "message": {"content": [
+                  {"type": "tool_use", "id": "q1", "name": "AskUserQuestion",
+                   "input": {"questions": [
+                       {"question": "Should plugins be npm packages?",
+                        "options": [{"label": "Yes"}, {"label": "No"}]}]}}]}}]
+                  + then_a_researcher("Starting a researcher.\n"))),
       "fail")
 
 # --------------------------------------- discuss-trigger starts discuss, then a researcher
