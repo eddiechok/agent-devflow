@@ -421,6 +421,8 @@ A **decision** is a call only the human can make. Taste. Product. Priority. Ask 
 
 On Deep, a fact nobody has read gets one `devflow:researcher` per fact, started automatically, with no question to the human. Follow [the plan skill's research reference](../plan/references/research.md) for the question, what each agent is given, what to do with what comes back, the fallback and the output lines. At most 3 in `flow`, counted across every round. Do not wait for it: ask the questions that do not need the fact now, and hold the dependent ones for the next round. "no research" anywhere in the request starts none: print `– **research** skipped — the request said no research`. Quick and Standard start no researcher; the session reads the fact itself, under the same source rules.
 
+When a talk turned into work, the `findings:` from `discuss` are kept: a question it answered is not researched again, and they go on to `devflow:plan` word for word, source and all. The cap of 3 covers only what is left open.
+
 #### Drop what another question decides
 
 A question is answerable only when its premise is settled. "Where does the cache live?" waits for "should there be a cache?". Do not ask both in the same round. Hold it back for the next round, which the answer that settles it opens. A question whose answer could not change a todo line, a plan piece, or what the user sees is not asked at all: it takes its recommendation and goes into **Assumptions**.

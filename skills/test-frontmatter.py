@@ -4573,6 +4573,25 @@ check("flow: a Rules line for research",
       "Never start more than 3 researchers" in flat(section(flow_text, "## Rules")),
       f"{FLOW_PATH}'s Rules has no line for research")
 
+# Issue #101: `discuss` hands `flow` the findings of a talk that turned into
+# work. Those are kept, not researched again, and go on to `plan` word for word;
+# `flow`'s own cap of 3 covers only what the discussion left open.
+
+check("flow: findings from discuss are kept and not researched again",
+      "`findings:` from `discuss`" in FLOW_RESEARCH
+      and "kept" in FLOW_RESEARCH
+      and "not researched again" in FLOW_RESEARCH,
+      f"{FLOW_PATH}'s research never says findings from `discuss` are kept and "
+      f"not researched again")
+
+check("flow: discuss's findings pass on to plan word for word",
+      "word for word" in FLOW_RESEARCH and "`devflow:plan`" in FLOW_RESEARCH,
+      f"{FLOW_PATH}'s research never passes discuss's findings to plan word for word")
+
+check("flow: the cap of 3 covers only what discuss left open",
+      "covers only what is left open" in FLOW_RESEARCH,
+      f"{FLOW_PATH}'s research never says its cap of 3 covers only what is left open")
+
 
 
 # --------------------------- plan takes flow's findings, researches the rest
