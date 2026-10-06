@@ -30,8 +30,8 @@ python3 evals/run.py --case sizing-* --runs 1
 python3 evals/run.py --dry-run                # parse and print, run nothing
 ```
 
-It scores **70 of the 83 graders** — every `regex`, `tool_used`, `tool_order`
-and `file_exists`. The thirteen `llm` graders come back `skip`, stay out of the
+It scores **77 of the 91 graders** — every `regex`, `tool_used`, `tool_order`
+and `file_exists`. The fourteen `llm` graders come back `skip`, stay out of the
 denominator, and are counted in the summary. **A skip is never a pass**, the
 same way `NOT RUN` is never `none`.
 
@@ -91,6 +91,7 @@ size with a bare `regex`/`trace` grader.
 | `backlog-parks-extras` | low | A three-feature prompt ships as one PR or drops two features on the floor |
 | `worktree-guard` | medium | A second session cuts its branch in the shared checkout and moves the folder out from under a session already working in it |
 | `ship-tends-conflict` | high, **manual** | A conflicting pull request gets merged, or `ship` goes back to stopping on a conflict and making the human type `tend` themselves |
+| `sweep-quick-issues` | high, **manual** | A sweep puts two issues that share a file in separate PRs, opens a PR for an issue that is not Quick, starts a sweeper per issue instead of per chain, or asks a question no sweeper can have answered |
 
 `plans-on-tracker` is **manual**. It needs a real GitHub repo with issues on and
 a logged-in `gh`, which no scaffold can fake. `run.py` leaves it out unless you
@@ -128,6 +129,19 @@ for a settled `CONFLICTING` or the run would open by measuring the
 wait-and-re-read path instead of the handoff. The `llm` grader judges it if the
 trace happens to show it, which it may well do after `tend` pushes. That is
 opportunistic coverage, not measurement.
+
+`sweep-quick-issues` is **manual** for the same reason as `plans-on-tracker`, and it
+writes more: it needs a real GitHub repo with issues on and a logged-in `gh`, it opens
+four real issues, and the run opens real pull requests. Set
+`DEVFLOW_EVAL_REPO=owner/name` to a throwaway repo you own, never one with work in it,
+because the scaffold pushes a fixture commit to its default branch. Then
+`python3 evals/run.py --case sweep-quick-issues`. The four issues are two that share
+`src/greet.js`, a README typo, and one that is not Quick. The prompt names them through
+an untracked `.sweep-issues` file, which keeps the run off any other issue the repo
+has. The scaffold closes the issues a previous run left open, but **not** the pull
+requests: close those and delete their branches by hand afterwards. It has one run and
+no `/clear` half. The `llm` grader reads which issues landed in which PR; the rest are
+counts of calls and lines.
 
 `sizing-quick`, `sizing-standard`, `sizing-deep` and `danger-list` are the
 classifier, which is the part of `flow` most likely to
