@@ -44,8 +44,13 @@ expected), the sweeper stops and reports. Stopping costs one issue; a guess open
 
 Each sweeper is a full session with a checkout behind it, so a fifth costs more in rate
 limit and in reports than it buys. It is the same cap as `plan`'s builders, explained in
-[docs/plan.md](plan.md). There is no cap on the total: further chains wait and start as
-slots free.
+[docs/plan.md](plan.md). There is no cap on the total: further chains run in the next group.
+
+The sweepers run in groups of 4, in the foreground, and `sweep` waits for the whole group
+before it starts the next. The first live test started them in the background and ended its
+turn; with nobody there to wake it, the run ended and took both sweepers with it, mid-build,
+before either opened a PR. A cloud session or a routine has the same gap. The cost is that
+one slow chain holds up the next group, and you chose that over refilling each slot.
 
 ## Why issues that share a file form one chain
 

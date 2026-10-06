@@ -1066,6 +1066,12 @@ _SW_NOT_QUICK = "Rework the greeting across every module"
 check("sweep-quick-issues: the right list line passes prints-the-chain-list",
       sweep_verdict("prints-the-chain-list",
                     said="→ **sweep** 3 issues in 2 chains, 1 skipped"), "pass")
+# Live test 1 printed the list inside a code block, where the bold markers
+# were dropped: "→ sweep 3 issues in 2 chains, 1 skipped". The count is what
+# the grader is for, so the plain line passes too.
+check("sweep-quick-issues: the list line without bold passes prints-the-chain-list",
+      sweep_verdict("prints-the-chain-list",
+                    said="→ sweep 3 issues in 2 chains, 1 skipped"), "pass")
 check("sweep-quick-issues: one chain for three issues fails prints-the-chain-list",
       sweep_verdict("prints-the-chain-list",
                     said="→ **sweep** 3 issues in 1 chains, 1 skipped"), "fail")

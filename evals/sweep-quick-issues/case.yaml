@@ -48,7 +48,9 @@ graders:
   - type: regex
     name: prints-the-chain-list
     target: trace
-    pattern: "\\*\\*sweep\\*\\* 3 issues in 2 chains"
+    # Bold optional: inside a code block the markers get dropped, and the
+    # count of issues and chains is what this grader checks.
+    pattern: "(\\*\\*)?sweep(\\*\\*)? 3 issues in 2 chains"
     match: contains
     weight: 4
 

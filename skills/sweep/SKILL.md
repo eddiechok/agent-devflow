@@ -84,9 +84,13 @@ chain B: #18 — config/flags.json
 
 ## Step 4 — start the sweepers
 
-Start one `devflow:sweeper` per chain, with `isolation: "worktree"` on the Agent call.
-**At most 4 at a time**; a fifth chain waits and starts when a slot frees. There is no cap
-on the total. Give each exactly two things: the issues of its chain, each with its number,
+Start one `devflow:sweeper` per chain, with `isolation: "worktree"` and
+`run_in_background: false` on the Agent call. **At most 4 at a time**: start the chains in
+groups of up to 4, every Agent call of a group in one message, so they run side by side and
+the message returns only when all of them have reported. Then the next group. There is no
+cap on the total. **Never end the turn while a sweeper runs**: a run with nobody to wake it
+— `claude -p`, a routine — ends with the turn and takes every sweeper with it, mid-build.
+Give each exactly two things: the issues of its chain, each with its number,
 title and body pasted in full, and the default branch ref as its base. Nothing else: not this
 session's reasoning, and not what another sweeper said.
 

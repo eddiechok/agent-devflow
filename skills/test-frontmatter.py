@@ -5242,6 +5242,28 @@ check("agents/sweeper: stops if its branch carries commits the default branch la
       and "carries commits" in sweeper_body,
       f"{SWEEPER_PATH} never checks that its worktree was cut from the default branch")
 
+# Live test 1 (devflow-smoketest #6-#9): sweep started both sweepers in the
+# background and ended its turn. With nobody to wake it, the run ended and
+# took both sweepers with it, mid-build, before either opened a PR. So the
+# sweepers start in groups of up to 4, in the foreground, and sweep waits for
+# the whole group before the next one. A cloud session or a routine has the
+# same gap; the human chose groups over refilling slots.
+check("sweep: starts each group of sweepers in the foreground and waits for all of it",
+      "run_in_background: false" in sweep_body
+      and "groups of up to 4" in sweep_body
+      and "never end the turn" in sweep_body.lower(),
+      f"{SWEEP_PATH} still starts sweepers in the background, where a run "
+      f"with nobody to wake it loses them")
+
+check("sweep: no slot refill left over from the background design",
+      "slot frees" not in sweep_body,
+      f"{SWEEP_PATH} still says a chain starts when a slot frees")
+
+check("docs/sweep: says why groups wait in the foreground",
+      "groups of 4" in flat(sweep_doc) and "foreground" in flat(sweep_doc)
+      and "slots free" not in flat(sweep_doc),
+      "docs/sweep.md never says why sweepers run in foreground groups")
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")
