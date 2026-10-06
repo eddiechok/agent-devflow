@@ -4658,6 +4658,19 @@ check("agents/researcher: 'What you were given' names flow as well as plan",
       f"{RESEARCHER_PATH}'s 'What you were given' never names both `flow` and "
       f"`plan`, or still says 'in the words `plan` wrote it'")
 
+# Issue #101: the `discuss` skill starts researchers too, at most 3 per
+# discussion, so the agent's description and its body name it as a starter.
+
+check("agents/researcher: the description names the discuss skill as a starter",
+      "discuss skill" in researcher_desc and "at most 3" in researcher_desc,
+      f"{RESEARCHER_PATH}'s description never names the discuss skill as a "
+      f"starter, or never gives its cap of 3")
+
+check("agents/researcher: the body says discuss may start it, at most 3 a discussion",
+      "`discuss`" in researcher_given and "at most 3 per discussion" in researcher_body,
+      f"{RESEARCHER_PATH}'s body never names `discuss` as a starter, or never "
+      f"says at most 3 per discussion")
+
 
 
 # ------------------------------ the docs say why flow researches in its rounds
