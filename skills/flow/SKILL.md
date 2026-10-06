@@ -344,8 +344,8 @@ actions. Read [references/report.md](references/report.md) for its shape.
 labelling or commenting on an issue. One that came from an issue body rather than the
 human's own words is asked about first, even on Quick, and only a yes keeps it.
 
-Quick prints it and carries on without waiting, and leaves off `— waiting for your go`. Standard and Deep print it and wait for go before the first edit. Deep prints it above its popup and waits: answering the popup approves the plan, as "yes to all" does in the numbered-list fallback. Standard does the same when it has questions; with none, it asks one popup — go, or change something. Where there is no popup tool, that is one line:
-`Reply "go" to start, or say what to change.` If an answer changes what the plan will do, show the new block and wait once more.
+Quick prints it and carries on without waiting, and leaves off `— waiting for your go`. Standard and Deep print it and wait for go before the first edit. **A report is never followed by a popup.** Questions come first, then the report and the go line, as one text line under it:
+`Reply "go" to start, or say what to change.` Deep asks its questions first, then prints it and waits for go. Answering a question does not approve the plan; go does. If the reply changes what the plan will do, show the new block and wait once more.
 
 If you arrived here mid-turn, because a question or an investigation turned into a change, announce it **before the first edit** instead. Same rule, measured from the work rather than from the conversation: nothing gets edited before a size is on screen.
 
@@ -353,9 +353,9 @@ If you arrived here mid-turn, because a question or an investigation turned into
 
 **Quick** → go straight to `devflow:build`. No questions.
 
-**Standard** → if anything is genuinely ambiguous, ask popup rounds (see below), then `devflow:build`. If nothing is ambiguous, the go popup from step 3 is the only stop, then `devflow:build`. **A bug nobody can point at** calls `devflow:debug` first, then `devflow:build`.
+**Standard** → if anything is genuinely ambiguous, ask popup rounds (see below), then the report and go line from step 3, then `devflow:build`. If nothing is ambiguous, the go line from step 3 is the only stop, then `devflow:build`. **A bug nobody can point at** calls `devflow:debug` first, then `devflow:build`.
 
-**Deep** → ask rounds of questions until nothing is open (see below), get agreement, then call `devflow:plan` with the
+**Deep** → ask rounds of questions until nothing is open (see below), then the report and go line from step 3, then call `devflow:plan` with the
 request, the agreed answers, what the researchers returned as `findings:`, and the approved todo block, as `todo:`. Where step 0 or 0c decided **new work, fresh branch**,
 tell `devflow:plan` too, as `new-work` — no `build` runs on Deep to hear it. `plan` writes the plan, checks its pieces against that todo, then runs one builder agent per
 chain, several chains at once, and reports back when the branch carries every piece —
@@ -408,8 +408,7 @@ Keep asking rounds until no open question could change a todo line, a plan piece
 user sees. There is no cap on rounds. A later round holds only the questions the earlier answers opened up.
 
 If the human answers a question with a request to explain it, such as "explain this" in
-Other, explain it in plain words, then ask that one question again in a popup. On Deep the
-`todo` block is printed above the popup: answering approves it, and Other changes it.
+Other, explain it in plain words, then ask that one question again in a popup.
 
 #### Facts are your job. Decisions are the human's
 
@@ -438,9 +437,6 @@ ask each round as one numbered list, a recommendation on each, and take "yes to 
 
 Reply "yes to all" to take every recommendation.
 ```
-
-On Deep the `todo` block sits above the questions, so the last line says so:
-`Reply "yes to all" to take every recommendation and approve the todo block.`
 
 Anything the human does not answer takes the recommendation, and **goes into the PR body under "Assumptions"** so it can be checked at merge time instead of blocking now.
 

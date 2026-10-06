@@ -10,10 +10,11 @@ context:
 
 execution:
   # Pre-answered on purpose: Deep asks in rounds and waits, and in -p mode
-  # nobody answers. "yes to all" is a valid reply per flow. --deep skips the
+  # nobody answers. "yes to all" answers the questions and "go" approves the
+  # plan, which yes to all no longer does (#110). --deep skips the
   # sizing step so the run spends its turns on the loop, which is what this
   # case measures.
-  prompt: "/devflow:flow --deep add a shout option and a lang option (en, ms, zh) to greet(), each as its own piece. Nobody is here to answer questions: take every recommendation, yes to all, and do not wait."
+  prompt: "/devflow:flow --deep add a shout option and a lang option (en, ms, zh) to greet(), each as its own piece. Nobody is here to answer questions: take every recommendation, yes to all, go, and do not wait."
   max_turns: 60
   timeout_seconds: 1800
   # Agent is the point. Without it the harness refuses the builders, flow

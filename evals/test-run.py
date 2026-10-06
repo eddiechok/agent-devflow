@@ -217,9 +217,20 @@ for _c in run.load_cases(None):
         _past_go_cases.append(_c["name"])
         check_true(f"{_c['name']}: the prompt tells the run not to wait for go",
                    "do not wait" in _c["execution"]["prompt"])
+        # #110: on Deep "yes to all" answers the questions and no longer
+        # approves the plan, so the prompt has to say go as well.
+        check_true(f"{_c['name']}: the prompt says go",
+                   re.search(r"\bgo\b", _c["execution"]["prompt"]) is not None)
 check_true("cases: the go scan found the cases that build past the stop",
            {"full-loop", "bug-routes-to-build", "bug-routes-to-debug",
             "deep-coordinator"} <= set(_past_go_cases))
+
+# plans-on-tracker is a manual case, so the scan above never loads it. It
+# reaches devflow:plan past Deep's go too (#110).
+with open(os.path.join(HERE, "plans-on-tracker", "case.yaml")) as fh:
+    _tracker = run.parse_yaml(fh.read())
+check_true("plans-on-tracker: the prompt says go",
+           re.search(r"\bgo\b", _tracker["execution"]["prompt"]) is not None)
 
 # `deep-coordinator` is the case that measures the Deep loop, and the loop is
 # now chains in parallel, merged back, then submit. The merge is the new

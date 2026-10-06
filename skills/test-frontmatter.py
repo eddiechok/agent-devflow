@@ -946,9 +946,7 @@ check("submit: step 9 prints the Done report before the PR link  <-- #95",
 # The size line says how big the work is, not what it will touch, so on Quick
 # and Standard the human saw nothing of the change until it was built. flow now
 # prints a short `todo` block right after the size line. Deep, where a wrong
-# plan costs the most, prints that block above its popup and waits, so
-# answering the popup (or "yes to all" where there is no popup tool) approves
-# the plan -- one stop, not two. At the other end the recap said how each step went but not
+# plan costs the most, prints that block and waits for go. At the other end the recap said how each step went but not
 # what changed, which only the PR body said; submit printed a `done` block
 # right above the recap. #95 folded both into the Done report.
 #
@@ -974,9 +972,19 @@ check("flow: Standard waits for go after its todo block  <-- #94",
       f"{FLOW_PATH} never says Standard waits for go -- the human sees the "
       f"plan only once it is being built")
 
-check("flow: Standard with no questions asks one go popup  <-- #94",
-      "with none, it asks one popup — go, or change something" in flat(flow_text),
-      f"{FLOW_PATH} never says what Standard asks when it has no questions")
+# #110: a popup covers the text above it, so a go popup hid the very plan it
+# asked the human to approve. The go is a text line under the report now, and
+# questions, which need no plan above them, come before the report.
+check("flow: a report is never followed by a popup  <-- #110",
+      "A report is never followed by a popup" in flat(flow_text)
+      and "it asks one popup" not in flat(flow_text)
+      and "the go popup" not in flat(flow_text),
+      f"{FLOW_PATH} still asks go in a popup, which covers the report")
+
+check("flow: questions come before the report  <-- #110",
+      "Questions come first, then the report and the go line"
+      in flat(flow_text),
+      f"{FLOW_PATH} never puts the questions before the report")
 
 check("flow: Standard's fallback reply line says go  <-- #94",
       FLOW_STANDARD_REPLY in flow_text,
@@ -992,7 +1000,7 @@ check("flow: a rule forbids editing before go on Standard and Deep  <-- #94",
       "Never edit on Standard or Deep before the human says go." in flow_text,
       f"{FLOW_PATH}'s Rules never forbid an edit before go")
 
-# Deep approves the todo block once, with its questions, and flow hands that
+# Deep approves the todo block with go, after its questions, and flow hands that
 # block to plan. plan checks its pieces against it: a match shows the pieces
 # and starts the builders without waiting; a drift shows a new todo block and
 # waits for go again. The pieces alone were the approval for one commit, and
@@ -1099,7 +1107,7 @@ check("plan: a rule forbids a builder on drifted pieces before go  <-- #94",
       "before the human says go." in flat(plan_text),
       f"{PLAN_PATH}'s Rules never forbid a builder on drifted pieces")
 
-FLOW_TODO_DEEP_WAITS = "Deep prints it above its popup and waits"
+FLOW_TODO_DEEP_WAITS = "Deep asks its questions first, then prints it and waits for go"
 FLOW_TODO_REDO = "show the new block and wait once more"
 
 check("flow: prints a todo block after the size line",
@@ -1112,16 +1120,16 @@ check("flow: Quick shows the todo block without stopping",
       FLOW_TODO_CARRY_ON in flat(flow_text),
       f"{FLOW_PATH} never says Quick carries on past the todo block")
 
-check("flow: Deep shows the todo block with its questions and waits",
+check("flow: Deep asks first, then shows the todo block and waits  <-- #110",
       FLOW_TODO_DEEP_WAITS in flat(flow_text),
-      f"{FLOW_PATH} never puts Deep's todo block above its popup -- "
-      f"without it Deep either builds unchecked or stops twice")
+      f"{FLOW_PATH} never puts Deep's todo block after its questions -- "
+      f"above a popup the human cannot see it")
 
-check("flow: answering Deep's popup approves the todo block",
-      "answering the popup approves the plan" in flat(flow_text)
-      and '"yes to all" does in the numbered-list fallback' in flat(flow_text),
-      f"{FLOW_PATH} never says answering the popup (or 'yes to all' in the "
-      f"fallback) approves Deep's todo block")
+check("flow: answering a question no longer approves the plan  <-- #110",
+      "Answering a question does not approve the plan" in flat(flow_text)
+      and "answering the popup approves" not in flat(flow_text)
+      and "answering approves it" not in flat(flow_text),
+      f"{FLOW_PATH} still lets a question's answer approve Deep's todo block")
 
 check("flow: a changed answer shows the todo block again",
       FLOW_TODO_REDO in flat(flow_text),
@@ -1132,10 +1140,15 @@ FLOW_DEEP_REPLY_LINE = (
     'block.'
 )
 
-check("flow: Deep's reply line tells the human it approves the plan too",
-      FLOW_DEEP_REPLY_LINE in flow_text,
-      f"no line {FLOW_DEEP_REPLY_LINE!r} in {FLOW_PATH}. The model knows one "
-      f"reply approves the plan; the human replying would not")
+check("flow: the fallback's yes to all no longer approves the plan  <-- #110",
+      FLOW_DEEP_REPLY_LINE not in flow_text
+      and "todo` block sits above the questions" not in flat(flow_text),
+      f"{FLOW_PATH} still has 'yes to all' approve Deep's todo block; go does")
+
+check("plan: the drift report asks go as a text line, not a popup  <-- #110",
+      "ask one popup" not in flat(plan_text)
+      and "end it with the line" in flat(plan_text),
+      f"{PLAN_PATH} still asks go on a drift in a popup, which covers the report")
 
 # #95: the end of the run is a report too. Its rows are the plan's rows, so
 # the human reads what was said next to what was done. The `done` lines became
@@ -4493,6 +4506,22 @@ check("docs/plan: says why the pieces are checked against the todo  <-- #94",
       "### Check the pieces against the todo" in _docs_plan,
       f"{DOCS_PLAN_RESEARCH_PATH} never says why plan stops before builders")
 
+check("docs/flow: says why a report is never followed by a popup  <-- #110",
+      "A popup covers the text above it" in flat(docs_flow_text)
+      and "answering the popup approves it" not in flat(docs_flow_text)
+      and "answering them is the go" not in flat(docs_flow_text),
+      f"{DOCS_FLOW_PATH} never says why the go is a text line, or still says "
+      f"an answer approves the plan")
+
+check("docs/plan: the drift go is a text line  <-- #110",
+      "never a popup" in flat(_docs_plan.split(
+          "### Check the pieces against the todo", 1)[-1].split("\n### ", 1)[0]),
+      f"{DOCS_PLAN_RESEARCH_PATH} never says the drift go is a text line")
+
+check("docs/provenance: the go in a popup's preview is not taken  <-- #110",
+      "`preview` field" in _prov,
+      f"{DOCS_PROVENANCE_PATH} never lists the preview-field go as not taken")
+
 check("docs/flow: says why the summary is a table  <-- #94",
       "every other line of the run" in flat(docs_flow_text),
       f"{DOCS_FLOW_PATH} never says why the summary became a table")
@@ -4789,6 +4818,17 @@ with open(os.path.join(REPO_ROOT, "docs", "pipeline.md"), encoding="utf-8") as f
 check("docs/pipeline: flow starts researcher too  <-- #92",
       "flow->>researcher" in _pipeline_doc,
       "docs/pipeline.md never shows flow starting a researcher")
+
+check("README: the go is a text line, and an answer approves nothing  <-- #110",
+      "answering approves it" not in flat(readme_text)
+      and "On Deep that comes with the questions" not in flat(readme_text)
+      and "never a popup" in flat(readme_text),
+      f"{README_PATH} still says the todo block sits above the popup")
+
+check("docs/pipeline: answers do not approve the todo, go does  <-- #110",
+      "answers, which approve the todo block" not in _pipeline_doc
+      and "You-->>flow: go" in _pipeline_doc,
+      "docs/pipeline.md still has the answers approve the todo block")
 
 check("README: flow starts researcher too  <-- #92",
       "`flow` and `plan` start one" in readme_research,
