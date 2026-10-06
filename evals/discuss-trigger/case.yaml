@@ -1,0 +1,66 @@
+schema_version: "1.1"
+name: discuss-trigger
+description: A request to discuss a design, with no slash command, starts devflow:discuss and a devflow:researcher for what other tools do, and edits no file.
+tags: [discuss, research, agents, regression]
+
+context:
+  scaffold_script: ./scaffold.sh
+
+execution:
+  # No `/devflow:discuss` in this prompt. That is the whole case: discuss is
+  # started by its description, the way auto-trigger tests flow, so a
+  # slash command here would hide the failure it exists to catch.
+  #
+  # The second half of the prompt is a fact outside the repo, what other CLIs
+  # do. discuss's rules say a fact nobody has read gets a researcher. Issue
+  # #101.
+  prompt: "let's discuss how this CLI should handle config files - what do other CLIs do?"
+  # Enough to route, start the researcher and read what comes back. The
+  # recommendation's wording is not what this measures.
+  max_turns: 20
+  timeout_seconds: 600
+  # Agent is the point. Without it the harness refuses the researcher and the
+  # case measures the in-session fallback instead. Edit and Write are left in
+  # on purpose: with them out, "edits no file" could not fail.
+  allowed_tools: [Bash, Read, Edit, Write, Glob, Grep, Skill, Agent, WebFetch, WebSearch]
+
+runs: 3
+
+graders:
+  # The reason this case exists. `tool_used` counts attempts rather than
+  # successes, which is exactly right here: reaching for the skill IS the
+  # behaviour under test.
+  - type: tool_used
+    name: reaches-discuss-unprompted
+    tool: Skill
+    input_match: "devflow:discuss"
+    min: 1
+    weight: 3
+
+  # What other CLIs do is a fact the repo cannot answer, so discuss starts a
+  # researcher for it on its own.
+  - type: tool_used
+    name: starts-a-researcher
+    tool: Agent
+    input_match: "devflow:researcher"
+    min: 1
+    weight: 3
+
+  # discuss never edits a tracked file. The moment the talk becomes an edit,
+  # it hands to flow, and nothing here asks for one.
+  - type: tool_used
+    name: edits-no-file
+    tool: Edit
+    max: 0
+    weight: 2
+
+  - type: tool_used
+    name: writes-no-file
+    tool: Write
+    max: 0
+    weight: 2
+
+expected_outcome: >
+  Starts devflow:discuss from a plain-English request to discuss a design, with
+  no slash command, starts a devflow:researcher for what other CLIs do, and
+  edits no file.

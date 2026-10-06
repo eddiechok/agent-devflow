@@ -773,6 +773,67 @@ check("research-in-rounds: 'Do you want me to research' is caught",
           "Do you want me to research ESLint's loader before we go on?"),
       "fail")
 
+# --------------------------------------- discuss-trigger starts discuss, then a researcher
+#
+# Issue #101: a request to discuss a design, typed with no slash command, starts
+# `devflow:discuss` and, for a fact outside the repo, a `devflow:researcher`.
+# Pinned both ways, so no grader reads as coverage while unable to fail.
+_dt_path = os.path.join(HERE, "discuss-trigger", "case.yaml")
+discuss_trigger = {}
+if os.path.isfile(_dt_path):
+    with open(_dt_path) as fh:
+        discuss_trigger = run.parse_yaml(fh.read())
+_dt = {g["name"]: g for g in discuss_trigger.get("graders", [])}
+
+check_true("discuss-trigger: the case exists", discuss_trigger != {})
+_dt_prompt = discuss_trigger.get("execution", {}).get("prompt", "")
+check_true("discuss-trigger: the prompt names no slash command", "/devflow" not in _dt_prompt)
+check_true("discuss-trigger: the prompt asks what other tools do", "other CLIs" in _dt_prompt)
+check_true("discuss-trigger: Agent is allowed, or no researcher can start",
+           "Agent" in discuss_trigger.get("execution", {}).get("allowed_tools", []))
+for _n in ("reaches-discuss-unprompted", "starts-a-researcher", "edits-no-file",
+           "writes-no-file"):
+    check_true("discuss-trigger: the %s grader is there" % _n, _n in _dt)
+
+
+def discuss_trigger_verdict(name, calls=()):
+    """The verdict of one discuss-trigger grader on a run that made `calls`,
+    each a (tool, input) pair."""
+    if name not in _dt:
+        return None
+    blocks = [{"type": "tool_use", "id": "t%d" % i, "name": tool, "input": inp}
+              for i, (tool, inp) in enumerate(calls)]
+    return verdict(_dt[name], ctx([{"type": "assistant", "message": {"content": blocks}}]))
+
+
+_DT_SKILL = ("Skill", {"skill": "devflow:discuss"})
+_DT_RESEARCHER = ("Agent", {"subagent_type": "devflow:researcher", "prompt": "q",
+                            "description": "d"})
+
+check("discuss-trigger: a Skill call to discuss passes reaches-discuss-unprompted",
+      discuss_trigger_verdict("reaches-discuss-unprompted", [_DT_SKILL]), "pass")
+check("discuss-trigger: no Skill call fails reaches-discuss-unprompted",
+      discuss_trigger_verdict("reaches-discuss-unprompted", [_DT_RESEARCHER]), "fail")
+check("discuss-trigger: flow is not discuss",
+      discuss_trigger_verdict("reaches-discuss-unprompted",
+                              [("Skill", {"skill": "devflow:flow"})]), "fail")
+check("discuss-trigger: a researcher Agent call passes starts-a-researcher",
+      discuss_trigger_verdict("starts-a-researcher", [_DT_SKILL, _DT_RESEARCHER]), "pass")
+check("discuss-trigger: no agent fails starts-a-researcher",
+      discuss_trigger_verdict("starts-a-researcher", [_DT_SKILL]), "fail")
+check("discuss-trigger: a builder is not a researcher",
+      discuss_trigger_verdict("starts-a-researcher",
+          [("Agent", {"subagent_type": "devflow:builder", "prompt": "q"})]), "fail")
+check("discuss-trigger: a run that edits nothing passes edits-no-file",
+      discuss_trigger_verdict("edits-no-file", [_DT_SKILL, _DT_RESEARCHER]), "pass")
+check("discuss-trigger: an Edit fails edits-no-file",
+      discuss_trigger_verdict("edits-no-file",
+          [("Edit", {"file_path": "README.md", "old_string": "a", "new_string": "b"})]),
+      "fail")
+check("discuss-trigger: a Write fails writes-no-file",
+      discuss_trigger_verdict("writes-no-file",
+          [("Write", {"file_path": "config.md", "content": "x"})]), "fail")
+
 # --------------------------------------------------------------- the scoring
 
 RESULTS = [
