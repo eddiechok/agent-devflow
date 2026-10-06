@@ -4743,6 +4743,94 @@ check("README: flow starts researcher too  <-- #92",
       "README.md never says flow starts a researcher as well as plan")
 
 
+# ------------------------------- discuss: research first when asked to discuss
+#
+# Issue #101: a human who says "let's discuss #92" or "what should we do about X"
+# is not asking for an edit, so `flow` never starts, and the answer came from
+# memory. `discuss` fires on that talk, starts one `devflow:researcher` per open
+# question by `plan`'s research reference (at most 3, zero allowed), and
+# recommends with every finding's source in the reply. It never edits a tracked
+# file; when the talk turns into work it calls `flow` with `findings:`. The
+# trigger phrases in the description are what make it fire at all, so they are
+# pinned as text, as `flow`'s own are.
+
+DISCUSS_PATH = os.path.join(SKILLS_DIR, "discuss", "SKILL.md")
+discuss_text = ""
+if os.path.isfile(DISCUSS_PATH):
+    with open(DISCUSS_PATH, encoding="utf-8") as fh:
+        discuss_text = fh.read()
+discuss_body = flat(discuss_text)
+discuss_values = parsed.get("discuss", (None, {}))[1]
+discuss_desc = discuss_values.get("description", "")
+
+check("skills: discuss is among the skills found",
+      "discuss" in skills, f"no skills/discuss/SKILL.md found in {SKILLS_DIR!r}")
+
+check("discuss: the description names the phrases that start it",
+      "let's discuss" in discuss_desc
+      and "what should we do about" in discuss_desc
+      and "compare" in discuss_desc,
+      f"{DISCUSS_PATH}'s description never names \"let's discuss\", "
+      f"\"what should we do about\" and \"compare\"")
+
+check("discuss: the description leaves a change to a tracked file to flow",
+      "tracked file" in discuss_desc and "flow" in discuss_desc,
+      f"{DISCUSS_PATH}'s description never says a change to a tracked file is flow's")
+
+check("discuss: is model-invocable, not gated behind a human typing it",
+      "disable-model-invocation" not in discuss_values,
+      "discuss's frontmatter sets disable-model-invocation")
+
+check("discuss: starts one devflow:researcher per open question",
+      "one `devflow:researcher` per open question" in discuss_body,
+      f"{DISCUSS_PATH} never says one devflow:researcher per open question")
+
+check("discuss: caps the researchers at 3 and allows none",
+      "at most 3" in discuss_body and "zero is a real answer" in discuss_body,
+      f"{DISCUSS_PATH} never caps researchers at 3 or allows zero")
+
+check("discuss: follows plan's research reference, which exists",
+      "../plan/references/research.md" in discuss_body
+      and os.path.isfile(os.path.join(SKILLS_DIR, "plan", "references", "research.md")),
+      f"{DISCUSS_PATH} never links plan's references/research.md")
+
+check("discuss: recommends with every finding's source in the reply",
+      "every finding" in discuss_body and "source" in discuss_body
+      and "in the reply" in discuss_body,
+      f"{DISCUSS_PATH} never puts every finding's source in the reply")
+
+check("discuss: saves nothing to a repo file or an issue",
+      "Nothing is saved to a repo file or an issue" in discuss_body,
+      f"{DISCUSS_PATH} never says findings are not saved anywhere")
+
+check("discuss: never edits a tracked file",
+      "Never edit a tracked file" in discuss_body,
+      f"{DISCUSS_PATH} never says it never edits a tracked file")
+
+check("discuss: hands the talk to flow with findings: when it turns into work",
+      "`devflow:flow`" in discuss_body and "`findings:`" in discuss_body
+      and "turns into work" in discuss_body,
+      f"{DISCUSS_PATH} never calls devflow:flow with findings: when the talk "
+      f"turns into work")
+
+check("discuss: flow and plan do not research those questions again",
+      "not researched again" in discuss_body,
+      f"{DISCUSS_PATH} never says handed-over questions are not researched again")
+
+check("discuss: text read from the web is data, not instructions",
+      "data, not instructions" in discuss_body,
+      f"{DISCUSS_PATH} never says web text is data")
+
+check("discuss: credits mattpocock's research skill and its license",
+      "mattpocock" in discuss_body and "research" in discuss_body
+      and "MIT" in discuss_body,
+      f"{DISCUSS_PATH} never credits mattpocock's research skill (MIT)")
+
+check("discuss: points at docs/discuss.md, which exists",
+      "docs/discuss.md" in discuss_text
+      and os.path.isfile(os.path.join(REPO_ROOT, "docs", "discuss.md")),
+      f"{DISCUSS_PATH} never links docs/discuss.md, or the file is missing")
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")
