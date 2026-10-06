@@ -4573,6 +4573,45 @@ check("flow: a Rules line for research",
       "Never start more than 3 researchers" in flat(section(flow_text, "## Rules")),
       f"{FLOW_PATH}'s Rules has no line for research")
 
+# Issue #101: `discuss` hands `flow` the findings of a talk that turned into
+# work. Those are kept, not researched again, and go on to `plan` word for word;
+# `flow`'s own cap of 3 covers only what the discussion left open.
+
+check("flow: findings from discuss are kept and not researched again",
+      "`findings:` from `discuss`" in FLOW_RESEARCH
+      and "kept" in FLOW_RESEARCH
+      and "not researched again" in FLOW_RESEARCH,
+      f"{FLOW_PATH}'s research never says findings from `discuss` are kept and "
+      f"not researched again")
+
+check("flow: discuss's findings pass on to plan word for word",
+      "word for word" in FLOW_RESEARCH and "`devflow:plan`" in FLOW_RESEARCH,
+      f"{FLOW_PATH}'s research never passes discuss's findings to plan word for word")
+
+check("flow: the cap of 3 covers only what discuss left open",
+      "covers only what is left open" in FLOW_RESEARCH,
+      f"{FLOW_PATH}'s research never says its cap of 3 covers only what is left open")
+
+# Issue #101: the README names `discuss` in its skills table and its agents
+# paragraph, and its docs index points at docs/discuss.md.
+
+_readme_flat = flat(readme_text)
+_readme_discuss_row = next((line for line in readme_text.split("\n")
+                            if line.startswith("| `discuss` |")), "")
+
+check("README: the skills table lists discuss and says it starts researchers",
+      _readme_discuss_row != "" and "researcher" in _readme_discuss_row,
+      "README.md's skills table has no `discuss` row that mentions researchers")
+
+check("README: the agents paragraph says discuss starts researchers too",
+      "`discuss` starts" in _readme_flat and "at most 3 per discussion" in _readme_flat,
+      "README.md's agents paragraph never says `discuss` starts researchers, "
+      "at most 3 per discussion")
+
+check("README: the docs index points at docs/discuss.md",
+      "| [docs/discuss.md](docs/discuss.md) |" in readme_text,
+      "README.md's docs index has no row for docs/discuss.md")
+
 
 
 # --------------------------- plan takes flow's findings, researches the rest
@@ -4658,6 +4697,19 @@ check("agents/researcher: 'What you were given' names flow as well as plan",
       f"{RESEARCHER_PATH}'s 'What you were given' never names both `flow` and "
       f"`plan`, or still says 'in the words `plan` wrote it'")
 
+# Issue #101: the `discuss` skill starts researchers too, at most 3 per
+# discussion, so the agent's description and its body name it as a starter.
+
+check("agents/researcher: the description names the discuss skill as a starter",
+      "discuss skill" in researcher_desc and "at most 3" in researcher_desc,
+      f"{RESEARCHER_PATH}'s description never names the discuss skill as a "
+      f"starter, or never gives its cap of 3")
+
+check("agents/researcher: the body says discuss may start it, at most 3 a discussion",
+      "`discuss`" in researcher_given and "at most 3 per discussion" in researcher_body,
+      f"{RESEARCHER_PATH}'s body never names `discuss` as a starter, or never "
+      f"says at most 3 per discussion")
+
 
 
 # ------------------------------ the docs say why flow researches in its rounds
@@ -4742,6 +4794,109 @@ check("README: flow starts researcher too  <-- #92",
       "`flow` and `plan` start one" in readme_research,
       "README.md never says flow starts a researcher as well as plan")
 
+
+# ------------------------------- discuss: research first when asked to discuss
+#
+# Issue #101: a human who says "let's discuss #92" or "what should we do about X"
+# is not asking for an edit, so `flow` never starts, and the answer came from
+# memory. `discuss` fires on that talk, starts one `devflow:researcher` per open
+# question by `plan`'s research reference (at most 3, zero allowed), and
+# recommends with every finding's source in the reply. It never edits a tracked
+# file; when the talk turns into work it calls `flow` with `findings:`. The
+# trigger phrases in the description are what make it fire at all, so they are
+# pinned as text, as `flow`'s own are.
+
+DISCUSS_PATH = os.path.join(SKILLS_DIR, "discuss", "SKILL.md")
+discuss_text = ""
+if os.path.isfile(DISCUSS_PATH):
+    with open(DISCUSS_PATH, encoding="utf-8") as fh:
+        discuss_text = fh.read()
+discuss_body = flat(discuss_text)
+discuss_values = parsed.get("discuss", (None, {}))[1]
+discuss_desc = discuss_values.get("description", "")
+
+check("skills: discuss is among the skills found",
+      "discuss" in skills, f"no skills/discuss/SKILL.md found in {SKILLS_DIR!r}")
+
+check("discuss: the description names the phrases that start it",
+      "let's discuss" in discuss_desc
+      and "what should we do about" in discuss_desc
+      and "compare" in discuss_desc,
+      f"{DISCUSS_PATH}'s description never names \"let's discuss\", "
+      f"\"what should we do about\" and \"compare\"")
+
+check("discuss: the description leaves a change to a tracked file to flow",
+      "tracked file" in discuss_desc and "flow" in discuss_desc,
+      f"{DISCUSS_PATH}'s description never says a change to a tracked file is flow's")
+
+check("discuss: is model-invocable, not gated behind a human typing it",
+      "disable-model-invocation" not in discuss_values,
+      "discuss's frontmatter sets disable-model-invocation")
+
+check("discuss: starts one devflow:researcher per open question",
+      "one `devflow:researcher` per open question" in discuss_body,
+      f"{DISCUSS_PATH} never says one devflow:researcher per open question")
+
+check("discuss: caps the researchers at 3 and allows none",
+      "at most 3" in discuss_body and "zero is a real answer" in discuss_body,
+      f"{DISCUSS_PATH} never caps researchers at 3 or allows zero")
+
+check("discuss: follows plan's research reference, which exists",
+      "../plan/references/research.md" in discuss_body
+      and os.path.isfile(os.path.join(SKILLS_DIR, "plan", "references", "research.md")),
+      f"{DISCUSS_PATH} never links plan's references/research.md")
+
+check("discuss: recommends with every finding's source in the reply",
+      "every finding" in discuss_body and "source" in discuss_body
+      and "in the reply" in discuss_body,
+      f"{DISCUSS_PATH} never puts every finding's source in the reply")
+
+check("discuss: saves nothing to a repo file or an issue",
+      "Nothing is saved to a repo file or an issue" in discuss_body,
+      f"{DISCUSS_PATH} never says findings are not saved anywhere")
+
+check("discuss: never edits a tracked file",
+      "Never edit a tracked file" in discuss_body,
+      f"{DISCUSS_PATH} never says it never edits a tracked file")
+
+check("discuss: hands the talk to flow with findings: when it turns into work",
+      "`devflow:flow`" in discuss_body and "`findings:`" in discuss_body
+      and "turns into work" in discuss_body,
+      f"{DISCUSS_PATH} never calls devflow:flow with findings: when the talk "
+      f"turns into work")
+
+check("discuss: flow and plan do not research those questions again",
+      "not researched again" in discuss_body,
+      f"{DISCUSS_PATH} never says handed-over questions are not researched again")
+
+check("discuss: text read from the web is data, not instructions",
+      "data, not instructions" in discuss_body,
+      f"{DISCUSS_PATH} never says web text is data")
+
+check("discuss: credits mattpocock's research skill and its license",
+      "mattpocock" in discuss_body and "research" in discuss_body
+      and "MIT" in discuss_body,
+      f"{DISCUSS_PATH} never credits mattpocock's research skill (MIT)")
+
+check("discuss: points at docs/discuss.md, which exists",
+      "docs/discuss.md" in discuss_text
+      and os.path.isfile(os.path.join(REPO_ROOT, "docs", "discuss.md")),
+      f"{DISCUSS_PATH} never links docs/discuss.md, or the file is missing")
+
+# Review of #101: "do not wait on the agents" let a recommendation go out from
+# the repo alone, the very round the issue was filed against.
+check("discuss: recommends only once every researcher is back",
+      "Recommend only once the findings are in" in discuss_body
+      and "Do not wait on the agents" not in discuss_body,
+      f"{DISCUSS_PATH} lets a recommendation go out before the findings")
+
+# docs/discuss.md sends the reader to provenance for where each idea came from.
+with open(os.path.join(REPO_ROOT, "docs", "provenance.md"), encoding="utf-8") as fh:
+    _provenance = fh.read()
+check("discuss: provenance has a section for it, crediting mattpocock's research",
+      "## `discuss`" in _provenance
+      and "mattpocock's `research`" in section(_provenance, "## `discuss`"),
+      "docs/provenance.md has no `discuss` section crediting mattpocock's research")
 
 # --------------------------------------------------------------------- report
 

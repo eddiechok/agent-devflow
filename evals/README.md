@@ -1,6 +1,6 @@
 # evals
 
-Fifteen cases. Run them before you push a change to a skill. Two are manual, see below.
+Sixteen cases. Run them before you push a change to a skill. Two are manual, see below.
 
 ## Which runner
 
@@ -30,7 +30,7 @@ python3 evals/run.py --case sizing-* --runs 1
 python3 evals/run.py --dry-run                # parse and print, run nothing
 ```
 
-It scores **66 of the 79 graders** — every `regex`, `tool_used`, `tool_order`
+It scores **70 of the 83 graders** — every `regex`, `tool_used`, `tool_order`
 and `file_exists`. The thirteen `llm` graders come back `skip`, stay out of the
 denominator, and are counted in the summary. **A skip is never a pass**, the
 same way `NOT RUN` is never `none`.
@@ -86,6 +86,7 @@ size with a bare `regex`/`trace` grader.
 | `full-loop` | high | The skills stop handing off to each other |
 | `deep-coordinator` | high | A Deep job builds every chain in one session again and outgrows its window, or the chains never merge back and the PR is missing a chain's work |
 | `research-in-rounds` | medium | A Deep question that needs a fact from outside the repo goes to the human as a guess, or `flow` asks whether to research instead of starting a `researcher` itself |
+| `discuss-trigger` | medium | A request to discuss a design, typed with no slash command, never reaches `discuss`, or `discuss` answers what other tools do from memory with no `researcher`, or edits a file instead of handing to `flow` |
 | `plans-on-tracker` | high, **manual** | A project that keeps plans on GitHub gets a file instead, or a plan nobody can close |
 | `backlog-parks-extras` | low | A three-feature prompt ships as one PR or drops two features on the floor |
 | `worktree-guard` | medium | A second session cuts its branch in the shared checkout and moves the folder out from under a session already working in it |
