@@ -5210,6 +5210,38 @@ check("provenance: a sweep section credits the human opt-in and the permission e
       and "permission endpoint" in flat(section(_provenance, "## `sweep`")),
       "docs/provenance.md has no `sweep` section crediting its findings")
 
+# Review round 1 on the sweep branch. `build` commits only a plan piece
+# (skills/build/SKILL.md, "Never commit anything but a finished plan piece"),
+# so a sweeper that asks it for one commit per issue gets none: the sweeper
+# commits each issue itself once build hands back green.
+check("agents/sweeper: commits each issue itself, because build commits only plan pieces",
+      "commit it yourself" in sweeper_body
+      and "only a plan piece" in sweeper_body
+      and "Refs #" in sweeper_body,
+      f"{SWEEPER_PATH} still leaves the per-issue commit to build, which never "
+      f"commits an issue")
+
+# A sweeper never guesses. "Takes the safe default" and "state the choice and
+# carry on" both let it open a PR on a guess; the design says it stops.
+check("agents/sweeper: never takes a default where submit would ask",
+      "safe default" not in sweeper_body
+      and "State the choice and carry on" not in sweeper_body,
+      f"{SWEEPER_PATH} still lets the sweeper guess instead of stopping")
+
+# `submit` opens every PR against the default branch and reviews from its
+# merge-base. A sweeper cut from a feature branch (worktree.baseRef = head)
+# would carry that branch's commits into every sweep PR. So sweep runs only
+# from a tree with no commits of its own, and the sweeper checks again.
+check("sweep: stops unless this folder has no commits beyond the default branch",
+      "git merge-base --is-ancestor HEAD" in sweep_body
+      and "run sweep from the default branch" in sweep_body,
+      f"{SWEEP_PATH} never stops on a branch with its own commits")
+
+check("agents/sweeper: stops if its branch carries commits the default branch lacks",
+      "git rev-list --count" in sweeper_body
+      and "carries commits" in sweeper_body,
+      f"{SWEEPER_PATH} never checks that its worktree was cut from the default branch")
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")

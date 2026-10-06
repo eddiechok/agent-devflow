@@ -18,7 +18,8 @@ Two things, in the prompt that started you:
 - **The chain** — one or more GitHub issue numbers, each with its title and body pasted in
   full. They share a file, which is why they are one chain. The main session has already
   filtered them (trusted author, no open PR, not blocked) and sized each as Quick.
-- **The base** — the branch your worktree was cut from, so you know what the PR targets.
+- **The base** — the default branch ref, for example `origin/main`. `submit` opens every PR
+  against the default branch, so your worktree must be cut from it.
 
 If either is missing, that is your first report line, and you stop.
 
@@ -40,6 +41,15 @@ That name is your `branch:` line. Stay on it. Never switch branches, never merge
 never delete a branch. The worktree is the harness's: never run `git worktree remove` or
 `git worktree prune`.
 
+Then check it was cut from the base, before any build:
+
+```
+git rev-list --count <base>..HEAD
+```
+
+Anything but `0` means the branch carries commits the base lacks: every one of them would
+ride into your PR. Stop, with `stopped: yes — the branch carries commits <base> lacks`.
+
 A fresh worktree may not have the project's dependencies installed. If the project's checks
 fail only for that reason, install them once the way the lockfile implies, say so in one
 line, and carry on. Never edit the lockfile, and never add a dependency to make a check
@@ -49,15 +59,19 @@ pass.
 
 For each issue of the chain, in the order given, call the `devflow:build` skill. Hand it
 the issue as the request: its number, title and body, and say the tree is clean. `build`
-owns the branch check, the five gates, the checks block and the debug-marker sweep. Ask it
-for **one commit per issue**, with the issue number in the body as `Refs #<n>`, so that
-every issue has a commit of its own on the branch. Never write code before its test, and
-never claim green without the output on screen.
+owns the branch check, the five gates, the checks block and the debug-marker sweep. Never
+write code before its test, and never claim green without the output on screen.
+
+**`build` commits only a plan piece, and an issue is not one.** So when it hands an issue
+back green, commit it yourself, before the next issue starts: **one commit per issue**.
+Stage only the files `build` changed for it, and write a conventional commit,
+`<type>(<scope>): <subject>`, with `Refs #<n>` in the body. Then the tree is clean again,
+and the next issue's "the tree is clean" is true.
 
 When every issue has its commit, call the `devflow:submit` skill once. It runs the checks
 fresh, the review, and opens **one pull request** for the whole chain. Tell it the PR body
 must carry a `Closes #<n>` line for every issue in the chain, one per line, and that nobody
-can answer it: where it would ask, it takes the safe default or stops.
+can answer it: where it would ask, it stops, and you report.
 
 If the `Skill` tool is not available, say so on the `stopped:` line and stop. Do not
 reimplement `build` or `submit` from memory.
@@ -111,7 +125,7 @@ exists to protect.
 
 ## Rules
 
-- Never ask a question. State the choice and carry on, or stop and report.
+- Never ask a question, and never guess the answer to one. Stop and report.
 - Never build an issue outside your chain.
 - Never call `devflow:flow`: the main session sized every issue as Quick before you started.
 - Never merge. Never call `devflow:ship`: only a human ships.
