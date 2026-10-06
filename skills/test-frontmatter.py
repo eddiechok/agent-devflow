@@ -4883,6 +4883,21 @@ check("discuss: points at docs/discuss.md, which exists",
       and os.path.isfile(os.path.join(REPO_ROOT, "docs", "discuss.md")),
       f"{DISCUSS_PATH} never links docs/discuss.md, or the file is missing")
 
+# Review of #101: "do not wait on the agents" let a recommendation go out from
+# the repo alone, the very round the issue was filed against.
+check("discuss: recommends only once every researcher is back",
+      "Recommend only once the findings are in" in discuss_body
+      and "Do not wait on the agents" not in discuss_body,
+      f"{DISCUSS_PATH} lets a recommendation go out before the findings")
+
+# docs/discuss.md sends the reader to provenance for where each idea came from.
+with open(os.path.join(REPO_ROOT, "docs", "provenance.md"), encoding="utf-8") as fh:
+    _provenance = fh.read()
+check("discuss: provenance has a section for it, crediting mattpocock's research",
+      "## `discuss`" in _provenance
+      and "mattpocock's `research`" in section(_provenance, "## `discuss`"),
+      "docs/provenance.md has no `discuss` section crediting mattpocock's research")
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")
