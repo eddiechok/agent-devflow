@@ -4592,6 +4592,26 @@ check("flow: the cap of 3 covers only what discuss left open",
       "covers only what is left open" in FLOW_RESEARCH,
       f"{FLOW_PATH}'s research never says its cap of 3 covers only what is left open")
 
+# Issue #101: the README names `discuss` in its skills table and its agents
+# paragraph, and its docs index points at docs/discuss.md.
+
+_readme_flat = flat(readme_text)
+_readme_discuss_row = next((line for line in readme_text.split("\n")
+                            if line.startswith("| `discuss` |")), "")
+
+check("README: the skills table lists discuss and says it starts researchers",
+      _readme_discuss_row != "" and "researcher" in _readme_discuss_row,
+      "README.md's skills table has no `discuss` row that mentions researchers")
+
+check("README: the agents paragraph says discuss starts researchers too",
+      "`discuss` starts" in _readme_flat and "at most 3 per discussion" in _readme_flat,
+      "README.md's agents paragraph never says `discuss` starts researchers, "
+      "at most 3 per discussion")
+
+check("README: the docs index points at docs/discuss.md",
+      "| [docs/discuss.md](docs/discuss.md) |" in readme_text,
+      "README.md's docs index has no row for docs/discuss.md")
+
 
 
 # --------------------------- plan takes flow's findings, researches the rest
