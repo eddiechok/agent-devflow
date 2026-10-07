@@ -2523,7 +2523,7 @@ SHAPED_LABELS = {
     "no-behaviour", "open", "opinion", "override", "parked", "piece",
     "pieces", "plan", "plans", "pr", "pushed", "red", "repo", "research", "retargeted", "review",
     "see", "session", "settings", "skills", "stuck", "tended", "test", "theirs", "todo",
-    "typecheck",
+    "typecheck", "ux", "variants",
     "worktree", "workflow", "yours",
 }
 
@@ -6031,6 +6031,305 @@ check("docs/provenance: credits find-skills (MIT) and claude-automation-recommen
       and "## `skills`" in docs_provenance_text,
       f"{DOCS_PROVENANCE_PATH} has no skills section crediting find-skills "
       f"and claude-automation-recommender")
+
+# --- the look question: show UI variants before build (#108)
+
+LOOK_PATH = os.path.join(SKILLS_DIR, "flow", "references", "look-question.md")
+if os.path.exists(LOOK_PATH):
+    with open(LOOK_PATH, encoding="utf-8") as fh:
+        look_text = fh.read()
+else:
+    look_text = ""
+look_body = flat(look_text)
+
+UX_PATH_EARLY = os.path.join(SKILLS_DIR, "skills", "references", "ux.md")
+ux_body_early = flat(open(UX_PATH_EARLY, encoding="utf-8").read()) \
+    if os.path.isfile(UX_PATH_EARLY) else ""
+_asking = flow_text.split("### Asking questions", 1)[1].split("\n## ", 1)[0] \
+    if "### Asking questions" in flow_text else ""
+_asking_flat = flat(_asking)
+
+check("flow/look: the rule sits in Asking questions, with the extra option",
+      '"Show me the variants"' in _asking_flat
+      and "Standard and Deep" in _asking_flat
+      and "how something looks" in _asking_flat
+      and "seeing beats reading" in _asking_flat,
+      f"{FLOW_PATH} Asking questions never carries the look-question rule")
+
+# The paid eval on 7 Oct 2026 saw "Show me 2 layout variants" in 2 runs of 3: a
+# label the model reworded is a label nothing downstream can find. So the rule
+# says the label is word for word.
+check("flow/look: the option label is word for word",
+      'labelled "Show me the variants", word for word' in _asking_flat,
+      f"{FLOW_PATH} lets the model reword the variants option")
+
+check("flow/look: the same question is asked again after the variants",
+      "ask the same question again" in _asking_flat
+      and "numbered list" in _asking_flat,
+      f"{FLOW_PATH} never re-asks the look question, or never offers it in the list")
+
+check("flow/look: links references/look-question.md from Asking questions",
+      "(references/look-question.md)" in _asking,
+      f"{FLOW_PATH} Asking questions never links references/look-question.md")
+
+check("flow/look: a Rules line keeps it off Quick and out of the repo",
+      "Never offer the look question on Quick" in flow_skill_flat
+      and "never write a variant into the repo" in flow_skill_flat,
+      f"{FLOW_PATH} has no Rules line for the look question")
+
+check("flow/look: lines 337 and 341 did not move (evals/README.md cites them)",
+      flow_text.splitlines()[336] == "Quick \u2014 single-file copy change."
+      and flow_text.splitlines()[340] == "Deep \u2014 new subsystem, touches auth (danger list).",
+      f"{FLOW_PATH} lines 337 and 341 are no longer the two size-line examples")
+
+check("flow/look: the reference exists",
+      look_text != "",
+      f"{LOOK_PATH} does not exist")
+
+for needle in ("A: sidebar", "B: tabs", "mktemp", "outside the repo",
+               "2 or 3 variants", "browser pane", "prints the path",
+               "really different", "the repo's design skill", "its own CSS",
+               "claude plugin list --json",
+               "never run /devflow:skills", "thrown away", "the pick and why",
+               "?variant=", "no dev server", "no prototype branch"):
+    check(f"flow/look: the reference names {needle}",
+          needle in look_body,
+          f"{LOOK_PATH} never names {needle!r}")
+
+# Review round 1 on #108. A bare path resolves against whatever repo flow runs
+# in, so the UX table is a link relative to this file, as flow's other
+# cross-skill links are.
+check("flow/look: the UX table is a relative link, not a bare path",
+      "](../../skills/references/ux.md)" in look_text
+      and "`skills/skills/references/ux.md`" not in look_text,
+      f"{LOOK_PATH} names ux.md by a path that only resolves inside agent-devflow")
+
+# `claude plugin list --json` lists project and local installs of other
+# folders too, marked disabled. Only an enabled entry for this folder, or a
+# user-scope one, is installed here.
+for _path, _body in ((LOOK_PATH, look_body), (UX_PATH_EARLY, ux_body_early)):
+    check(f"look/ux: {os.path.basename(_path)} counts only an enabled install for this folder",
+          '"enabled": true' in _body and "projectPath" in _body and "user scope" in _body,
+          f"{_path} matches a plugin installed in another folder")
+
+# The spec makes `/impeccable critique` the UX check when impeccable is the
+# design skill; without it the look question prints a hint that adds nothing.
+check("flow/look: impeccable's critique is the check when impeccable is installed",
+      "impeccable@impeccable" in look_body and "/impeccable critique" in look_body,
+      f"{LOOK_PATH} skips the UX check in a repo whose design skill is impeccable")
+
+# Review round 2 on #108: design.md installs impeccable with `npx impeccable
+# install`, a loose skill, which `claude plugin list` never shows.
+check("flow/look: impeccable also counts as a loose skill",
+      ".claude/skills/impeccable/" in look_body and "~/.claude/skills/impeccable/" in look_body,
+      f"{LOOK_PATH} misses impeccable installed the way design.md says to")
+
+# The paid eval saw an 'Or reply' line in place of an item. The rule in flow
+# itself says item, since the list is written before look-question.md is read.
+check("flow/look: the numbered list offers it as one more item",
+      "numbered list offers it too, as one more item" in _asking_flat,
+      f"{FLOW_PATH} lets the list offer the variants as something other than an item")
+
+check("flow/look: prints the one-line ux hint when no UX skill is installed",
+      "\u2013 **ux** no UX skill installed \u2014 run /devflow:skills to get one" in look_text,
+      f"{LOOK_PATH} never prints the no-UX-skill line")
+
+check("flow/look: no popup tool still offers the option and prints the path",
+      "no popup tool" in look_body.lower() and "Show me the variants" in look_body,
+      f"{LOOK_PATH} never says what happens where there is no popup tool")
+
+check("flow/look: says why real-page variants are out (go, and the branch switch)",
+      "before go" in look_body and "step 0c" in look_body,
+      f"{LOOK_PATH} never says why the variants are not real-page ones")
+
+check("docs/flow: says why the look question shows a throwaway file",
+      "look question" in flat(open(DOCS_FLOW_PATH, encoding="utf-8").read())
+      and "Show me the variants" in flat(open(DOCS_FLOW_PATH, encoding="utf-8").read()),
+      f"{DOCS_FLOW_PATH} never explains the look question")
+
+# --- one UX skill per UI repo (#108)
+
+UX_PATH = os.path.join(SKILLS_DIR, "skills", "references", "ux.md")
+ux_text = ""
+if os.path.isfile(UX_PATH):
+    with open(UX_PATH, encoding="utf-8") as fh:
+        ux_text = fh.read()
+ux_body = flat(ux_text)
+
+_step_3a = finder_text.split("## 3a.", 1)[1].split("\n## ", 1)[0] \
+    if "## 3a." in finder_text else ""
+_step_3a_flat = flat(_step_3a)
+
+check("skills/ux: the reference exists",
+      ux_text != "",
+      f"{UX_PATH} does not exist")
+
+# The live check on 7 Oct 2026 read design/.mcp.json: the design plugin turns
+# on 9 MCP servers, each asking for a login. A suggestion that hides that is
+# not the whole of what it carries.
+check("skills/ux: the design plugin row says it carries 9 MCP servers",
+      "9 MCP servers" in ux_body and "design/.mcp.json" in ux_body,
+      f"{UX_PATH} lists the design plugin as if it carried skills only")
+
+for needle in ("design@knowledge-work-plugins", "ux-design@wondelai-skills",
+               "claude plugin marketplace add anthropics/knowledge-work-plugins --scope project",
+               "claude plugin install design@knowledge-work-plugins --scope project",
+               "claude plugin marketplace add wondelai/skills --scope project",
+               "claude plugin install ux-design@wondelai-skills --scope project",
+               "26,788", "2,351", "Apache-2.0", "MIT",
+               "design:design-critique", "ux-design:ux-heuristics",
+               "design-critique", "ux-copy", "accessibility-review",
+               "ux-heuristics", "ios-hig-design",
+               "/impeccable critique", "inferred", "claude plugin list --json"):
+    check(f"skills/ux: names {needle}",
+          needle in ux_body,
+          f"{UX_PATH} never names {needle!r}")
+
+_ux_pick = ux_text.split("## Pick one", 1)[1].split("\n## ", 1)[0] \
+    if "## Pick one" in ux_text else ""
+_ux_rows = [l for l in _ux_pick.split("\n") if l.startswith("| ") and "---" not in l][1:]
+check("skills/ux: the UX pick is one ordered table, first match wins",
+      "first match wins" in flat(_ux_pick) and len(_ux_rows) >= 3,
+      f"{UX_PATH} has no ordered pick table")
+check("skills/ux: every pick row names at most one UX plugin",
+      _ux_rows != [] and all(
+          sum(s in r for s in ("`design@knowledge-work-plugins`",
+                               "`ux-design@wondelai-skills`")) <= 1
+          for r in _ux_rows),
+      f"{UX_PATH}: a pick row names two UX plugins")
+check("skills/ux: both plugins can be the pick, and impeccable picks none",
+      "`design@knowledge-work-plugins`" in _ux_pick
+      and "`ux-design@wondelai-skills`" in _ux_pick
+      and "impeccable" in _ux_pick and "none" in _ux_pick,
+      f"{UX_PATH}: a plugin can never be picked, or impeccable still gets one")
+
+check("skills/ux: says a design skill that carries its own UX review gets no second one",
+      "no second UX skill" in ux_body,
+      f"{UX_PATH} never says impeccable's critique means no second UX skill")
+
+check("skills/step 3a: links the UX reference and suggests one UX skill",
+      "(references/ux.md)" in _step_3a
+      and "one UX skill" in _step_3a_flat,
+      f"{FINDER_PATH} step 3a never links references/ux.md or names one UX skill")
+
+check("skills/step 3a: impeccable as the design pick means no UX skill",
+      "impeccable" in _step_3a_flat and "no UX skill" in _step_3a_flat,
+      f"{FINDER_PATH} step 3a never gives the impeccable exception")
+
+check("skills/step 3a: the UX pick asks no new question",
+      "no new question" in _step_3a_flat,
+      f"{FINDER_PATH} step 3a never says the UX pick asks nothing new")
+
+check("docs/skills: says why one UX skill, and why none for impeccable",
+      "one UX skill" in skills_doc_body and "impeccable" in skills_doc_body
+      and "critique" in skills_doc_body,
+      f"{SKILLS_DOC_PATH} never explains the one UX skill")
+
+# --- live search for design and UX skills, and the source bar (#108)
+
+def _step(text, heading):
+    if heading not in text:
+        return ""
+    return flat(text.split(heading, 1)[1].split("\n## ", 1)[0])
+
+_step_4 = _step(finder_text, "## 4.")
+_step_5 = _step(finder_text, "## 5.")
+
+check("skills/step 3a: design and UX skills get a live search on top of their tables",
+      "DISABLE_TELEMETRY=1 npx skills find" in _step_3a_flat
+      and "every run" in _step_3a_flat
+      and "on top of" in _step_3a_flat,
+      f"{FINDER_PATH} step 3a never runs the live search on top of the tables")
+
+check("skills/step 3a: stars and size are read fresh for table rows too",
+      "fresh" in _step_3a_flat and "table rows" in _step_3a_flat
+      and "gh api" in _step_3a_flat,
+      f"{FINDER_PATH} step 3a never reads stars and size fresh for table rows")
+
+check("skills/step 3a: a new find that passes may beat a table row, with the reason",
+      "over a table row" in _step_3a_flat and "reason" in _step_3a_flat
+      and "one design skill" in _step_3a_flat and "one UX skill" in _step_3a_flat,
+      f"{FINDER_PATH} step 3a never lets a find replace a table row, or loses the one-skill rule")
+
+check("skills/step 4: a collection of 10 or more skills is judged by install count",
+      "10 or more skills" in _step_4 and "install count" in _step_4
+      and "1K+" in _step_4 and "not the repo's stars" in _step_4,
+      f"{FINDER_PATH} step 4 never judges a big collection by its skill's install count")
+
+check("skills/step 4: 100 to 999 stars is never suggested, under 100 is dropped",
+      "100 to 999 stars" in _step_4 and "never suggested" in _step_4
+      and "under 100 stars" in _step_4 and "dropped" in _step_4,
+      f"{FINDER_PATH} step 4 never says what happens at 100 to 999 stars")
+
+check("skills/step 5: the Also seen line, at the end, with no install command",
+      "Also seen, not suggested (small repos): <skill> (<owner/repo>, <stars> stars)"
+      in _step_5
+      and "at the end" in _step_5 and "no install command" in _step_5,
+      f"{FINDER_PATH} step 5 never prints the Also seen line")
+
+check("skills/step 5: stars and size not read are said, never guessed",
+      "stars not read" in _step_5 and "size not read" in _step_5,
+      f"{FINDER_PATH} step 5 never says what to print when stars cannot be read")
+
+check("skills/design: the table numbers are a reference, read fresh each run",
+      "reference" in design_body and "fresh" in design_body,
+      f"{DESIGN_PATH} never says its numbers are read fresh each run")
+
+check("skills/ux: the table numbers are a reference, read fresh each run",
+      "reference" in ux_body and "fresh" in ux_body,
+      f"{UX_PATH} never says its numbers are read fresh each run")
+
+check("docs/skills: says why design and UX get a live search too",
+      "design and UX" in skills_doc_body and "live search" in skills_doc_body
+      and "fresh" in skills_doc_body,
+      f"{SKILLS_DOC_PATH} never explains the live search for design and UX skills")
+
+check("docs/skills: says why a collection is judged by install count and 100-999 is one line",
+      "install count" in skills_doc_body and "Also seen" in skills_doc_body
+      and "10 or more" in skills_doc_body,
+      f"{SKILLS_DOC_PATH} never explains the collection rule and the Also seen line")
+
+# ------------------------------------------- provenance: the look question (#108)
+#
+# The look question and the UX table borrow from five sources. Each is credited
+# in the long-form Credits section with its link and its license, and the rows
+# for the look question and the UX pick say what was kept and what was not.
+
+_credits = provenance_flat[provenance_flat.find("## Credits, in full"):]
+
+
+def _credit(link, license_text):
+    """The credit line holding `link`, so a license is checked on its own line."""
+    for line in _credits.split("- **"):
+        if link in line:
+            return license_text in line
+    return False
+
+
+check("docs/provenance: credits superpowers' visual companion with a link and a license",
+      _credit("obra/superpowers/blob/main/skills/brainstorming/visual-companion.md", "MIT"),
+      f"{DOCS_PROVENANCE_PATH} credits no superpowers visual-companion.md link with MIT")
+
+check("docs/provenance: credits GSD's sketch with a link and a license",
+      _credit("gsd-build/get-shit-done/blob/main/get-shit-done/workflows/sketch.md", "MIT"),
+      f"{DOCS_PROVENANCE_PATH} credits no GSD sketch.md link with MIT")
+
+check("docs/provenance: credits mattpocock's prototype UI.md with a link and a license",
+      _credit("mattpocock/skills/blob/main/skills/engineering/prototype/UI.md", "MIT"),
+      f"{DOCS_PROVENANCE_PATH} credits no mattpocock prototype/UI.md link with MIT")
+
+check("docs/provenance: credits Anthropic's design plugin with a link and a license",
+      _credit("anthropics/knowledge-work-plugins/tree/main/design/skills", "Apache-2.0"),
+      f"{DOCS_PROVENANCE_PATH} credits no knowledge-work-plugins design link with Apache-2.0")
+
+check("docs/provenance: credits wondelai/skills with a link and a license",
+      _credit("github.com/wondelai/skills", "MIT"),
+      f"{DOCS_PROVENANCE_PATH} credits no wondelai/skills link with MIT")
+
+check("docs/provenance: a table for the look question and a row for the UX pick",
+      "look question" in provenance_flat
+      and "One UX skill per UI repo" in provenance_flat,
+      f"{DOCS_PROVENANCE_PATH} has no row for the look question or the UX pick")
 
 # --------------------------------------------------------------------- report
 

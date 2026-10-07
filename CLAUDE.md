@@ -42,3 +42,7 @@ directory is no proof: it exists as soon as any folder updates.
 
 ## Plans
 - Tracker: github
+
+## Workflow
+- Mode: pr
+- About: devflow: one dev loop for features, changes, bug fixes and chores — sizes the work, writes the test first, proves the code runs, opens a PR.

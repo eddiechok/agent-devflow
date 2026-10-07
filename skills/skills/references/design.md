@@ -11,7 +11,9 @@ clashes with nothing and is suggested alongside whichever skill is picked.
 
 ## The table
 
-Sizes and stars were read on 2026-10-07 from the installed copy or the repo.
+Sizes and stars were read on 2026-10-07 from the installed copy or the repo. They are a
+reference, not what gets printed: step 3a reads stars and size fresh each run for every
+skill it lists, and runs a live search on top of this table.
 
 | Skill | Size | Stars | Carries | Install |
 |---|---|---|---|---|

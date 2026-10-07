@@ -34,6 +34,17 @@ anonymous usage data. When npx is missing the fallback is skipped and a line say
 gap in the list is never read as "nothing exists". A big vendor list would go stale and is
 out of scope.
 
+## Why design and UX skills get a live search too
+
+The first version took design skills from the table alone. A table goes stale: stars move,
+a skill is renamed, and a better one appears. So for design and UX skills the skill runs a
+live search every run on top of the tables, and reads stars and size fresh for every skill
+it lists, table rows included, so the number printed is the number that day (#108). A new
+find that passes the source bar may be recommended over a table row, with the reason in one
+line, but the list still holds one design skill and one UX skill. The search is fuzzy and
+prints install counts, not stars or a description, so a result is only a lead until the
+bar has been applied to it.
+
 ## Why it searches only what the repo is built with
 
 A search for "testing" or "code review" finds skills that compete with `build` and `review`.
@@ -63,12 +74,37 @@ When several design skills are already installed the skill warns and names them,
 pick sits at user scope only it prints the commands to move it to project scope. Those
 commands are printed and never run, because one of them deletes a folder.
 
+## Why one UX skill
+
+A design skill says how the UI looks. Nothing in the list said whether it works, and the
+look question in `flow` (#108) needs something to check its variants with. So a repo with
+a UI also gets one UX skill, picked from the same answer to "what is the UI for?" and the
+same repo facts, with no new question: web screens and landing pages take the Anthropic
+design plugin, a React Native or Expo app takes wondelai's `ux-design`. Both set no style,
+so they clash with neither the design pick nor each other, and still the list holds one,
+because two critiques of the same screen overlap.
+
+`impeccable` is the exception. It carries a `critique` command that scores Nielsen's 10
+heuristics, so suggesting a UX skill beside it would pay twice for one review. The list says
+`/impeccable critique` is the check and suggests nothing else.
+
 ## Why the source bar
 
 A search result is not a recommendation. Official vendor repo, or 1k+ stars; under 100 stars
 is a reason to drop it. These are find-skills' quality rules, copied with credit. The star
 count follows the repo's own rule in [provenance](provenance.md): copied text is always
 credited, and a count is a reason to list something, never a reason to trust it blind.
+
+## Why a collection is judged by install count, and 100 to 999 stars is one line
+
+Stars belong to the repo, and a repo with 10 or more skills (wondelai/skills holds 65) has
+stars from the whole collection, so they say little about the one skill in it. The install
+count is per skill, so that skill is judged by its own, 1K+. Smaller repos still use stars.
+
+A repo of 100 to 999 stars was undefined before: not trusted enough to suggest, not small
+enough to drop. It is never suggested, and it is not hidden either: one "Also seen" line at
+the end names it with its stars and no install command, so the human knows it exists and can
+look. Under 100 stars stays dropped, because a line for every stray repo would be noise.
 
 ## Why each entry says what it carries and its size
 

@@ -418,7 +418,7 @@ Keep asking rounds until no open question could change a todo line, a plan piece
 user sees. There is no cap on rounds. A later round holds only the questions the earlier answers opened up.
 
 If the human answers a question with a request to explain it, such as "explain this" in
-Other, explain it in plain words, then ask that one question again in a popup.
+Other, explain it in plain words, then ask that one question again in a popup. On Standard and Deep, a decision question about how something looks, where seeing beats reading, gets one extra option labelled "Show me the variants", word for word (the numbered list offers it too, as one more item). Pick it, read [references/look-question.md](references/look-question.md) to make the variants, then ask the same question again.
 
 #### Facts are your job. Decisions are the human's
 
@@ -491,6 +491,7 @@ the result — for example `✓ **checks** 3 of 3 pass, exit 0`.
 - Never ask the human a question the repo already answers. Go and read it.
 - Never ask a question whose premise another question in the same round decides, and never stop while an open question could change a todo line, a plan piece, or what the user sees.
 - Never start more than 3 researchers in `flow`, or any on Quick or Standard, and never ask the human whether to research.
+- Never offer the look question on Quick, and never write a variant into the repo: it is one throwaway file in a temp folder.
 - Never write a term into `CONTEXT.md` that the human did not settle, and never write implementation detail there.
 - Never finish without calling `submit`, or saying in one line why you did not.
 - Never write the plan's pieces, spawn a builder, or resolve a chain conflict yourself. That

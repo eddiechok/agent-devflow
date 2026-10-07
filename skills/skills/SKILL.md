@@ -72,6 +72,18 @@ Suggest **one design skill** and nothing else that generates a style, plus
 `web-design-guidelines`, which is review-only and clashes with nothing. Design skills give
 competing directions when installed together, so two of them is never a list.
 
+For design and UX skills, run `DISABLE_TELEMETRY=1 npx skills find <query>` every run, on top
+of the two tables: a table is a reference that goes stale, and a better skill may exist. Read
+stars (`gh api`) and size fresh for every skill that would be listed, table rows included,
+never from the table. A new find that passes step 4 may be recommended over a table row, with the
+reason in one line. The result is still one design skill and one UX skill.
+
+Then suggest **one UX skill**, picked from the same answer to "what is the UI for?" and the
+frontend facts, with no new question. It sets no style, so it clashes with nothing. When the
+design pick is `impeccable`, which carries its own UX review, there is no UX skill and no
+second one: say `/impeccable critique` is the check. The table and the pick are in
+[the UX reference](references/ux.md).
+
 When several design skills are already installed, print a clash warning naming them. When the
 pick is installed at user scope only, print the commands to move it from user scope to
 project scope. Never run them.
@@ -82,9 +94,13 @@ Do not list a skill on the strength of a search result alone. A skill from the t
 already cleared the bar. For anything else:
 
 1. Official sources first: the vendor's own repo, or a publisher the ecosystem knows.
-2. The repo's stars: 1k+ stars, or an official vendor repo. Treat anything under 100 stars
-   as a reason to drop it, not to mention it.
+2. The repo's stars: 1k+ stars, or an official vendor repo. 100 to 999 stars is never
+   suggested; it goes on the one Also seen line in step 5. Anything under 100 stars is
+   dropped, not mentioned.
 3. Install count, where the search shows one. Prefer 1K+.
+4. A repo with 10 or more skills is a big collection, and its stars say little about one
+   skill in it. Judge that skill by its own install count (1K+), not the repo's stars.
+   Smaller repos still use stars.
 
 ## 5. Print the list
 
@@ -95,6 +111,8 @@ One entry per suggestion, at most 1 or 2 for each part of the stack:
 - its **size**: how many skills it holds, and how many lines of markdown where that is cheap
   to read. Read the plugin's folder at run time with `gh api repos/<owner>/<repo>/contents/<path>`.
   Where `gh` cannot reach it, write "size not read" rather than a number you did not see.
+- its **stars**, read fresh with `gh api repos/<owner>/<repo>`, or "stars not read" where
+  `gh` cannot reach it; for a big collection (step 4), its install count instead
 - the exact install command, at project scope
 
 The commands, which the human runs:
@@ -109,6 +127,13 @@ that command's default.
 
 A committed project-scope entry turns a plugin on for everyone in the repo, and each person
 still runs the install line once.
+
+Put one line at the end of the list for what step 4 held back, with no install command, and
+leave it off when nothing was held back:
+
+```
+Also seen, not suggested (small repos): <skill> (<owner/repo>, <stars> stars)
+```
 
 **Never suggest a plugin and its own MCP-only install both.** A plugin that carries an MCP
 server already has it. Print the plugin and leave the MCP-only line out.
