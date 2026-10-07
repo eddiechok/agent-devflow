@@ -255,6 +255,25 @@ More than two is a design session, not a change.
 Question 2 shows the split. "Per-user or global" is a decision, so it is asked. "How
 notifications store it" is a fact, so it was looked up and handed over.
 
+### Step 4 — the look question
+
+On Standard and Deep, a decision question about how something looks gets one extra
+option, "Show me the variants" (#108). Reading "sidebar or tabs" is a weak way to choose;
+seeing them is a strong one. The variants are made only when the option is picked, so a
+human who already knows pays nothing, and Quick never gets it.
+
+The variants are one throwaway HTML file in a temp folder, not the real page. A variant
+on the real page edits tracked files before the human has said go, and a prototype
+branch moves the whole folder, which step 0c keeps off a folder another session is
+using. A file outside the repo touches neither. It is thrown away; only the pick and why
+go on to build. mattpocock's prototype skill switches `?variant=` on a live page, and
+that is the part this leaves out for those two reasons.
+
+The question is asked again after the variants are shown, the same way it is after
+"explain this". Before they are shown they are checked with whichever UX skill from the
+UX table is installed, and when none is, one line suggests `/devflow:skills` and nothing
+is run from there.
+
 ### Step 4 — research during the rounds
 
 On Deep, `flow` starts a `researcher` for a fact nobody has read, during the rounds and not

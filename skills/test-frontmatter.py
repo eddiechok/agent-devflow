@@ -2523,7 +2523,7 @@ SHAPED_LABELS = {
     "no-behaviour", "open", "opinion", "override", "parked", "piece",
     "pieces", "plan", "plans", "pr", "pushed", "red", "repo", "research", "retargeted", "review",
     "see", "session", "settings", "skills", "stuck", "tended", "test", "theirs", "todo",
-    "typecheck",
+    "typecheck", "ux", "variants",
     "worktree", "workflow", "yours",
 }
 
@@ -6031,6 +6031,77 @@ check("docs/provenance: credits find-skills (MIT) and claude-automation-recommen
       and "## `skills`" in docs_provenance_text,
       f"{DOCS_PROVENANCE_PATH} has no skills section crediting find-skills "
       f"and claude-automation-recommender")
+
+# --- the look question: show UI variants before build (#108)
+
+LOOK_PATH = os.path.join(SKILLS_DIR, "flow", "references", "look-question.md")
+if os.path.exists(LOOK_PATH):
+    with open(LOOK_PATH, encoding="utf-8") as fh:
+        look_text = fh.read()
+else:
+    look_text = ""
+look_body = flat(look_text)
+
+_asking = flow_text.split("### Asking questions", 1)[1].split("\n## ", 1)[0] \
+    if "### Asking questions" in flow_text else ""
+_asking_flat = flat(_asking)
+
+check("flow/look: the rule sits in Asking questions, with the extra option",
+      '"Show me the variants"' in _asking_flat
+      and "Standard and Deep" in _asking_flat
+      and "how something looks" in _asking_flat
+      and "seeing beats reading" in _asking_flat,
+      f"{FLOW_PATH} Asking questions never carries the look-question rule")
+
+check("flow/look: the same question is asked again after the variants",
+      "ask the same question again" in _asking_flat
+      and "numbered list" in _asking_flat,
+      f"{FLOW_PATH} never re-asks the look question, or never offers it in the list")
+
+check("flow/look: links references/look-question.md from Asking questions",
+      "(references/look-question.md)" in _asking,
+      f"{FLOW_PATH} Asking questions never links references/look-question.md")
+
+check("flow/look: a Rules line keeps it off Quick and out of the repo",
+      "Never offer the look question on Quick" in flow_skill_flat
+      and "never write a variant into the repo" in flow_skill_flat,
+      f"{FLOW_PATH} has no Rules line for the look question")
+
+check("flow/look: lines 337 and 341 did not move (evals/README.md cites them)",
+      flow_text.splitlines()[336] == "Quick \u2014 single-file copy change."
+      and flow_text.splitlines()[340] == "Deep \u2014 new subsystem, touches auth (danger list).",
+      f"{FLOW_PATH} lines 337 and 341 are no longer the two size-line examples")
+
+check("flow/look: the reference exists",
+      look_text != "",
+      f"{LOOK_PATH} does not exist")
+
+for needle in ("A: sidebar", "B: tabs", "mktemp", "outside the repo",
+               "2 or 3 variants", "browser pane", "prints the path",
+               "really different", "the repo's design skill", "its own CSS",
+               "skills/skills/references/ux.md", "claude plugin list --json",
+               "never run /devflow:skills", "thrown away", "the pick and why",
+               "?variant=", "no dev server", "no prototype branch"):
+    check(f"flow/look: the reference names {needle}",
+          needle in look_body,
+          f"{LOOK_PATH} never names {needle!r}")
+
+check("flow/look: prints the one-line ux hint when no UX skill is installed",
+      "\u2013 **ux** no UX skill installed \u2014 run /devflow:skills to get one" in look_text,
+      f"{LOOK_PATH} never prints the no-UX-skill line")
+
+check("flow/look: no popup tool still offers the option and prints the path",
+      "no popup tool" in look_body.lower() and "Show me the variants" in look_body,
+      f"{LOOK_PATH} never says what happens where there is no popup tool")
+
+check("flow/look: says why real-page variants are out (go, and the branch switch)",
+      "before go" in look_body and "step 0c" in look_body,
+      f"{LOOK_PATH} never says why the variants are not real-page ones")
+
+check("docs/flow: says why the look question shows a throwaway file",
+      "look question" in flat(open(DOCS_FLOW_PATH, encoding="utf-8").read())
+      and "Show me the variants" in flat(open(DOCS_FLOW_PATH, encoding="utf-8").read()),
+      f"{DOCS_FLOW_PATH} never explains the look question")
 
 # --------------------------------------------------------------------- report
 
