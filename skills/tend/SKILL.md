@@ -38,7 +38,8 @@ Outside it, `tend` is exactly as below: an open PR, and nothing else.
 - **Fix.** Through `devflow:build`, as step 4. The fix lands as a new commit on main: the
   red commit is already pushed, so never amend, rebase or force-push it. `submit` runs in
   direct mode, so it commits and pushes to main, or lands a worktree's branch through
-  `skills/submit/references/land-on-main.md`, and opens no PR.
+  [submit's land-on-main reference](../submit/references/land-on-main.md), and opens no
+  PR.
 - **Report.** Step 6's report without the threads: `✓ **yours**`, `– **theirs**`,
   `✓ **pushed**`.
 
