@@ -267,15 +267,18 @@ branch anyway, and the check below would catch that only after four builders had
 – **chains** worktree.baseRef was just written — this run does not spawn chains
 ```
 
-Then build this job on the sequential path — the one under "Where the harness cannot give
-a builder its own worktree" below: one builder per **chain**, in plan order, one at a time,
-spawned **without** `isolation` on the Agent call, so it commits on this branch and there
-is no merge step. The run that finds the setting already there is the run that spawns
-chains.
+Then take the sequential path under "Where the harness cannot give a builder its own
+worktree" below: one builder per **chain**, in plan order, spawned **without** `isolation`,
+so it commits on this branch and there is no merge step. The run that finds the setting
+already there is the run that spawns chains.
 
 **The check below still runs on the runs that do spawn.** A settings file that says
 `"head"` is not proof the value reached this session either — one edited by hand a minute
 ago reads exactly like one loaded at start-up. So finding it does not excuse trusting it.
+
+**In direct, cut no feature branch.** `Mode: direct` in `CLAUDE.md`'s `## Workflow` and no
+`mode: pr` line: read [references/direct.md](references/direct.md) in place of the next
+paragraph. The chains still merge at step 5, `--no-ff`, into the branch you stand on.
 
 **Stand on the feature branch first**, on every path, the sequential one included. No
 `build` runs in this session, so nothing else cuts it. **Read the plan's `Branch:` line
@@ -448,10 +451,9 @@ before the first chain:
 This harness only starts agents when you ask. Say "build the chains" and one builder runs per chain.
 ```
 
-If that answer does not come, build every piece in this session through `devflow:build`,
-one at a time, in plan order, exactly as before this section existed. Print one line —
-`– **chains** agents not permitted — building in-session` — and carry on. Nothing is lost
-but the window. Ask once for the whole job, not once per chain.
+If that answer does not come, build every piece in this session through `devflow:build`, one
+at a time, in plan order. Print `– **chains** agents not permitted — building in-session`
+and carry on. Nothing is lost but the window. Ask once for the whole job.
 
 ## Started by hand
 

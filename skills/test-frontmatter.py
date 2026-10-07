@@ -5543,6 +5543,67 @@ for doc, needle in (("ship", "direct"), ("tend", "direct")):
           "## Direct mode" in doc_text,
           f"docs/{doc}.md has no '## Direct mode' section")
 
+# --------------------------------------- plan and sweep land on main in direct
+#
+# In direct there is no feature branch and no PR. plan runs its chains in worktrees
+# as ever and merges them into main in this folder; a session in a linked worktree
+# lands through submit's land-on-main reference. sweep's chains each land through
+# that same reference instead of opening a PR, and the report says landed.
+
+PLAN_DIRECT_PATH = os.path.join(SKILLS_DIR, "plan", "references", "direct.md")
+if os.path.exists(PLAN_DIRECT_PATH):
+    with open(PLAN_DIRECT_PATH, encoding="utf-8") as fh:
+        plan_direct_flat = flat(fh.read())
+else:
+    plan_direct_flat = ""
+
+check("plan/direct: the reference exists",
+      plan_direct_flat != "",
+      f"{PLAN_DIRECT_PATH} does not exist")
+
+check("plan: points at references/direct.md",
+      "references/direct.md" in flat(plan_text),
+      "plan's SKILL.md never links references/direct.md")
+
+check("plan: stays at or under 500 lines with the pointer",
+      len(plan_text.splitlines()) <= 500,
+      f"{PLAN_PATH} is {len(plan_text.splitlines())} lines, cap is 500")
+
+check("plan/direct: cuts no feature branch, merges the chains into main --no-ff",
+      "no feature branch" in plan_direct_flat
+      and "--no-ff" in plan_direct_flat
+      and "worktrees" in plan_direct_flat,
+      f"{PLAN_DIRECT_PATH} never says chains merge --no-ff into main with no "
+      f"feature branch")
+
+check("plan/direct: a linked worktree follows land-on-main.md",
+      "land-on-main.md" in plan_direct_flat
+      and "linked worktree" in plan_direct_flat,
+      f"{PLAN_DIRECT_PATH} never names land-on-main.md for a linked worktree")
+
+check("plan/direct: mode: pr keeps today's path",
+      "`mode: pr`" in plan_direct_flat,
+      f"{PLAN_DIRECT_PATH} never says a mode: pr line keeps the PR path")
+
+check("sweep: in direct each chain lands through land-on-main.md",
+      "land-on-main.md" in flat(sweep_text)
+      and "`landed`" in flat(sweep_text)
+      and "direct" in flat(sweep_text),
+      f"{SWEEP_PATH} never names land-on-main.md and the landed line for direct")
+
+check("agents/sweeper: in direct lands through land-on-main.md, reports landed:",
+      "land-on-main.md" in sweeper_body
+      and "landed:" in sweeper_body
+      and "direct" in sweeper_body,
+      f"{SWEEPER_PATH} never lands through land-on-main.md in direct")
+
+for doc in ("plan", "sweep"):
+    with open(os.path.join(REPO_ROOT, "docs", doc + ".md"), encoding="utf-8") as fh:
+        doc_direct_text = fh.read()
+    check(f"docs/{doc}: records why direct changes it",
+          "## Direct mode" in doc_direct_text,
+          f"docs/{doc}.md has no '## Direct mode' section")
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")

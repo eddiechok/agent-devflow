@@ -78,6 +78,14 @@ the review starts must be given that path and read the files there. An agent sta
 session's main folder, not in your worktree, so without the path a reviewer reads the main
 folder's copy of each file and reviews code that is not yours.
 
+**In direct** — `Mode: direct` in `## Workflow` in `CLAUDE.md`, and no `mode: pr` line in
+your prompt — there is no pull request. Tell `submit` the same, and that your worktree is a
+linked one, so it lands the branch on main through
+[land-on-main.md](../skills/submit/references/land-on-main.md): rebase, the checks again,
+then the push, or the fast-forward with no remote. Put `Closes #<n>` for every issue in the
+commit message body instead of a PR body. Your `pr:` line becomes `landed:`, with the
+landed sha, and `none` when it stopped before landing.
+
 If the `Skill` tool is not available, say so on the `stopped:` line and stop. Do not
 reimplement `build` or `submit` from memory.
 
