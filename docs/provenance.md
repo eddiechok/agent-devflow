@@ -394,6 +394,24 @@ Anything marked as a summary was not read on the page itself.
 | Do not overwrite an existing block | **Ours** | Someone wrote it on purpose |
 | A line may repeat, no wrapper script | **Ours** | Two honest lines beat one invented script. Adding a script is changing the project to suit the tool |
 
+## `skills`
+
+Read on 2026-10-07 for issue #91, before the skill was written.
+
+| Step | From | Why |
+|---|---|---|
+| Show the exact install command, never install | **Copied** — [vercel-labs/skills](https://github.com/vercel-labs/skills) `find-skills` (MIT, 33,286 stars) | Its last step presents the command and leaves the install to the human. Same rule here, at project scope |
+| The source bar: official first, 1k+ stars, skeptical under 100, prefer 1K+ installs | **Copied** — `find-skills` quality rules, in our own words | Its checks before recommending a result. The vendor-repo exception is ours |
+| `DISABLE_TELEMETRY=1 npx skills find <query>` as the fallback | **Changed** — `find-skills` runs the search when a person asks | Ours runs it only for what the vendor table missed and the repo is built with, and sets the variable the `vercel-labs/skills` README gives to stop anonymous telemetry |
+| Read-only, recommend 1 or 2 per part of the stack, read the repo first | **Copied** — `claude-automation-recommender` from Anthropic's `claude-code-setup` plugin (Apache-2.0) | It analyses the codebase, writes nothing, and caps the list per category so it does not overwhelm. Its tools line lacks WebSearch although it says to search the web; ours names the search it runs |
+| Scan the repo for what to suggest | **Changed** — `find-skills` waits for a question | The two sources split here: find-skills answers a question, the recommender scans a repo. Ours scans, and searches only what the repo is built with |
+| Read what is installed, skip it, warn on a clash | **Ours** | Neither source reads the installed list. Three commands, all read-only, because `claude plugin list` does not see loose skills |
+| Vendor table, signalled by a file | **Human's call** | Railway, Medusa, Cloudflare, Supabase, Stripe, each official or 1k+ stars |
+| Never both a plugin and its MCP-only install | **Ours** | The plugin already carries the server |
+| One design skill, up to three questions asked together | **Human's call** | The design generators give competing directions. Asking the whole frontier together with a recommendation per question is mattpocock's `grilling`, as in `flow` |
+| Empty repo gets 4 stack questions, a repo with code gets none | **Human's call** | Files are facts, and facts are the agent's job |
+| Search only what the repo is built with | **Human's call** | devflow already owns review, test-first, workflow and git |
+
 ## `bash-guard.py`
 
 | Change | From | Why |
@@ -454,6 +472,8 @@ The README keeps one line per source. This is the long form it used to carry.
 - **[heliohq/ship](https://github.com/heliohq/ship)** — two ideas, both reworked. Its **independent peer challenger** became `hardcase`, with the defaults inverted. Theirs produces objections. Ours tries to destroy them, and defaults to *falls*. Its evidence hierarchy became the **first-hand / second-hand** test in `submit` step 4 and `ship` step 5. In theirs, L1 is a screenshot or a response body. L2 is an HTTP 200 or "tests passed", and L2 is insufficient. Restated as one question you can apply yourself: *would this have been true before the change?* Its pipeline shape was **not** taken. It runs every job through the full sequence, which is the thing the Quick tier exists to refuse.
 - **Anthropic's [`code-review`](https://github.com/anthropics/claude-plugins-official) plugin** (Apache-2.0) — `reviewer`'s "Do not report" list is its false-positive taxonomy, rephrased: pre-existing problems, pedantic nitpicks, anything a linter or typechecker already catches, quality gripes no `CLAUDE.md` asked for. Its confidence filter is **reworked, not copied**. Theirs is a 0-100 score across five bands, dropped below 80. Ours became one question: can you name the input that fails? Its five review lenses were not carried over. `reviewer` uses four of its own.
 - **Anthropic's `feature-dev` plugin** (Apache-2.0) — reviewed for patterns only, nothing taken.
+- **[vercel-labs/skills](https://github.com/vercel-labs/skills)** (MIT, 33,286 stars) — `find-skills`, read on 2026-10-07: the quality rules for what to recommend, and showing the install command rather than running it. Its `npx skills find` and `npx skills add` are what the skill's fallback and its non-plugin install lines call.
+- **Anthropic's `claude-code-setup` plugin** (Apache-2.0) — `claude-automation-recommender`, read on 2026-10-07: read-only, one or two suggestions per part of the stack, the repo read first.
 
 ## How much to trust this
 

@@ -5505,6 +5505,49 @@ check("skills: the two skills whose source is unconfirmed are confirmed before a
       "unconfirmed" in design_body and "confirm the source" in design_body,
       f"{DESIGN_PATH} never says minimalist-skill and redesign-skill need their source confirmed")
 
+# --- piece 4: the docs, the credits and the README name the skill (#91)
+
+SKILLS_DOC_PATH = os.path.join(REPO_ROOT, "docs", "skills.md")
+skills_doc_text = ""
+if os.path.isfile(SKILLS_DOC_PATH):
+    with open(SKILLS_DOC_PATH, encoding="utf-8") as fh:
+        skills_doc_text = fh.read()
+skills_doc_body = flat(skills_doc_text)
+
+with open(README_PATH, encoding="utf-8") as fh:
+    readme_text_91 = fh.read()
+
+check("docs/skills: exists and says why it lists and never installs",
+      "never installs" in skills_doc_body and "the human runs" in skills_doc_body,
+      f"{SKILLS_DOC_PATH} is missing or never says the skill lists and never installs")
+
+check("docs/skills: says why a repo with code is never asked a stack question",
+      "stack question" in skills_doc_body and "files win" in skills_doc_body.lower(),
+      f"{SKILLS_DOC_PATH} never says why files win over stack questions")
+
+check("docs/skills: says why only one design skill is listed",
+      "one design skill" in skills_doc_body and "competing" in skills_doc_body,
+      f"{SKILLS_DOC_PATH} never says why one design skill, not two")
+
+check("docs/skills: says why the skill is model-invocable and does not touch setup",
+      "model-invocable" in skills_doc_body and "setup" in skills_doc_body,
+      f"{SKILLS_DOC_PATH} never says why the model can start the skill")
+
+check("README: the skills table lists skills",
+      "| `skills` |" in readme_text_91,
+      f"{README_PATH} never lists `skills` in its skills table")
+
+check("README: the docs table links docs/skills.md",
+      "(docs/skills.md)" in readme_text_91,
+      f"{README_PATH} never links docs/skills.md")
+
+check("docs/provenance: credits find-skills (MIT) and claude-automation-recommender",
+      "find-skills" in docs_provenance_text
+      and "claude-automation-recommender" in docs_provenance_text
+      and "## `skills`" in docs_provenance_text,
+      f"{DOCS_PROVENANCE_PATH} has no skills section crediting find-skills "
+      f"and claude-automation-recommender")
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")
