@@ -6238,6 +6238,48 @@ check("docs/skills: says why a collection is judged by install count and 100-999
       and "10 or more" in skills_doc_body,
       f"{SKILLS_DOC_PATH} never explains the collection rule and the Also seen line")
 
+# ------------------------------------------- provenance: the look question (#108)
+#
+# The look question and the UX table borrow from five sources. Each is credited
+# in the long-form Credits section with its link and its license, and the rows
+# for the look question and the UX pick say what was kept and what was not.
+
+_credits = provenance_flat[provenance_flat.find("## Credits, in full"):]
+
+
+def _credit(link, license_text):
+    """The credit line holding `link`, so a license is checked on its own line."""
+    for line in _credits.split("- **"):
+        if link in line:
+            return license_text in line
+    return False
+
+
+check("docs/provenance: credits superpowers' visual companion with a link and a license",
+      _credit("obra/superpowers/blob/main/skills/brainstorming/visual-companion.md", "MIT"),
+      f"{DOCS_PROVENANCE_PATH} credits no superpowers visual-companion.md link with MIT")
+
+check("docs/provenance: credits GSD's sketch with a link and a license",
+      _credit("gsd-build/get-shit-done/blob/main/get-shit-done/workflows/sketch.md", "MIT"),
+      f"{DOCS_PROVENANCE_PATH} credits no GSD sketch.md link with MIT")
+
+check("docs/provenance: credits mattpocock's prototype UI.md with a link and a license",
+      _credit("mattpocock/skills/blob/main/skills/engineering/prototype/UI.md", "MIT"),
+      f"{DOCS_PROVENANCE_PATH} credits no mattpocock prototype/UI.md link with MIT")
+
+check("docs/provenance: credits Anthropic's design plugin with a link and a license",
+      _credit("anthropics/knowledge-work-plugins/tree/main/design/skills", "Apache-2.0"),
+      f"{DOCS_PROVENANCE_PATH} credits no knowledge-work-plugins design link with Apache-2.0")
+
+check("docs/provenance: credits wondelai/skills with a link and a license",
+      _credit("github.com/wondelai/skills", "MIT"),
+      f"{DOCS_PROVENANCE_PATH} credits no wondelai/skills link with MIT")
+
+check("docs/provenance: a table for the look question and a row for the UX pick",
+      "look question" in provenance_flat
+      and "One UX skill per UI repo" in provenance_flat,
+      f"{DOCS_PROVENANCE_PATH} has no row for the look question or the UX pick")
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")
