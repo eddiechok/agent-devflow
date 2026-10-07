@@ -1236,7 +1236,8 @@ if os.path.isfile(_dm_scaffold):
                 '#!/usr/bin/env bash\nset -e\nmkdir -p "$1"\ncd "$1"\n'
                 'git init -q -b main\ngit config user.email e@x\n'
                 'git config user.name e\ngit config commit.gpgsign false\n'
-                'printf "## Checks\\n- Test: npm test\\n" > CLAUDE.md\n'
+                'printf "## Checks\\n- Test: npm test\\n\\n## Workflow\\n'
+                '- Mode: pr\\n- About: a tiny CLI\\n" > CLAUDE.md\n'
                 'printf "# greeter\\n\\nA tiny CLI that says hello.\\n" > README.md\n'
                 'git add -A\ngit commit -qm init\n'
                 'git init -q --bare "$1.origin.git"\n'
@@ -1258,6 +1259,11 @@ if os.path.isfile(_dm_scaffold):
         check_true("direct-mode: CLAUDE.md keeps ## Checks", "## Checks" in _md)
         check_true("direct-mode: CLAUDE.md says ## Workflow, Mode: direct",
                    re.search(r"## Workflow\n- Mode: direct\n", _md))
+        # The shared fixture writes a pr block; this case swaps it, never adds a
+        # second one, or a skill reading the first block would see pr.
+        check("direct-mode: CLAUDE.md has one ## Workflow block, not two",
+              _md.count("## Workflow"), 1)
+        check_true("direct-mode: the fixture's Mode: pr is gone", "- Mode: pr" not in _md)
         check("direct-mode: the project has no remote", _git("remote"), "")
         check("direct-mode: it starts on main", _git("rev-parse", "--abbrev-ref", "HEAD"), "main")
         check("direct-mode: it starts with a clean tree", _git("status", "--porcelain"), "")
@@ -1269,6 +1275,19 @@ if os.path.isfile(_dm_scaffold):
 # The README row is what a reader checks to learn what a failure costs.
 _dm_rows = [l for l in _readme.split("\n") if l.startswith("| `direct-mode`")]
 check("readme: the direct-mode row is there", len(_dm_rows), 1)
+
+# flow calls setup first when CLAUDE.md has no `## Workflow` block. A fixture
+# that writes `## Checks` alone would send every case through setup's
+# questionnaire before the thing it measures. Only setup-writes-checks starts
+# with no CLAUDE.md at all, on purpose.
+_EVALS = os.path.dirname(os.path.abspath(__file__))
+for _rel in ["fixtures/greeter.sh", "plans-on-tracker/scaffold.sh",
+             "ship-tends-conflict/scaffold.sh", "sweep-quick-issues/scaffold.sh"]:
+    with open(os.path.join(_EVALS, _rel)) as fh:
+        _src = fh.read()
+    check_true(f"{_rel}: writes ## Checks", "## Checks" in _src)
+    check_true(f"{_rel}: writes ## Workflow with Mode: pr beside it, so flow skips setup",
+               re.search(r"## Workflow\n- Mode: pr\n- About: ", _src))
 
 # --------------------------------------------------------------- the scoring
 

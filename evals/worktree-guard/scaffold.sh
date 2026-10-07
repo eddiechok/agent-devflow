@@ -39,8 +39,8 @@ git commit -qm "docs: the other session's work in progress"
 # erroring `gh` produces none, so `:48` and `:61-63` send an ambiguous branch
 # down "new work, fresh branch" -- which is exactly what step 0c is scoped to at
 # `:188`. Step 0b makes no call at all here; its `gh issue list` is gated on a
-# `## Plans` block saying `github`, and the shared fixture's CLAUDE.md has only
-# `## Checks`. The cost is a few wasted tool calls, which is what `max_turns:
+# `## Plans` block saying `github`, and the shared fixture's CLAUDE.md has none
+# -- only `## Checks` and `## Workflow`. The cost is a few wasted tool calls, which is what `max_turns:
 # 20` is for. Measured: 3 runs, 3 passes, 14/14 weighted each.
 git remote set-head origin main
 

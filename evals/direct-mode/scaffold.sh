@@ -8,13 +8,14 @@ workspace="${1:-$PWD}"
 "$here/../fixtures/greeter.sh" "$workspace" --with-checks-block
 cd "$workspace"
 
-# A direct project. The block is the exact shape every skill and the hook read.
-cat >> CLAUDE.md <<'MD'
-
-## Workflow
-- Mode: direct
-- About: a tiny CLI that says hello
-MD
+# A direct project. The shared fixture writes a `## Workflow` block saying pr;
+# swap its lines rather than add a second block, which a skill reading the first
+# one would take as pr. Through a temp file because `sed -i` differs between
+# BSD and GNU sed.
+tmp="$(mktemp)"
+sed -e 's/^- Mode: pr$/- Mode: direct/' \
+    -e 's/^- About: .*/- About: a tiny CLI that says hello/' CLAUDE.md > "$tmp" \
+  && mv "$tmp" CLAUDE.md
 
 # No remote. The fixture adds a bare one so submit can push in the other cases;
 # a direct project with nowhere to push is the path this case measures, where
