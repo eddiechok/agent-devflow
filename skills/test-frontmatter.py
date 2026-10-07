@@ -5604,6 +5604,56 @@ for doc in ("plan", "sweep"):
           "## Direct mode" in doc_direct_text,
           f"docs/{doc}.md has no '## Direct mode' section")
 
+# ------------------------------------ glossary, README and pipeline for direct
+#
+# CONTEXT.md holds the project's words, read by `build` and never written by it.
+# `direct` and `pr` name the way the work is done, so they are defined once there.
+# The README says how a project picks one, and the pipeline draws the direct path.
+
+CONTEXT_PATH = os.path.join(REPO_ROOT, "CONTEXT.md")
+if os.path.exists(CONTEXT_PATH):
+    with open(CONTEXT_PATH, encoding="utf-8") as fh:
+        context_text = fh.read()
+else:
+    context_text = ""
+context_flat = flat(context_text)
+
+check("CONTEXT.md: exists with a ## Words block",
+      "## Words" in context_text,
+      f"{CONTEXT_PATH} has no ## Words block")
+
+check("CONTEXT.md: defines direct as main, no branch, no PR",
+      "**direct**" in context_text
+      and "straight on main" in context_flat
+      and "not how many people work on the project" in context_flat,
+      f"{CONTEXT_PATH} never defines **direct** as a way of working")
+
+check("CONTEXT.md: defines pr as a branch and a pull request for each job",
+      "**pr**" in context_text
+      and "a branch and a pull request for each job" in context_flat,
+      f"{CONTEXT_PATH} never defines **pr**")
+
+readme_direct_flat = flat(open(README_PATH, encoding="utf-8").read())
+check("README: setup section names the questionnaire and ## Workflow",
+      "## Workflow" in readme_direct_flat
+      and "questionnaire" in readme_direct_flat
+      and "flow runs it first" in readme_direct_flat,
+      "README.md never says setup asks, writes ## Workflow, and flow runs it first")
+
+check("README: names both modes and --pr",
+      "`direct`" in readme_direct_flat and "`pr`" in readme_direct_flat
+      and "`--pr`" in readme_direct_flat,
+      "README.md never names `direct`, `pr` and `--pr`")
+
+with open(os.path.join(REPO_ROOT, "docs", "pipeline.md"), encoding="utf-8") as fh:
+    pipeline_direct_flat = flat(fh.read())
+check("docs/pipeline: draws the direct path",
+      "## Direct" in pipeline_direct_flat
+      and "main" in pipeline_direct_flat
+      and "land-on-main.md" in pipeline_direct_flat
+      and "start:" in pipeline_direct_flat,
+      "docs/pipeline.md has no Direct section with the start sha and landing")
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")

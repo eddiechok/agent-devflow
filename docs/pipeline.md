@@ -86,6 +86,54 @@ from where you are standing.
 the `## Checks` block everything downstream trusts. It is not a state the work passes
 through.
 
+## Direct: the same work with no branch and no PR
+
+A project whose `## Workflow` says `Mode: direct` takes a shorter route. The states are
+the same ones with two taken out. There is no `Submitted` waiting on a pull request, and no
+`Merged`: the work is `Live` once main is pushed and deployed.
+
+```mermaid
+stateDiagram-v2
+    direction TB
+
+    [*] --> Sized: /devflow:flow, setup first if there is no Workflow block
+    Sized --> Building: build, on main, start sha recorded
+    Building --> Building: five gates, once per piece
+    Building --> OnMain: submit commits and pushes
+    OnMain --> Live: ship deploys the pushed commit
+    OnMain --> Reporting: CI goes red on that commit
+    Reporting --> Building: tend, a new commit on main
+    Live --> [*]
+
+    note right of OnMain
+        No PR. What the PR body would say
+        is in the Done report, and the
+        Assumptions are in the commit body.
+    end note
+```
+
+What moves, compared with the PR path:
+
+- **`flow` records where the work began.** Before the first edit it runs `git rev-parse
+  HEAD` and hands it to `submit` as `start:`, with `size:`. On main the merge-base with the
+  default branch is `HEAD` itself, so `review` would find nothing; it is given `start:` as
+  its fixed point instead.
+- **Review follows the size.** Quick is not reviewed (`– **review** skipped — Quick, direct
+  mode`). Standard and Deep are, from the start sha. In `pr` every size is reviewed.
+- **`submit` commits on main and pushes.** With no remote it commits only and says so. In a
+  linked worktree, which is where multitask, `plan` chains and `sweep` work, the branch
+  lands on main through [land-on-main.md](../skills/submit/references/land-on-main.md): rebase,
+  the checks again, then push. Never `git update-ref`, which leaves the main checkout stale.
+- **`ship` has no PR to merge.** It runs the `## Deploy` block for the pushed commit and
+  checks it is live. A PR from somebody else still goes the PR path.
+- **`tend` has a PR-less case.** A red CI run on a main commit is read and fixed through
+  `build`, as a new commit on main.
+- **`--pr` is one run in the other mode.** `flow` hands `mode: pr` to `build`, `plan` and
+  `submit`, and that run follows the PR diagrams above.
+
+The `bash-guard` hook asks before a commit or push on the default branch. In a `direct`
+project it lets them through, since that is the project's way of working.
+
 ## One Deep job, end to end
 
 The state diagram says where work rests. This one says who hands what to whom.
