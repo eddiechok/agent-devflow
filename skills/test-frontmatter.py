@@ -832,6 +832,32 @@ check("setup: keeps an existing ## Workflow block",
       "Never overwrite an existing `## Workflow`" in setup_text,
       f"{SETUP_PATH} never says an existing ## Workflow block is kept")
 
+# The human's comment on #96: setup's last step offers `/devflow:skills`, the
+# skill from #120 that lists agent skills fitting the repo. It comes after the
+# report, so the list is the last thing setup prints, and only on a yes:
+# skills lists, and the human runs every install.
+_offer_at = setup_text.find("## 8. Offer agent skills")
+_offer = setup_text[_offer_at:setup_text.find("\n## ", _offer_at + 1)] if _offer_at >= 0 else ""
+check("setup: step 8 offers agent skills, after the report",
+      _offer_at > setup_text.find("## 7. Report") >= 0,
+      f"{SETUP_PATH} has no '## 8. Offer agent skills' after '## 7. Report'")
+check("setup: the offer is one recommended question, and yes calls devflow:skills",
+      "Look for agent skills that fit this repo?" in _offer
+      and "Yes (Recommended)" in _offer and "`devflow:skills`" in _offer,
+      f"{SETUP_PATH} step 8 never asks the question with a recommended yes "
+      f"that calls devflow:skills")
+check("setup: a no prints the skipped line",
+      "– **skills** skipped" in _offer,
+      f"{SETUP_PATH} step 8 never prints '– **skills** skipped' on a no")
+check("setup: the offer installs nothing itself",
+      "Never run an install" in setup_text,
+      f"{SETUP_PATH} never says setup leaves every install to the human")
+with open(os.path.join(REPO_ROOT, "docs", "setup.md"), encoding="utf-8") as fh:
+    _docs_setup = fh.read()
+check("docs/setup: says why setup offers devflow:skills",
+      "devflow:skills" in _docs_setup and "#96" in _docs_setup,
+      "docs/setup.md never says why setup offers devflow:skills")
+
 
 # ------------------------------------ flow runs setup first, and has a direct path
 #
@@ -2496,7 +2522,7 @@ SHAPED_LABELS = {
     "green", "handback", "issue", "landed", "lesson", "lint", "live", "look", "merge", "merged",
     "no-behaviour", "open", "opinion", "override", "parked", "piece",
     "pieces", "plan", "plans", "pr", "pushed", "red", "repo", "research", "retargeted", "review",
-    "see", "session", "settings", "stuck", "tended", "test", "theirs", "todo",
+    "see", "session", "settings", "skills", "stuck", "tended", "test", "theirs", "todo",
     "typecheck",
     "worktree", "workflow", "yours",
 }

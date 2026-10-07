@@ -75,6 +75,15 @@ call it ([anthropics/claude-code#93761](https://github.com/anthropics/claude-cod
 So the flag came off `setup`. `ship` and `sweep` keep theirs, because they should only ever
 start from a human.
 
+## Step 8 — why setup offers `devflow:skills`
+
+Setup is the one moment a project is looked at as a whole, so it is the natural place to
+ask which agent skills would fit it. The human asked for that on #96. `devflow:skills`
+already does the reading and the listing, and it is model-invocable, so setup calls it
+rather than copying it. It comes after the report, so the list is the last thing on screen,
+and only on a yes: a project set up again later can skip it in one answer. Nothing gets
+installed here. `skills` prints each command, and the human decides which to run.
+
 ## Where the shape came from
 
 The questionnaire follows `setup-matt-pocock-skills` in

@@ -258,6 +258,23 @@ Then mention, once, only if relevant:
 - a check took a long time
 - the project is currently red
 
+## 8. Offer agent skills
+
+Last, after the report, ask one question in the same popup style as step 6, every time
+setup runs:
+
+1. **Look for agent skills that fit this repo?**
+   - Yes (Recommended) — call `devflow:skills`. It reads what the repo is built with and
+     what is already installed, then lists the skills that fit, each with its install
+     command. Its list is the last thing setup prints.
+   - No — print one line and stop:
+
+     ```
+     – **skills** skipped
+     ```
+
+`devflow:skills` only lists. Setup installs nothing either: the human runs each command.
+
 ## Output
 
 Every line a human reads takes one shape: a mark, a bold one-word lowercase label, then
@@ -278,6 +295,7 @@ the result — for example `✓ **checks** 3 of 3 pass, exit 0`.
 - Never overwrite an existing `## Workflow` block. Say what it says and keep it.
 - Never write `Mode:` as anything but `direct` or `pr`, and never write it without asking.
 - Never add anything to `CLAUDE.md` except the `## Checks`, `## Plans` and `## Workflow` blocks, and never a block you did not prove.
+- Never run an install. Step 8 offers `devflow:skills`, which only lists; the human installs.
 
 ## Where the shape came from
 
