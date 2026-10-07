@@ -220,3 +220,19 @@ also lets the comment link it.
 from an issue body, because closing and commenting are public, and anyone who can write an
 issue could otherwise make them happen. A `submit` that went looking for actions itself
 would skip that question.
+
+## Direct mode — finishing a job on main
+
+A project that works `direct` has no pull request to open, so `submit` has two jobs less and one more. The detail is in [the direct reference](../skills/submit/references/direct.md); `SKILL.md` only points at it from steps 1, 5, 7 and 8, so a `pr` run never reads it.
+
+**Step 1 does not refuse main.** The refusal exists so work never lands on the default branch unreviewed, and in direct that is the point. The Rules say "in pr mode" for the same reason: a rule written for one way of working, left bare, would contradict the other.
+
+**Review follows the size, because there is no PR to stop at.** In `pr` mode review runs on every size, since a human reads the PR afterwards. In direct, nothing stands between the commit and main, so a Quick change is not reviewed: the reviewers cost more than the change is worth, and the skipped line says so out loud rather than leaving a gap. Standard and Deep are reviewed as today.
+
+**The fixed point is `start:`.** `review` takes a fixed point as its first word and defaults to the merge-base with the default branch. On main that is `HEAD`, so there would be nothing to review. `flow` records `HEAD` before the first edit and hands it over, so `review`'s own text needs no change.
+
+**Assumptions go in the commit body.** In `pr` mode the PR body carries them for the reader at merge time. With no PR, the commit message is the one place that survives in the log, and the Done report in the chat carries the rest of the body: What, Why, How to check, Evidence.
+
+**Pull with a rebase, then push.** Another commit may have reached main since the work began; a rebase puts this one on top rather than creating a merge commit. With no remote there is nothing to push to, and the run says so in one line instead of failing.
+
+**A linked worktree lands through one file.** Multitask, plan chains and sweep all end with a worktree's branch that has to reach main, so [land-on-main.md](../skills/submit/references/land-on-main.md) holds the sequence once: rebase on the default branch ref, run the checks again, then push `HEAD:<default>`, or with no remote fast-forward the main checkout with `--ff-only`. The commands that look right are named as never, each tested on git 2.49.0. `update-ref` is not refused and leaves the main checkout's index and working tree stale, so the next commit there reverts the landed work. A push or fetch into a branch checked out in another worktree is refused. A fast-forward merge in the main checkout moves HEAD, index and working tree together, and fails without changing anything if main moved or the same files are dirty. That is why a refusal means rebase once more, and a second refusal means stop.

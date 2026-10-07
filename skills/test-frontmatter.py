@@ -792,6 +792,189 @@ check("setup: says flow parks extra features under the backlog label",
       f"feature per run")
 
 
+# ------------------------------------ setup is a questionnaire, writes the mode
+#
+# `flow` runs setup first when CLAUDE.md has no `## Workflow` block, so setup
+# has to be callable by a model (no `disable-model-invocation`), has to write
+# the block in the one shape every skill and the hook read, and credits the
+# skill whose shape it borrowed.
+
+setup_values = parsed.get("setup", (None, {}))[1]
+
+check("setup: is model-invocable, so flow can call it",
+      "disable-model-invocation" not in setup_values
+      and "disable-model-invocation" not in frontmatter(setup_text),
+      "setup's frontmatter still sets disable-model-invocation; flow cannot "
+      "call a gated skill")
+
+check("setup: description says when a model should call it",
+      "## Workflow" in setup_values.get("description", ""),
+      "setup's description never names the missing '## Workflow' block")
+
+check("setup: writes a ## Workflow block with Mode: and About:",
+      "## Workflow" in setup_text and "- Mode: " in setup_text
+      and "- About: " in setup_text,
+      f"{SETUP_PATH} never shows the '## Workflow' block with '- Mode:' "
+      f"and '- About:' lines")
+
+check("setup: names both modes, direct and pr",
+      "`direct`" in setup_text and "`pr`" in setup_text,
+      f"{SETUP_PATH} never names both modes `direct` and `pr`")
+
+check("setup: credits mattpocock's setup skill",
+      "https://github.com/mattpocock/skills/blob/main/skills/engineering/"
+      "setup-matt-pocock-skills/SKILL.md" in setup_text
+      and "Where the shape came from" in setup_text,
+      f"{SETUP_PATH} never credits setup-matt-pocock-skills in a 'Where "
+      f"the shape came from' section")
+
+check("setup: keeps an existing ## Workflow block",
+      "Never overwrite an existing `## Workflow`" in setup_text,
+      f"{SETUP_PATH} never says an existing ## Workflow block is kept")
+
+
+# ------------------------------------ flow runs setup first, and has a direct path
+#
+# No `## Workflow` block means "not set up", and flow is the entry point, so it
+# calls setup before anything else. `Mode: direct` sends it to the direct
+# reference, which holds the override, the start sha and the skipped steps.
+
+FLOW_DIRECT_PATH = os.path.join(SKILLS_DIR, "flow", "references", "direct.md")
+with open(os.path.join(SKILLS_DIR, "flow", "SKILL.md"), encoding="utf-8") as fh:
+    flow_skill_flat = flat(fh.read())
+
+check("flow: calls devflow:setup when ## Workflow is missing",
+      "devflow:setup" in flow_skill_flat and "## Workflow" in flow_skill_flat,
+      "flow's SKILL.md never names devflow:setup and the ## Workflow block")
+
+check("flow: argument-hint offers --pr",
+      "--pr" in flow_values.get("argument-hint", ""),
+      "flow's argument-hint never mentions --pr")
+
+check("flow: points at references/direct.md",
+      "references/direct.md" in flow_skill_flat,
+      "flow's SKILL.md never links references/direct.md")
+
+if os.path.exists(FLOW_DIRECT_PATH):
+    with open(FLOW_DIRECT_PATH, encoding="utf-8") as fh:
+        flow_direct_text = fh.read()
+else:
+    flow_direct_text = ""
+
+check("flow/direct: the reference exists",
+      flow_direct_text != "",
+      f"{FLOW_DIRECT_PATH} does not exist")
+
+for needle in ("start:", "size:", "mode: pr", "--pr", "Mode:", "PR this time",
+               "rev-parse HEAD"):
+    check(f"flow/direct: names {needle}",
+          needle in flow_direct_text,
+          f"{FLOW_DIRECT_PATH} never names {needle!r}")
+
+check("flow/direct: skips the PR lookup and the branch logic",
+      "step 0" in flow_direct_text and "0c" in flow_direct_text,
+      f"{FLOW_DIRECT_PATH} never says which of flow's steps direct skips")
+
+
+# ------------------------------- build and submit finish a direct job on main
+#
+# In direct, build cuts no branch and submit does not refuse main. The detail
+# is submit's references/direct.md: review by size, the start sha as review's
+# fixed point, Assumptions in the commit body, pull --rebase then push, and no
+# remote. Landing a linked worktree's branch is land-on-main.md's, not this.
+
+SUBMIT_DIRECT_PATH = os.path.join(SKILLS_DIR, "submit", "references",
+                                   "direct.md")
+with open(os.path.join(SKILLS_DIR, "submit", "SKILL.md"),
+          encoding="utf-8") as fh:
+    submit_skill_raw = fh.read()
+submit_skill_flat = flat(submit_skill_raw)
+submit_values = parsed.get("submit", (None, {}))[1]
+
+if os.path.exists(SUBMIT_DIRECT_PATH):
+    with open(SUBMIT_DIRECT_PATH, encoding="utf-8") as fh:
+        submit_direct_text = fh.read()
+else:
+    submit_direct_text = ""
+
+with open(os.path.join(SKILLS_DIR, "build", "SKILL.md"),
+          encoding="utf-8") as fh:
+    build_direct_text = fh.read()
+
+check("build: in direct it cuts no branch",
+      "direct" in build_direct_text
+      and "no branch" in flat(build_direct_text)
+      and "`## Workflow`" in build_direct_text
+      and "`mode: pr`" in build_direct_text,
+      "build/SKILL.md never says that in direct, with no mode: pr line, it "
+      "cuts no branch")
+
+check("submit: points at references/direct.md",
+      submit_skill_flat.count("references/direct.md") >= 4,
+      "submit's SKILL.md links references/direct.md fewer than four times "
+      "(steps 1, 5, 7, 8)")
+
+check("submit: argument-hint takes start:, size: and mode:",
+      all(w in submit_values.get("argument-hint", "")
+          for w in ("start:", "size:", "mode: pr")),
+      "submit's argument-hint never names start:, size: and mode: pr")
+
+check("submit: the default-branch rules say pr mode",
+      "Never commit on the default branch in pr mode." in submit_skill_raw
+      and "Never end a pr-mode run without a pull request." in submit_skill_raw,
+      "submit's Rules never limit the default-branch and PR rules to pr mode")
+
+check("submit/direct: the reference exists",
+      submit_direct_text != "",
+      f"{SUBMIT_DIRECT_PATH} does not exist")
+
+# ----------------------------- landing a worktree branch on main, written once
+#
+# Multitask, plan chains and sweep all land a linked worktree's branch on main,
+# so the sequence lives in one file and each caller points at it. The commands
+# that look right and are wrong are pinned too: update-ref leaves the main
+# checkout's index stale, and push or fetch into a checked-out branch is refused.
+
+LAND_PATH = os.path.join(SKILLS_DIR, "submit", "references", "land-on-main.md")
+if os.path.exists(LAND_PATH):
+    with open(LAND_PATH, encoding="utf-8") as fh:
+        land_text = fh.read()
+else:
+    land_text = ""
+
+check("land-on-main: the reference exists",
+      land_text != "", f"{LAND_PATH} does not exist")
+
+for needle in ("--ff-only", "push origin HEAD:", "rebase",
+               "✓ **landed** <branch> on main, <sha>",
+               "✗ **landed** main moved",
+               "branch -d"):
+    check(f"land-on-main: names {needle}",
+          needle in land_text,
+          f"{LAND_PATH} never names {needle!r}")
+
+check("land-on-main: update-ref is named as a never",
+      re.search(r"[Nn]ever[^\n]*git update-ref", land_text) is not None,
+      f"{LAND_PATH} never lists git update-ref among the commands never to run")
+
+check("land-on-main: push and fetch into main are named as a never",
+      "push . HEAD:main" in land_text and "fetch . HEAD:main" in land_text,
+      f"{LAND_PATH} never lists the push . and fetch . forms as forbidden")
+
+check("submit/direct: calls land-on-main.md for a linked worktree",
+      "land-on-main.md" in submit_direct_text
+      and "linked worktree" in submit_direct_text,
+      f"{SUBMIT_DIRECT_PATH} never sends a linked worktree to land-on-main.md")
+
+for needle in ("start:", "size:", "mode: pr", "Quick", "Standard", "Deep",
+               "– **review** skipped — Quick, direct mode",
+               "fixed point", "Assumptions", "git pull --rebase",
+               "git push", "no remote", "Done report", "step 8"):
+    check(f"submit/direct: names {needle}",
+          needle in submit_direct_text,
+          f"{SUBMIT_DIRECT_PATH} never names {needle!r}")
+
+
 # ------------------------------------ ship refuses and protects stacked PRs
 #
 # On 22 Sep 2026 `gh pr merge 23 --rebase --delete-branch` closed #24, which
@@ -2281,12 +2464,12 @@ check("build: a detached HEAD is no branch, so it cuts one",
 SHAPED_LABELS = {
     "backlog", "branch", "chains", "checks", "chips", "cleaned", "commit",
     "conflict", "debug", "deploy", "docs", "done", "features", "glossary",
-    "green", "handback", "issue", "lesson", "lint", "live", "look", "merge", "merged",
+    "green", "handback", "issue", "landed", "lesson", "lint", "live", "look", "merge", "merged",
     "no-behaviour", "open", "opinion", "override", "parked", "piece",
-    "pieces", "plan", "plans", "pr", "pushed", "red", "research", "retargeted", "review",
+    "pieces", "plan", "plans", "pr", "pushed", "red", "repo", "research", "retargeted", "review",
     "see", "session", "settings", "stuck", "tended", "test", "theirs", "todo",
     "typecheck",
-    "worktree", "yours",
+    "worktree", "workflow", "yours",
 }
 
 # `→` also runs mid-sentence in prose -- "Either fails → **stop editing**" --
@@ -4034,6 +4217,8 @@ REFERENCE_STEPS = {
         "plan-and-concerns.md": ["## 7. "],
         "update-pr.md": ["## 8. "],
         "tracker-actions.md": ["## 8. "],
+        "direct.md": ["## 1. ", "## 5. ", "## 7. ", "## 8. "],
+        "land-on-main.md": ["## 7. "],
     },
     "review": {
         "find-the-spec.md": ["## 2. "],
