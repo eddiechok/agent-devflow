@@ -30,7 +30,7 @@ python3 evals/run.py --case sizing-* --runs 1
 python3 evals/run.py --dry-run                # parse and print, run nothing
 ```
 
-It scores **77 of the 91 graders** — every `regex`, `tool_used`, `tool_order`
+It scores **83 of the 97 graders** — every `regex`, `tool_used`, `tool_order`
 and `file_exists`. The fourteen `llm` graders come back `skip`, stay out of the
 denominator, and are counted in the summary. **A skip is never a pass**, the
 same way `NOT RUN` is never `none`.
@@ -92,6 +92,7 @@ size with a bare `regex`/`trace` grader.
 | `worktree-guard` | medium | A second session cuts its branch in the shared checkout and moves the folder out from under a session already working in it |
 | `ship-tends-conflict` | high, **manual** | A conflicting pull request gets merged, or `ship` goes back to stopping on a conflict and making the human type `tend` themselves |
 | `sweep-quick-issues` | high, **manual** | A sweep puts two issues that share a file in separate PRs, opens a PR for an issue that is not Quick, starts a sweeper per issue instead of per chain, or asks a question no sweeper can have answered |
+| `skills-suggests-railway` | low | A repo with a `railway.json` is not told about the Railway plugin, gets an install command without `--scope project`, or has an install run for it instead of printed |
 
 `plans-on-tracker` is **manual**. It needs a real GitHub repo with issues on and
 a logged-in `gh`, which no scaffold can fake. `run.py` leaves it out unless you

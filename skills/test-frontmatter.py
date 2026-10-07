@@ -5290,6 +5290,221 @@ check("agents/sweeper: hands its worktree path to every agent the review starts"
       and "main folder" in sweeper_body,
       f"{SWEEPER_PATH} never tells the review's agents to read its worktree")
 
+# ------------------------------------------------------------ skills' rules
+#
+# Issue #91: `skills` reads what the repo is built with, matches it against a
+# short vendor table, and prints the exact install command for each match. It
+# lists and never installs: the human runs every command, at project scope. It
+# is model-invocable so `setup` can call it later. The vendor table lives in
+# references/vendors.md, where a human can read the source bar per row.
+
+FINDER_PATH = os.path.join(SKILLS_DIR, "skills", "SKILL.md")
+finder_text = ""
+if os.path.isfile(FINDER_PATH):
+    with open(FINDER_PATH, encoding="utf-8") as fh:
+        finder_text = fh.read()
+finder_body = flat(finder_text)
+finder_values = parsed.get("skills", (None, {}))[1]
+finder_desc = finder_values.get("description", "")
+VENDORS_PATH = os.path.join(SKILLS_DIR, "skills", "references", "vendors.md")
+vendors_text = ""
+if os.path.isfile(VENDORS_PATH):
+    with open(VENDORS_PATH, encoding="utf-8") as fh:
+        vendors_text = fh.read()
+vendors_body = flat(vendors_text)
+
+check("skills: skills is among the skills found",
+      "skills" in skills, f"no skills/skills/SKILL.md found in {SKILLS_DIR!r}")
+
+check("skills: is model-invocable, so setup can call it",
+      "disable-model-invocation" not in finder_values,
+      "skills' frontmatter sets disable-model-invocation")
+
+check("skills: the description says it suggests skills that fit the repo",
+      "suggest" in finder_desc and "repo" in finder_desc
+      and "install" in finder_desc,
+      f"{FINDER_PATH}'s description never says it suggests skills for the repo")
+
+check("skills: reads what is installed first, from the CLI and from loose files",
+      "claude plugin list --json" in finder_body
+      and "claude mcp list" in finder_body
+      and ".claude/skills/*/SKILL.md" in finder_body
+      and "~/.claude/skills/*/SKILL.md" in finder_body,
+      f"{FINDER_PATH} never reads installed plugins, MCP servers and loose skills")
+
+check("skills: skips what is already installed",
+      "skip" in finder_body and "already installed" in finder_body,
+      f"{FINDER_PATH} never skips an installed skill")
+
+check("skills: links the vendor table, which exists",
+      "references/vendors.md" in finder_body and vendors_text != "",
+      f"{FINDER_PATH} never links references/vendors.md, or the file is missing")
+
+check("skills: the vendor table names Railway, Medusa, Cloudflare, Supabase and Stripe",
+      all(repo in vendors_text for repo in (
+          "railwayapp/railway-skills", "medusajs/medusa-agent-skills",
+          "cloudflare/skills", "supabase/agent-skills", "stripe/ai")),
+      f"{VENDORS_PATH} is missing one of the five vendor repos")
+
+check("skills: the vendor table keys each row to a file signal",
+      all(sig in vendors_text for sig in (
+          "railway.json", "railway.toml", "@medusajs/", "wrangler.jsonc",
+          "wrangler.toml", "supabase/", "@supabase/", "Dockerfile",
+          "playwright.config")),
+      f"{VENDORS_PATH} is missing a file signal")
+
+check("skills: the source bar is an official vendor repo or 1k+ stars",
+      "official vendor repo" in vendors_body and "1k+ stars" in vendors_body,
+      f"{VENDORS_PATH} never states the source bar")
+
+check("skills: prints project-scope commands for a plugin marketplace",
+      "claude plugin marketplace add <owner/repo> --scope project" in finder_body
+      and "claude plugin install <plugin>@<marketplace> --scope project" in finder_body
+      and "npx skills add <owner/repo>" in finder_body,
+      f"{FINDER_PATH} never prints the project-scope install commands")
+
+check("skills: lists and never installs, the human runs each command",
+      "Never run an install command" in finder_body
+      and "the human runs" in finder_body,
+      f"{FINDER_PATH} never says it only prints the install command")
+
+check("skills: never suggests a plugin and its own MCP-only install both",
+      "never suggest a plugin and its own mcp-only install both"
+      in finder_body.lower(),
+      f"{FINDER_PATH} never says a plugin and its MCP-only install are one choice")
+
+check("skills: says what each suggestion carries and its size",
+      "carries" in finder_body and "size" in finder_body
+      and "skill only" in finder_body and "hooks" in finder_body
+      and "MCP" in finder_body and "scripts" in finder_body,
+      f"{FINDER_PATH} never says what a suggestion carries, or its size")
+
+check("skills: falls back to npx skills find with telemetry off",
+      "DISABLE_TELEMETRY=1 npx skills find" in finder_body,
+      f"{FINDER_PATH} never falls back to DISABLE_TELEMETRY=1 npx skills find")
+
+check("skills: with no npx it skips the fallback and says so",
+      "npx is missing" in finder_body and "skip the fallback" in finder_body
+      and "print a line" in finder_body,
+      f"{FINDER_PATH} never says what it does when npx is missing")
+
+check("skills: searches only what the repo is built with",
+      "only what the repo is built with" in finder_body
+      and "openapi" in finder_body.lower(),
+      f"{FINDER_PATH} never limits the search to what the repo is built with")
+
+check("skills: never searches the categories devflow owns",
+      "Never search" in finder_body and "code quality" in finder_body
+      and "TDD" in finder_body and "git" in finder_body,
+      f"{FINDER_PATH} never names the how-to-work categories it leaves to devflow")
+
+check("skills: quality rules copied from find-skills",
+      "official sources first" in finder_body.lower()
+      and "under 100 stars" in finder_body,
+      f"{FINDER_PATH} never carries find-skills' quality rules")
+
+check("skills: an empty repo gets up to 4 stack questions in one round",
+      "up to 4" in finder_body and "one round" in finder_body
+      and "frontend, backend, database, deploy" in finder_body
+      and "Not decided yet" in finder_body,
+      f"{FINDER_PATH} never asks the 4 stack questions for an empty repo")
+
+check("skills: an empty repo is told to run again, and files win over answers",
+      "run it again" in finder_body and "files win" in finder_body.lower(),
+      f"{FINDER_PATH} never says to run again, or that files win over answers")
+
+check("skills: a repo with code never gets stack questions, a missing deploy file is a skip",
+      "never ask a stack question" in finder_body.lower()
+      and "skip deploy" in finder_body,
+      f"{FINDER_PATH} still lets a repo with code be asked about its stack")
+
+# Issue #91, frontend: design skills give competing style directives when
+# installed together, so the skill suggests ONE of them plus the review-only
+# web-design-guidelines, after asking up to 3 questions in one round. The
+# questions and what each answer maps to live in references/design.md.
+
+DESIGN_PATH = os.path.join(SKILLS_DIR, "skills", "references", "design.md")
+design_text = ""
+if os.path.isfile(DESIGN_PATH):
+    with open(DESIGN_PATH, encoding="utf-8") as fh:
+        design_text = fh.read()
+design_body = flat(design_text)
+
+check("skills: links the design reference, which exists",
+      "references/design.md" in finder_body and design_text != "",
+      f"{FINDER_PATH} never links references/design.md, or the file is missing")
+
+check("skills: the design table names all six skills with their repos",
+      all(item in design_text for item in (
+          "frontend-design", "taste-skill", "impeccable", "ui-ux-pro-max",
+          "minimalist-skill", "redesign-skill", "web-design-guidelines",
+          "Leonxlnx/taste-skill", "pbakaus/impeccable",
+          "nextlevelbuilder/ui-ux-pro-max-skill", "vercel-labs/agent-skills")),
+      f"{DESIGN_PATH} is missing a design skill or its repo")
+
+check("skills: the design table gives size, stars, what it carries and the install",
+      all(col in design_text for col in ("Size", "Stars", "Carries", "Install")),
+      f"{DESIGN_PATH}'s table is missing a column")
+
+check("skills: detects frontend facts before it asks anything",
+      all(fact in finder_body for fact in (
+          "react-native", "expo", "electron", "tauri", "tailwind.config",
+          "components/ui"))
+      and "facts first" in finder_body.lower(),
+      f"{FINDER_PATH} never lists the frontend facts it reads before asking")
+
+check("skills: asks up to 3 design questions in one round, each with a recommendation",
+      "up to 3 questions" in finder_body and "one round" in finder_body
+      and "recommended answer" in finder_body,
+      f"{FINDER_PATH} never asks the design questions as one round with a recommendation")
+
+check("skills: question 1 asks what the UI is for, and maps each answer",
+      "what is the ui for" in design_body.lower()
+      and "landing" in design_body and "app screens" in design_body
+      and "mobile" in design_body and "desktop" in design_body,
+      f"{DESIGN_PATH} never asks what the UI is for, or never maps its answers")
+
+check("skills: question 2 asks the look, and maps bold, clean and no view",
+      "what look" in design_body.lower() and "bold" in design_body
+      and "minimalist-skill" in design_body and "no view" in design_body,
+      f"{DESIGN_PATH} never asks about the look, or never maps its answers")
+
+check("skills: question 3 asks new or improve, and only when UI exists",
+      "new or improve" in design_body.lower() and "only when UI exists" in design_body
+      and "redesign-skill" in design_body,
+      f"{DESIGN_PATH} never asks new or improve, only when UI exists")
+
+check("skills: suggests ONE design skill plus web-design-guidelines",
+      "one design skill" in finder_body.lower()
+      and "web-design-guidelines" in finder_body
+      and "review-only" in finder_body,
+      f"{FINDER_PATH} never limits the list to one design skill plus web-design-guidelines")
+
+check("skills: warns when several design skills are already installed",
+      "several design skills" in finder_body and "clash" in finder_body
+      and "competing" in design_body,
+      f"{FINDER_PATH} never warns about several installed design skills clashing")
+
+check("skills: minimalist-skill is named as the clash with frontend-design's bold direction",
+      "minimalist-skill" in design_body and "frontend-design" in design_body
+      and "conflicts with" in design_body,
+      f"{DESIGN_PATH} never says minimalist-skill conflicts with frontend-design")
+
+check("skills: prints commands to move a design skill from user to project scope",
+      "~/.claude/skills/<name>" in design_text
+      and ".claude/skills/<name>" in design_text
+      and "claude plugin uninstall <plugin>@<marketplace> --scope user" in design_text
+      and "user scope to project scope" in finder_body,
+      f"{FINDER_PATH} and {DESIGN_PATH} never print how to move a skill to project scope")
+
+check("skills: the move commands are printed and never run",
+      "never run them" in design_body.lower() or "never run them" in finder_body.lower(),
+      f"{DESIGN_PATH} never says the move commands are only printed")
+
+check("skills: the two skills whose source is unconfirmed are confirmed before a command is printed",
+      "unconfirmed" in design_body and "confirm the source" in design_body,
+      f"{DESIGN_PATH} never says minimalist-skill and redesign-skill need their source confirmed")
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")
