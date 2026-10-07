@@ -5418,6 +5418,93 @@ check("skills: a repo with code never gets stack questions, a missing deploy fil
       and "skip deploy" in finder_body,
       f"{FINDER_PATH} still lets a repo with code be asked about its stack")
 
+# Issue #91, frontend: design skills give competing style directives when
+# installed together, so the skill suggests ONE of them plus the review-only
+# web-design-guidelines, after asking up to 3 questions in one round. The
+# questions and what each answer maps to live in references/design.md.
+
+DESIGN_PATH = os.path.join(SKILLS_DIR, "skills", "references", "design.md")
+design_text = ""
+if os.path.isfile(DESIGN_PATH):
+    with open(DESIGN_PATH, encoding="utf-8") as fh:
+        design_text = fh.read()
+design_body = flat(design_text)
+
+check("skills: links the design reference, which exists",
+      "references/design.md" in finder_body and design_text != "",
+      f"{FINDER_PATH} never links references/design.md, or the file is missing")
+
+check("skills: the design table names all six skills with their repos",
+      all(item in design_text for item in (
+          "frontend-design", "taste-skill", "impeccable", "ui-ux-pro-max",
+          "minimalist-skill", "redesign-skill", "web-design-guidelines",
+          "Leonxlnx/taste-skill", "pbakaus/impeccable",
+          "nextlevelbuilder/ui-ux-pro-max-skill", "vercel-labs/agent-skills")),
+      f"{DESIGN_PATH} is missing a design skill or its repo")
+
+check("skills: the design table gives size, stars, what it carries and the install",
+      all(col in design_text for col in ("Size", "Stars", "Carries", "Install")),
+      f"{DESIGN_PATH}'s table is missing a column")
+
+check("skills: detects frontend facts before it asks anything",
+      all(fact in finder_body for fact in (
+          "react-native", "expo", "electron", "tauri", "tailwind.config",
+          "components/ui"))
+      and "facts first" in finder_body.lower(),
+      f"{FINDER_PATH} never lists the frontend facts it reads before asking")
+
+check("skills: asks up to 3 design questions in one round, each with a recommendation",
+      "up to 3 questions" in finder_body and "one round" in finder_body
+      and "recommended answer" in finder_body,
+      f"{FINDER_PATH} never asks the design questions as one round with a recommendation")
+
+check("skills: question 1 asks what the UI is for, and maps each answer",
+      "what is the ui for" in design_body.lower()
+      and "landing" in design_body and "app screens" in design_body
+      and "mobile" in design_body and "desktop" in design_body,
+      f"{DESIGN_PATH} never asks what the UI is for, or never maps its answers")
+
+check("skills: question 2 asks the look, and maps bold, clean and no view",
+      "what look" in design_body.lower() and "bold" in design_body
+      and "minimalist-skill" in design_body and "no view" in design_body,
+      f"{DESIGN_PATH} never asks about the look, or never maps its answers")
+
+check("skills: question 3 asks new or improve, and only when UI exists",
+      "new or improve" in design_body.lower() and "only when UI exists" in design_body
+      and "redesign-skill" in design_body,
+      f"{DESIGN_PATH} never asks new or improve, only when UI exists")
+
+check("skills: suggests ONE design skill plus web-design-guidelines",
+      "one design skill" in finder_body.lower()
+      and "web-design-guidelines" in finder_body
+      and "review-only" in finder_body,
+      f"{FINDER_PATH} never limits the list to one design skill plus web-design-guidelines")
+
+check("skills: warns when several design skills are already installed",
+      "several design skills" in finder_body and "clash" in finder_body
+      and "competing" in design_body,
+      f"{FINDER_PATH} never warns about several installed design skills clashing")
+
+check("skills: minimalist-skill is named as the clash with frontend-design's bold direction",
+      "minimalist-skill" in design_body and "frontend-design" in design_body
+      and "conflicts with" in design_body,
+      f"{DESIGN_PATH} never says minimalist-skill conflicts with frontend-design")
+
+check("skills: prints commands to move a design skill from user to project scope",
+      "~/.claude/skills/<name>" in design_text
+      and ".claude/skills/<name>" in design_text
+      and "claude plugin uninstall <plugin>@<marketplace> --scope user" in design_text
+      and "user scope to project scope" in finder_body,
+      f"{FINDER_PATH} and {DESIGN_PATH} never print how to move a skill to project scope")
+
+check("skills: the move commands are printed and never run",
+      "never run them" in design_body.lower() or "never run them" in finder_body.lower(),
+      f"{DESIGN_PATH} never says the move commands are only printed")
+
+check("skills: the two skills whose source is unconfirmed are confirmed before a command is printed",
+      "unconfirmed" in design_body and "confirm the source" in design_body,
+      f"{DESIGN_PATH} never says minimalist-skill and redesign-skill need their source confirmed")
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")

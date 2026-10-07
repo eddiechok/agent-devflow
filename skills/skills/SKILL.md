@@ -58,6 +58,25 @@ For each such search, run `DISABLE_TELEMETRY=1 npx skills find <query>`. The var
 the search from sending anonymous usage data. When npx is missing, skip the fallback and
 print a line saying so, so a gap in the list is never read as "nothing exists".
 
+## 3a. A repo with a UI
+
+Read the frontend facts first: `react-native`, `expo`, `electron` or `tauri` in the
+dependencies, a `tailwind.config.*` file, a `components/ui` folder, and how much UI code
+there is. No UI at all means skip this step.
+
+Then ask up to 3 questions in one round: what the UI is for, what look it should have, and
+whether it is new or an improvement (only when UI exists). Each has a recommended answer
+taken from the facts. The questions, and which skill each answer points at, are in
+[the design reference](references/design.md).
+
+Suggest **one design skill** and nothing else that generates a style, plus
+`web-design-guidelines`, which is review-only and clashes with nothing. Design skills give
+competing directions when installed together, so two of them is never a list.
+
+When several design skills are already installed, print a clash warning naming them. When the
+pick is installed at user scope only, print the commands to move it from user scope to
+project scope. Never run them.
+
 ## 4. Check the source before listing it
 
 Do not list a skill on the strength of a search result alone. A skill from the table has
