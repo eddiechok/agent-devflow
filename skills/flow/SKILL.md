@@ -1,7 +1,7 @@
 ---
 name: flow
-description: "Use when a request will change anything tracked in the repo - a feature, a bug fix, a refactor, a chore or a dependency bump, and equally copy, content, docs, config, styles, images or other assets. Editing a tracked file is the test, not whether the work sounds like coding. Enter here mid-task too, the moment an investigation turns into an edit. Sizes the work as Quick, Standard or Deep, then routes it through build and submit, so the work ends as a pull request rather than uncommitted changes. Accepts free text, a GitHub issue number like #123, an issue URL, a backlog file path under .devflow/backlog/, or a plan to build - a devflow:plan issue or a path under .devflow/plans/. This is the entry point, start here."
-argument-hint: "[--quick|--deep] what you want, #123, .devflow/backlog/<name>.md, or .devflow/plans/<name>.md"
+description: "Use when a request will change anything tracked in the repo - a feature, a bug fix, a refactor, a chore or a dependency bump, and equally copy, content, docs, config, styles, images or other assets. Editing a tracked file is the test, not whether the work sounds like coding. Enter here mid-task too, the moment an investigation turns into an edit. Sizes the work as Quick, Standard or Deep, then routes it through build and submit, so the work ends as a pull request (or, in a project set to direct, a commit on main) rather than uncommitted changes. Accepts free text, a GitHub issue number like #123, an issue URL, a backlog file path under .devflow/backlog/, or a plan to build - a devflow:plan issue or a path under .devflow/plans/. This is the entry point, start here."
+argument-hint: "[--quick|--deep] [--pr] what you want, #123, .devflow/backlog/<name>.md, or .devflow/plans/<name>.md"
 allowed-tools: Bash(git status:*), Bash(git branch:*), Bash(git rev-parse:*), Bash(git symbolic-ref:*), Bash(git rev-list:*), Bash(git remote show:*), Bash(ls:*), Bash(gh label create:*), Bash(rm .devflow/backlog/*), Bash(git log:*), EnterWorktree, mcp__ccd_session__spawn_task
 ---
 
@@ -19,6 +19,13 @@ rule looks wrong.
 - Status: !`git status --short 2>/dev/null | head -20 || true`
 - Commits ahead of origin/HEAD: !`git rev-list --count origin/HEAD..HEAD 2>/dev/null || echo "unknown — origin/HEAD is not set"`
 - Plans on disk: !`ls .devflow/plans 2>/dev/null || echo none`
+
+## Before step 0 — is this project set up?
+
+Read `CLAUDE.md` for a `## Workflow` block. **None means not set up**: call `devflow:setup`,
+then carry on with the request. `Mode: direct` means read
+[references/direct.md](references/direct.md) now; it says which steps below change. `Mode: pr`
+changes nothing.
 
 ## Step 0 — is this a follow-up?
 
@@ -452,15 +459,12 @@ When `build` comes back — or the last builder's report, on a Deep job — call
 `review` finds it on its own; pass the request anyway, it costs one paste.
 
 Each kept tracker action goes too, one `tracker: <action>` line each, before the `request:` line.
+In direct mode `start:` and `size:` go too, and `mode: pr` on an override: references/direct.md.
 
 Do not stop at "ready for a PR" and hand it back.
 
-The only reasons not to call `submit`:
-
-- The build did not reach green. Say what is red and stop.
-- The human said not to.
-
-Both are things you say out loud. Neither is silence.
+The only reasons not to call `submit` are a build that did not reach green (say what is red
+and stop) and the human saying not to. Both are said out loud, never in silence.
 
 ## Output
 

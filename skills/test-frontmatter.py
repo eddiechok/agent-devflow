@@ -833,6 +833,49 @@ check("setup: keeps an existing ## Workflow block",
       f"{SETUP_PATH} never says an existing ## Workflow block is kept")
 
 
+# ------------------------------------ flow runs setup first, and has a direct path
+#
+# No `## Workflow` block means "not set up", and flow is the entry point, so it
+# calls setup before anything else. `Mode: direct` sends it to the direct
+# reference, which holds the override, the start sha and the skipped steps.
+
+FLOW_DIRECT_PATH = os.path.join(SKILLS_DIR, "flow", "references", "direct.md")
+with open(os.path.join(SKILLS_DIR, "flow", "SKILL.md"), encoding="utf-8") as fh:
+    flow_skill_flat = flat(fh.read())
+
+check("flow: calls devflow:setup when ## Workflow is missing",
+      "devflow:setup" in flow_skill_flat and "## Workflow" in flow_skill_flat,
+      "flow's SKILL.md never names devflow:setup and the ## Workflow block")
+
+check("flow: argument-hint offers --pr",
+      "--pr" in flow_values.get("argument-hint", ""),
+      "flow's argument-hint never mentions --pr")
+
+check("flow: points at references/direct.md",
+      "references/direct.md" in flow_skill_flat,
+      "flow's SKILL.md never links references/direct.md")
+
+if os.path.exists(FLOW_DIRECT_PATH):
+    with open(FLOW_DIRECT_PATH, encoding="utf-8") as fh:
+        flow_direct_text = fh.read()
+else:
+    flow_direct_text = ""
+
+check("flow/direct: the reference exists",
+      flow_direct_text != "",
+      f"{FLOW_DIRECT_PATH} does not exist")
+
+for needle in ("start:", "size:", "mode: pr", "--pr", "Mode:", "PR this time",
+               "rev-parse HEAD"):
+    check(f"flow/direct: names {needle}",
+          needle in flow_direct_text,
+          f"{FLOW_DIRECT_PATH} never names {needle!r}")
+
+check("flow/direct: skips the PR lookup and the branch logic",
+      "step 0" in flow_direct_text and "0c" in flow_direct_text,
+      f"{FLOW_DIRECT_PATH} never says which of flow's steps direct skips")
+
+
 # ------------------------------------ ship refuses and protects stacked PRs
 #
 # On 22 Sep 2026 `gh pr merge 23 --rebase --delete-branch` closed #24, which
