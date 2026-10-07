@@ -418,7 +418,7 @@ Keep asking rounds until no open question could change a todo line, a plan piece
 user sees. There is no cap on rounds. A later round holds only the questions the earlier answers opened up.
 
 If the human answers a question with a request to explain it, such as "explain this" in
-Other, explain it in plain words, then ask that one question again in a popup. On Standard and Deep, a decision question about how something looks, where seeing beats reading, gets one extra option, "Show me the variants" (the numbered list offers it too). Pick it, read [references/look-question.md](references/look-question.md) to make the variants, then ask the same question again.
+Other, explain it in plain words, then ask that one question again in a popup. On Standard and Deep, a decision question about how something looks, where seeing beats reading, gets one extra option labelled "Show me the variants", word for word (the numbered list offers it too). Pick it, read [references/look-question.md](references/look-question.md) to make the variants, then ask the same question again.
 
 #### Facts are your job. Decisions are the human's
 

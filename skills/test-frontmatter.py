@@ -6053,6 +6053,13 @@ check("flow/look: the rule sits in Asking questions, with the extra option",
       and "seeing beats reading" in _asking_flat,
       f"{FLOW_PATH} Asking questions never carries the look-question rule")
 
+# The paid eval on 7 Oct 2026 saw "Show me 2 layout variants" in 2 runs of 3: a
+# label the model reworded is a label nothing downstream can find. So the rule
+# says the label is word for word.
+check("flow/look: the option label is word for word",
+      'labelled "Show me the variants", word for word' in _asking_flat,
+      f"{FLOW_PATH} lets the model reword the variants option")
+
 check("flow/look: the same question is asked again after the variants",
       "ask the same question again" in _asking_flat
       and "numbered list" in _asking_flat,
