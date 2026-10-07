@@ -20,16 +20,21 @@ runs: 1
 
 graders:
   # The reason this case exists. A railway.json is the file signal for the
-  # Railway row, so the reply has to name the vendor's repo.
+  # Railway row, so the reply has to name the vendor's repo. Graded on what the
+  # run said, not the trace: vendors.md holds this name and the MCP-only line,
+  # and a `cat` or grep of it stays in the trace.
   - type: regex
     name: names-the-railway-repo
+    target: said
     pattern: "railwayapp/railway-skills"
     match: contains
     weight: 3
 
   # Install scope is the project's, so the commands the human copies carry it.
+  # On what was said: every install line in vendors.md carries it too.
   - type: regex
     name: prints-project-scope
+    target: said
     pattern: "--scope project"
     match: contains
     weight: 2
@@ -62,6 +67,7 @@ graders:
   # line as well is two installs of one thing.
   - type: regex
     name: suggests-no-mcp-only-install
+    target: said
     pattern: "claude mcp add railway"
     match: not_contains
     weight: 2

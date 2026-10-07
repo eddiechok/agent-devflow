@@ -1,7 +1,6 @@
 ---
 name: skills
 description: "Use when the human asks which agent skills, plugins or MCP servers would suit this project, or when setup wants to offer them. Reads the repo's files for what it is built with, reads what is already installed, then suggests skills that fit, each with why, what it carries and its size, and the exact install command. Lists only: the human runs every install."
-argument-hint: "[optional: a part of the stack to look at, such as deploy]"
 ---
 
 # skills

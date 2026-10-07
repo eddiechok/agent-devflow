@@ -478,6 +478,15 @@ check("grader: regex not_contains passes when absent",
                "pattern": "Quick\\s*[—–-]", "match": "not_contains"}),
       "pass")
 
+check("grader: regex on what was said finds the assistant's text",
+      verdict({"type": "regex", "name": "x", "target": "said",
+               "pattern": "Standard — changing", "match": "contains"}), "pass")
+check("grader: regex on what was said ignores tool output",
+      verdict({"type": "regex", "name": "x", "target": "said",
+               "pattern": "# pass 4", "match": "contains"}), "fail")
+check("grader: regex on what was said ignores the commands the run typed",
+      verdict({"type": "regex", "name": "x", "target": "said",
+               "pattern": "npm test", "match": "contains"}), "fail")
 check("grader: regex not_contains fails when present",
       verdict({"type": "regex", "target": "trace",
                "pattern": "Standard\\s*[—–-]", "match": "not_contains"}),
@@ -1199,6 +1208,36 @@ check("skills-suggests-railway: printing the MCP-only line too fails suggests-no
       "fail")
 check("skills-suggests-railway: the plugin alone passes suggests-no-mcp-only-install",
       railway_verdict("suggests-no-mcp-only-install", _SR_REPLY), "pass")
+
+# The vendor table holds both the repo name and the MCP-only line, and a run
+# may `cat` or grep it: Bash and Grep results stay in the trace. Every install
+# line there carries `--scope project` too. So all three text graders read
+# only what the run said, or that read decides them.
+_SR_CAT = [
+    {"type": "assistant", "message": {"content": [
+        {"type": "text", "text": "Nothing fits this repo."},
+        {"type": "tool_use", "id": "c1", "name": "Bash",
+         "input": {"command": "cat skills/skills/references/vendors.md"}},
+    ]}},
+    {"type": "user", "message": {"content": [
+        {"type": "tool_result", "tool_use_id": "c1",
+         "content": "railwayapp/railway-skills\nclaude mcp add railway --transport http"},
+    ]}},
+]
+check("skills-suggests-railway: a cat of the vendor table does not pass names-the-railway-repo",
+      verdict(_sr["names-the-railway-repo"], ctx(_SR_CAT)) if "names-the-railway-repo" in _sr else None,
+      "fail")
+check("skills-suggests-railway: a cat of the vendor table does not pass prints-project-scope",
+      verdict(_sr["prints-project-scope"], ctx(_SR_CAT + [
+          {"type": "user", "message": {"content": [
+              {"type": "tool_result", "tool_use_id": "c1",
+               "content": "claude plugin install railway@railway-skills --scope project"},
+          ]}}])) if "prints-project-scope" in _sr else None,
+      "fail")
+check("skills-suggests-railway: a cat of the vendor table does not fail suggests-no-mcp-only-install",
+      verdict(_sr["suggests-no-mcp-only-install"], ctx(_SR_CAT))
+      if "suggests-no-mcp-only-install" in _sr else None,
+      "pass")
 _sr_rows = [l for l in _readme.split("\n") if l.startswith("| `skills-suggests-railway`")]
 check("readme: the skills-suggests-railway row is there", len(_sr_rows), 1)
 

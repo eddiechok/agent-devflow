@@ -69,7 +69,9 @@ and those files hold worked examples of the lines graders look for:
 
 The limit, said out loud: the plugin source read any other way — `cat`, `grep` —
 still lands in the trace. Do not write a case that does that and then judges a
-size with a bare `regex`/`trace` grader.
+size with a bare `regex`/`trace` grader. A `regex` grader with `target: said`
+reads only the assistant's own text, no tool input or output, for a case whose
+run may read the very line it looks for.
 
 ## What each case is for
 

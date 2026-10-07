@@ -5505,6 +5505,47 @@ check("skills: the two skills whose source is unconfirmed are confirmed before a
       "unconfirmed" in design_body and "confirm the source" in design_body,
       f"{DESIGN_PATH} never says minimalist-skill and redesign-skill need their source confirmed")
 
+# Leonxlnx/taste-skill keeps its skills under skills/, so a check of the
+# repo's top level never finds them and always says "could not be confirmed".
+check("skills: the source check reads the folder the skills live in",
+      "repos/Leonxlnx/taste-skill/contents/skills" in design_text,
+      f"{DESIGN_PATH} checks the repo's top level, where neither skill sits")
+
+# "Pick the one question 1 named" could never reach minimalist-skill or
+# redesign-skill, and left landing + no view with two skills. One ordered
+# table, first match wins, every row naming one skill.
+_pick = design_text.split("## Pick one", 1)[1].split("\n## ", 1)[0] \
+    if "## Pick one" in design_text else ""
+_pick_rows = [l for l in _pick.split("\n") if l.startswith("| ") and "---" not in l][1:]
+check("skills: the design pick is one ordered table, first match wins",
+      "first match wins" in flat(_pick) and len(_pick_rows) >= 6,
+      f"{DESIGN_PATH} has no ordered pick table")
+check("skills: every row of the pick table names exactly one skill",
+      _pick_rows != [] and all(
+          sum(s in r for s in ("`frontend-design`", "`taste-skill`", "`impeccable`",
+                               "`ui-ux-pro-max`", "`minimalist-skill`",
+                               "`redesign-skill`")) == 1 for r in _pick_rows),
+      f"{DESIGN_PATH}: a pick row names two skills, or none")
+check("skills: every design skill can be picked",
+      all(s in _pick for s in ("`frontend-design`", "`taste-skill`", "`impeccable`",
+                               "`ui-ux-pro-max`", "`minimalist-skill`",
+                               "`redesign-skill`")),
+      f"{DESIGN_PATH}: some design skill can never be the pick")
+check("skills: the old tie-break is gone",
+      "question 1 named" not in design_body,
+      f"{DESIGN_PATH} still picks the skill question 1 named")
+
+# Cloud sessions load no plugin the repo's settings turn on, so a move to
+# project scope does not reach one.
+check("skills: the move to project scope makes no cloud claim",
+      "cloud session does not have it" not in design_body,
+      f"{DESIGN_PATH} says a project-scope move reaches a cloud session")
+
+# Nothing in the skill reads an argument, so the hint must not offer one.
+check("skills: no argument-hint the skill never reads",
+      "argument-hint" not in finder_values,
+      f"{FINDER_PATH} offers an argument nothing reads")
+
 # --- piece 4: the docs, the credits and the README name the skill (#91)
 
 SKILLS_DOC_PATH = os.path.join(REPO_ROOT, "docs", "skills.md")

@@ -25,8 +25,8 @@ Sizes and stars were read on 2026-10-07 from the installed copy or the repo.
 
 `minimalist-skill` and `redesign-skill` are probably part of `Leonxlnx/taste-skill`, and that
 is **unconfirmed**. Before printing an install line for either, confirm the source: read the
-repo's file list with `gh api repos/Leonxlnx/taste-skill/contents`, and print a line only if
-the skill's folder is there. If it is not, say the source could not be confirmed and print no
+repo's skills folder with `gh api repos/Leonxlnx/taste-skill/contents/skills`, and print a
+line only if the skill's folder is there. If it is not, say the source could not be confirmed and print no
 command.
 
 `web-design-guidelines` has no license, so nothing is copied from it. It is named and linked.
@@ -77,8 +77,22 @@ Recommend "no view" when the repo shows nothing that decides it.
 
 Recommend "improve" when there is a lot of UI code already.
 
-When the answers point at two different skills, pick the one question 1 named, and say in
-one line which answer it came from. Never print two design skills.
+## Pick one
+
+The tables above say which way each answer leans. This one decides. Go down it with the
+answers; first match wins, and say in one line which row it was. Never print two design
+skills.
+
+| # | When | Pick |
+|---|---|---|
+| 1 | the UI is for a mobile or desktop app | `ui-ux-pro-max` |
+| 2 | improve, and the UI is app screens | `impeccable` |
+| 3 | improve, and the UI is a landing, marketing site or portfolio | `redesign-skill` |
+| 4 | the look is clean and quiet | `minimalist-skill` |
+| 5 | the look is bold, and there is a lot of UI | `taste-skill` |
+| 6 | the look is bold | `frontend-design` |
+| 7 | the UI is app screens | `impeccable` |
+| 8 | anything left: a landing, marketing site or portfolio with no view on the look | `ui-ux-pro-max` |
 
 ## Already installed
 
@@ -89,8 +103,8 @@ plugins.
 - **Several design skills installed** (two or more of `frontend-design`, `taste-skill`,
   `impeccable`, `ui-ux-pro-max`, `minimalist-skill`): print a clash warning naming them, and
   say their directions are competing. Name the one that fits, and leave the rest to the human.
-- **The pick is installed at user scope only**: it is not in the repo, so a collaborator or a
-  cloud session does not have it. Print the commands to move it to project scope. They are
+- **The pick is installed at user scope only**: it is not in the repo, so a collaborator does
+  not get it. Print the commands to move it to project scope. They are
   printed and never run: the human runs them, and checks first that the project copy is the
   same version.
 
