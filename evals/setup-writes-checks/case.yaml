@@ -1,14 +1,21 @@
 schema_version: "1.1"
 name: setup-writes-checks
-description: setup runs the candidate commands before recording them, and does not invent the one the project lacks.
+description: setup runs the candidate commands before recording them, does not invent the one the project lacks, and writes a Workflow block from its questionnaire.
 tags: [setup]
 
 context:
   scaffold_script: ./scaffold.sh
 
 execution:
-  prompt: "/devflow:setup"
-  max_turns: 12
+  # Setup is a questionnaire now: what the project is about, direct or pr, where
+  # plans live. No popup tool is allowed here, so it asks as a numbered list,
+  # and nobody is at the keyboard to answer it.
+  prompt: "/devflow:setup Nobody is here to answer: yes to all, take every recommended answer, do not wait."
+  # 12 before the questionnaire. Step 0 reads the repo (three gh calls that fail
+  # on a fixture with no GitHub host), then the two commands, then the write.
+  # Not measured from a trace yet: if the late graders fail while the early
+  # ones pass, suspect this number first.
+  max_turns: 20
   timeout_seconds: 300
   allowed_tools: [Bash, Read, Write, Edit, Glob, Grep, Skill]
 
@@ -47,6 +54,20 @@ graders:
     pattern: "Lint:\\s*npm run lint"
     match: contains
 
+  # The questionnaire's answer, written where every skill reads it. The mode
+  # itself is not graded: the fixture's remote is a bare local repo, so the
+  # facts step 0 reads are "not read" and either recommendation is a fair one.
+  # What is graded is that a block was written at all, in the shape the skills
+  # and the hook read -- `Mode:` is `direct` or `pr` and nothing else.
+  - type: regex
+    name: writes-workflow-block
+    target:
+      source: file
+      path: CLAUDE.md
+    pattern: "##\\s*Workflow\\s*\\n-\\s*Mode:\\s*(direct|pr)\\s*\\n"
+    match: contains
+    weight: 3
+
   # The project has no typecheck. Recording one would be a command nothing
   # verified, which is the exact failure the skill exists to prevent -- submit
   # would later run it, see whatever it does, and call the work proven.
@@ -77,4 +98,5 @@ graders:
 
 expected_outcome: >
   Runs npm test and npm run lint, sees both pass, then writes a ## Checks
-  block naming exactly those two and no typecheck line.
+  block naming exactly those two and no typecheck line. Asks how the project
+  works, and writes a ## Workflow block whose Mode: is direct or pr.
