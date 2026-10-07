@@ -1,6 +1,6 @@
 # evals
 
-Seventeen cases. Run them before you push a change to a skill. Two are manual, see below.
+Twenty cases. Run them before you push a change to a skill. Three are manual, see below.
 
 ## Which runner
 
@@ -30,7 +30,7 @@ python3 evals/run.py --case sizing-* --runs 1
 python3 evals/run.py --dry-run                # parse and print, run nothing
 ```
 
-It scores **89 of the 103 graders** — every `regex`, `tool_used`, `tool_order`
+It scores **94 of the 108 graders** — every `regex`, `tool_used`, `tool_order`
 and `file_exists`. The fourteen `llm` graders come back `skip`, stay out of the
 denominator, and are counted in the summary. **A skip is never a pass**, the
 same way `NOT RUN` is never `none`.
@@ -96,6 +96,7 @@ run may read the very line it looks for.
 | `ship-tends-conflict` | high, **manual** | A conflicting pull request gets merged, or `ship` goes back to stopping on a conflict and making the human type `tend` themselves |
 | `sweep-quick-issues` | high, **manual** | A sweep puts two issues that share a file in separate PRs, opens a PR for an issue that is not Quick, starts a sweeper per issue instead of per chain, or asks a question no sweeper can have answered |
 | `skills-suggests-railway` | low | A repo with a `railway.json` is not told about the Railway plugin, gets an install command without `--scope project`, or has an install run for it instead of printed |
+| `look-question` | low | A Standard request with an open look decision never offers "Show me the variants", or edits the repo or drops a variant file in it before the human has picked |
 
 `plans-on-tracker` is **manual**. It needs a real GitHub repo with issues on and
 a logged-in `gh`, which no scaffold can fake. `run.py` leaves it out unless you
@@ -146,6 +147,13 @@ has. The scaffold closes the issues a previous run left open, but **not** the pu
 requests: close those and delete their branches by hand afterwards. It has one run and
 no `/clear` half. The `llm` grader reads which issues landed in which PR; the rest are
 counts of calls and lines.
+
+`look-question` stops at the question, like the sizing cases, so it measures what
+did not happen: no pick comes in a `claude -p` run, which means no variants are made,
+and nothing in the repo may change while the question waits. Its three "in the repo"
+graders find the repo by its temp folder name, `devflow-eval-*`, which is `run.py`'s
+`mkdtemp` prefix; `claude plugin eval` names its workspace differently, so there they
+pass for the wrong reason. A variant file in `mktemp`'s own folder is not a failure.
 
 `sizing-quick`, `sizing-standard`, `sizing-deep` and `danger-list` are the
 classifier, which is the part of `flow` most likely to

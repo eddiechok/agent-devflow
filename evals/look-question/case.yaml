@@ -1,0 +1,82 @@
+schema_version: "1.1"
+name: look-question
+description: A Standard request with an open look decision offers "Show me the variants" on its question, and until a pick edits nothing in the repo and writes no variant file there.
+tags: [flow, look-question]
+
+context:
+  scaffold_script: ./scaffold.sh
+
+execution:
+  # One new page in a repo that already has a UI: Standard, never Quick (the
+  # look question is Standard and Deep only) and nowhere near Deep. The prompt
+  # says the look is undecided on purpose. Without that the questions are all
+  # about behaviour, and a run that never asks a look question would pass for
+  # the wrong reason.
+  prompt: "/devflow:flow add a page to the web app that shows the greetings people have sent. I have not decided how it should look"
+  # Budgeted from what the run needs, not from taste (see the README on
+  # max_turns): the Skill call, a few reads of the page and its stylesheet, the
+  # size line, then the question. The run stops there. No pick ever comes, so
+  # the variants are never made and nothing is built.
+  max_turns: 14
+  timeout_seconds: 420
+  # Edit, Write and Bash stay in on purpose: with any of them out, the "edits
+  # nothing" graders could not fail.
+  allowed_tools: [Bash, Read, Edit, Write, Glob, Grep, Skill]
+
+runs: 3
+
+graders:
+  - type: regex
+    name: announces-standard
+    target: trace
+    pattern: "Standard\\s*[—–-]"
+    match: contains
+    weight: 2
+
+  # The reason this case exists. Issue #108. In a popup the option is a
+  # "label"; with no popup tool, which is every `claude -p` run, it is a line
+  # of the numbered list. Both are anchored: a `cat` of flow's own SKILL.md
+  # stays in the trace and says the phrase in prose, which must not count.
+  - type: regex
+    name: offers-the-variants-option
+    target: trace
+    pattern: '(?im)"label":\s*"Show me the variants|^[ \t>*_-]*(?:\(?[A-Za-z0-9]{1,2}[.):]\s*)?(?:\*\*)?"?Show me the variants'
+    match: contains
+    weight: 3
+
+  # Standard waits for go before the first edit, and the look question comes
+  # before go. The workspace is a mkdtemp named devflow-eval-*, which is how
+  # these three tell a path in the repo from the variants' own mktemp folder.
+  # `claude plugin eval` names its workspace differently, so these graders are
+  # run.py's. Edit and Write both count attempts, which is what is wanted.
+  - type: tool_used
+    name: no-edit-in-the-repo
+    tool: Edit
+    input_match: "devflow-eval-"
+    max: 0
+    weight: 3
+
+  - type: tool_used
+    name: no-write-in-the-repo
+    tool: Write
+    input_match: "devflow-eval-"
+    max: 0
+    weight: 3
+
+  # A variant file made with the shell instead of Write. A redirect or tee into
+  # a relative .html (the run's cwd is the repo) or into an absolute path inside
+  # the workspace. A redirect into mktemp's folder or any other absolute path is
+  # where the variants belong and does not match, and neither does reading the
+  # page: the `>` has to be a redirect, with a space before it.
+  - type: regex
+    name: no-variant-file-in-the-repo
+    target: trace
+    pattern: '(?:(?<=\s)>>?|\btee\b(?:\s+-a)?)\s*\\?["'']?(?:(?![/$~&])[\w./-]+|/[^\s"''\\]*devflow-eval-[^\s"''\\]*)\.html'
+    match: not_contains
+    weight: 2
+
+expected_outcome: >
+  Announces "Standard — ...", reads the page and its stylesheet, and asks how
+  the new page should look as text options ("A: ...", "B: ...") with one more,
+  "Show me the variants". Edits nothing and writes no file in the repo while
+  waiting for the pick.

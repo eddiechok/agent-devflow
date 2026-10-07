@@ -1412,6 +1412,200 @@ check("skills-suggests-railway: a cat of the vendor table does not fail suggests
 _sr_rows = [l for l in _readme.split("\n") if l.startswith("| `skills-suggests-railway`")]
 check("readme: the skills-suggests-railway row is there", len(_sr_rows), 1)
 
+# ---------------- look-question: offers the variants, edits nothing, writes no file
+#
+# Issue #108: on Standard and Deep, a decision question about how something
+# looks gets one extra option, "Show me the variants". The run here stops at the
+# question, so nothing is picked, and the promise is what did NOT happen: no
+# Edit or Write into the repo before the pick, and no variant file in the repo
+# at all. The workspace is a mkdtemp named devflow-eval-*, which is how a path
+# inside the repo is told from the variants' own temp folder.
+
+_lq_path = os.path.join(HERE, "look-question", "case.yaml")
+look_case = {}
+if os.path.isfile(_lq_path):
+    with open(_lq_path) as fh:
+        look_case = run.parse_yaml(fh.read())
+_lq = {g["name"]: g for g in look_case.get("graders", [])}
+_lq_ex = look_case.get("execution", {})
+
+check_true("look-question: the case exists", look_case != {})
+check_true("look-question: starts flow, which is where the question is asked",
+           "/devflow:flow" in _lq_ex.get("prompt", ""))
+check_true("look-question: the prompt leaves the look open, so there is a look to ask",
+           "look" in _lq_ex.get("prompt", "").lower())
+check_true("look-question: Edit and Write are allowed, or editing early could never fail",
+           {"Edit", "Write"} <= set(_lq_ex.get("allowed_tools", [])))
+check_true("look-question: Bash is allowed, or a heredoc variant file could never fail",
+           "Bash" in _lq_ex.get("allowed_tools", []))
+for _n in ("announces-standard", "offers-the-variants-option", "no-edit-in-the-repo",
+           "no-write-in-the-repo", "no-variant-file-in-the-repo"):
+    check_true("look-question: the %s grader is there" % _n, _n in _lq)
+
+_LQ_REPO = "/private/var/folders/xx/T/devflow-eval-ab12cd"
+_LQ_TEMP = "/private/var/folders/xx/T/tmp.Qw3rTy"
+
+
+def lq_verdict(name, said="", calls=()):
+    """The verdict of one look-question grader on a run that said `said` and
+    made `calls`, each a (tool, input) pair."""
+    if name not in _lq:
+        return None
+    blocks = [{"type": "text", "text": said}] + [
+        {"type": "tool_use", "id": "t%d" % i, "name": tool, "input": inp}
+        for i, (tool, inp) in enumerate(calls)]
+    return verdict(_lq[name], ctx([{"type": "assistant", "message": {"content": blocks}}]))
+
+
+check("look-question: a Standard line passes announces-standard",
+      lq_verdict("announces-standard", "Standard — a new page, three files."), "pass")
+check("look-question: a Quick line fails announces-standard",
+      lq_verdict("announces-standard", "Quick — one file."), "fail")
+
+_LQ_POPUP = ("AskUserQuestion", {"questions": [{
+    "question": "How should the history page be laid out?",
+    "options": [{"label": "A: cards (Recommended)"}, {"label": "B: table"},
+                {"label": "Show me the variants"}]}]})
+check("look-question: a popup with the extra option passes offers-the-variants-option",
+      lq_verdict("offers-the-variants-option", calls=[_LQ_POPUP]), "pass")
+check("look-question: a numbered list with the extra option passes offers-the-variants-option",
+      lq_verdict("offers-the-variants-option",
+                 "1. How should it look?\n   A: cards (Recommended)\n   B: table\n"
+                 "   C: Show me the variants"), "pass")
+check("look-question: a question with only text options fails offers-the-variants-option",
+      lq_verdict("offers-the-variants-option",
+                 "1. How should it look?\n   A: cards (Recommended)\n   B: table"), "fail")
+check("look-question: no question at all fails offers-the-variants-option",
+      lq_verdict("offers-the-variants-option", "Standard — a new page."), "fail")
+# A `cat` of flow's SKILL.md stays in the trace and says the phrase in prose.
+check("look-question: the phrase in a file the run only read does not pass offers-the-variants-option",
+      verdict(_lq["offers-the-variants-option"], ctx([
+          {"type": "assistant", "message": {"content": [
+              {"type": "tool_use", "id": "c1", "name": "Bash",
+               "input": {"command": "cat skills/flow/SKILL.md"}}]}},
+          {"type": "user", "message": {"content": [
+              {"type": "tool_result", "tool_use_id": "c1",
+               "content": "A look question gets one extra option, \"Show me the variants\", "
+                          "and only a pick of it makes them."}]}},
+      ])) if "offers-the-variants-option" in _lq else None,
+      "fail")
+
+check("look-question: an Edit inside the repo fails no-edit-in-the-repo",
+      lq_verdict("no-edit-in-the-repo", calls=[("Edit", {
+          "file_path": _LQ_REPO + "/public/index.html", "old_string": "a", "new_string": "b"})]),
+      "fail")
+check("look-question: a run that only reads passes no-edit-in-the-repo",
+      lq_verdict("no-edit-in-the-repo", calls=[("Read", {
+          "file_path": _LQ_REPO + "/public/index.html"})]), "pass")
+check("look-question: a Write to a tracked file fails no-write-in-the-repo",
+      lq_verdict("no-write-in-the-repo", calls=[("Write", {
+          "file_path": _LQ_REPO + "/public/styles.css", "content": "x"})]), "fail")
+check("look-question: a Write to a new file in the repo fails no-write-in-the-repo",
+      lq_verdict("no-write-in-the-repo", calls=[("Write", {
+          "file_path": _LQ_REPO + "/variants.html", "content": "x"})]), "fail")
+check("look-question: a Write into the variants' temp folder passes no-write-in-the-repo",
+      lq_verdict("no-write-in-the-repo", calls=[("Write", {
+          "file_path": _LQ_TEMP + "/variants.html", "content": "x"})]), "pass")
+
+check("look-question: a heredoc into a relative .html fails no-variant-file-in-the-repo",
+      lq_verdict("no-variant-file-in-the-repo", calls=[("Bash", {
+          "command": "cat > variants.html <<'EOF'\n<html></html>\nEOF"})]), "fail")
+check("look-question: a redirect into a subfolder of the repo fails no-variant-file-in-the-repo",
+      lq_verdict("no-variant-file-in-the-repo", calls=[("Bash", {
+          "command": "echo '<p>a</p>' > public/look-variants.html"})]), "fail")
+check("look-question: tee into the repo fails no-variant-file-in-the-repo",
+      lq_verdict("no-variant-file-in-the-repo", calls=[("Bash", {
+          "command": "echo '<p>a</p>' | tee mock.html"})]), "fail")
+check("look-question: a redirect to an absolute path in the repo fails no-variant-file-in-the-repo",
+      lq_verdict("no-variant-file-in-the-repo", calls=[("Bash", {
+          "command": "cat > " + _LQ_REPO + "/variants.html <<'EOF'\nx\nEOF"})]), "fail")
+check("look-question: a heredoc into mktemp's folder passes no-variant-file-in-the-repo",
+      lq_verdict("no-variant-file-in-the-repo", calls=[("Bash", {
+          "command": "d=$(mktemp -d) && cat > \"$d/variants.html\" <<'EOF'\nx\nEOF"})]), "pass")
+check("look-question: a redirect to an absolute temp path passes no-variant-file-in-the-repo",
+      lq_verdict("no-variant-file-in-the-repo", calls=[("Bash", {
+          "command": "cat > " + _LQ_TEMP + "/variants.html <<'EOF'\nx\nEOF"})]), "pass")
+check("look-question: reading the app's page passes no-variant-file-in-the-repo",
+      lq_verdict("no-variant-file-in-the-repo", calls=[("Bash", {
+          "command": "cat public/index.html"})]), "pass")
+
+_lq_scaffold = os.path.join(HERE, "look-question", "scaffold.sh")
+check_true("look-question: the scaffold exists", os.path.isfile(_lq_scaffold))
+
+# The real scaffold runs beside a stub greeter.sh, as direct-mode's does: the
+# real one needs npm and node. What this scaffold has to leave behind is a repo
+# with a UI -- a page and a stylesheet, tracked -- on main with a clean tree,
+# so a look decision is open and an edit would show in `git status`.
+if os.path.isfile(_lq_scaffold):
+    _tmp = tempfile.mkdtemp()
+    try:
+        os.makedirs(os.path.join(_tmp, "case"))
+        os.makedirs(os.path.join(_tmp, "fixtures"))
+        shutil.copy(_lq_scaffold, os.path.join(_tmp, "case", "scaffold.sh"))
+        with open(os.path.join(_tmp, "fixtures", "greeter.sh"), "w") as fh:
+            fh.write(
+                '#!/usr/bin/env bash\nset -e\nmkdir -p "$1"\ncd "$1"\n'
+                'git init -q -b main\ngit config user.email e@x\n'
+                'git config user.name e\ngit config commit.gpgsign false\n'
+                'printf "## Checks\\n- Test: npm test\\n\\n## Workflow\\n'
+                '- Mode: pr\\n- About: a tiny CLI\\n" > CLAUDE.md\n'
+                'printf "# greeter\\n" > README.md\n'
+                'git add -A\ngit commit -qm init\n'
+                'git init -q --bare "$1.origin.git"\n'
+                'git remote add origin "$1.origin.git"\n')
+        os.chmod(os.path.join(_tmp, "fixtures", "greeter.sh"), 0o755)
+        _ws = os.path.join(_tmp, "ws")
+        _sc = subprocess.run(["bash", os.path.join(_tmp, "case", "scaffold.sh"), _ws],
+                             capture_output=True, text=True)
+        check("look-question: the scaffold exits 0", _sc.returncode, 0)
+
+        def _lgit(*args):
+            return subprocess.run(["git"] + list(args), cwd=_ws,
+                                  capture_output=True, text=True).stdout.strip()
+
+        def _lread(*parts):
+            path = os.path.join(_ws, *parts)
+            return open(path).read() if os.path.isfile(path) else ""
+
+        _tracked = _lgit("ls-files").split("\n")
+        check_true("look-question: the repo tracks a page", "public/index.html" in _tracked)
+        check_true("look-question: the repo tracks a stylesheet with the app's own look",
+                   "public/styles.css" in _tracked)
+        check_true("look-question: the stylesheet has theme colours and a font to copy",
+                   re.search(r"--[\w-]+:\s*#[0-9a-fA-F]{3,6}", _lread("public", "styles.css"))
+                   and "font-family" in _lread("public", "styles.css"))
+        check_true("look-question: the page has no history view yet, so the look is open",
+                   _lread("public", "index.html") != ""
+                   and "history" not in _lread("public", "index.html").lower())
+        check("look-question: it starts on main", _lgit("rev-parse", "--abbrev-ref", "HEAD"), "main")
+        check("look-question: it starts with a clean tree", _lgit("status", "--porcelain"), "")
+        check("look-question: the work is pushed, so main has nothing ahead",
+              _lgit("rev-list", "--count", "origin/main..main"), "0")
+    finally:
+        shutil.rmtree(_tmp, ignore_errors=True)
+
+_lq_rows = [l for l in _readme.split("\n") if l.startswith("| `look-question`")]
+check("readme: the look-question row is there", len(_lq_rows), 1)
+
+# The README opens with a case count in words. It rotted once (seventeen, with
+# twenty directories) because nothing compared it with the directories.
+_WORDS = {17: "Seventeen", 18: "Eighteen", 19: "Nineteen", 20: "Twenty",
+          21: "Twenty-one", 22: "Twenty-two", 23: "Twenty-three", 24: "Twenty-four"}
+_case_dirs = [d for d in sorted(os.listdir(HERE))
+              if os.path.isfile(os.path.join(HERE, d, "case.yaml"))]
+_manual_dirs = []
+for _d in _case_dirs:
+    with open(os.path.join(HERE, _d, "case.yaml")) as fh:
+        if re.search(r"^manual:\s*true", fh.read(), re.M):
+            _manual_dirs.append(_d)
+_NUM = {1: "One", 2: "Two", 3: "Three", 4: "Four", 5: "Five"}
+check_true("readme: the opening names the number of case directories",
+           _readme.startswith("# evals\n\n%s cases." % _WORDS.get(len(_case_dirs), "?")))
+check_true("readme: the opening names how many cases are manual",
+           ("%s are manual" % _NUM.get(len(_manual_dirs), "?")) in _readme.split("\n")[2])
+check_true("readme: every case directory has a row in the table",
+           all(("| `%s`" % d) in _readme for d in _case_dirs))
+
 # --------------------------------------------------------------- the scoring
 
 RESULTS = [
