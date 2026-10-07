@@ -1,7 +1,7 @@
 ---
 name: submit
 description: Use when the code is finished and ready to become a pull request. Runs the project checks fresh, runs the app to confirm the change really works, writes a conventional commit, and opens a PR with steps for the human to check it. Never merges; merging is what the ship skill does, and only a human starts that.
-argument-hint: "[tracker: one issue action per line, before the request] [request: the words the human typed, passed on to review as the spec]"
+argument-hint: "[tracker: one issue action per line, before the request] [request: the words the human typed, passed on to review as the spec] [start: <sha>, size: <Quick|Standard|Deep>, mode: pr - from flow]"
 allowed-tools: Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git branch:*), Bash(git rev-parse:*), Bash(git symbolic-ref:*)
 ---
 
@@ -19,6 +19,10 @@ rule looks wrong.
 - Changed files: !`git status --short 2>/dev/null || true`
 
 ## 1. Check the branch
+
+**Direct mode** — `Mode: direct` in the `## Workflow` block of `CLAUDE.md` and no `mode: pr`
+line — is not this skill as written below. Read [references/direct.md](references/direct.md)
+now: it says what changes at steps 1, 5, 7 and 8. Every other step runs as written.
 
 If you are on the default branch, **stop**. Create a branch first:
 
@@ -88,6 +92,8 @@ Otherwise read [references/live-check.md](references/live-check.md) and follow i
 
 ## 5. Review the change
 
+In direct mode, review follows `size:` and the fixed point is `start:`: [references/direct.md](references/direct.md).
+
 Invoke `devflow:review` with the branch point:
 
 ```
@@ -142,6 +148,8 @@ And say so when nothing was, in those words, rather than going quiet:
 
 ## 7. Commit
 
+In direct mode the commit lands on main and is pushed, with the Assumptions in its body: [references/direct.md](references/direct.md).
+
 **If any file changed since step 2's run, run the checks again first.** Same rule as step 2: the checks must postdate the last edit. Bare, one per call, output on screen.
 
 **If any file changed since the last review that read it, one short look first.** Read [references/look.md](references/look.md) and follow it. When nothing changed, there is no look to run: print `– **look** nothing changed since the last review`.
@@ -171,6 +179,8 @@ Otherwise, once the commit is in:
 ```
 
 ## 8. Open the PR — or update the one already there
+
+In direct mode there is no PR: skip this step and put its body in the Done report ([references/direct.md](references/direct.md)).
 
 **First, does this branch already have an open pull request?** Ask through whatever GitHub access this environment has. With `gh`, that is `gh api`, never the `gh pr` commands: those send GraphQL, and a cloud session's GitHub proxy refuses every GraphQL request.
 
@@ -292,8 +302,9 @@ the result — for example `✓ **checks** 3 of 3 pass, exit 0`.
 - Never claim a review ran when it did not. A slash command you cannot type has not run.
 - Never assert that a skill, command or CLI exists. Check, then fall back, then say which you used. `/code-review` was asserted once and could not run; `run` and `gh` are the same shape.
 - Never add pipes or redirects to a check command. Bare, one per call.
-- Never commit on the default branch.
+- Never commit on the default branch in pr mode.
 - Never open a second pull request for a branch that already has one open.
+- Never end a pr-mode run without a pull request.
 - Never open a PR when the live check failed.
 - Never invent check commands the project did not give you.
 - Never merge, and never call `devflow:ship`. The open PR is where this skill ends.

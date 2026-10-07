@@ -876,6 +876,67 @@ check("flow/direct: skips the PR lookup and the branch logic",
       f"{FLOW_DIRECT_PATH} never says which of flow's steps direct skips")
 
 
+# ------------------------------- build and submit finish a direct job on main
+#
+# In direct, build cuts no branch and submit does not refuse main. The detail
+# is submit's references/direct.md: review by size, the start sha as review's
+# fixed point, Assumptions in the commit body, pull --rebase then push, and no
+# remote. Landing a linked worktree's branch is land-on-main.md's, not this.
+
+SUBMIT_DIRECT_PATH = os.path.join(SKILLS_DIR, "submit", "references",
+                                   "direct.md")
+with open(os.path.join(SKILLS_DIR, "submit", "SKILL.md"),
+          encoding="utf-8") as fh:
+    submit_skill_raw = fh.read()
+submit_skill_flat = flat(submit_skill_raw)
+submit_values = parsed.get("submit", (None, {}))[1]
+
+if os.path.exists(SUBMIT_DIRECT_PATH):
+    with open(SUBMIT_DIRECT_PATH, encoding="utf-8") as fh:
+        submit_direct_text = fh.read()
+else:
+    submit_direct_text = ""
+
+with open(os.path.join(SKILLS_DIR, "build", "SKILL.md"),
+          encoding="utf-8") as fh:
+    build_direct_text = fh.read()
+
+check("build: in direct it cuts no branch",
+      "direct" in build_direct_text
+      and "no branch" in flat(build_direct_text)
+      and "`## Workflow`" in build_direct_text
+      and "`mode: pr`" in build_direct_text,
+      "build/SKILL.md never says that in direct, with no mode: pr line, it "
+      "cuts no branch")
+
+check("submit: points at references/direct.md",
+      submit_skill_flat.count("references/direct.md") >= 4,
+      "submit's SKILL.md links references/direct.md fewer than four times "
+      "(steps 1, 5, 7, 8)")
+
+check("submit: argument-hint takes start:, size: and mode:",
+      all(w in submit_values.get("argument-hint", "")
+          for w in ("start:", "size:", "mode: pr")),
+      "submit's argument-hint never names start:, size: and mode: pr")
+
+check("submit: the default-branch rules say pr mode",
+      "Never commit on the default branch in pr mode." in submit_skill_raw
+      and "Never end a pr-mode run without a pull request." in submit_skill_raw,
+      "submit's Rules never limit the default-branch and PR rules to pr mode")
+
+check("submit/direct: the reference exists",
+      submit_direct_text != "",
+      f"{SUBMIT_DIRECT_PATH} does not exist")
+
+for needle in ("start:", "size:", "mode: pr", "Quick", "Standard", "Deep",
+               "– **review** skipped — Quick, direct mode",
+               "fixed point", "Assumptions", "git pull --rebase",
+               "git push", "no remote", "Done report", "step 8"):
+    check(f"submit/direct: names {needle}",
+          needle in submit_direct_text,
+          f"{SUBMIT_DIRECT_PATH} never names {needle!r}")
+
+
 # ------------------------------------ ship refuses and protects stacked PRs
 #
 # On 22 Sep 2026 `gh pr merge 23 --rebase --delete-branch` closed #24, which
@@ -4118,6 +4179,7 @@ REFERENCE_STEPS = {
         "plan-and-concerns.md": ["## 7. "],
         "update-pr.md": ["## 8. "],
         "tracker-actions.md": ["## 8. "],
+        "direct.md": ["## 1. ", "## 5. ", "## 7. ", "## 8. "],
     },
     "review": {
         "find-the-spec.md": ["## 2. "],
