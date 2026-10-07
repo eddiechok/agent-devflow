@@ -1,0 +1,76 @@
+schema_version: "1.1"
+name: direct-mode
+description: A Quick change in a project set to direct is committed on main, with no branch and no review, and says so.
+tags: [direct, flow, submit]
+
+context:
+  scaffold_script: ./scaffold.sh
+
+execution:
+  # The same typo as sizing-quick, so the size is not in question. What is in
+  # question is where the work lands: CLAUDE.md says `Mode: direct` and the
+  # project has no remote, so there is nothing to branch for and nothing to push.
+  prompt: "/devflow:flow fix the typo in README.md - it says 'sasy hello' when it should say 'says hello'. Nobody is here to answer: yes to all, do not wait."
+  # Not measured from a trace yet. The loop runs to submit's step 5, which is
+  # where the review line is printed, so this is room for flow, build and the
+  # first half of submit. If prints-review-skipped fails while the commit
+  # graders pass, suspect this number first.
+  max_turns: 25
+  timeout_seconds: 600
+  allowed_tools: [Bash, Read, Edit, Write, Glob, Grep, Skill]
+
+runs: 3
+
+graders:
+  # The point of direct. A branch here is today's path leaking through. The
+  # pattern covers both ways to cut one, and is a trace regex because the
+  # command may arrive spelled either way.
+  - type: regex
+    name: cuts-no-branch
+    target: trace
+    pattern: "git (checkout -[bB]|switch -[cC])\\b"
+    match: not_contains
+    weight: 4
+
+  # `git commit` counts attempts, not successes (see evals/README.md). Together
+  # with cuts-no-branch it says the commit was made where the session started,
+  # which is main. The project has no remote, so there is no push to ask for.
+  - type: tool_used
+    name: commits-on-main
+    tool: Bash
+    input_match: "git commit"
+    min: 1
+    weight: 3
+
+  # Quick in direct mode skips review. Any of reviewer, spec-reviewer or
+  # security-reviewer would be a review that ran, and all three contain the
+  # substring below.
+  - type: tool_used
+    name: starts-no-review-agent
+    tool: Agent
+    input_match: "reviewer"
+    max: 0
+    weight: 3
+
+  - type: tool_used
+    name: calls-no-review
+    tool: Skill
+    input_match: "devflow:review"
+    max: 0
+    weight: 2
+
+  # A step that prints nothing cannot be told from a step that was skipped, so
+  # the skip has to be said. Dash-tolerant: the line is the claim under test,
+  # not whether the model reached for an em dash.
+  - type: regex
+    name: prints-review-skipped
+    target: trace
+    pattern: "\\*\\*review\\*\\* skipped\\s*[—–-]\\s*Quick, direct mode"
+    match: contains
+    weight: 3
+
+expected_outcome: >
+  Reads Mode: direct from CLAUDE.md, sizes the typo Quick, fixes it on main
+  without cutting a branch, commits it, prints "– **review** skipped — Quick,
+  direct mode" and starts no review agent. There is no remote, so nothing is
+  pushed and it says so.

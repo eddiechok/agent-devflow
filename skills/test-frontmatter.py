@@ -792,6 +792,244 @@ check("setup: says flow parks extra features under the backlog label",
       f"feature per run")
 
 
+# ------------------------------------ setup is a questionnaire, writes the mode
+#
+# `flow` runs setup first when CLAUDE.md has no `## Workflow` block, so setup
+# has to be callable by a model (no `disable-model-invocation`), has to write
+# the block in the one shape every skill and the hook read, and credits the
+# skill whose shape it borrowed.
+
+setup_values = parsed.get("setup", (None, {}))[1]
+
+check("setup: is model-invocable, so flow can call it",
+      "disable-model-invocation" not in setup_values
+      and "disable-model-invocation" not in frontmatter(setup_text),
+      "setup's frontmatter still sets disable-model-invocation; flow cannot "
+      "call a gated skill")
+
+check("setup: description says when a model should call it",
+      "## Workflow" in setup_values.get("description", ""),
+      "setup's description never names the missing '## Workflow' block")
+
+check("setup: writes a ## Workflow block with Mode: and About:",
+      "## Workflow" in setup_text and "- Mode: " in setup_text
+      and "- About: " in setup_text,
+      f"{SETUP_PATH} never shows the '## Workflow' block with '- Mode:' "
+      f"and '- About:' lines")
+
+check("setup: names both modes, direct and pr",
+      "`direct`" in setup_text and "`pr`" in setup_text,
+      f"{SETUP_PATH} never names both modes `direct` and `pr`")
+
+check("setup: credits mattpocock's setup skill",
+      "https://github.com/mattpocock/skills/blob/main/skills/engineering/"
+      "setup-matt-pocock-skills/SKILL.md" in setup_text
+      and "Where the shape came from" in setup_text,
+      f"{SETUP_PATH} never credits setup-matt-pocock-skills in a 'Where "
+      f"the shape came from' section")
+
+check("setup: keeps an existing ## Workflow block",
+      "Never overwrite an existing `## Workflow`" in setup_text,
+      f"{SETUP_PATH} never says an existing ## Workflow block is kept")
+
+# The human's comment on #96: setup's last step offers `/devflow:skills`, the
+# skill from #120 that lists agent skills fitting the repo. It comes after the
+# report, so the list is the last thing setup prints, and only on a yes:
+# skills lists, and the human runs every install.
+_offer_at = setup_text.find("## 8. Offer agent skills")
+_offer = setup_text[_offer_at:setup_text.find("\n## ", _offer_at + 1)] if _offer_at >= 0 else ""
+check("setup: step 8 offers agent skills, after the report",
+      _offer_at > setup_text.find("## 7. Report") >= 0,
+      f"{SETUP_PATH} has no '## 8. Offer agent skills' after '## 7. Report'")
+check("setup: the offer is one recommended question, and yes calls devflow:skills",
+      "Look for agent skills that fit this repo?" in _offer
+      and "Yes (Recommended)" in _offer and "`devflow:skills`" in _offer,
+      f"{SETUP_PATH} step 8 never asks the question with a recommended yes "
+      f"that calls devflow:skills")
+check("setup: a no prints the skipped line",
+      "– **skills** skipped" in _offer,
+      f"{SETUP_PATH} step 8 never prints '– **skills** skipped' on a no")
+check("setup: the offer installs nothing itself",
+      "Never run an install" in setup_text,
+      f"{SETUP_PATH} never says setup leaves every install to the human")
+with open(os.path.join(REPO_ROOT, "docs", "setup.md"), encoding="utf-8") as fh:
+    _docs_setup = fh.read()
+check("docs/setup: says why setup offers devflow:skills",
+      "devflow:skills" in _docs_setup and "#96" in _docs_setup,
+      "docs/setup.md never says why setup offers devflow:skills")
+
+
+# ------------------------------------ flow runs setup first, and has a direct path
+#
+# No `## Workflow` block means "not set up", and flow is the entry point, so it
+# calls setup before anything else. `Mode: direct` sends it to the direct
+# reference, which holds the override, the start sha and the skipped steps.
+
+FLOW_DIRECT_PATH = os.path.join(SKILLS_DIR, "flow", "references", "direct.md")
+with open(os.path.join(SKILLS_DIR, "flow", "SKILL.md"), encoding="utf-8") as fh:
+    flow_skill_flat = flat(fh.read())
+
+check("flow: calls devflow:setup when ## Workflow is missing",
+      "devflow:setup" in flow_skill_flat and "## Workflow" in flow_skill_flat,
+      "flow's SKILL.md never names devflow:setup and the ## Workflow block")
+
+check("flow: argument-hint offers --pr",
+      "--pr" in flow_values.get("argument-hint", ""),
+      "flow's argument-hint never mentions --pr")
+
+check("flow: points at references/direct.md",
+      "references/direct.md" in flow_skill_flat,
+      "flow's SKILL.md never links references/direct.md")
+
+if os.path.exists(FLOW_DIRECT_PATH):
+    with open(FLOW_DIRECT_PATH, encoding="utf-8") as fh:
+        flow_direct_text = fh.read()
+else:
+    flow_direct_text = ""
+
+check("flow/direct: the reference exists",
+      flow_direct_text != "",
+      f"{FLOW_DIRECT_PATH} does not exist")
+
+for needle in ("start:", "size:", "mode: pr", "--pr", "Mode:", "PR this time",
+               "rev-parse HEAD"):
+    check(f"flow/direct: names {needle}",
+          needle in flow_direct_text,
+          f"{FLOW_DIRECT_PATH} never names {needle!r}")
+
+check("flow/direct: skips the PR lookup and the branch logic",
+      "step 0" in flow_direct_text and "0c" in flow_direct_text,
+      f"{FLOW_DIRECT_PATH} never says which of flow's steps direct skips")
+
+
+# ------------------------------- build and submit finish a direct job on main
+#
+# In direct, build cuts no branch and submit does not refuse main. The detail
+# is submit's references/direct.md: review by size, the start sha as review's
+# fixed point, Assumptions in the commit body, pull --rebase then push, and no
+# remote. Landing a linked worktree's branch is land-on-main.md's, not this.
+
+SUBMIT_DIRECT_PATH = os.path.join(SKILLS_DIR, "submit", "references",
+                                   "direct.md")
+with open(os.path.join(SKILLS_DIR, "submit", "SKILL.md"),
+          encoding="utf-8") as fh:
+    submit_skill_raw = fh.read()
+submit_skill_flat = flat(submit_skill_raw)
+submit_values = parsed.get("submit", (None, {}))[1]
+
+if os.path.exists(SUBMIT_DIRECT_PATH):
+    with open(SUBMIT_DIRECT_PATH, encoding="utf-8") as fh:
+        submit_direct_text = fh.read()
+else:
+    submit_direct_text = ""
+
+with open(os.path.join(SKILLS_DIR, "build", "SKILL.md"),
+          encoding="utf-8") as fh:
+    build_direct_text = fh.read()
+
+check("build: in direct it cuts no branch",
+      "direct" in build_direct_text
+      and "no branch" in flat(build_direct_text)
+      and "`## Workflow`" in build_direct_text
+      and "`mode: pr`" in build_direct_text,
+      "build/SKILL.md never says that in direct, with no mode: pr line, it "
+      "cuts no branch")
+
+check("submit: points at references/direct.md",
+      submit_skill_flat.count("references/direct.md") >= 4,
+      "submit's SKILL.md links references/direct.md fewer than four times "
+      "(steps 1, 5, 7, 8)")
+
+check("submit: argument-hint takes start:, size: and mode:",
+      all(w in submit_values.get("argument-hint", "")
+          for w in ("start:", "size:", "mode: pr")),
+      "submit's argument-hint never names start:, size: and mode: pr")
+
+check("submit: the default-branch rules say pr mode",
+      "Never commit on the default branch in pr mode." in submit_skill_raw
+      and "Never end a pr-mode run without a pull request." in submit_skill_raw,
+      "submit's Rules never limit the default-branch and PR rules to pr mode")
+
+check("submit/direct: the reference exists",
+      submit_direct_text != "",
+      f"{SUBMIT_DIRECT_PATH} does not exist")
+
+# ----------------------------- landing a worktree branch on main, written once
+#
+# Multitask, plan chains and sweep all land a linked worktree's branch on main,
+# so the sequence lives in one file and each caller points at it. The commands
+# that look right and are wrong are pinned too: update-ref leaves the main
+# checkout's index stale, and push or fetch into a checked-out branch is refused.
+
+LAND_PATH = os.path.join(SKILLS_DIR, "submit", "references", "land-on-main.md")
+if os.path.exists(LAND_PATH):
+    with open(LAND_PATH, encoding="utf-8") as fh:
+        land_text = fh.read()
+else:
+    land_text = ""
+
+check("land-on-main: the reference exists",
+      land_text != "", f"{LAND_PATH} does not exist")
+
+for needle in ("--ff-only", "push origin HEAD:", "rebase",
+               "✓ **landed** <branch> on main, <sha>",
+               "✗ **landed** main moved",
+               "branch -d"):
+    check(f"land-on-main: names {needle}",
+          needle in land_text,
+          f"{LAND_PATH} never names {needle!r}")
+
+check("land-on-main: update-ref is named as a never",
+      re.search(r"[Nn]ever[^\n]*git update-ref", land_text) is not None,
+      f"{LAND_PATH} never lists git update-ref among the commands never to run")
+
+check("land-on-main: push and fetch into main are named as a never",
+      "push . HEAD:main" in land_text and "fetch . HEAD:main" in land_text,
+      f"{LAND_PATH} never lists the push . and fetch . forms as forbidden")
+
+check("submit/direct: calls land-on-main.md for a linked worktree",
+      "land-on-main.md" in submit_direct_text
+      and "linked worktree" in submit_direct_text,
+      f"{SUBMIT_DIRECT_PATH} never sends a linked worktree to land-on-main.md")
+
+for needle in ("start:", "size:", "mode: pr", "Quick", "Standard", "Deep",
+               "– **review** skipped — Quick, direct mode",
+               "fixed point", "Assumptions", "git pull --rebase",
+               "git push", "no remote", "Done report", "step 8"):
+    check(f"submit/direct: names {needle}",
+          needle in submit_direct_text,
+          f"{SUBMIT_DIRECT_PATH} never names {needle!r}")
+
+# Review round 1 on #117. A plain `--rebase` flattens the --no-ff merge a plan
+# chain leaves, and rewrites the SHAs its builders reported. A pull that brought
+# commits in leaves a tip no check ever ran on. With no remote, `merge
+# --ff-only` moves whatever the main folder has checked out -- a detached HEAD
+# moved while `main` stayed put, and the run still said `landed on main`.
+check("submit/direct: the pull keeps merge commits",
+      "git pull --rebase=merges" in submit_direct_text,
+      f"{SUBMIT_DIRECT_PATH} pulls with a bare --rebase, which flattens chain merges")
+check("submit/direct: a pull that brought commits runs the checks again before the push",
+      "brought commits" in submit_direct_text
+      and "checks again" in submit_direct_text,
+      f"{SUBMIT_DIRECT_PATH} pushes a tip no check ran on")
+check("land-on-main: the rebase keeps merge commits",
+      "git rebase --rebase-merges <default branch ref>" in land_text,
+      f"{LAND_PATH} rebases with a plain rebase, which flattens chain merges")
+check("land-on-main: checks the main folder is on the default branch first",
+      "git -C <main checkout> symbolic-ref --short -q HEAD" in land_text
+      and "✗ **landed** main folder is on" in land_text,
+      f"{LAND_PATH} fast-forwards whatever the main folder has checked out")
+check("land-on-main: the moved-twice line says what to do next",
+      "✗ **landed** main moved twice — run submit again to land it" in land_text
+      and "rebased twice" not in land_text,
+      f"{LAND_PATH} says what happened but not what to do")
+with open(os.path.join(SKILLS_DIR, "submit", "SKILL.md"), encoding="utf-8") as fh:
+    _submit_skill = fh.read()
+check("submit: the ends-at-a-PR rule is marked pr mode",
+      "The open PR is where a pr-mode run ends" in _submit_skill,
+      "skills/submit/SKILL.md still says every run ends at a PR")
+
+
 # ------------------------------------ ship refuses and protects stacked PRs
 #
 # On 22 Sep 2026 `gh pr merge 23 --rebase --delete-branch` closed #24, which
@@ -2281,12 +2519,12 @@ check("build: a detached HEAD is no branch, so it cuts one",
 SHAPED_LABELS = {
     "backlog", "branch", "chains", "checks", "chips", "cleaned", "commit",
     "conflict", "debug", "deploy", "docs", "done", "features", "glossary",
-    "green", "handback", "issue", "lesson", "lint", "live", "look", "merge", "merged",
+    "green", "handback", "issue", "landed", "lesson", "lint", "live", "look", "merge", "merged",
     "no-behaviour", "open", "opinion", "override", "parked", "piece",
-    "pieces", "plan", "plans", "pr", "pushed", "red", "research", "retargeted", "review",
-    "see", "session", "settings", "stuck", "tended", "test", "theirs", "todo",
+    "pieces", "plan", "plans", "pr", "pushed", "red", "repo", "research", "retargeted", "review",
+    "see", "session", "settings", "skills", "stuck", "tended", "test", "theirs", "todo",
     "typecheck",
-    "worktree", "yours",
+    "worktree", "workflow", "yours",
 }
 
 # `→` also runs mid-sentence in prose -- "Either fails → **stop editing**" --
@@ -4034,6 +4272,8 @@ REFERENCE_STEPS = {
         "plan-and-concerns.md": ["## 7. "],
         "update-pr.md": ["## 8. "],
         "tracker-actions.md": ["## 8. "],
+        "direct.md": ["## 1. ", "## 5. ", "## 7. ", "## 8. "],
+        "land-on-main.md": ["## 7. "],
     },
     "review": {
         "find-the-spec.md": ["## 2. "],
@@ -5290,6 +5530,209 @@ check("agents/sweeper: hands its worktree path to every agent the review starts"
       and "main folder" in sweeper_body,
       f"{SWEEPER_PATH} never tells the review's agents to read its worktree")
 
+# --------------------------------------------- ship and tend in a direct project
+#
+# In direct there is no PR for the work this session did, so ship has nothing to
+# merge: it deploys the commit that was pushed to main and verifies it. A PR
+# from somebody else still goes the PR path. tend, which exists for an open PR,
+# also reads a red CI run on a main commit and fixes it as a new commit on main.
+
+SHIP_DIRECT_PATH = os.path.join(SKILLS_DIR, "ship", "references", "direct.md")
+if os.path.exists(SHIP_DIRECT_PATH):
+    with open(SHIP_DIRECT_PATH, encoding="utf-8") as fh:
+        ship_direct_text = fh.read()
+else:
+    ship_direct_text = ""
+ship_direct_flat = flat(ship_direct_text)
+
+check("ship/direct: the reference exists",
+      ship_direct_text != "",
+      f"{SHIP_DIRECT_PATH} does not exist")
+
+check("ship: points at references/direct.md",
+      "references/direct.md" in flat(ship_text),
+      "ship's SKILL.md never links references/direct.md")
+
+check("ship: stays under the 500-line cap with the pointer",
+      len(ship_text.splitlines()) <= 500,
+      f"{SHIP_PATH} is {len(ship_text.splitlines())} lines, cap is 500")
+
+check("ship/direct: deploys the pushed main commit from the ## Deploy block",
+      "## Deploy" in ship_direct_text
+      and "pushed" in ship_direct_flat
+      and "step 4" in ship_direct_flat,
+      f"{SHIP_DIRECT_PATH} never runs the ## Deploy block for the pushed commit")
+
+check("ship/direct: merges nothing",
+      "gh pr merge" in ship_direct_text
+      and "never" in ship_direct_flat
+      and "no PR to merge" in ship_direct_flat,
+      f"{SHIP_DIRECT_PATH} never says there is no PR to merge and no merge runs")
+
+check("ship/direct: a PR from somebody else still goes the PR path",
+      "somebody else" in ship_direct_flat
+      and "PR path" in ship_direct_flat
+      and "`mode: pr`" in ship_direct_text,
+      f"{SHIP_DIRECT_PATH} never keeps other people's PRs on the PR path")
+
+check("ship/direct: refuses to deploy a commit that is not pushed",
+      "git fetch origin" in ship_direct_text and "not pushed" in ship_direct_flat,
+      f"{SHIP_DIRECT_PATH} never checks the commit is on the remote first")
+
+tend_flat = flat(tend_text)
+check("tend: reads a red CI run on a main commit in direct",
+      "direct" in tend_flat
+      and "commits/<sha>/check-runs" in tend_text
+      and "red-commit-on-main" in tend_flat,
+      f"{TEND_PATH} never names the red-commit-on-main path")
+
+check("tend: fixes a red main commit through build as a new commit on main",
+      "new commit on main" in tend_flat
+      and "never amend" in tend_flat,
+      f"{TEND_PATH} never says the fix lands as a new commit on main")
+
+for doc, needle in (("ship", "direct"), ("tend", "direct")):
+    with open(os.path.join(REPO_ROOT, "docs", doc + ".md"), encoding="utf-8") as fh:
+        doc_text = fh.read()
+    check(f"docs/{doc}: records why direct changes it",
+          "## Direct mode" in doc_text,
+          f"docs/{doc}.md has no '## Direct mode' section")
+
+# --------------------------------------- plan and sweep land on main in direct
+#
+# In direct there is no feature branch and no PR. plan runs its chains in worktrees
+# as ever and merges them into main in this folder; a session in a linked worktree
+# lands through submit's land-on-main reference. sweep's chains each land through
+# that same reference instead of opening a PR, and the report says landed.
+
+PLAN_DIRECT_PATH = os.path.join(SKILLS_DIR, "plan", "references", "direct.md")
+if os.path.exists(PLAN_DIRECT_PATH):
+    with open(PLAN_DIRECT_PATH, encoding="utf-8") as fh:
+        plan_direct_flat = flat(fh.read())
+else:
+    plan_direct_flat = ""
+
+check("plan/direct: the reference exists",
+      plan_direct_flat != "",
+      f"{PLAN_DIRECT_PATH} does not exist")
+
+check("plan: points at references/direct.md",
+      "references/direct.md" in flat(plan_text),
+      "plan's SKILL.md never links references/direct.md")
+
+check("plan: stays at or under 500 lines with the pointer",
+      len(plan_text.splitlines()) <= 500,
+      f"{PLAN_PATH} is {len(plan_text.splitlines())} lines, cap is 500")
+
+check("plan/direct: cuts no feature branch, merges the chains into main --no-ff",
+      "no feature branch" in plan_direct_flat
+      and "--no-ff" in plan_direct_flat
+      and "worktrees" in plan_direct_flat,
+      f"{PLAN_DIRECT_PATH} never says chains merge --no-ff into main with no "
+      f"feature branch")
+
+check("plan/direct: a linked worktree follows land-on-main.md",
+      "land-on-main.md" in plan_direct_flat
+      and "linked worktree" in plan_direct_flat,
+      f"{PLAN_DIRECT_PATH} never names land-on-main.md for a linked worktree")
+
+check("plan/direct: mode: pr keeps today's path",
+      "`mode: pr`" in plan_direct_flat,
+      f"{PLAN_DIRECT_PATH} never says a mode: pr line keeps the PR path")
+
+check("sweep: in direct each chain lands through land-on-main.md",
+      "land-on-main.md" in flat(sweep_text)
+      and "`landed`" in flat(sweep_text)
+      and "direct" in flat(sweep_text),
+      f"{SWEEP_PATH} never names land-on-main.md and the landed line for direct")
+
+check("agents/sweeper: in direct lands through land-on-main.md, reports landed:",
+      "land-on-main.md" in sweeper_body
+      and "landed:" in sweeper_body
+      and "direct" in sweeper_body,
+      f"{SWEEPER_PATH} never lands through land-on-main.md in direct")
+
+for doc in ("plan", "sweep"):
+    with open(os.path.join(REPO_ROOT, "docs", doc + ".md"), encoding="utf-8") as fh:
+        doc_direct_text = fh.read()
+    check(f"docs/{doc}: records why direct changes it",
+          "## Direct mode" in doc_direct_text,
+          f"docs/{doc}.md has no '## Direct mode' section")
+
+# ------------------------------------ glossary, README and pipeline for direct
+#
+# CONTEXT.md holds the project's words, read by `build` and never written by it.
+# `direct` and `pr` name the way the work is done, so they are defined once there.
+# The README says how a project picks one, and the pipeline draws the direct path.
+
+CONTEXT_PATH = os.path.join(REPO_ROOT, "CONTEXT.md")
+if os.path.exists(CONTEXT_PATH):
+    with open(CONTEXT_PATH, encoding="utf-8") as fh:
+        context_text = fh.read()
+else:
+    context_text = ""
+context_flat = flat(context_text)
+
+check("CONTEXT.md: exists with a ## Words block",
+      "## Words" in context_text,
+      f"{CONTEXT_PATH} has no ## Words block")
+
+check("CONTEXT.md: defines direct as main, no branch, no PR",
+      "**direct**" in context_text
+      and "straight on main" in context_flat
+      and "not how many people work on the project" in context_flat,
+      f"{CONTEXT_PATH} never defines **direct** as a way of working")
+
+check("CONTEXT.md: defines pr as a branch and a pull request for each job",
+      "**pr**" in context_text
+      and "a branch and a pull request for each job" in context_flat,
+      f"{CONTEXT_PATH} never defines **pr**")
+
+readme_direct_flat = flat(open(README_PATH, encoding="utf-8").read())
+check("README: setup section names the questionnaire and ## Workflow",
+      "## Workflow" in readme_direct_flat
+      and "questionnaire" in readme_direct_flat
+      and "flow runs it first" in readme_direct_flat,
+      "README.md never says setup asks, writes ## Workflow, and flow runs it first")
+
+check("README: names both modes and --pr",
+      "`direct`" in readme_direct_flat and "`pr`" in readme_direct_flat
+      and "`--pr`" in readme_direct_flat,
+      "README.md never names `direct`, `pr` and `--pr`")
+
+with open(os.path.join(REPO_ROOT, "docs", "pipeline.md"), encoding="utf-8") as fh:
+    pipeline_direct_flat = flat(fh.read())
+check("docs/pipeline: draws the direct path",
+      "## Direct" in pipeline_direct_flat
+      and "main" in pipeline_direct_flat
+      and "land-on-main.md" in pipeline_direct_flat
+      and "start:" in pipeline_direct_flat,
+      "docs/pipeline.md has no Direct section with the start sha and landing")
+
+# ------------------ submit direct with no start: reviews every unpushed commit
+#
+# A direct run started by hand has no `start:` line. Falling back to HEAD there
+# reviews only what is uncommitted, and the commits already made on main since
+# the last push go unseen. The upstream is the fixed point instead; with no
+# upstream the fallback is HEAD, and the run says only uncommitted work is read.
+
+NO_UPSTREAM_LINE = "– **review** no upstream — only uncommitted work is reviewed"
+
+check("submit/direct: no start: line falls back to the upstream",
+      "git rev-parse @{upstream}" in submit_direct_text
+      and "not yet pushed" in flat(submit_direct_text),
+      f"{SUBMIT_DIRECT_PATH} never names `git rev-parse @{{upstream}}` as the "
+      f"fixed point when no start: line was given")
+
+check("submit/direct: no upstream falls back to HEAD with a printed line",
+      NO_UPSTREAM_LINE in submit_direct_text
+      and "`HEAD`" in submit_direct_text,
+      f"{SUBMIT_DIRECT_PATH} never prints {NO_UPSTREAM_LINE!r} before "
+      f"falling back to HEAD")
+
+check("submit/direct: the old HEAD-only fallback is gone from the intro",
+      "use `HEAD` and say so in one line" not in flat(submit_direct_text),
+      f"{SUBMIT_DIRECT_PATH} still says a missing start: uses HEAD outright")
 # ------------------------------------------------------------ skills' rules
 #
 # Issue #91: `skills` reads what the repo is built with, matches it against a

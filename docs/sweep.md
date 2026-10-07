@@ -73,3 +73,14 @@ comment on every issue a sweep passes over would be noise on the issues you did 
 When #96 (setup asks how to work) is built, `setup` must run in the main session before any
 sweeper starts, because sweepers cannot ask. A project that has not answered it by then
 gets the answer there, not in a helper that has no one to ask.
+
+## Direct mode
+
+A sweeper's last act is `submit`, which in a `direct` project opens no PR. So each chain
+lands on main through
+[land-on-main.md](../skills/submit/references/land-on-main.md), the one written sequence
+for putting a linked worktree's branch on main: rebase, run the checks again, push, never
+`git update-ref`. The sweepers run side by side, so two can finish together; the second
+finds main moved, the sequence refuses without changing anything, and it rebases once and
+tries again. The issue closes through `Closes #<n>` in the commit body, which a push to
+main honours, and the Done report prints `landed` where it printed `pr`.

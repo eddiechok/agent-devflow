@@ -307,3 +307,11 @@ its own review step. See [docs/lessons.md](lessons.md) for the fuller reasoning.
 On a hosted session — Claude Code on the web included — `~/.claude` is inside a container
 that is deleted when the session ends, which is exactly why the destination moved to a
 repo. The reply is in the transcript regardless, so it was never the only copy.
+
+## Why setup runs first, and why there is a direct path
+
+`flow` is the entry point, and every skill after it reads one fact from the project's `CLAUDE.md`: whether this project works `direct` (commit on main, no branch, no pull request) or `pr` (a branch and a pull request for each job). No `## Workflow` block means the question was never asked, so `flow` calls `devflow:setup` before anything else and then carries on with the request. It is only a pointer in `flow`, because `setup` is the one place that reads the repo and asks. That is also why `setup` lost its `disable-model-invocation` flag: a gated skill cannot be called by another skill.
+
+Direct exists because a private repo one person uses, with no CI, gains nothing from a branch and a PR per job. The detail lives in [the direct reference](../skills/flow/references/direct.md) so `SKILL.md` stays under its 500 lines. What it skips is what only a PR needs: step 0's lookup of the branch's PR, and step 0c's fresh branch and worktree. What it adds is `start: <sha>`, recorded before the first edit. On main the usual fixed point, the merge-base with the default branch, is `HEAD` itself and leaves nothing to review, so the sha is how `review` still finds the diff.
+
+**`--pr` is one run, not a setting.** A project set to direct sometimes wants a PR for one risky change. The flag, or words like "PR this time", hands `mode: pr` to `build`, `plan` and `submit` as its own line, and `CLAUDE.md` is never rewritten for it.

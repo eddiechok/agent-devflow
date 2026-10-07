@@ -117,6 +117,10 @@ if [ "$with_checks" = "--with-checks-block" ]; then
 ## Checks
 - Test: npm test
 - Lint: npm run lint
+
+## Workflow
+- Mode: pr
+- About: a tiny CLI that says hello, used by devflow's evals
 MD
 fi
 

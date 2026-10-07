@@ -94,6 +94,12 @@ Give each exactly two things: the issues of its chain, each with its number,
 title and body pasted in full, and the default branch ref as its base. Nothing else: not this
 session's reasoning, and not what another sweeper said.
 
+**In direct** (`Mode: direct` in `CLAUDE.md`'s `## Workflow`, and no `mode: pr` line in the
+request) no sweeper opens a PR: each lands its chain on main through
+[land-on-main.md](../submit/references/land-on-main.md), the sweepers landing one after
+another as each finishes, and its `pr:` line becomes `landed:`. The report says `landed`,
+not `pr`. Say so in the prompt.
+
 Each reports a `branch:` line, an `issue:` and a `commit:` line per issue, one `pr:` line
 and one `stopped:` line. A report with fewer lines than that, or in prose, is a stopped
 chain: record it as stopped with the issues it was given. So is a sweeper that died — an API
@@ -116,7 +122,8 @@ When every sweeper has reported, print one report, the last thing this skill pri
 ```
 
 One line for each PR, each skipped issue and why, and each stopped chain, with where its
-work sits. A sweeper that stops keeps its worktree and branch on this machine, unpushed:
+work sits. In direct there is no PR: a chain's line is `✓ **landed** chain A <sha> on main,
+closes #12, #15` in place of `pr`. A sweeper that stops keeps its worktree and branch on this machine, unpushed:
 say where, so the human can open it.
 
 ## Output

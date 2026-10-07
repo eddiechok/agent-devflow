@@ -19,6 +19,29 @@ rule looks wrong.
 
 **`gh` is the example, not the requirement.** Use whatever GitHub access this environment has — the CLI, an MCP server, the API. With `gh`, pull requests go through `gh api`, never the `gh pr` commands: those send GraphQL, and a cloud session's GitHub proxy refuses every GraphQL request. `gh` fills `{owner}/{repo}` from the git remote.
 
+## Direct mode: a red commit on main
+
+Read `Mode:` in the project's `## Workflow` block in `CLAUDE.md`. With `Mode: direct`, no
+`mode: pr` line, no PR number in `$ARGUMENTS` and no open PR for the current branch, there
+is no PR to tend, but a pushed commit on the default branch can still be red. That is the
+red-commit-on-main path, and it replaces steps 1, 2, 5 and 6. Steps 3 and 4 run as written.
+Outside it, `tend` is exactly as below: an open PR, and nothing else.
+
+- **Which commit.** A sha in `$ARGUMENTS`, else the tip of the default branch after
+  `git fetch origin`: `git rev-parse <default branch ref>`.
+- **Read it.** The same two reads as step 2, with that sha, the check runs first:
+  `gh api --paginate 'repos/{owner}/{repo}/commits/<sha>/check-runs?per_page=100'`, then
+  the `status` route beside it. Print the same shaped lines. A run that has not finished
+  is not red: say so and stop.
+- **Triage.** Step 3's question is whether that commit, or the commits just before it,
+  caused the failure. Read the `git log` of the files the failing step names.
+- **Fix.** Through `devflow:build`, as step 4. The fix lands as a new commit on main: the
+  red commit is already pushed, so never amend, rebase or force-push it. `submit` runs in
+  direct mode, so it commits and pushes to main, or lands a worktree's branch through
+  `skills/submit/references/land-on-main.md`, and opens no PR.
+- **Report.** Step 6's report without the threads: `✓ **yours**`, `– **theirs**`,
+  `✓ **pushed**`.
+
 ## 1. Find the PR
 
 `$ARGUMENTS` is a PR number if you were given one. Otherwise ask for the PR on the current branch:

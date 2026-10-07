@@ -1126,6 +1126,177 @@ check("sweep-quick-issues: a comment on an issue fails comments-on-no-issue",
                     [("Bash", {"command": "gh api repos/o/r/issues/4/comments -f body=x"})]),
       "fail")
 
+# ------------------------------------- setup and direct mode have their cases
+#
+# `setup` became a questionnaire that writes `## Workflow`, and a direct
+# project commits on main with no branch and no review for Quick work. Both
+# are promises between skills that a pin on the file cannot keep. Nothing
+# here calls a model: the graders are fed transcripts built by hand, one that
+# does the right thing and one that does not.
+
+with open(os.path.join(HERE, "setup-writes-checks", "case.yaml")) as fh:
+    _setup_case = run.parse_yaml(fh.read())
+_su = {g["name"]: g for g in _setup_case["graders"]}
+
+
+def _workflow_file_verdict(claude_md):
+    """The writes-workflow-block verdict on a CLAUDE.md with this content."""
+    if "writes-workflow-block" not in _su:
+        return None
+    _d = tempfile.mkdtemp()
+    try:
+        with open(os.path.join(_d, "CLAUDE.md"), "w") as fh:
+            fh.write(claude_md)
+        return verdict(_su["writes-workflow-block"], ctx(workdir=_d))
+    finally:
+        shutil.rmtree(_d, ignore_errors=True)
+
+
+check("setup-writes-checks: a Workflow block with Mode: direct passes",
+      _workflow_file_verdict("## Checks\n- Test: npm test\n\n## Workflow\n"
+                             "- Mode: direct\n- About: a greeter\n"), "pass")
+check("setup-writes-checks: a Workflow block with Mode: pr passes",
+      _workflow_file_verdict("## Workflow\n- Mode: pr\n- About: x\n"), "pass")
+check("setup-writes-checks: no Workflow block fails",
+      _workflow_file_verdict("## Checks\n- Test: npm test\n"), "fail")
+check("setup-writes-checks: a Mode that is neither direct nor pr fails",
+      _workflow_file_verdict("## Workflow\n- Mode: both\n"), "fail")
+check_true("setup-writes-checks: the Checks graders are still there",
+           {"has-checks-block", "records-test-command", "records-lint-command",
+            "invents-no-typecheck", "actually-ran-the-test-command",
+            "actually-ran-the-lint-command"} <= set(_su))
+# Nobody is at the keyboard in a scored run, so the prompt has to say yes to
+# the questionnaire, the way worktree-guard does for flow's.
+check_true("setup-writes-checks: the prompt answers the questionnaire itself",
+           "yes to all" in _setup_case["execution"]["prompt"])
+
+_dm_case_path = os.path.join(HERE, "direct-mode", "case.yaml")
+check_true("direct-mode: the case exists", os.path.isfile(_dm_case_path))
+_dm = {}
+_dm_case = {}
+if os.path.isfile(_dm_case_path):
+    with open(_dm_case_path) as fh:
+        _dm_case = run.parse_yaml(fh.read())
+    _dm = {g["name"]: g for g in _dm_case["graders"]}
+check_true("direct-mode: the prompt is a Quick change through flow",
+           "/devflow:flow" in _dm_case.get("execution", {}).get("prompt", ""))
+
+
+def dm_verdict(name, calls=(), said=""):
+    """The verdict of one direct-mode grader on a run that made `calls`, each a
+    (tool, input) pair, and said `said`."""
+    if name not in _dm:
+        return None
+    blocks = [{"type": "tool_use", "id": "d%d" % i, "name": tool, "input": inp}
+              for i, (tool, inp) in enumerate(calls)]
+    if said:
+        blocks.append({"type": "text", "text": said})
+    return verdict(_dm[name], ctx([{"type": "assistant", "message": {"content": blocks}}]))
+
+
+_DM_COMMIT = ("Bash", {"command": "git commit -am 'docs: fix typo'"})
+_DM_BRANCH = ("Bash", {"command": "git checkout -b docs/typo main"})
+_DM_SWITCH = ("Bash", {"command": "git switch -c docs/typo"})
+_DM_REVIEW_AGENT = ("Agent", {"subagent_type": "devflow:reviewer", "prompt": "p"})
+_DM_REVIEW_SKILL = ("Skill", {"skill": "devflow:review", "args": "abc123"})
+
+check("direct-mode: a run that never cuts a branch passes",
+      dm_verdict("cuts-no-branch", [_DM_COMMIT]), "pass")
+check("direct-mode: checkout -b fails cuts-no-branch",
+      dm_verdict("cuts-no-branch", [_DM_BRANCH, _DM_COMMIT]), "fail")
+check("direct-mode: switch -c fails cuts-no-branch",
+      dm_verdict("cuts-no-branch", [_DM_SWITCH, _DM_COMMIT]), "fail")
+check("direct-mode: a commit passes commits-on-main",
+      dm_verdict("commits-on-main", [_DM_COMMIT]), "pass")
+check("direct-mode: no commit fails commits-on-main",
+      dm_verdict("commits-on-main", []), "fail")
+check("direct-mode: no reviewer agent passes starts-no-review-agent",
+      dm_verdict("starts-no-review-agent", [_DM_COMMIT]), "pass")
+check("direct-mode: a reviewer agent fails starts-no-review-agent",
+      dm_verdict("starts-no-review-agent", [_DM_REVIEW_AGENT]), "fail")
+check("direct-mode: calling devflow:review fails calls-no-review",
+      dm_verdict("calls-no-review", [_DM_REVIEW_SKILL]), "fail")
+check("direct-mode: no review call passes calls-no-review",
+      dm_verdict("calls-no-review", [_DM_COMMIT]), "pass")
+check("direct-mode: the skipped line passes prints-review-skipped",
+      dm_verdict("prints-review-skipped",
+                 said="– **review** skipped — Quick, direct mode"), "pass")
+check("direct-mode: a dash-tolerant skipped line passes prints-review-skipped",
+      dm_verdict("prints-review-skipped",
+                 said="- **review** skipped - Quick, direct mode"), "pass")
+check("direct-mode: no skipped line fails prints-review-skipped",
+      dm_verdict("prints-review-skipped", said="✓ **review** all three ran"), "fail")
+
+_dm_scaffold = os.path.join(HERE, "direct-mode", "scaffold.sh")
+check_true("direct-mode: the scaffold exists", os.path.isfile(_dm_scaffold))
+
+# The real scaffold runs beside a stub greeter.sh that builds a repo with a
+# remote, as the real one does: the real one runs npm and node, and this test
+# needs python3 and git alone. What the scaffold has to leave behind is a
+# project that says direct, has no remote, and starts with a clean tree on main.
+if os.path.isfile(_dm_scaffold):
+    _tmp = tempfile.mkdtemp()
+    try:
+        os.makedirs(os.path.join(_tmp, "case"))
+        os.makedirs(os.path.join(_tmp, "fixtures"))
+        shutil.copy(_dm_scaffold, os.path.join(_tmp, "case", "scaffold.sh"))
+        with open(os.path.join(_tmp, "fixtures", "greeter.sh"), "w") as fh:
+            fh.write(
+                '#!/usr/bin/env bash\nset -e\nmkdir -p "$1"\ncd "$1"\n'
+                'git init -q -b main\ngit config user.email e@x\n'
+                'git config user.name e\ngit config commit.gpgsign false\n'
+                'printf "## Checks\\n- Test: npm test\\n\\n## Workflow\\n'
+                '- Mode: pr\\n- About: a tiny CLI\\n" > CLAUDE.md\n'
+                'printf "# greeter\\n\\nA tiny CLI that says hello.\\n" > README.md\n'
+                'git add -A\ngit commit -qm init\n'
+                'git init -q --bare "$1.origin.git"\n'
+                'git remote add origin "$1.origin.git"\n')
+        os.chmod(os.path.join(_tmp, "fixtures", "greeter.sh"), 0o755)
+        _ws = os.path.join(_tmp, "ws")
+        _sc = subprocess.run(["bash", os.path.join(_tmp, "case", "scaffold.sh"), _ws],
+                             capture_output=True, text=True)
+        check("direct-mode: the scaffold exits 0", _sc.returncode, 0)
+
+        def _git(*args):
+            return subprocess.run(["git"] + list(args), cwd=_ws,
+                                  capture_output=True, text=True).stdout.strip()
+
+        _md = ""
+        if os.path.isfile(os.path.join(_ws, "CLAUDE.md")):
+            with open(os.path.join(_ws, "CLAUDE.md")) as fh:
+                _md = fh.read()
+        check_true("direct-mode: CLAUDE.md keeps ## Checks", "## Checks" in _md)
+        check_true("direct-mode: CLAUDE.md says ## Workflow, Mode: direct",
+                   re.search(r"## Workflow\n- Mode: direct\n", _md))
+        # The shared fixture writes a pr block; this case swaps it, never adds a
+        # second one, or a skill reading the first block would see pr.
+        check("direct-mode: CLAUDE.md has one ## Workflow block, not two",
+              _md.count("## Workflow"), 1)
+        check_true("direct-mode: the fixture's Mode: pr is gone", "- Mode: pr" not in _md)
+        check("direct-mode: the project has no remote", _git("remote"), "")
+        check("direct-mode: it starts on main", _git("rev-parse", "--abbrev-ref", "HEAD"), "main")
+        check("direct-mode: it starts with a clean tree", _git("status", "--porcelain"), "")
+        check_true("direct-mode: the typo is in the README", "sasy hello" in
+                   open(os.path.join(_ws, "README.md")).read())
+    finally:
+        shutil.rmtree(_tmp, ignore_errors=True)
+
+# The README row is what a reader checks to learn what a failure costs.
+_dm_rows = [l for l in _readme.split("\n") if l.startswith("| `direct-mode`")]
+check("readme: the direct-mode row is there", len(_dm_rows), 1)
+
+# flow calls setup first when CLAUDE.md has no `## Workflow` block. A fixture
+# that writes `## Checks` alone would send every case through setup's
+# questionnaire before the thing it measures. Only setup-writes-checks starts
+# with no CLAUDE.md at all, on purpose.
+_EVALS = os.path.dirname(os.path.abspath(__file__))
+for _rel in ["fixtures/greeter.sh", "plans-on-tracker/scaffold.sh",
+             "ship-tends-conflict/scaffold.sh", "sweep-quick-issues/scaffold.sh"]:
+    with open(os.path.join(_EVALS, _rel)) as fh:
+        _src = fh.read()
+    check_true(f"{_rel}: writes ## Checks", "## Checks" in _src)
+    check_true(f"{_rel}: writes ## Workflow with Mode: pr beside it, so flow skips setup",
+               re.search(r"## Workflow\n- Mode: pr\n- About: ", _src))
 # ----------------------- skills-suggests-railway: names the vendor, installs nothing
 #
 # Issue #91: `/devflow:skills` on a repo with a railway.json suggests the

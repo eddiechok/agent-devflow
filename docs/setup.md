@@ -36,3 +36,57 @@ Two honest lines beat one invented wrapper script.
 No block means local, and that is the safe outcome without a claim the human did not make.
 
 The second label, `devflow:backlog`, is made alongside `devflow:plan` for the same reason: `flow` needs it the first time a request names more than one feature, and asking for it there would cost a round trip this step can pay for once, up front. A project on `local` gets no label, but `flow` still has somewhere to park the rest — a file under `.devflow/backlog/`.
+
+## Step 0 — reading the repo before asking
+
+A question the repo already answers is a question the human answers for nothing. Whether the
+repo is private, how many people can push to it, whether CI exists and whether a push to main
+deploys are all facts, so `setup` reads them first and asks only the decision they leave open.
+The same rule is `flow`'s: facts are the session's job, decisions are the human's. A `403` or
+`404` on branch protection is read as "none" because that is what a free private repo answers.
+
+## Step 6 — why a questionnaire, and why `direct` exists
+
+Some projects gain nothing from a branch and a pull request per job: a private repo one person
+uses, with no CI to wait for. For them the PR is a ritual, and `main` is where the work was
+going to land anyway. `direct` names that way of working, and `pr` names today's. The names say
+how the work is done, not how many people work on the project, so a team can pick `direct` for
+a docs repo and a solo project can pick `pr`.
+
+Two questions, not one. The first, what the project is about, goes into `About:` in the
+human's own words, so a later session reads a sentence a person wrote rather than a guess.
+The second, `direct` or `pr`, is stored because `flow`, the other skills and the hook all
+read it later and nothing else carries it.
+
+The recommendation is read from the repo: private, one collaborator and no CI says `direct`,
+anything else says `pr`. A push to main that deploys live is a warning in the option's text,
+not a reason to change the recommendation, since review still runs on Standard and Deep work.
+
+A project that already has `## Checks` but no `## Workflow` is asked only these questions. A
+`## Workflow` that is already there is kept, the same as `## Checks` and `## Plans`: someone
+chose it.
+
+## Why the `disable-model-invocation` flag came off
+
+`flow` runs `setup` first when `CLAUDE.md` has no `## Workflow` block. A skill with
+`disable-model-invocation: true` cannot be called by another skill: the Skill tool refuses it
+and tells the model to ask the human to type it, even when a skill's own instructions say to
+call it ([anthropics/claude-code#93761](https://github.com/anthropics/claude-code/issues/93761)).
+So the flag came off `setup`. `ship` and `sweep` keep theirs, because they should only ever
+start from a human.
+
+## Step 8 — why setup offers `devflow:skills`
+
+Setup is the one moment a project is looked at as a whole, so it is the natural place to
+ask which agent skills would fit it. The human asked for that on #96. `devflow:skills`
+already does the reading and the listing, and it is model-invocable, so setup calls it
+rather than copying it. It comes after the report, so the list is the last thing on screen,
+and only on a yes: a project set up again later can skip it in one answer. Nothing gets
+installed here. `skills` prints each command, and the human decides which to run.
+
+## Where the shape came from
+
+The questionnaire follows `setup-matt-pocock-skills` in
+[mattpocock/skills](https://github.com/mattpocock/skills/blob/main/skills/engineering/setup-matt-pocock-skills/SKILL.md)
+(MIT). That skill is not forced on the user. This one is run by `flow` when the block is
+missing, because the block is read by every skill and the hook.

@@ -1,6 +1,6 @@
 # evals
 
-Sixteen cases. Run them before you push a change to a skill. Two are manual, see below.
+Seventeen cases. Run them before you push a change to a skill. Two are manual, see below.
 
 ## Which runner
 
@@ -30,7 +30,7 @@ python3 evals/run.py --case sizing-* --runs 1
 python3 evals/run.py --dry-run                # parse and print, run nothing
 ```
 
-It scores **83 of the 97 graders** — every `regex`, `tool_used`, `tool_order`
+It scores **89 of the 103 graders** — every `regex`, `tool_used`, `tool_order`
 and `file_exists`. The fourteen `llm` graders come back `skip`, stay out of the
 denominator, and are counted in the summary. **A skip is never a pass**, the
 same way `NOT RUN` is never `none`.
@@ -49,8 +49,8 @@ it spends money.
 
 **A rendered `SKILL.md` is not part of the trace.** The `Skill` tool returns the
 whole skill body as a tool result, and `skills/flow/SKILL.md` contains its own
-worked examples — `Quick — single-file copy change.` at line 330 and `Deep — new
-subsystem, touches auth (danger list).` at 334. Count those as trace and three
+worked examples — `Quick — single-file copy change.` at line 337 and `Deep — new
+subsystem, touches auth (danger list).` at 341. Count those as trace and three
 weight-3 graders stop measuring anything:
 
 | Grader | What it would do |
@@ -84,7 +84,8 @@ run may read the very line it looks for.
 | `bug-routes-to-debug` | low | A bug only running can show — the code reads as correct — gets planned across many files instead of routed through `devflow:debug` |
 | `bug-routes-to-build` | low | A bug the request already points at takes the `devflow:debug` detour it does not need, instead of going straight to `devflow:build` |
 | `auto-trigger` | low | Work never reaches `flow` at all, so nothing ever ships |
-| `setup-writes-checks` | medium | Every downstream check runs a command nobody verified |
+| `setup-writes-checks` | medium | Every downstream check runs a command nobody verified, or the questionnaire writes no `## Workflow` block and every skill reads the project as not set up |
+| `direct-mode` | medium | A project set to `direct` still gets a branch, a review of a typo fix, or no word that the review was skipped, so the mode changes nothing the human can see |
 | `full-loop` | high | The skills stop handing off to each other |
 | `deep-coordinator` | high | A Deep job builds every chain in one session again and outgrows its window, or the chains never merge back and the PR is missing a chain's work |
 | `research-in-rounds` | medium | A Deep question that needs a fact from outside the repo goes to the human as a guess, or `flow` asks whether to research instead of starting a `researcher` itself |

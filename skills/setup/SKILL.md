@@ -1,17 +1,44 @@
 ---
 name: setup
-description: Prepare a project to use devflow. Detects the test, typecheck and lint commands, runs them to confirm they actually work, then writes a Checks block into the project CLAUDE.md. Also asks where Deep plans live, in a file or on GitHub, and writes a Plans block. Run once per project, or again when the commands change.
-disable-model-invocation: true
+description: Use when a project's CLAUDE.md has no `## Workflow` block, or the human asks to set devflow up. Reads the repo, detects the test, typecheck and lint commands and runs them to confirm they work, asks what the project is about and whether to work direct (commit on main) or pr (a branch and a pull request per job), then writes the Checks, Plans and Workflow blocks into the project CLAUDE.md. Called by flow first, when the Workflow block is missing.
 ---
 
 # setup
 
-Work out this project's check commands, **prove they run**, then write them down.
+Read the repo, ask how the human works here, work out this project's check commands,
+**prove they run**, then write them down.
 
-Run once per project. Run again if the commands change or the checks start behaving oddly.
+Run once per project. `flow` calls it first when `CLAUDE.md` has no `## Workflow` block. Run
+it again if the commands change or the checks start behaving oddly.
 
 Why these rules are what they are: [docs/setup.md](../../docs/setup.md). Read it only if a
 rule looks wrong.
+
+## 0. Read the repo before asking
+
+Everything below that can be read is read first, and a question the repo already answers is
+not asked. Run each bare, one per call:
+
+```
+gh api repos/{owner}/{repo} --jq .private
+gh api repos/{owner}/{repo}/collaborators --jq length
+gh api repos/{owner}/{repo}/branches/<default>/protection --silent
+```
+
+- Whether `.github/workflows` exists, and whether any workflow runs on a push to the default
+  branch.
+- A `403` or `404` on branch protection is "none", not an error.
+- Deploy-on-push signs: `vercel.json`, `netlify.toml`, `railway.json`, `railway.toml`, or a
+  workflow that deploys on a push to the default branch.
+- No `gh`, or no GitHub remote: say "not read" for each GitHub fact and go on. Never guess one.
+
+Print what you found, one shaped line each:
+
+```
+✓ **repo** private, 1 collaborator, no CI, no protection on main
+
+✓ **deploy** vercel.json — a push to main may go live
+```
 
 ## 1. Already set up?
 
@@ -23,7 +50,7 @@ command, the same shape step 3 uses below. Then:
 - all pass → go to step 5 if there is no `## Plans` block yet
 - one fails or is missing → print it `✗`, suggest a fix, and ask before changing anything
 
-A block someone wrote deliberately is not yours to replace. The same goes for `## Plans`: if it is there, leave it, and only say what it says.
+A block someone wrote deliberately is not yours to replace. The same goes for `## Plans` and `## Workflow`: if one is there, leave it, and only say what it says. A project with `## Checks` but no `## Workflow` is asked only step 6's questions.
 
 ## 2. Work out the commands
 
@@ -166,7 +193,39 @@ Write the block:
 
 Or `local`. One line, one value. Nothing else goes in this block.
 
-## 6. Report
+## 6. How do you work here?
+
+Ask in `AskUserQuestion` popups, by [flow's rules for asking](../flow/SKILL.md#asking-questions--rounds-until-no-answer-would-change-the-build):
+the recommended option first, its label ending " (Recommended)", the tool's own "Other"
+for free text. Where there is no popup tool, ask the same as a numbered list and take "yes to
+all". Skip this step when `## Workflow` is already there, and only say what it says.
+
+One round, two questions:
+
+1. **What is this project about?** The recommended option is a one-line guess from the
+   README, so "yes" is enough. The human's own words, typed into Other, win over the guess.
+   Those words are what gets written, unedited.
+2. **How should the work be done?** Two options:
+   - `direct` — commit on main and push. No branch, no pull request.
+   - `pr` — a branch and a pull request for each job.
+
+   Recommend from what step 0 read. **Private, one collaborator and no CI → `direct`.**
+   Anything else → `pr`. When a deploy-on-push sign was found, say so in the option's own
+   text: "a push to main may go live". Still recommend `direct` when the rest says direct;
+   review stays on for Standard and Deep work either way.
+
+Write the block, exactly this shape, to the project's `CLAUDE.md`:
+
+```markdown
+## Workflow
+- Mode: direct
+- About: <one line, the human's own words>
+```
+
+`Mode:` is `direct` or `pr`. Nothing else goes in this block. No block means "not set up",
+and every skill reads `Mode:` from here itself.
+
+## 7. Report
 
 Keep it short, one shaped line per fact:
 
@@ -181,6 +240,8 @@ Keep it short, one shaped line per fact:
 
 ✓ **plans** github (labels devflow:plan, devflow:backlog exist)
 
+✓ **workflow** direct (private, 1 collaborator, no CI)
+
 – **deploy** not written — that is ship's to add
 the first time it deploys and can prove the command works
 ```
@@ -188,11 +249,31 @@ the first time it deploys and can prove the command works
 The `checks` line says `written` only when step 4 wrote the block. Otherwise it is
 `– **checks** kept — already in CLAUDE.md`, or `✗ **checks** not written — <why>`.
 
+The `workflow` line says `kept` when `## Workflow` was already there. A `Mode:` the human
+chose against the recommendation says so: `✓ **workflow** pr (direct was recommended)`.
+
 Then mention, once, only if relevant:
 
 - the project has no tests at all — worth knowing before trusting the flow
 - a check took a long time
 - the project is currently red
+
+## 8. Offer agent skills
+
+Last, after the report, ask one question in the same popup style as step 6, every time
+setup runs:
+
+1. **Look for agent skills that fit this repo?**
+   - Yes (Recommended) — call `devflow:skills`. It reads what the repo is built with and
+     what is already installed, then lists the skills that fit, each with its install
+     command. Its list is the last thing setup prints.
+   - No — print one line and stop:
+
+     ```
+     – **skills** skipped
+     ```
+
+`devflow:skills` only lists. Setup installs nothing either: the human runs each command.
 
 ## Output
 
@@ -211,4 +292,17 @@ the result — for example `✓ **checks** 3 of 3 pass, exit 0`.
 - Never overwrite an existing `## Checks` block without asking.
 - Never invent a command to fill a row. Missing is better than wrong.
 - Never write `Tracker: github` without that REST read having answered in this run.
-- Never add anything to `CLAUDE.md` except the `## Checks` and `## Plans` blocks, and never a block you did not prove.
+- Never overwrite an existing `## Workflow` block. Say what it says and keep it.
+- Never write `Mode:` as anything but `direct` or `pr`, and never write it without asking.
+- Never add anything to `CLAUDE.md` except the `## Checks`, `## Plans` and `## Workflow` blocks, and never a block you did not prove.
+- Never run an install. Step 8 offers `devflow:skills`, which only lists; the human installs.
+
+## Where the shape came from
+
+The questionnaire takes its shape from the `setup-matt-pocock-skills` skill in
+[mattpocock/skills](https://github.com/mattpocock/skills/blob/main/skills/engineering/setup-matt-pocock-skills/SKILL.md)
+(MIT): read the repo first, print what it shows, ask one section at a time with the
+recommended answer first, skip a question the repo already settled, then write a block into
+`CLAUDE.md`. Where it differs: the recommendation here is read from the repo's own facts
+(visibility, collaborators, CI), the one question that matters is `direct` or `pr`, and
+`flow` calls it on its own when the block is missing.

@@ -66,12 +66,30 @@ It also asks where Deep plans live. Local is the default: a file in `.devflow/pl
 
 Run it again if the commands change. It will not overwrite a block you wrote without asking.
 
+### How the project works: `direct` or `pr`
+
+`setup` is a short questionnaire, not only a command finder. It reads the repo first (private or public, how many collaborators, whether CI runs), asks what the project is about, and asks how the work should land. It recommends one answer and says why. Then it writes a `## Workflow` block into `CLAUDE.md`:
+
+```markdown
+## Workflow
+- Mode: direct
+- About: a private budgeting app, only me
+```
+
+- **`direct`** commits straight on main and pushes. No branch, no pull request. `flow` still sizes the work, `build` still goes test first, and `submit` still runs the checks and the app, but a Quick change is not reviewed, and what the PR body would say goes in the Done report in the chat. The recommendation: a private repo, one collaborator and no CI. If a push to main deploys live, `setup` says so and still recommends `direct` when the rest says direct.
+- **`pr`** is a branch and a pull request for each job, which is the default for everything else. `ship` merges it.
+
+You do not have to run `/devflow:setup` yourself. When there is no `## Workflow` block, flow runs it first, then carries on with your request. A project that already has `## Checks` is asked only the new questions.
+
+To use `pr` once in a `direct` project, put `--pr` in the request, or say "PR this time". Nothing in `CLAUDE.md` changes.
+
 ## Use it
 
 ```
 /devflow:flow add a settings page for email alerts
 /devflow:flow #123
 /devflow:flow --deep change how sessions are stored
+/devflow:flow --pr rename the settings route
 ```
 
 Then, once you have looked at the PR and want it finished:
@@ -90,7 +108,7 @@ There are two exceptions. `ship` is the one skill nothing else can call. `flow` 
 ### The loop
 
 ```
-/devflow:setup      once per project. Writes the Checks block.
+/devflow:setup      once per project. Writes Checks and Workflow.
       ┆
       ▼
 /devflow:flow ◄──────────────────────────────────────────────┐
@@ -238,8 +256,8 @@ auth and permissions · secrets and keys · payments · public API or wire forma
 
 | Skill | What it does |
 |---|---|
-| `setup` | Once per project. Finds and verifies the check commands. You invoke it yourself, so it costs nothing at runtime |
-| `skills` | Suggests agent skills and plugins that fit this repo. Reads what it is built with and what is already installed, matches a short vendor table, searches the rest, and prints each install command at project scope. **Lists only: you run the installs.** Start it by hand; `setup` will call it later |
+| `setup` | Once per project. Finds and verifies the check commands, then asks how to work, `direct` or `pr`, and writes `## Workflow`. `flow` runs it first when that block is missing. Its last step offers `skills` |
+| `skills` | Suggests agent skills and plugins that fit this repo. Reads what it is built with and what is already installed, matches a short vendor table, searches the rest, and prints each install command at project scope. **Lists only: you run the installs.** Start it by hand, or say yes when `setup` offers it |
 | `flow` | Sizes the request. Routes it. Asks any questions in popup rounds |
 | `discuss` | Design talk and requests for advice — "let's discuss #92", "what should we do about X", "compare A and B". Starts one `researcher` per open question, at most 3, then recommends with every finding's source in the reply. Edits nothing and saves nothing; when the talk turns into work it hands its findings to `flow` |
 | `debug` | A bug nobody can point at, before `build` sees it: builds a red-capable loop, ranks 3 to 5 falsifiable causes, and hands the confirmed one to `build` as its first failing test. Called by `flow`, or start it by hand |

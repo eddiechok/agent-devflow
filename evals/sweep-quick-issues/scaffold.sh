@@ -50,6 +50,10 @@ MD
 cat > CLAUDE.md <<'MD'
 ## Checks
 - Test: npm test
+
+## Workflow
+- Mode: pr
+- About: a tiny CLI that says hello, used by devflow's evals
 MD
 
 npm test >/dev/null 2>&1 \

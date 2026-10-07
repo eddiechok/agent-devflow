@@ -365,3 +365,17 @@ popup, because a popup covers the report it asks about (#110). A match shows the
 and goes on. A resume does
 not stop, because it was approved when it was written, and the by-hand path already stops
 after writing.
+
+## Direct mode
+
+A project that works `direct` has no feature branch and no PR, so `plan` cuts no branch.
+Everything that made the chains safe stays: each still runs in its own worktree, cut from
+this session's tip, and merges `--no-ff` in plan order. Only the branch they merge into
+changes, from a feature branch to the one the session already stands on: main in the main
+folder, or a linked worktree's own branch, which `submit` then lands on main through
+[land-on-main.md](../skills/submit/references/land-on-main.md). That reference exists once
+so `plan`, `sweep` and `submit` cannot grow three ways of putting a branch on main.
+
+The detail sits in [references/direct.md](../skills/plan/references/direct.md) because
+SKILL.md is capped at 500 lines and most plans are not direct. A `mode: pr` line from
+`flow` keeps today's path for that run.

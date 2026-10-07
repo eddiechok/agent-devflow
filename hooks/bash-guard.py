@@ -12,7 +12,9 @@ Two jobs:
                   be: permissions are checked against the rewrapped form, and
                   no Bash rule can match a compound statement. See truncate().
 
-  2. branch-guard Ask before committing straight to the default branch.
+  2. branch-guard Ask before committing straight to the default branch,
+                  unless the project's CLAUDE.md says `- Mode: direct` under
+                  `## Workflow`.
 
 This is an ergonomic speed bump, NOT a security control. It matches text in
 command strings and is trivially bypassed by variable indirection, aliases or
@@ -32,6 +34,7 @@ Opt-outs, both documented in the README:
 """
 
 import json
+import os
 import re
 import subprocess
 import sys
@@ -86,6 +89,29 @@ def _git(args, cwd):
         return None
 
 
+DIRECT_RE = re.compile(r"^\s*-\s*Mode:\s*direct\s*$", re.IGNORECASE)
+
+
+def _is_direct(cwd):
+    """True when the repo's CLAUDE.md has a `## Workflow` block with
+    `- Mode: direct`. Any error reading it is False."""
+    try:
+        top = _git(["rev-parse", "--show-toplevel"], cwd)
+        if not top:
+            return False
+        with open(os.path.join(top, "CLAUDE.md"), encoding="utf-8") as f:
+            lines = f.read().splitlines()
+        in_block = False
+        for line in lines:
+            if line.startswith("## "):
+                in_block = line[3:].strip().lower() == "workflow"
+            elif in_block and DIRECT_RE.match(line):
+                return True
+    except Exception:
+        return False
+    return False
+
+
 def guard_branch(command, cwd):
     branch = _git(["rev-parse", "--abbrev-ref", "HEAD"], cwd)
     default = _git(["symbolic-ref", "--short", "refs/remotes/origin/HEAD"], cwd)
@@ -100,6 +126,11 @@ def guard_branch(command, cwd):
     # Only guard when we are confident. Unknown state means allow.
     if not branch or not default or branch != default:
         return
+
+    # A project that chose direct mode commits on the default branch on
+    # purpose. Any trouble reading that choice means we ask, as before.
+    if _is_direct(cwd):
+        passthrough()
 
     print(json.dumps({
         "hookSpecificOutput": {

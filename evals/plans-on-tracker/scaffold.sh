@@ -35,6 +35,10 @@ cat > CLAUDE.md <<'MD'
 
 ## Plans
 - Tracker: github
+
+## Workflow
+- Mode: pr
+- About: a tiny CLI that says hello, used by devflow's evals
 MD
 
 npm test >/dev/null 2>&1 || { echo "scaffold.sh: npm test does not pass on the fresh fixture" >&2; exit 1; }
