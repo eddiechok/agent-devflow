@@ -6174,6 +6174,70 @@ check("docs/skills: says why one UX skill, and why none for impeccable",
       and "critique" in skills_doc_body,
       f"{SKILLS_DOC_PATH} never explains the one UX skill")
 
+# --- live search for design and UX skills, and the source bar (#108)
+
+def _step(text, heading):
+    if heading not in text:
+        return ""
+    return flat(text.split(heading, 1)[1].split("\n## ", 1)[0])
+
+_step_4 = _step(finder_text, "## 4.")
+_step_5 = _step(finder_text, "## 5.")
+
+check("skills/step 3a: design and UX skills get a live search on top of their tables",
+      "DISABLE_TELEMETRY=1 npx skills find" in _step_3a_flat
+      and "every run" in _step_3a_flat
+      and "on top of" in _step_3a_flat,
+      f"{FINDER_PATH} step 3a never runs the live search on top of the tables")
+
+check("skills/step 3a: stars and size are read fresh for table rows too",
+      "fresh" in _step_3a_flat and "table rows" in _step_3a_flat
+      and "gh api" in _step_3a_flat,
+      f"{FINDER_PATH} step 3a never reads stars and size fresh for table rows")
+
+check("skills/step 3a: a new find that passes may beat a table row, with the reason",
+      "over a table row" in _step_3a_flat and "reason" in _step_3a_flat
+      and "one design skill" in _step_3a_flat and "one UX skill" in _step_3a_flat,
+      f"{FINDER_PATH} step 3a never lets a find replace a table row, or loses the one-skill rule")
+
+check("skills/step 4: a collection of 10 or more skills is judged by install count",
+      "10 or more skills" in _step_4 and "install count" in _step_4
+      and "1K+" in _step_4 and "not the repo's stars" in _step_4,
+      f"{FINDER_PATH} step 4 never judges a big collection by its skill's install count")
+
+check("skills/step 4: 100 to 999 stars is never suggested, under 100 is dropped",
+      "100 to 999 stars" in _step_4 and "never suggested" in _step_4
+      and "under 100 stars" in _step_4 and "dropped" in _step_4,
+      f"{FINDER_PATH} step 4 never says what happens at 100 to 999 stars")
+
+check("skills/step 5: the Also seen line, at the end, with no install command",
+      "Also seen, not suggested (small repos): <skill> (<owner/repo>, <stars> stars)"
+      in _step_5
+      and "at the end" in _step_5 and "no install command" in _step_5,
+      f"{FINDER_PATH} step 5 never prints the Also seen line")
+
+check("skills/step 5: stars and size not read are said, never guessed",
+      "stars not read" in _step_5 and "size not read" in _step_5,
+      f"{FINDER_PATH} step 5 never says what to print when stars cannot be read")
+
+check("skills/design: the table numbers are a reference, read fresh each run",
+      "reference" in design_body and "fresh" in design_body,
+      f"{DESIGN_PATH} never says its numbers are read fresh each run")
+
+check("skills/ux: the table numbers are a reference, read fresh each run",
+      "reference" in ux_body and "fresh" in ux_body,
+      f"{UX_PATH} never says its numbers are read fresh each run")
+
+check("docs/skills: says why design and UX get a live search too",
+      "design and UX" in skills_doc_body and "live search" in skills_doc_body
+      and "fresh" in skills_doc_body,
+      f"{SKILLS_DOC_PATH} never explains the live search for design and UX skills")
+
+check("docs/skills: says why a collection is judged by install count and 100-999 is one line",
+      "install count" in skills_doc_body and "Also seen" in skills_doc_body
+      and "10 or more" in skills_doc_body,
+      f"{SKILLS_DOC_PATH} never explains the collection rule and the Also seen line")
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")

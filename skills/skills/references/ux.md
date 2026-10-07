@@ -10,7 +10,10 @@ matching the plugin names below against `claude plugin list --json`.
 
 ## The table
 
-Stars and sizes were read on 2026-10-07 from the repo.
+Stars and sizes were read on 2026-10-07 from the repo. They are a reference, not what gets
+printed: step 3a reads them fresh each run for every skill it lists, and runs a live search
+on top of this table. A find that passes the source bar may be recommended over a row here,
+with the reason.
 
 | Plugin | Skills used | Size | Stars | Install |
 |---|---|---|---|---|

@@ -34,6 +34,17 @@ anonymous usage data. When npx is missing the fallback is skipped and a line say
 gap in the list is never read as "nothing exists". A big vendor list would go stale and is
 out of scope.
 
+## Why design and UX skills get a live search too
+
+The first version took design skills from the table alone. A table goes stale: stars move,
+a skill is renamed, and a better one appears. So for design and UX skills the skill runs a
+live search every run on top of the tables, and reads stars and size fresh for every skill
+it lists, table rows included, so the number printed is the number that day (#108). A new
+find that passes the source bar may be recommended over a table row, with the reason in one
+line, but the list still holds one design skill and one UX skill. The search is fuzzy and
+prints install counts, not stars or a description, so a result is only a lead until the
+bar has been applied to it.
+
 ## Why it searches only what the repo is built with
 
 A search for "testing" or "code review" finds skills that compete with `build` and `review`.
@@ -83,6 +94,17 @@ A search result is not a recommendation. Official vendor repo, or 1k+ stars; und
 is a reason to drop it. These are find-skills' quality rules, copied with credit. The star
 count follows the repo's own rule in [provenance](provenance.md): copied text is always
 credited, and a count is a reason to list something, never a reason to trust it blind.
+
+## Why a collection is judged by install count, and 100 to 999 stars is one line
+
+Stars belong to the repo, and a repo with 10 or more skills (wondelai/skills holds 65) has
+stars from the whole collection, so they say little about the one skill in it. The install
+count is per skill, so that skill is judged by its own, 1K+. Smaller repos still use stars.
+
+A repo of 100 to 999 stars was undefined before: not trusted enough to suggest, not small
+enough to drop. It is never suggested, and it is not hidden either: one "Also seen" line at
+the end names it with its stars and no install command, so the human knows it exists and can
+look. Under 100 stars stays dropped, because a line for every stray repo would be noise.
 
 ## Why each entry says what it carries and its size
 
