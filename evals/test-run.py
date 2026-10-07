@@ -989,6 +989,134 @@ check("discuss-trigger: a Write fails writes-no-file",
       discuss_trigger_verdict("writes-no-file",
           [("Write", {"file_path": "config.md", "content": "x"})]), "fail")
 
+# ----------------------------- sweep-quick-issues: one PR per chain, no questions
+#
+# `sweep` opens many PRs from one run and its sweepers cannot ask. The case needs
+# a real GitHub repo with real issues, so it is manual like `plans-on-tracker`.
+# Four issues: two that share a file (one chain), one on its own (a second
+# chain), one that is not Quick (skipped). Pinned both ways, so no grader reads
+# as coverage while unable to fail.
+_sw_path = os.path.join(HERE, "sweep-quick-issues", "case.yaml")
+sweep_case = {}
+if os.path.isfile(_sw_path):
+    with open(_sw_path) as fh:
+        sweep_case = run.parse_yaml(fh.read())
+_sw = {g["name"]: g for g in sweep_case.get("graders", [])}
+_sw_ex = sweep_case.get("execution", {})
+
+check_true("sweep-quick-issues: the case exists", sweep_case != {})
+check("sweep-quick-issues: is manual, because it needs a real repo with real issues",
+      sweep_case.get("manual"), True)
+check_true("sweep-quick-issues: starts sweep, not another skill",
+           "/devflow:sweep" in _sw_ex.get("prompt", ""))
+check_true("sweep-quick-issues: the prompt tells the run not to wait",
+           "do not wait" in _sw_ex.get("prompt", ""))
+check_true("sweep-quick-issues: Agent is allowed, or no sweeper can start",
+           {"Agent", "Skill", "Bash"} <= set(_sw_ex.get("allowed_tools", [])))
+for _n in ("prints-the-chain-list", "starts-one-sweeper-per-chain",
+           "opens-one-pr-per-chain", "never-starts-the-not-quick-issue",
+           "prints-the-skipped-line", "asks-no-question", "comments-on-no-issue",
+           "one-pr-closes-the-shared-file-issues"):
+    check_true("sweep-quick-issues: the %s grader is there" % _n, _n in _sw)
+
+_sw_scaffold = os.path.join(HERE, "sweep-quick-issues", "scaffold.sh")
+_sw_scaffold_text = ""
+if os.path.isfile(_sw_scaffold):
+    with open(_sw_scaffold) as fh:
+        _sw_scaffold_text = fh.read()
+check("sweep-quick-issues: the scaffold opens 4 issues through REST",
+      len(re.findall(r'^open_issue "', _sw_scaffold_text, re.M)), 4)
+check_true("sweep-quick-issues: the scaffold writes the issue numbers for the prompt",
+           ".sweep-issues" in _sw_scaffold_text
+           and ".sweep-issues" in _sw_ex.get("prompt", ""))
+_sw_rows = [l for l in _readme.split("\n") if l.startswith("| `sweep-quick-issues`")]
+check("readme: the sweep-quick-issues row is there", len(_sw_rows), 1)
+check_true("readme: its row says it is manual",
+           len(_sw_rows) == 1 and "**manual**" in _sw_rows[0])
+check_true("sweep-quick-issues: the scaffold never runs a GraphQL issue command",
+           _sw_scaffold_text != "" and re.search(r"gh issue ", _sw_scaffold_text) is None)
+check_true("sweep-quick-issues: the scaffold names the repo from DEVFLOW_EVAL_REPO",
+           "DEVFLOW_EVAL_REPO" in _sw_scaffold_text)
+
+
+def sweep_verdict(name, calls=(), said=""):
+    """The verdict of one sweep-quick-issues grader on a run that said `said`
+    and made `calls`, each a (tool, input) pair."""
+    if name not in _sw:
+        return None
+    blocks = [{"type": "tool_use", "id": "t%d" % i, "name": tool, "input": inp}
+              for i, (tool, inp) in enumerate(calls)]
+    if said:
+        blocks.append({"type": "text", "text": said})
+    return verdict(_sw[name], ctx([{"type": "assistant", "message": {"content": blocks}}]))
+
+
+def _sweeper(prompt):
+    return ("Agent", {"subagent_type": "devflow:sweeper", "prompt": prompt,
+                      "description": "d", "isolation": "worktree"})
+
+
+def _open_pr(title):
+    return ("Bash", {"command": "gh api repos/{owner}/{repo}/pulls -f title=\"%s\" "
+                                "-F body=@/tmp/b -f head=x -f base=main" % title})
+
+
+_SW_NOT_QUICK = "Rework the greeting across every module"
+
+check("sweep-quick-issues: the right list line passes prints-the-chain-list",
+      sweep_verdict("prints-the-chain-list",
+                    said="→ **sweep** 3 issues in 2 chains, 1 skipped"), "pass")
+# Live test 1 printed the list inside a code block, where the bold markers
+# were dropped: "→ sweep 3 issues in 2 chains, 1 skipped". The count is what
+# the grader is for, so the plain line passes too.
+check("sweep-quick-issues: the list line without bold passes prints-the-chain-list",
+      sweep_verdict("prints-the-chain-list",
+                    said="→ sweep 3 issues in 2 chains, 1 skipped"), "pass")
+check("sweep-quick-issues: one chain for three issues fails prints-the-chain-list",
+      sweep_verdict("prints-the-chain-list",
+                    said="→ **sweep** 3 issues in 1 chains, 1 skipped"), "fail")
+check("sweep-quick-issues: two sweepers pass starts-one-sweeper-per-chain",
+      sweep_verdict("starts-one-sweeper-per-chain",
+                    [_sweeper("#1 #2"), _sweeper("#3")]), "pass")
+check("sweep-quick-issues: one sweeper per issue fails starts-one-sweeper-per-chain",
+      sweep_verdict("starts-one-sweeper-per-chain",
+                    [_sweeper("#1"), _sweeper("#2"), _sweeper("#3")]), "fail")
+check("sweep-quick-issues: a builder is not a sweeper",
+      sweep_verdict("starts-one-sweeper-per-chain",
+                    [("Agent", {"subagent_type": "devflow:builder", "prompt": "x"}),
+                     ("Agent", {"subagent_type": "devflow:builder", "prompt": "y"})]),
+      "fail")
+check("sweep-quick-issues: two PRs pass opens-one-pr-per-chain",
+      sweep_verdict("opens-one-pr-per-chain", [_open_pr("a"), _open_pr("b")]), "pass")
+check("sweep-quick-issues: three PRs fail opens-one-pr-per-chain",
+      sweep_verdict("opens-one-pr-per-chain",
+                    [_open_pr("a"), _open_pr("b"), _open_pr("c")]), "fail")
+check("sweep-quick-issues: one PR fails opens-one-pr-per-chain",
+      sweep_verdict("opens-one-pr-per-chain", [_open_pr("a")]), "fail")
+check("sweep-quick-issues: a sweeper on the not-Quick issue fails the skip",
+      sweep_verdict("never-starts-the-not-quick-issue",
+                    [_sweeper("#4 " + _SW_NOT_QUICK)]), "fail")
+check("sweep-quick-issues: sweepers on the Quick issues pass the skip",
+      sweep_verdict("never-starts-the-not-quick-issue",
+                    [_sweeper("#1 #2"), _sweeper("#3")]), "pass")
+check("sweep-quick-issues: a skipped line passes prints-the-skipped-line",
+      sweep_verdict("prints-the-skipped-line",
+                    said="– skipped #4 not Quick, reaches many files"), "pass")
+check("sweep-quick-issues: the Done report's skipped line passes too",
+      sweep_verdict("prints-the-skipped-line",
+                    said="– **skipped** #4 not Quick"), "pass")
+check("sweep-quick-issues: no skipped line fails prints-the-skipped-line",
+      sweep_verdict("prints-the-skipped-line", said="all done"), "fail")
+check("sweep-quick-issues: a question fails asks-no-question",
+      sweep_verdict("asks-no-question",
+                    [("AskUserQuestion", {"questions": []})]), "fail")
+check("sweep-quick-issues: no question passes asks-no-question",
+      sweep_verdict("asks-no-question", [_sweeper("#1")]), "pass")
+check("sweep-quick-issues: a comment on an issue fails comments-on-no-issue",
+      sweep_verdict("comments-on-no-issue",
+                    [("Bash", {"command": "gh api repos/o/r/issues/4/comments -f body=x"})]),
+      "fail")
+
 # --------------------------------------------------------------- the scoring
 
 RESULTS = [

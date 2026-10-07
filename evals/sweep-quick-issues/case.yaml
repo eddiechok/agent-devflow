@@ -1,0 +1,140 @@
+schema_version: "1.1"
+name: sweep-quick-issues
+description: A sweep over four open issues starts one sweeper per chain, opens one PR per chain, skips the issue that is not Quick, and asks nobody anything.
+tags: [sweep, sweeper, issues]
+
+# MANUAL. This case needs a real GitHub repo with issues enabled and a gh that
+# is logged in. It opens real issues and the run opens real pull requests, so
+# run.py leaves it out unless you name it:
+#   DEVFLOW_EVAL_REPO=owner/name python3 evals/run.py --case sweep-quick-issues
+# Point it at a throwaway repo you own, never one with work in it: the scaffold
+# pushes a fixture commit to the default branch.
+manual: true
+
+context:
+  # The scaffold clones that repo, writes a tiny project and a Checks block,
+  # pushes one commit, and opens four issues. Two share src/greet.js, one is a
+  # README typo, and one is a design question that is not Quick. It writes
+  # their numbers to .sweep-issues, untracked, for the prompt below to read.
+  scaffold_script: ./scaffold.sh
+
+execution:
+  # The numbers come from a file because the prompt is static and the issue
+  # numbers are not known until the scaffold has opened them. Passing numbers
+  # also keeps the run off any real issue the repo may have, and they still
+  # pass every filter, so the not-Quick one has to be skipped by `sweep` itself.
+  #
+  # "yes to all" is here because the sweepers run build and submit, and either
+  # may ask. A sweeper cannot ask anyone, so it must stop instead, and a run
+  # that waits at a question measures nothing.
+  prompt: "/devflow:sweep the issue numbers listed in the file .sweep-issues in this folder. Nobody is here to answer: take every recommendation, yes to all, go, and do not wait."
+  # Two sweepers, each a full build then submit with its own review agents.
+  # A budget that cannot reach the second PR turns every PR grader into a
+  # measurement of the budget. If runs keep dying at the cap, raise this rather
+  # than deleting the graders it starves.
+  max_turns: 80
+  timeout_seconds: 2400
+  allowed_tools: [Bash, Read, Edit, Write, Glob, Grep, Skill, Agent]
+
+# One run: it opens real pull requests, so three runs is three sets of them.
+# One run is weak evidence about a model and this file does not pretend
+# otherwise: it catches a rule that is gone, not one obeyed two times in three.
+runs: 1
+
+graders:
+  # The printed list is the contract: three Quick issues in two chains, with
+  # the fourth skipped. A sweep that made a chain per issue prints a different
+  # count, and one that started on all four prints no skip at all.
+  - type: regex
+    name: prints-the-chain-list
+    target: trace
+    # Bold optional: inside a code block the markers get dropped, and the
+    # count of issues and chains is what this grader checks.
+    pattern: "(\\*\\*)?sweep(\\*\\*)? 3 issues in 2 chains"
+    match: contains
+    weight: 4
+
+  # Counted on the session's own Agent calls: the sweepers start further agents
+  # of their own (submit's reviewers), which are not chains. Two chains, two
+  # sweepers. Three would be one per issue, which is the shared-file mistake.
+  - type: tool_used
+    name: starts-one-sweeper-per-chain
+    tool: Agent
+    input_match: "devflow:sweeper"
+    session_only: true
+    min: 2
+    max: 2
+    weight: 5
+
+  # `submit` opens a PR with this one gh api call, and it is the only place in
+  # the plugin that does. One per chain: two. Counted across the sweepers, since
+  # it is a sweeper's own session that runs submit.
+  - type: tool_used
+    name: opens-one-pr-per-chain
+    tool: Bash
+    input_match: "pulls -f title"
+    min: 2
+    max: 2
+    weight: 5
+
+  # The issue is named by its title in the prompt a sweeper would be handed, so
+  # a sweeper started for it shows up here. Matching the title and not the
+  # number keeps the grader static.
+  - type: tool_used
+    name: never-starts-the-not-quick-issue
+    tool: Agent
+    input_match: "Rework the greeting across every module"
+    max: 0
+    weight: 5
+
+  # Both the list and the Done report print a skipped line for it.
+  - type: regex
+    name: prints-the-skipped-line
+    target: trace
+    pattern: "skipped\\*{0,2} #\\d+"
+    match: contains
+    weight: 2
+
+  # Sweepers have no question tool, and the main session was told nobody is
+  # here. Any call at all is a failure of the rule that sweep never asks.
+  - type: tool_used
+    name: asks-no-question
+    tool: AskUserQuestion
+    max: 0
+    weight: 3
+
+  # A skipped issue gets a line in the Done report and nothing on GitHub.
+  - type: tool_used
+    name: comments-on-no-issue
+    tool: Bash
+    input_match: "/comments"
+    max: 0
+    weight: 2
+
+  - type: llm
+    name: one-pr-closes-the-shared-file-issues
+    focus: trace
+    criteria: >
+      The two issues that edit src/greet.js (the exclamation mark and the
+      capitalised name) must be built by one sweeper and closed by ONE pull
+      request whose body has a "Closes #N" line for each of them, with one
+      commit per issue. The README typo issue must be in a second pull
+      request that closes only it. PASS if all of that holds. FAIL if the two
+      src/greet.js issues were in separate pull requests, if a pull request
+      closes the not-Quick issue, or if either PR leaves out a Closes line
+      for an issue it fixed. Treat a run that ran out of turns before the
+      second PR as a budget finding, not a behaviour failure, and say which it
+      was.
+
+expected_outcome: >
+  A "→ **sweep** 3 issues in 2 chains, 1 skipped" line appears, with a line
+  naming the not-Quick issue as skipped. Two devflow:sweeper agents start,
+  each in its own worktree: one for the two src/greet.js issues and one for the
+  README typo. Each builds its issues test-first with one commit per issue and
+  opens one pull request, the first with a Closes line for both of its issues.
+  Nothing is asked of anybody and nothing is commented on any issue. The run
+  ends with a Done report listing both PRs and the skipped issue.
+
+  Afterwards, by hand: close the two pull requests and delete their branches on
+  the throwaway repo. The next run's scaffold closes the leftover issues itself
+  but leaves pull requests alone.

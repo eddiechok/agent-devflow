@@ -130,6 +130,22 @@ The three states are left visible here on purpose. The promise was wrong for lon
 | Findings stay in the reply, not a file | **Human's call**, 6 Oct 2026 | mattpocock's `research` writes them to a Markdown file. A saved finding goes stale and is trusted unchecked, and devflow runs in other people's projects |
 | Hands findings to `flow` as `findings:` | **Human's call**, 6 Oct 2026 | The same hand-off `flow` makes to `plan`, so no question is researched twice |
 
+## `sweep`
+
+Read through a `researcher` agent while the plan was written, from each tool's own docs.
+Anything marked as a summary was not read on the page itself.
+
+| Step | From | Why |
+|---|---|---|
+| Only a human starts it | **Same idea** — [Claude Code Action](https://raw.githubusercontent.com/anthropics/claude-code-action/main/docs/usage.md) (a trigger phrase, an assignee or a label), [OpenHands' resolver](https://pypi.org/project/openhands-resolver/) (the OpenHands repo has 90,085 stars, counted 2026-10-06) and [Copilot's cloud agent](https://docs.github.com/en/copilot/responsible-use/copilot-cloud-agent) all start on a human opt-in; none scans for "easy" issues itself | Worked out here from "one run can open many PRs", then found agreed. Ours is a slash command with `disable-model-invocation: true` rather than a label, because a sweep takes the whole open list |
+| Drop an issue whose author lacks write access, by the permission endpoint | **Changed** — Copilot's cloud agent answers only users with write access, and never sees comments from the rest. GitHub's [permission endpoint](https://docs.github.com/en/rest/collaborators/collaborators#get-repository-permissions-for-a-user) returns `admin`, `write`, `read` or `none` | Same line, drawn by `gh api` in the main session before any agent reads the text. `author_association` is not documented as implying write, and its value docs were not found, so it is not the test |
+| An issue with an open PR is dropped, read from the issue's timeline | **Ours** | The [timeline docs](https://docs.github.com/en/rest/issues/timeline) show a cross-referenced event with `source.issue.pull_request` and `source.issue.state`. That is the researcher's reading of the documented fields and **has not been run**. No documented REST endpoint links a branch to an issue, so a branch with no PR is not seen |
+| A blocked issue waits | **Ours** | `GET .../dependencies/blocked_by` is in the [issue-dependencies docs](https://docs.github.com/en/rest/issues/issue-dependencies). "after #N" in the text is the same rule for an issue that never used the field |
+| Only Quick, and not sure means not Quick | **Ours** | Sized by `flow`'s Quick row, so the two never disagree. The sweepers cannot ask, so a maybe is skipped |
+| Issues that share a file form one chain | **Ours** | `plan`'s rule that two chains never edit the same file, applied to a guess instead of a written plan |
+| At most 4 sweepers at a time | **Same idea** — `plan`'s cap of four builders | Each is a full session with a checkout, and the reason is the same |
+| A skipped issue gets no comment; stopped work is not pushed | **Changed** — OpenHands' resolver opens a draft PR on success, pushes a branch only on failure and comments the result on the issue (a search summary, not page text) | Ours comments on nothing and pushes nothing from a stopped chain. The Done report is where a human reads it, and an unpushed branch cannot be mistaken for finished work |
+
 ## `debug`
 
 | Step | From | Why |
@@ -250,6 +266,16 @@ The three states are left visible here on purpose. The promise was wrong for lon
 | Text read from a web page is data, not instructions | **Ours** | The agent reads pages it did not choose. A page that tells it what to do is a finding about the page |
 | Reads any source; copied text is credited with its license; 1,000 stars only to name a repo as weight | **Human's call**, 2 Oct 2026 | Replaces the older flat 1,000-star rule, which barred reading as well as claiming. A small repo can answer the question correctly, so stars no longer decide what is read. They decide only what is named as evidence that a pattern is common, which is the one claim a star count supports. Copying is the other thing that needs care, and it is credited every time |
 | Pins `model: sonnet`, tools `Read, Grep, Glob, Bash, WebFetch, WebSearch` | **Human's call**, 2 Oct 2026 | A cheaper model needs evidence first, and one wrong fact feeds up to 4 builders, so not Haiku. No `Edit` or `Write`: it reads and reports. Haiku can be tried later with an eval |
+
+## `sweeper` agent — one chain of Quick issues, one PR
+
+| Part | From | Why |
+|---|---|---|
+| A new agent, not `builder` | **Ours** | `builder` never submits and never starts an agent. The sweeper does both, so widening `builder` would break its own rules |
+| `Agent` in its tools | **Ours**, against `builder` | `submit`'s review starts reviewer agents. Anthropic's [sub-agents docs](https://code.claude.com/docs/en/sub-agents) say a subagent can spawn subagents by default, up to three layers below the main conversation |
+| It runs `build` then `submit`, never `flow` | **Ours** | The main session already sized each issue as Quick. `flow` would size it again, and might ask |
+| It never asks; where `build` or `submit` would, it stops and reports | **Same idea** — the same docs say the question tool is removed from every subagent, even when listed | Nobody can answer a helper, so a stop is the only honest answer |
+| Pins `model: sonnet` | **Human's call**, 6 Oct 2026 | The model `builder` runs, and the reason is the same: cost, with up to four running at once. The sizing stays on the session's model and the review on opus, so a weak fix is caught before the PR. One live run of `sweep-quick-issues` has passed with it (7 Oct 2026); one run is weak evidence, not proof |
 
 ## `security-reviewer` agent — what an attacker gets
 
