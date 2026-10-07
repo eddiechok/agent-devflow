@@ -96,7 +96,12 @@ session's reasoning, and not what another sweeper said.
 
 Each reports a `branch:` line, an `issue:` and a `commit:` line per issue, one `pr:` line
 and one `stopped:` line. A report with fewer lines than that, or in prose, is a stopped
-chain: record it as stopped with the issues it was given.
+chain: record it as stopped with the issues it was given. So is a sweeper that died — an API
+error, a cut-off, a result that says it was interrupted, stalled or failed — whatever it
+committed first: its branch and worktree stay where they are, and the Done report says
+where. **Never ask the human anything** about it: a died sweeper is a line in the Done
+report, not a question. **Never wake a sweeper with `SendMessage`**: that runs
+it in the background, and a turn that ends while it runs takes it down again.
 
 ## Step 5 — the Done report
 

@@ -5264,6 +5264,32 @@ check("docs/sweep: says why groups wait in the foreground",
       and "slots free" not in flat(sweep_doc),
       "docs/sweep.md never says why sweepers run in foreground groups")
 
+# Live test 2: chain A's sweeper died of an API error inside submit, with both
+# commits in. sweep woke it with SendMessage, which runs in the background, and
+# ended the turn, so the run took it down a second time. A sweeper that dies is
+# a stopped chain: its work stays where it is, and sweep never wakes it.
+check("sweep: a sweeper that dies is recorded as stopped, never woken with SendMessage",
+      "died" in sweep_body
+      and "Never wake a sweeper with `SendMessage`" in sweep_body,
+      f"{SWEEP_PATH} never says a dead sweeper stays stopped and is not woken")
+
+# Live test 3: both sweepers stalled on the API and came back as "Request
+# interrupted by user for tool use". sweep read that as a pause and asked the
+# human what to do. An interrupted, stalled or failed sweeper is one that died.
+check("sweep: an interrupted or stalled sweeper counts as died, and sweep asks nothing",
+      "interrupted" in sweep_body and "stalled" in sweep_body
+      and "Never ask the human anything" in sweep_body,
+      f"{SWEEP_PATH} never says an interrupted sweeper died, or never forbids asking")
+
+# Live test 3: the reviewer a sweeper's review started read README.md from the
+# main folder, not the sweeper's worktree: an agent starts in the session's
+# folder. So the sweeper hands its worktree path down to every agent.
+check("agents/sweeper: hands its worktree path to every agent the review starts",
+      "git rev-parse --show-toplevel" in sweeper_body
+      and "every agent" in sweeper_body
+      and "main folder" in sweeper_body,
+      f"{SWEEPER_PATH} never tells the review's agents to read its worktree")
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")

@@ -73,6 +73,11 @@ fresh, the review, and opens **one pull request** for the whole chain. Tell it t
 must carry a `Closes #<n>` line for every issue in the chain, one per line, and that nobody
 can answer it: where it would ask, it stops, and you report.
 
+**Tell it your worktree path too**, from `git rev-parse --show-toplevel`, and that every agent
+the review starts must be given that path and read the files there. An agent starts in the
+session's main folder, not in your worktree, so without the path a reviewer reads the main
+folder's copy of each file and reviews code that is not yours.
+
 If the `Skill` tool is not available, say so on the `stopped:` line and stop. Do not
 reimplement `build` or `submit` from memory.
 
