@@ -170,6 +170,54 @@ check("stays quiet on a feature branch",
 check("stays quiet where there is no repo at all",
       call("git commit -m 'x'", cwd=tempfile.mkdtemp()) == {})
 
+# ------------------------------------------- direct mode: CLAUDE.md allows it
+
+
+def with_claude_md(content, binary=False):
+    """A scratch repo on main whose CLAUDE.md holds `content`."""
+    d = scratch_repo("main")
+    with open(os.path.join(d, "CLAUDE.md"), "wb" if binary else "w") as f:
+        f.write(content)
+    return d
+
+
+direct = with_claude_md(
+    "# proj\n\n## Workflow\n- Mode: direct\n- About: a private tool\n")
+check("a direct repo on main is not asked  <-- direct mode",
+      call("git commit -m 'x'", cwd=direct) == {},
+      f"got {call('git commit -m x', cwd=direct)!r}")
+check("a direct repo is not asked about a push either",
+      call("git push origin main", cwd=direct) == {})
+
+sub = os.path.join(direct, "src")
+os.mkdir(sub)
+check("direct is found from a subfolder, by the repo top",
+      call("git commit -m 'x'", cwd=sub) == {})
+
+pr = with_claude_md("## Workflow\n- Mode: pr\n- About: a team app\n")
+check("a pr repo on main is still asked",
+      decision(call("git commit -m 'x'", cwd=pr)) == "ask")
+
+noblock = with_claude_md("# proj\n\n## Checks\n- Test: make test\n")
+check("a repo with no Workflow block is still asked",
+      decision(call("git commit -m 'x'", cwd=noblock)) == "ask")
+
+elsewhere = with_claude_md(
+    "## Workflow\n- Mode: pr\n\n## Notes\n- Mode: direct\n")
+check("a Mode: line outside the Workflow block does not count",
+      decision(call("git commit -m 'x'", cwd=elsewhere)) == "ask")
+
+broken = with_claude_md(b"## Workflow\n- Mode: direct\n\xff\xfe\x80\n",
+                        binary=True)
+check("a CLAUDE.md that cannot be read still asks",
+      decision(call("git commit -m 'x'", cwd=broken)) == "ask",
+      f"got {call('git commit -m x', cwd=broken)!r}")
+
+unreadable = scratch_repo("main")
+os.mkdir(os.path.join(unreadable, "CLAUDE.md"))
+check("a CLAUDE.md that is a folder still asks",
+      decision(call("git commit -m 'x'", cwd=unreadable)) == "ask")
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")

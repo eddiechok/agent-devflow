@@ -38,6 +38,13 @@ a real run.
 **Asks before committing to the default branch.** It asks rather than blocks. A wrong ask
 costs one keypress. A wrong block stops your work.
 
+**Stands down in a direct project.** A project can pick `direct` mode, where work is
+committed straight on the default branch with no branch and no pull request. When the
+repo's `CLAUDE.md` has a `## Workflow` block with `- Mode: direct`, the hook does not ask,
+since committing on main is the choice that project made. It finds the repo top with
+`git rev-parse --show-toplevel` and reads that file. If the file is missing, cannot be
+read, or has no such line, the hook asks as before.
+
 > ⚠️ **This stops mistakes. It does not stop attackers.** It matches text in
 > command strings. Variable indirection, aliases, or a different binary get past it
 > easily. It stops accidents, not attackers. It also fails open. Any error and your
