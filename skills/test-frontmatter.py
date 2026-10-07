@@ -6331,6 +6331,62 @@ check("docs/provenance: a table for the look question and a row for the UX pick"
       and "One UX skill per UI repo" in provenance_flat,
       f"{DOCS_PROVENANCE_PATH} has no row for the look question or the UX pick")
 
+# ------------------------------------------------------ bare cross-skill paths
+
+# tend named land-on-main.md as `skills/submit/references/land-on-main.md`. A
+# bare path resolves against the session's working directory, so in any repo
+# but this one it finds no file. #108 fixed the same slip in look-question.md.
+# A file under another skill is reached by a link relative to the file naming
+# it. Fenced blocks are sample output, not instructions, so they are skipped.
+_SKILL_DIRS = {name for name in os.listdir(SKILLS_DIR)
+               if os.path.isdir(os.path.join(SKILLS_DIR, name))}
+_BARE_SKILL_PATH = re.compile(r"`skills/([A-Za-z0-9_-]+)/[^`\s]*`")
+
+
+def bare_skill_paths(text):
+    """`skills/<real skill>/...` in backticks, outside fenced blocks, with
+    the 1-based line each sits on."""
+    hits = []
+    fence = None
+    for number, line in enumerate(text.splitlines(), 1):
+        opener = re.match(r"\s*(`{3,}|~{3,})", line)
+        if opener:
+            marker = opener.group(1)
+            if fence is None:
+                fence = marker
+            elif marker[0] == fence[0] and len(marker) >= len(fence) \
+                    and not line.strip()[len(marker):].strip():
+                fence = None
+            continue
+        if fence is not None:
+            continue
+        for match in _BARE_SKILL_PATH.finditer(line):
+            if match.group(1) in _SKILL_DIRS:
+                hits.append((number, match.group(0)))
+    return hits
+
+
+check("bare paths: the finder sees one in prose and skips one in a fence",
+      bare_skill_paths("read `skills/submit/references/land-on-main.md`\n")
+      == [(1, "`skills/submit/references/land-on-main.md`")]
+      and bare_skill_paths("```markdown\n| 1 | x | `skills/build/SKILL.md` |\n```\n") == []
+      and bare_skill_paths("see `skills/nosuchskill/x.md`\n") == [],
+      "bare_skill_paths() misreads prose, fences or unknown skill folders")
+
+_md_files = []
+for _root in (SKILLS_DIR, AGENTS_DIR):
+    for _dirpath, _dirnames, _filenames in os.walk(_root):
+        _md_files += [os.path.join(_dirpath, f) for f in _filenames if f.endswith(".md")]
+_bare_hits = []
+for _path in sorted(_md_files):
+    with open(_path, encoding="utf-8") as _fh:
+        for _line, _hit in bare_skill_paths(_fh.read()):
+            _bare_hits.append(f"{os.path.relpath(_path, os.path.dirname(SKILLS_DIR))}:{_line} {_hit}")
+check("bare paths: no skill or agent names a skill's file by a bare skills/ path",
+      not _bare_hits,
+      "a bare path only resolves inside agent-devflow; link it relative to the file: "
+      + "; ".join(_bare_hits))
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")
