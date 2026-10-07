@@ -5290,6 +5290,134 @@ check("agents/sweeper: hands its worktree path to every agent the review starts"
       and "main folder" in sweeper_body,
       f"{SWEEPER_PATH} never tells the review's agents to read its worktree")
 
+# ------------------------------------------------------------ skills' rules
+#
+# Issue #91: `skills` reads what the repo is built with, matches it against a
+# short vendor table, and prints the exact install command for each match. It
+# lists and never installs: the human runs every command, at project scope. It
+# is model-invocable so `setup` can call it later. The vendor table lives in
+# references/vendors.md, where a human can read the source bar per row.
+
+FINDER_PATH = os.path.join(SKILLS_DIR, "skills", "SKILL.md")
+finder_text = ""
+if os.path.isfile(FINDER_PATH):
+    with open(FINDER_PATH, encoding="utf-8") as fh:
+        finder_text = fh.read()
+finder_body = flat(finder_text)
+finder_values = parsed.get("skills", (None, {}))[1]
+finder_desc = finder_values.get("description", "")
+VENDORS_PATH = os.path.join(SKILLS_DIR, "skills", "references", "vendors.md")
+vendors_text = ""
+if os.path.isfile(VENDORS_PATH):
+    with open(VENDORS_PATH, encoding="utf-8") as fh:
+        vendors_text = fh.read()
+vendors_body = flat(vendors_text)
+
+check("skills: skills is among the skills found",
+      "skills" in skills, f"no skills/skills/SKILL.md found in {SKILLS_DIR!r}")
+
+check("skills: is model-invocable, so setup can call it",
+      "disable-model-invocation" not in finder_values,
+      "skills' frontmatter sets disable-model-invocation")
+
+check("skills: the description says it suggests skills that fit the repo",
+      "suggest" in finder_desc and "repo" in finder_desc
+      and "install" in finder_desc,
+      f"{FINDER_PATH}'s description never says it suggests skills for the repo")
+
+check("skills: reads what is installed first, from the CLI and from loose files",
+      "claude plugin list --json" in finder_body
+      and "claude mcp list" in finder_body
+      and ".claude/skills/*/SKILL.md" in finder_body
+      and "~/.claude/skills/*/SKILL.md" in finder_body,
+      f"{FINDER_PATH} never reads installed plugins, MCP servers and loose skills")
+
+check("skills: skips what is already installed",
+      "skip" in finder_body and "already installed" in finder_body,
+      f"{FINDER_PATH} never skips an installed skill")
+
+check("skills: links the vendor table, which exists",
+      "references/vendors.md" in finder_body and vendors_text != "",
+      f"{FINDER_PATH} never links references/vendors.md, or the file is missing")
+
+check("skills: the vendor table names Railway, Medusa, Cloudflare, Supabase and Stripe",
+      all(repo in vendors_text for repo in (
+          "railwayapp/railway-skills", "medusajs/medusa-agent-skills",
+          "cloudflare/skills", "supabase/agent-skills", "stripe/ai")),
+      f"{VENDORS_PATH} is missing one of the five vendor repos")
+
+check("skills: the vendor table keys each row to a file signal",
+      all(sig in vendors_text for sig in (
+          "railway.json", "railway.toml", "@medusajs/", "wrangler.jsonc",
+          "wrangler.toml", "supabase/", "@supabase/", "Dockerfile",
+          "playwright.config")),
+      f"{VENDORS_PATH} is missing a file signal")
+
+check("skills: the source bar is an official vendor repo or 1k+ stars",
+      "official vendor repo" in vendors_body and "1k+ stars" in vendors_body,
+      f"{VENDORS_PATH} never states the source bar")
+
+check("skills: prints project-scope commands for a plugin marketplace",
+      "claude plugin marketplace add <owner/repo> --scope project" in finder_body
+      and "claude plugin install <plugin>@<marketplace> --scope project" in finder_body
+      and "npx skills add <owner/repo>" in finder_body,
+      f"{FINDER_PATH} never prints the project-scope install commands")
+
+check("skills: lists and never installs, the human runs each command",
+      "Never run an install command" in finder_body
+      and "the human runs" in finder_body,
+      f"{FINDER_PATH} never says it only prints the install command")
+
+check("skills: never suggests a plugin and its own MCP-only install both",
+      "never suggest a plugin and its own mcp-only install both"
+      in finder_body.lower(),
+      f"{FINDER_PATH} never says a plugin and its MCP-only install are one choice")
+
+check("skills: says what each suggestion carries and its size",
+      "carries" in finder_body and "size" in finder_body
+      and "skill only" in finder_body and "hooks" in finder_body
+      and "MCP" in finder_body and "scripts" in finder_body,
+      f"{FINDER_PATH} never says what a suggestion carries, or its size")
+
+check("skills: falls back to npx skills find with telemetry off",
+      "DISABLE_TELEMETRY=1 npx skills find" in finder_body,
+      f"{FINDER_PATH} never falls back to DISABLE_TELEMETRY=1 npx skills find")
+
+check("skills: with no npx it skips the fallback and says so",
+      "npx is missing" in finder_body and "skip the fallback" in finder_body
+      and "print a line" in finder_body,
+      f"{FINDER_PATH} never says what it does when npx is missing")
+
+check("skills: searches only what the repo is built with",
+      "only what the repo is built with" in finder_body
+      and "openapi" in finder_body.lower(),
+      f"{FINDER_PATH} never limits the search to what the repo is built with")
+
+check("skills: never searches the categories devflow owns",
+      "Never search" in finder_body and "code quality" in finder_body
+      and "TDD" in finder_body and "git" in finder_body,
+      f"{FINDER_PATH} never names the how-to-work categories it leaves to devflow")
+
+check("skills: quality rules copied from find-skills",
+      "official sources first" in finder_body.lower()
+      and "under 100 stars" in finder_body,
+      f"{FINDER_PATH} never carries find-skills' quality rules")
+
+check("skills: an empty repo gets up to 4 stack questions in one round",
+      "up to 4" in finder_body and "one round" in finder_body
+      and "frontend, backend, database, deploy" in finder_body
+      and "Not decided yet" in finder_body,
+      f"{FINDER_PATH} never asks the 4 stack questions for an empty repo")
+
+check("skills: an empty repo is told to run again, and files win over answers",
+      "run it again" in finder_body and "files win" in finder_body.lower(),
+      f"{FINDER_PATH} never says to run again, or that files win over answers")
+
+check("skills: a repo with code never gets stack questions, a missing deploy file is a skip",
+      "never ask a stack question" in finder_body.lower()
+      and "skip deploy" in finder_body,
+      f"{FINDER_PATH} still lets a repo with code be asked about its stack")
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")
