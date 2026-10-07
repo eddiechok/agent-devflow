@@ -5654,6 +5654,31 @@ check("docs/pipeline: draws the direct path",
       and "start:" in pipeline_direct_flat,
       "docs/pipeline.md has no Direct section with the start sha and landing")
 
+# ------------------ submit direct with no start: reviews every unpushed commit
+#
+# A direct run started by hand has no `start:` line. Falling back to HEAD there
+# reviews only what is uncommitted, and the commits already made on main since
+# the last push go unseen. The upstream is the fixed point instead; with no
+# upstream the fallback is HEAD, and the run says only uncommitted work is read.
+
+NO_UPSTREAM_LINE = "– **review** no upstream — only uncommitted work is reviewed"
+
+check("submit/direct: no start: line falls back to the upstream",
+      "git rev-parse @{upstream}" in submit_direct_text
+      and "not yet pushed" in flat(submit_direct_text),
+      f"{SUBMIT_DIRECT_PATH} never names `git rev-parse @{{upstream}}` as the "
+      f"fixed point when no start: line was given")
+
+check("submit/direct: no upstream falls back to HEAD with a printed line",
+      NO_UPSTREAM_LINE in submit_direct_text
+      and "`HEAD`" in submit_direct_text,
+      f"{SUBMIT_DIRECT_PATH} never prints {NO_UPSTREAM_LINE!r} before "
+      f"falling back to HEAD")
+
+check("submit/direct: the old HEAD-only fallback is gone from the intro",
+      "use `HEAD` and say so in one line" not in flat(submit_direct_text),
+      f"{SUBMIT_DIRECT_PATH} still says a missing start: uses HEAD outright")
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")
