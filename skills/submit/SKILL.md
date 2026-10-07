@@ -148,7 +148,7 @@ And say so when nothing was, in those words, rather than going quiet:
 
 ## 7. Commit
 
-In direct mode the commit lands on main and is pushed, with the Assumptions in its body: [references/direct.md](references/direct.md).
+In direct mode the commit lands on main and is pushed, with the Assumptions in its body: [references/direct.md](references/direct.md). A linked worktree lands through [references/land-on-main.md](references/land-on-main.md).
 
 **If any file changed since step 2's run, run the checks again first.** Same rule as step 2: the checks must postdate the last edit. Bare, one per call, output on screen.
 

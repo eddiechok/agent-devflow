@@ -55,6 +55,10 @@ git push
 Run each bare, one per call. A rebase that conflicts is not yours to guess at: stop and say
 which files. After the push print `✓ **pushed** main, <sha>`.
 
+**In a linked worktree** the branch is not main, so none of that applies. Commit on the
+worktree's own branch, then land it as [land-on-main.md](land-on-main.md) says, which prints
+its own `landed` line in place of `pushed`.
+
 **No remote** (`git remote` prints nothing): commit only, never push, and say so in one line:
 
 ```

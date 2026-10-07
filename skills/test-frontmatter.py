@@ -928,6 +928,44 @@ check("submit/direct: the reference exists",
       submit_direct_text != "",
       f"{SUBMIT_DIRECT_PATH} does not exist")
 
+# ----------------------------- landing a worktree branch on main, written once
+#
+# Multitask, plan chains and sweep all land a linked worktree's branch on main,
+# so the sequence lives in one file and each caller points at it. The commands
+# that look right and are wrong are pinned too: update-ref leaves the main
+# checkout's index stale, and push or fetch into a checked-out branch is refused.
+
+LAND_PATH = os.path.join(SKILLS_DIR, "submit", "references", "land-on-main.md")
+if os.path.exists(LAND_PATH):
+    with open(LAND_PATH, encoding="utf-8") as fh:
+        land_text = fh.read()
+else:
+    land_text = ""
+
+check("land-on-main: the reference exists",
+      land_text != "", f"{LAND_PATH} does not exist")
+
+for needle in ("--ff-only", "push origin HEAD:", "rebase",
+               "✓ **landed** <branch> on main, <sha>",
+               "✗ **landed** main moved",
+               "branch -d"):
+    check(f"land-on-main: names {needle}",
+          needle in land_text,
+          f"{LAND_PATH} never names {needle!r}")
+
+check("land-on-main: update-ref is named as a never",
+      re.search(r"[Nn]ever[^\n]*git update-ref", land_text) is not None,
+      f"{LAND_PATH} never lists git update-ref among the commands never to run")
+
+check("land-on-main: push and fetch into main are named as a never",
+      "push . HEAD:main" in land_text and "fetch . HEAD:main" in land_text,
+      f"{LAND_PATH} never lists the push . and fetch . forms as forbidden")
+
+check("submit/direct: calls land-on-main.md for a linked worktree",
+      "land-on-main.md" in submit_direct_text
+      and "linked worktree" in submit_direct_text,
+      f"{SUBMIT_DIRECT_PATH} never sends a linked worktree to land-on-main.md")
+
 for needle in ("start:", "size:", "mode: pr", "Quick", "Standard", "Deep",
                "– **review** skipped — Quick, direct mode",
                "fixed point", "Assumptions", "git pull --rebase",
@@ -2426,7 +2464,7 @@ check("build: a detached HEAD is no branch, so it cuts one",
 SHAPED_LABELS = {
     "backlog", "branch", "chains", "checks", "chips", "cleaned", "commit",
     "conflict", "debug", "deploy", "docs", "done", "features", "glossary",
-    "green", "handback", "issue", "lesson", "lint", "live", "look", "merge", "merged",
+    "green", "handback", "issue", "landed", "lesson", "lint", "live", "look", "merge", "merged",
     "no-behaviour", "open", "opinion", "override", "parked", "piece",
     "pieces", "plan", "plans", "pr", "pushed", "red", "repo", "research", "retargeted", "review",
     "see", "session", "settings", "stuck", "tended", "test", "theirs", "todo",
@@ -4180,6 +4218,7 @@ REFERENCE_STEPS = {
         "update-pr.md": ["## 8. "],
         "tracker-actions.md": ["## 8. "],
         "direct.md": ["## 1. ", "## 5. ", "## 7. ", "## 8. "],
+        "land-on-main.md": ["## 7. "],
     },
     "review": {
         "find-the-spec.md": ["## 2. "],
