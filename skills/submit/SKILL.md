@@ -307,4 +307,5 @@ the result — for example `✓ **checks** 3 of 3 pass, exit 0`.
 - Never end a pr-mode run without a pull request.
 - Never open a PR when the live check failed.
 - Never invent check commands the project did not give you.
-- Never merge, and never call `devflow:ship`. The open PR is where this skill ends.
+- Never merge, and never call `devflow:ship`. The open PR is where a pr-mode run ends;
+  a direct run ends at its commit on main.

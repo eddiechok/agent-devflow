@@ -64,12 +64,16 @@ the line out when there were none. A `tracker:` action that closes an issue puts
 Then, with the checks green:
 
 ```
-git pull --rebase
+git pull --rebase=merges
 git push
 ```
 
-Run each bare, one per call. A rebase that conflicts is not yours to guess at: stop and say
-which files. After the push print `✓ **pushed** main, <sha>`.
+Run each bare, one per call. `=merges` keeps the `--no-ff` merge a plan chain leaves, where a bare
+`--rebase` flattens it. When main moved, the pull still replays the local commits, so their
+SHAs change: the Done report names the SHAs as pushed, not as the builders reported them. A rebase that conflicts
+is not yours to guess at: stop and say which files. **A pull that brought commits** moves
+`HEAD` to a tip no check ran on: when `HEAD` changed across the pull, run the checks again,
+bare, before the push. After the push print `✓ **pushed** main, <sha>`.
 
 **In a linked worktree** the branch is not main, so none of that applies. Commit on the
 worktree's own branch, then land it as [land-on-main.md](land-on-main.md) says, which prints

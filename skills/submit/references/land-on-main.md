@@ -12,11 +12,13 @@ prints two different paths. The main checkout is the folder that holds the commo
 1. **Rebase on the default branch ref**, so the branch sits on top of whatever main is now:
 
    ```
-   git rebase <default branch ref>
+   git rebase --rebase-merges <default branch ref>
    ```
 
-   With a remote, `git fetch origin` first. A conflict is not yours to guess at: stop and
-   say which files.
+   `--rebase-merges` keeps the `--no-ff` merge a plan chain leaves; a plain rebase flattens
+   it. When main moved, the commits are replayed and their SHAs change; report the landed
+   ones. With a remote, `git fetch origin` first. A conflict is not yours to guess at: stop
+   and say which files.
 2. **Run the checks again**, bare, one per call. They must postdate the rebase.
 3. **Land it.** With a remote:
 
@@ -24,7 +26,22 @@ prints two different paths. The main checkout is the folder that holds the commo
    git push origin HEAD:<default>
    ```
 
-   With no remote, from the main checkout:
+   With no remote, from the main checkout. `--ff-only` moves whatever that folder has
+   checked out, so first make sure it is the default branch:
+
+   ```
+   git -C <main checkout> symbolic-ref --short -q HEAD
+   ```
+
+   Anything but `<default>` — another branch, or nothing at all for a detached `HEAD` —
+   and stop, changing nothing:
+
+   ```
+   ✗ **landed** main folder is on <what it printed, or detached>
+   switch it to <default>, then run submit again
+   ```
+
+   On the default branch:
 
    ```
    git -C <main checkout> merge --ff-only <branch>
@@ -33,10 +50,10 @@ prints two different paths. The main checkout is the folder that holds the commo
 Both refuse and change nothing if main moved since step 1, and `--ff-only` also aborts
 without touching a thing when the main checkout has uncommitted changes to the same files.
 When it refuses, rebase again **once**, run the checks again, and land again. Refused a
-second time, stop:
+second time, stop. Nothing changed, and the branch still holds the work:
 
 ```
-✗ **landed** main moved — rebased twice and it moved again, nothing changed
+✗ **landed** main moved twice — run submit again to land it
 ```
 
 On success:

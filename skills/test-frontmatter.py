@@ -974,6 +974,35 @@ for needle in ("start:", "size:", "mode: pr", "Quick", "Standard", "Deep",
           needle in submit_direct_text,
           f"{SUBMIT_DIRECT_PATH} never names {needle!r}")
 
+# Review round 1 on #117. A plain `--rebase` flattens the --no-ff merge a plan
+# chain leaves, and rewrites the SHAs its builders reported. A pull that brought
+# commits in leaves a tip no check ever ran on. With no remote, `merge
+# --ff-only` moves whatever the main folder has checked out -- a detached HEAD
+# moved while `main` stayed put, and the run still said `landed on main`.
+check("submit/direct: the pull keeps merge commits",
+      "git pull --rebase=merges" in submit_direct_text,
+      f"{SUBMIT_DIRECT_PATH} pulls with a bare --rebase, which flattens chain merges")
+check("submit/direct: a pull that brought commits runs the checks again before the push",
+      "brought commits" in submit_direct_text
+      and "checks again" in submit_direct_text,
+      f"{SUBMIT_DIRECT_PATH} pushes a tip no check ran on")
+check("land-on-main: the rebase keeps merge commits",
+      "git rebase --rebase-merges <default branch ref>" in land_text,
+      f"{LAND_PATH} rebases with a plain rebase, which flattens chain merges")
+check("land-on-main: checks the main folder is on the default branch first",
+      "git -C <main checkout> symbolic-ref --short -q HEAD" in land_text
+      and "✗ **landed** main folder is on" in land_text,
+      f"{LAND_PATH} fast-forwards whatever the main folder has checked out")
+check("land-on-main: the moved-twice line says what to do next",
+      "✗ **landed** main moved twice — run submit again to land it" in land_text
+      and "rebased twice" not in land_text,
+      f"{LAND_PATH} says what happened but not what to do")
+with open(os.path.join(SKILLS_DIR, "submit", "SKILL.md"), encoding="utf-8") as fh:
+    _submit_skill = fh.read()
+check("submit: the ends-at-a-PR rule is marked pr mode",
+      "The open PR is where a pr-mode run ends" in _submit_skill,
+      "skills/submit/SKILL.md still says every run ends at a PR")
+
 
 # ------------------------------------ ship refuses and protects stacked PRs
 #

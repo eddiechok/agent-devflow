@@ -31,13 +31,14 @@ Step 5 is as written, with one difference in what it merges into: the branch you
 Check each chain with `git merge-tree --write-tree`, stop on a conflict, and then merge
 with `git merge --no-ff <chain branch>`, in plan order. A merge commit is a commit on main,
 so the history keeps one merge commit per chain, naming it, and the builders' own SHAs stay
-as they reported them.
+as they reported them until `submit` pulls or rebases. If main moved meanwhile, that replays
+them under new SHAs; the merge commits stay.
 
 Steps 6 and 7, the cleanup and `chain: final`, are as written.
 
 ## Reporting back
 
 Step 8 is as written, and `flow` calls `submit` from there. In the main folder `submit`
-pushes main (`git pull --rebase`, `git push`); with no remote it commits only, and says so
+pushes main (`git pull --rebase=merges`, `git push`); with no remote it commits only, and says so
 in one line. Nothing here pushes: a chain's commit is on main only once `submit` has
 pushed it.
