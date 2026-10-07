@@ -5475,6 +5475,74 @@ check("agents/sweeper: hands its worktree path to every agent the review starts"
       and "main folder" in sweeper_body,
       f"{SWEEPER_PATH} never tells the review's agents to read its worktree")
 
+# --------------------------------------------- ship and tend in a direct project
+#
+# In direct there is no PR for the work this session did, so ship has nothing to
+# merge: it deploys the commit that was pushed to main and verifies it. A PR
+# from somebody else still goes the PR path. tend, which exists for an open PR,
+# also reads a red CI run on a main commit and fixes it as a new commit on main.
+
+SHIP_DIRECT_PATH = os.path.join(SKILLS_DIR, "ship", "references", "direct.md")
+if os.path.exists(SHIP_DIRECT_PATH):
+    with open(SHIP_DIRECT_PATH, encoding="utf-8") as fh:
+        ship_direct_text = fh.read()
+else:
+    ship_direct_text = ""
+ship_direct_flat = flat(ship_direct_text)
+
+check("ship/direct: the reference exists",
+      ship_direct_text != "",
+      f"{SHIP_DIRECT_PATH} does not exist")
+
+check("ship: points at references/direct.md",
+      "references/direct.md" in flat(ship_text),
+      "ship's SKILL.md never links references/direct.md")
+
+check("ship: stays under the 500-line cap with the pointer",
+      len(ship_text.splitlines()) <= 500,
+      f"{SHIP_PATH} is {len(ship_text.splitlines())} lines, cap is 500")
+
+check("ship/direct: deploys the pushed main commit from the ## Deploy block",
+      "## Deploy" in ship_direct_text
+      and "pushed" in ship_direct_flat
+      and "step 4" in ship_direct_flat,
+      f"{SHIP_DIRECT_PATH} never runs the ## Deploy block for the pushed commit")
+
+check("ship/direct: merges nothing",
+      "gh pr merge" in ship_direct_text
+      and "never" in ship_direct_flat
+      and "no PR to merge" in ship_direct_flat,
+      f"{SHIP_DIRECT_PATH} never says there is no PR to merge and no merge runs")
+
+check("ship/direct: a PR from somebody else still goes the PR path",
+      "somebody else" in ship_direct_flat
+      and "PR path" in ship_direct_flat
+      and "`mode: pr`" in ship_direct_text,
+      f"{SHIP_DIRECT_PATH} never keeps other people's PRs on the PR path")
+
+check("ship/direct: refuses to deploy a commit that is not pushed",
+      "git fetch origin" in ship_direct_text and "not pushed" in ship_direct_flat,
+      f"{SHIP_DIRECT_PATH} never checks the commit is on the remote first")
+
+tend_flat = flat(tend_text)
+check("tend: reads a red CI run on a main commit in direct",
+      "direct" in tend_flat
+      and "commits/<sha>/check-runs" in tend_text
+      and "red-commit-on-main" in tend_flat,
+      f"{TEND_PATH} never names the red-commit-on-main path")
+
+check("tend: fixes a red main commit through build as a new commit on main",
+      "new commit on main" in tend_flat
+      and "never amend" in tend_flat,
+      f"{TEND_PATH} never says the fix lands as a new commit on main")
+
+for doc, needle in (("ship", "direct"), ("tend", "direct")):
+    with open(os.path.join(REPO_ROOT, "docs", doc + ".md"), encoding="utf-8") as fh:
+        doc_text = fh.read()
+    check(f"docs/{doc}: records why direct changes it",
+          "## Direct mode" in doc_text,
+          f"docs/{doc}.md has no '## Direct mode' section")
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")

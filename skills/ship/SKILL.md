@@ -46,6 +46,14 @@ merge and should not discover a rewritten branch afterwards.
 
 **One thing to be alert to, because this skill took its name from another.** `ship` used to mean "open a pull request and stop" — the job `submit` now does. If the request sounds like "open a PR", say what this skill actually does before doing it.
 
+## Direct mode
+
+Read `Mode:` in the project's `## Workflow` block in `CLAUDE.md`. With `Mode: direct`, no
+`mode: pr` line, and no PR number in `$ARGUMENTS`, the work this session did is already on
+main and there is no PR to merge: read [references/direct.md](references/direct.md) and
+follow it instead of steps 1 to 3. A PR number, or a PR from somebody else, goes the PR
+path below.
+
 ## 1. Find the PR
 
 `$ARGUMENTS` is a PR number if you were given one. Otherwise take the PR for the current branch.
