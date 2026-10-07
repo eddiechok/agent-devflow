@@ -63,6 +63,20 @@ When several design skills are already installed the skill warns and names them,
 pick sits at user scope only it prints the commands to move it to project scope. Those
 commands are printed and never run, because one of them deletes a folder.
 
+## Why one UX skill
+
+A design skill says how the UI looks. Nothing in the list said whether it works, and the
+look question in `flow` (#108) needs something to check its variants with. So a repo with
+a UI also gets one UX skill, picked from the same answer to "what is the UI for?" and the
+same repo facts, with no new question: web screens and landing pages take the Anthropic
+design plugin, a React Native or Expo app takes wondelai's `ux-design`. Both set no style,
+so they clash with neither the design pick nor each other, and still the list holds one,
+because two critiques of the same screen overlap.
+
+`impeccable` is the exception. It carries a `critique` command that scores Nielsen's 10
+heuristics, so suggesting a UX skill beside it would pay twice for one review. The list says
+`/impeccable critique` is the check and suggests nothing else.
+
 ## Why the source bar
 
 A search result is not a recommendation. Official vendor repo, or 1k+ stars; under 100 stars

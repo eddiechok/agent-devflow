@@ -6103,6 +6103,77 @@ check("docs/flow: says why the look question shows a throwaway file",
       and "Show me the variants" in flat(open(DOCS_FLOW_PATH, encoding="utf-8").read()),
       f"{DOCS_FLOW_PATH} never explains the look question")
 
+# --- one UX skill per UI repo (#108)
+
+UX_PATH = os.path.join(SKILLS_DIR, "skills", "references", "ux.md")
+ux_text = ""
+if os.path.isfile(UX_PATH):
+    with open(UX_PATH, encoding="utf-8") as fh:
+        ux_text = fh.read()
+ux_body = flat(ux_text)
+
+_step_3a = finder_text.split("## 3a.", 1)[1].split("\n## ", 1)[0] \
+    if "## 3a." in finder_text else ""
+_step_3a_flat = flat(_step_3a)
+
+check("skills/ux: the reference exists",
+      ux_text != "",
+      f"{UX_PATH} does not exist")
+
+for needle in ("design@knowledge-work-plugins", "ux-design@wondelai-skills",
+               "claude plugin marketplace add anthropics/knowledge-work-plugins --scope project",
+               "claude plugin install design@knowledge-work-plugins --scope project",
+               "claude plugin marketplace add wondelai/skills --scope project",
+               "claude plugin install ux-design@wondelai-skills --scope project",
+               "26,788", "2,351", "Apache-2.0", "MIT",
+               "design:design-critique", "ux-design:ux-heuristics",
+               "design-critique", "ux-copy", "accessibility-review",
+               "ux-heuristics", "ios-hig-design",
+               "/impeccable critique", "inferred", "claude plugin list --json"):
+    check(f"skills/ux: names {needle}",
+          needle in ux_body,
+          f"{UX_PATH} never names {needle!r}")
+
+_ux_pick = ux_text.split("## Pick one", 1)[1].split("\n## ", 1)[0] \
+    if "## Pick one" in ux_text else ""
+_ux_rows = [l for l in _ux_pick.split("\n") if l.startswith("| ") and "---" not in l][1:]
+check("skills/ux: the UX pick is one ordered table, first match wins",
+      "first match wins" in flat(_ux_pick) and len(_ux_rows) >= 3,
+      f"{UX_PATH} has no ordered pick table")
+check("skills/ux: every pick row names at most one UX plugin",
+      _ux_rows != [] and all(
+          sum(s in r for s in ("`design@knowledge-work-plugins`",
+                               "`ux-design@wondelai-skills`")) <= 1
+          for r in _ux_rows),
+      f"{UX_PATH}: a pick row names two UX plugins")
+check("skills/ux: both plugins can be the pick, and impeccable picks none",
+      "`design@knowledge-work-plugins`" in _ux_pick
+      and "`ux-design@wondelai-skills`" in _ux_pick
+      and "impeccable" in _ux_pick and "none" in _ux_pick,
+      f"{UX_PATH}: a plugin can never be picked, or impeccable still gets one")
+
+check("skills/ux: says a design skill that carries its own UX review gets no second one",
+      "no second UX skill" in ux_body,
+      f"{UX_PATH} never says impeccable's critique means no second UX skill")
+
+check("skills/step 3a: links the UX reference and suggests one UX skill",
+      "(references/ux.md)" in _step_3a
+      and "one UX skill" in _step_3a_flat,
+      f"{FINDER_PATH} step 3a never links references/ux.md or names one UX skill")
+
+check("skills/step 3a: impeccable as the design pick means no UX skill",
+      "impeccable" in _step_3a_flat and "no UX skill" in _step_3a_flat,
+      f"{FINDER_PATH} step 3a never gives the impeccable exception")
+
+check("skills/step 3a: the UX pick asks no new question",
+      "no new question" in _step_3a_flat,
+      f"{FINDER_PATH} step 3a never says the UX pick asks nothing new")
+
+check("docs/skills: says why one UX skill, and why none for impeccable",
+      "one UX skill" in skills_doc_body and "impeccable" in skills_doc_body
+      and "critique" in skills_doc_body,
+      f"{SKILLS_DOC_PATH} never explains the one UX skill")
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")

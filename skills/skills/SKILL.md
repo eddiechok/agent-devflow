@@ -72,6 +72,12 @@ Suggest **one design skill** and nothing else that generates a style, plus
 `web-design-guidelines`, which is review-only and clashes with nothing. Design skills give
 competing directions when installed together, so two of them is never a list.
 
+Then suggest **one UX skill**, picked from the same answer to "what is the UI for?" and the
+frontend facts, with no new question. It sets no style, so it clashes with nothing. When the
+design pick is `impeccable`, which carries its own UX review, there is no UX skill and no
+second one: say `/impeccable critique` is the check. The table and the pick are in
+[the UX reference](references/ux.md).
+
 When several design skills are already installed, print a clash warning naming them. When the
 pick is installed at user scope only, print the commands to move it from user scope to
 project scope. Never run them.
