@@ -792,6 +792,47 @@ check("setup: says flow parks extra features under the backlog label",
       f"feature per run")
 
 
+# ------------------------------------ setup is a questionnaire, writes the mode
+#
+# `flow` runs setup first when CLAUDE.md has no `## Workflow` block, so setup
+# has to be callable by a model (no `disable-model-invocation`), has to write
+# the block in the one shape every skill and the hook read, and credits the
+# skill whose shape it borrowed.
+
+setup_values = parsed.get("setup", (None, {}))[1]
+
+check("setup: is model-invocable, so flow can call it",
+      "disable-model-invocation" not in setup_values
+      and "disable-model-invocation" not in frontmatter(setup_text),
+      "setup's frontmatter still sets disable-model-invocation; flow cannot "
+      "call a gated skill")
+
+check("setup: description says when a model should call it",
+      "## Workflow" in setup_values.get("description", ""),
+      "setup's description never names the missing '## Workflow' block")
+
+check("setup: writes a ## Workflow block with Mode: and About:",
+      "## Workflow" in setup_text and "- Mode: " in setup_text
+      and "- About: " in setup_text,
+      f"{SETUP_PATH} never shows the '## Workflow' block with '- Mode:' "
+      f"and '- About:' lines")
+
+check("setup: names both modes, direct and pr",
+      "`direct`" in setup_text and "`pr`" in setup_text,
+      f"{SETUP_PATH} never names both modes `direct` and `pr`")
+
+check("setup: credits mattpocock's setup skill",
+      "https://github.com/mattpocock/skills/blob/main/skills/engineering/"
+      "setup-matt-pocock-skills/SKILL.md" in setup_text
+      and "Where the shape came from" in setup_text,
+      f"{SETUP_PATH} never credits setup-matt-pocock-skills in a 'Where "
+      f"the shape came from' section")
+
+check("setup: keeps an existing ## Workflow block",
+      "Never overwrite an existing `## Workflow`" in setup_text,
+      f"{SETUP_PATH} never says an existing ## Workflow block is kept")
+
+
 # ------------------------------------ ship refuses and protects stacked PRs
 #
 # On 22 Sep 2026 `gh pr merge 23 --rebase --delete-branch` closed #24, which
@@ -2283,10 +2324,10 @@ SHAPED_LABELS = {
     "conflict", "debug", "deploy", "docs", "done", "features", "glossary",
     "green", "handback", "issue", "lesson", "lint", "live", "look", "merge", "merged",
     "no-behaviour", "open", "opinion", "override", "parked", "piece",
-    "pieces", "plan", "plans", "pr", "pushed", "red", "research", "retargeted", "review",
+    "pieces", "plan", "plans", "pr", "pushed", "red", "repo", "research", "retargeted", "review",
     "see", "session", "settings", "stuck", "tended", "test", "theirs", "todo",
     "typecheck",
-    "worktree", "yours",
+    "worktree", "workflow", "yours",
 }
 
 # `→` also runs mid-sentence in prose -- "Either fails → **stop editing**" --
