@@ -275,7 +275,7 @@ Anything marked as a summary was not read on the page itself.
 | `Agent` in its tools | **Ours**, against `builder` | `submit`'s review starts reviewer agents. Anthropic's [sub-agents docs](https://code.claude.com/docs/en/sub-agents) say a subagent can spawn subagents by default, up to three layers below the main conversation |
 | It runs `build` then `submit`, never `flow` | **Ours** | The main session already sized each issue as Quick. `flow` would size it again, and might ask |
 | It never asks; where `build` or `submit` would, it stops and reports | **Same idea** — the same docs say the question tool is removed from every subagent, even when listed | Nobody can answer a helper, so a stop is the only honest answer |
-| Pins `model: sonnet` | **Human's call**, agreed in the plan | The model `builder` runs. No run of the sweeper's own has tested the choice yet |
+| Pins `model: sonnet` | **Human's call**, 6 Oct 2026 | The model `builder` runs, and the reason is the same: cost, with up to four running at once. The sizing stays on the session's model and the review on opus, so a weak fix is caught before the PR. One live run of `sweep-quick-issues` has passed with it (7 Oct 2026); one run is weak evidence, not proof |
 
 ## `security-reviewer` agent — what an attacker gets
 
