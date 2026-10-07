@@ -6,8 +6,8 @@ request. Read this when `Mode: direct` is in the project's `## Workflow` block i
 exactly as written in its SKILL.md and this file is not read.
 
 `flow` hands you two lines beside `request:` and any `tracker:` lines: `start: <sha>`, where
-the work began, and `size: <Quick|Standard|Deep>`. Invoked directly with no `start:`, use
-`HEAD` and say so in one line; the review then reads only what is uncommitted. With no
+the work began, and `size: <Quick|Standard|Deep>`. Invoked directly with no `start:`, the
+work was started by hand and the review's fixed point is found as step 5 says. With no
 `size:`, treat the work as Standard.
 
 ## Step 1 — main is allowed
@@ -37,6 +37,22 @@ Review follows the size `flow` gave, not the branch:
   is `start:`, not `git merge-base HEAD <default branch ref>`. On main the merge-base is
   `HEAD` itself and leaves nothing to review. Pass the request and any `no-behaviour:` line
   as usual, and act on what comes back the same way.
+
+  **With no `start:` line**, nothing recorded where the work began, and `HEAD` would leave
+  every commit already made on main unseen. The fixed point is the upstream, so every
+  commit not yet pushed is reviewed along with what is uncommitted:
+
+  ```
+  git rev-parse @{upstream}
+  ```
+
+  **With no upstream** (the command fails: no remote, or the branch tracks nothing) fall
+  back to `HEAD`, and print one line, because the review then reads only what is
+  uncommitted:
+
+  ```
+  – **review** no upstream — only uncommitted work is reviewed
+  ```
 
 ## Step 7 — commit on main, then push
 

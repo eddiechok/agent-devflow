@@ -98,3 +98,18 @@ A CI failure is a bug report with a reproduction already attached, which is the 
 Three pushes at one red check is the same signal as three patches at one bug: the problem is somewhere other than where you are looking.
 
 Nothing about this skill survives the session, and a red check is exactly the thing you get invoked at three separate times.
+
+## Direct mode
+
+`tend` was written for an open pull request, and a `direct` project has none: the work is
+pushed to main and CI runs on that commit. A check can still go red there, and nobody is
+told but the person who looks. So `tend` reads it, through the same check-runs route it
+uses for a PR's head sha (`commits/<sha>/check-runs`), with a commit on main in the place
+of the PR. This is the red-commit-on-main path.
+
+The triage and the fix are step 3 and step 4 unchanged: whose problem is it, then the
+failing case becomes a test, through `build`. What changes is the landing. The red commit
+is pushed history, so the fix is a **new commit on main** and never an amend, a rebase or a
+force-push. Steps 1, 2, 5 and 6 are about a PR and are replaced by the path's own lines.
+
+Outside that path, with a PR open or a `mode: pr` line, nothing about `tend` changed.
