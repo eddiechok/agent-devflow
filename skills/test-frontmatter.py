@@ -6042,6 +6042,9 @@ else:
     look_text = ""
 look_body = flat(look_text)
 
+UX_PATH_EARLY = os.path.join(SKILLS_DIR, "skills", "references", "ux.md")
+ux_body_early = flat(open(UX_PATH_EARLY, encoding="utf-8").read()) \
+    if os.path.isfile(UX_PATH_EARLY) else ""
 _asking = flow_text.split("### Asking questions", 1)[1].split("\n## ", 1)[0] \
     if "### Asking questions" in flow_text else ""
 _asking_flat = flat(_asking)
@@ -6086,12 +6089,46 @@ check("flow/look: the reference exists",
 for needle in ("A: sidebar", "B: tabs", "mktemp", "outside the repo",
                "2 or 3 variants", "browser pane", "prints the path",
                "really different", "the repo's design skill", "its own CSS",
-               "skills/skills/references/ux.md", "claude plugin list --json",
+               "claude plugin list --json",
                "never run /devflow:skills", "thrown away", "the pick and why",
                "?variant=", "no dev server", "no prototype branch"):
     check(f"flow/look: the reference names {needle}",
           needle in look_body,
           f"{LOOK_PATH} never names {needle!r}")
+
+# Review round 1 on #108. A bare path resolves against whatever repo flow runs
+# in, so the UX table is a link relative to this file, as flow's other
+# cross-skill links are.
+check("flow/look: the UX table is a relative link, not a bare path",
+      "](../../skills/references/ux.md)" in look_text
+      and "`skills/skills/references/ux.md`" not in look_text,
+      f"{LOOK_PATH} names ux.md by a path that only resolves inside agent-devflow")
+
+# `claude plugin list --json` lists project and local installs of other
+# folders too, marked disabled. Only an enabled entry for this folder, or a
+# user-scope one, is installed here.
+for _path, _body in ((LOOK_PATH, look_body), (UX_PATH_EARLY, ux_body_early)):
+    check(f"look/ux: {os.path.basename(_path)} counts only an enabled install for this folder",
+          '"enabled": true' in _body and "projectPath" in _body and "user scope" in _body,
+          f"{_path} matches a plugin installed in another folder")
+
+# The spec makes `/impeccable critique` the UX check when impeccable is the
+# design skill; without it the look question prints a hint that adds nothing.
+check("flow/look: impeccable's critique is the check when impeccable is installed",
+      "impeccable@impeccable" in look_body and "/impeccable critique" in look_body,
+      f"{LOOK_PATH} skips the UX check in a repo whose design skill is impeccable")
+
+# Review round 2 on #108: design.md installs impeccable with `npx impeccable
+# install`, a loose skill, which `claude plugin list` never shows.
+check("flow/look: impeccable also counts as a loose skill",
+      ".claude/skills/impeccable/" in look_body and "~/.claude/skills/impeccable/" in look_body,
+      f"{LOOK_PATH} misses impeccable installed the way design.md says to")
+
+# The paid eval saw an 'Or reply' line in place of an item. The rule in flow
+# itself says item, since the list is written before look-question.md is read.
+check("flow/look: the numbered list offers it as one more item",
+      "numbered list offers it too, as one more item" in _asking_flat,
+      f"{FLOW_PATH} lets the list offer the variants as something other than an item")
 
 check("flow/look: prints the one-line ux hint when no UX skill is installed",
       "\u2013 **ux** no UX skill installed \u2014 run /devflow:skills to get one" in look_text,
@@ -6126,6 +6163,13 @@ _step_3a_flat = flat(_step_3a)
 check("skills/ux: the reference exists",
       ux_text != "",
       f"{UX_PATH} does not exist")
+
+# The live check on 7 Oct 2026 read design/.mcp.json: the design plugin turns
+# on 9 MCP servers, each asking for a login. A suggestion that hides that is
+# not the whole of what it carries.
+check("skills/ux: the design plugin row says it carries 9 MCP servers",
+      "9 MCP servers" in ux_body and "design/.mcp.json" in ux_body,
+      f"{UX_PATH} lists the design plugin as if it carried skills only")
 
 for needle in ("design@knowledge-work-plugins", "ux-design@wondelai-skills",
                "claude plugin marketplace add anthropics/knowledge-work-plugins --scope project",

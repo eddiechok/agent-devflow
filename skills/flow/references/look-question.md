@@ -41,11 +41,18 @@ stops there, one line:
 ## The UX check
 
 Before showing the variants, check them with the UX skill that is installed. The table of
-UX skills is `skills/skills/references/ux.md`: find an installed one by matching its
-plugin names against `claude plugin list --json`, then run that skill on the file.
-Fix what it names that would change which variant wins, and show the file after that.
+UX skills is [the skills skill's ux.md](../../skills/references/ux.md): find an installed
+one by matching its plugin names against `claude plugin list --json`, then run that skill
+on the file. An entry counts only with `"enabled": true` and either user scope or a
+`projectPath` that is this repo's top folder: the list also shows installs from other
+folders, disabled here. When impeccable is installed, it is the check: run
+`/impeccable critique` on the file, and no table plugin is needed. It counts as an
+`impeccable@impeccable` entry by the same rule, or as a loose skill in
+`.claude/skills/impeccable/` or `~/.claude/skills/impeccable/`, which is where
+`npx impeccable install` puts it.
+Fix what the check names that would change which variant wins, and show the file after that.
 
-If none of the table's plugins is installed, skip the check, print this one line, and
+If none of these is installed, skip the check, print this one line, and
 carry on to the variants, and never run /devflow:skills from here: it only suggests, and
 the human runs it when they choose to:
 

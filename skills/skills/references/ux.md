@@ -6,7 +6,9 @@ two do not compete, because the UX skills below set no style. Two UX skills woul
 overlapping critiques, so one is the most a list holds.
 
 The look question in the flow skill reads this file too: it finds an installed UX skill by
-matching the plugin names below against `claude plugin list --json`.
+matching the plugin names below against `claude plugin list --json`. An entry counts only
+with `"enabled": true` and either user scope or a `projectPath` that is this repo's top
+folder; the list also shows installs from other folders, disabled here.
 
 ## The table
 
@@ -19,6 +21,11 @@ with the reason.
 |---|---|---|---|---|
 | `design@knowledge-work-plugins` | `design:design-critique`, `design:ux-copy`, `design:accessibility-review` | 7 skills in the plugin; design-critique 118 lines, ux-copy 107, accessibility-review 128 (WCAG 2.1 AA) | 26,788 (`anthropics/knowledge-work-plugins`, Apache-2.0) | `claude plugin marketplace add anthropics/knowledge-work-plugins --scope project`, then `claude plugin install design@knowledge-work-plugins --scope project` |
 | `ux-design@wondelai-skills` | `ux-design:ux-heuristics`, `ux-design:ios-hig-design` | 11 skills in the plugin; line counts not read | 2,351 (`wondelai/skills`, MIT; a collection of 65 skills, so its install count counts, not its stars) | `claude plugin marketplace add wondelai/skills --scope project`, then `claude plugin install ux-design@wondelai-skills --scope project` |
+
+`design@knowledge-work-plugins` is not skills only: `design/.mcp.json` turns on 9 MCP
+servers (Slack, Figma, Linear, Asana, Atlassian, Notion, Intercom, Google Calendar, Gmail),
+each asking for a login. Say so on its entry, under what it carries.
+`ux-design@wondelai-skills` carries skills only.
 
 Both set no style. `ux-heuristics` covers Krug, Nielsen's 10 heuristics, dark patterns and
 accessibility; `design-critique` covers usability, hierarchy, consistency and accessibility.

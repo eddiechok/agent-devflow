@@ -1472,12 +1472,23 @@ check("look-question: a numbered list with the extra option passes offers-the-va
       lq_verdict("offers-the-variants-option",
                  "1. How should it look?\n   A: cards (Recommended)\n   B: table\n"
                  "   C: Show me the variants"), "pass")
+# The third paid try on 7 Oct 2026: two runs offered it as an item in forms the
+# grader did not know -- a dash after the letter, and an "Other option:" line.
+check("look-question: a 'C —' item passes offers-the-variants-option",
+      lq_verdict("offers-the-variants-option",
+                 "**1. How should it look?**\n- **A — Cards (Recommended)**\n"
+                 "- **C — Show me the variants:** I make mock pages."), "pass")
+check("look-question: an 'Other option:' item passes offers-the-variants-option",
+      lq_verdict("offers-the-variants-option",
+                 "**2. How should it look?**\n   → Recommend: a card list.\n"
+                 "   → Other option: \"Show me the variants\" — 2-3 looks."), "pass")
 # The paid eval on 7 Oct 2026, run 1 of the second try: the list offered it
-# word for word, under the question instead of as an item. Still offered.
-check("look-question: an 'Or reply' line under the question passes offers-the-variants-option",
+# under the question instead of as an item. The plan asks for a popup option or
+# a list item, so that drift has to fail (review round 1 on #108).
+check("look-question: an 'Or reply' line under the question fails offers-the-variants-option",
       lq_verdict("offers-the-variants-option",
                  "1. How should it look?\n   -> Recommend: cards.\n"
-                 "   -> Or reply \"Show me the variants\" and I will build samples."), "pass")
+                 "   -> Or reply \"Show me the variants\" and I will build samples."), "fail")
 check("look-question: a question with only text options fails offers-the-variants-option",
       lq_verdict("offers-the-variants-option",
                  "1. How should it look?\n   A: cards (Recommended)\n   B: table"), "fail")
