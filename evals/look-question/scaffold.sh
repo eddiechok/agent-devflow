@@ -92,6 +92,17 @@ button {
 }
 CSS
 
+# The greetings people sent, already saved. Without them the page the prompt
+# asks for needs storage first, the job sizes Deep, and the look question waits
+# behind the storage questions. With them, the page reads one file: Standard.
+cat > public/greetings.json <<'JSON'
+[
+  { "name": "Ada", "sent": "2026-10-01" },
+  { "name": "Linus", "sent": "2026-10-03" },
+  { "name": "Grace", "sent": "2026-10-05" }
+]
+JSON
+
 git add -A
 git commit -qm "feat: a web page for the greeter"
 git push -q origin main

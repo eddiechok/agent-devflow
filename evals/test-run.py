@@ -1472,6 +1472,12 @@ check("look-question: a numbered list with the extra option passes offers-the-va
       lq_verdict("offers-the-variants-option",
                  "1. How should it look?\n   A: cards (Recommended)\n   B: table\n"
                  "   C: Show me the variants"), "pass")
+# The paid eval on 7 Oct 2026, run 1 of the second try: the list offered it
+# word for word, under the question instead of as an item. Still offered.
+check("look-question: an 'Or reply' line under the question passes offers-the-variants-option",
+      lq_verdict("offers-the-variants-option",
+                 "1. How should it look?\n   -> Recommend: cards.\n"
+                 "   -> Or reply \"Show me the variants\" and I will build samples."), "pass")
 check("look-question: a question with only text options fails offers-the-variants-option",
       lq_verdict("offers-the-variants-option",
                  "1. How should it look?\n   A: cards (Recommended)\n   B: table"), "fail")
@@ -1577,6 +1583,12 @@ if os.path.isfile(_lq_scaffold):
         check_true("look-question: the page has no history view yet, so the look is open",
                    _lread("public", "index.html") != ""
                    and "history" not in _lread("public", "index.html").lower())
+        # The paid eval on 7 Oct 2026 sized the job Deep in 3 runs of 3: with no
+        # greetings kept anywhere, the page needed storage first, and the look
+        # question queued behind it. Saved greetings make the page one seam.
+        check_true("look-question: the greetings are already saved, so the page is Standard",
+                   "public/greetings.json" in _tracked
+                   and '"name"' in _lread("public", "greetings.json"))
         check("look-question: it starts on main", _lgit("rev-parse", "--abbrev-ref", "HEAD"), "main")
         check("look-question: it starts with a clean tree", _lgit("status", "--porcelain"), "")
         check("look-question: the work is pushed, so main has nothing ahead",

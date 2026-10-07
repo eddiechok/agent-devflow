@@ -37,10 +37,12 @@ graders:
   # "label"; with no popup tool, which is every `claude -p` run, it is a line
   # of the numbered list. Both are anchored: a `cat` of flow's own SKILL.md
   # stays in the trace and says the phrase in prose, which must not count.
+  # The third form, 'Or reply "Show me the variants"' under the question, is
+  # how a run offered it on 7 Oct 2026; no skill text says "reply" before it.
   - type: regex
     name: offers-the-variants-option
     target: trace
-    pattern: '(?im)"label":\s*"Show me the variants|^[ \t>*_-]*(?:\(?[A-Za-z0-9]{1,2}[.):]\s*)?(?:\*\*)?"?Show me the variants'
+    pattern: '(?im)"label":\s*"Show me the variants|^[ \t>*_-]*(?:\(?[A-Za-z0-9]{1,2}[.):]\s*)?(?:\*\*)?"?Show me the variants|\breply\s+(?:\*\*)?"Show me the variants'
     match: contains
     weight: 3
 
