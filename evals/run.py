@@ -340,6 +340,18 @@ def build_trace(events):
     return "\n".join(p for p in parts if p)
 
 
+def said_text(events):
+    """The assistant's text blocks alone: what the run said, nothing it read."""
+    parts = []
+    for event in events or []:
+        if event.get("type") != "assistant":
+            continue
+        for block in _content(event.get("message", {})):
+            if block.get("type") == "text":
+                parts.append(block.get("text", ""))
+    return "\n".join(p for p in parts if p)
+
+
 # =================================================================== the graders
 
 
@@ -395,6 +407,11 @@ def _grade_regex(g, ctx):
             haystack = fh.read()
     elif target == "trace":
         haystack = ctx.trace
+    elif target == "said":
+        # Only the assistant's own text: no tool input, no tool output. For a
+        # case whose run may `cat` or grep a file holding the very line the
+        # grader looks for -- the trace keeps that output, this does not.
+        haystack = said_text(ctx.events)
     else:
         return "skip", "unsupported target %r" % (target,)
     found = re.search(g.get("pattern", ""), haystack) is not None

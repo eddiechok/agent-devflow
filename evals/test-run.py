@@ -478,6 +478,15 @@ check("grader: regex not_contains passes when absent",
                "pattern": "Quick\\s*[—–-]", "match": "not_contains"}),
       "pass")
 
+check("grader: regex on what was said finds the assistant's text",
+      verdict({"type": "regex", "name": "x", "target": "said",
+               "pattern": "Standard — changing", "match": "contains"}), "pass")
+check("grader: regex on what was said ignores tool output",
+      verdict({"type": "regex", "name": "x", "target": "said",
+               "pattern": "# pass 4", "match": "contains"}), "fail")
+check("grader: regex on what was said ignores the commands the run typed",
+      verdict({"type": "regex", "name": "x", "target": "said",
+               "pattern": "npm test", "match": "contains"}), "fail")
 check("grader: regex not_contains fails when present",
       verdict({"type": "regex", "target": "trace",
                "pattern": "Standard\\s*[—–-]", "match": "not_contains"}),
@@ -1288,6 +1297,120 @@ for _rel in ["fixtures/greeter.sh", "plans-on-tracker/scaffold.sh",
     check_true(f"{_rel}: writes ## Checks", "## Checks" in _src)
     check_true(f"{_rel}: writes ## Workflow with Mode: pr beside it, so flow skips setup",
                re.search(r"## Workflow\n- Mode: pr\n- About: ", _src))
+# ----------------------- skills-suggests-railway: names the vendor, installs nothing
+#
+# Issue #91: `/devflow:skills` on a repo with a railway.json suggests the
+# Railway plugin, prints the project-scope command, and runs no install: the
+# human runs it. Bash stays allowed on purpose, so "runs no install" can fail.
+# Pinned both ways, so no grader reads as coverage while unable to fail.
+_sr_path = os.path.join(HERE, "skills-suggests-railway", "case.yaml")
+railway_case = {}
+if os.path.isfile(_sr_path):
+    with open(_sr_path) as fh:
+        railway_case = run.parse_yaml(fh.read())
+_sr = {g["name"]: g for g in railway_case.get("graders", [])}
+_sr_ex = railway_case.get("execution", {})
+
+check_true("skills-suggests-railway: the case exists", railway_case != {})
+check("skills-suggests-railway: runs once, because it is cheap and one run is the bar",
+      railway_case.get("runs"), 1)
+check_true("skills-suggests-railway: starts the skills skill",
+           "/devflow:skills" in _sr_ex.get("prompt", ""))
+check_true("skills-suggests-railway: Bash is allowed, or an install could never fail it",
+           {"Bash", "Skill"} <= set(_sr_ex.get("allowed_tools", [])))
+for _n in ("names-the-railway-repo", "prints-project-scope",
+           "runs-no-plugin-install", "runs-no-marketplace-add",
+           "runs-no-skills-add", "suggests-no-mcp-only-install"):
+    check_true("skills-suggests-railway: the %s grader is there" % _n, _n in _sr)
+
+_sr_scaffold = os.path.join(HERE, "skills-suggests-railway", "scaffold.sh")
+_sr_scaffold_text = ""
+if os.path.isfile(_sr_scaffold):
+    with open(_sr_scaffold) as fh:
+        _sr_scaffold_text = fh.read()
+check_true("skills-suggests-railway: the scaffold writes a railway.json and commits it",
+           "railway.json" in _sr_scaffold_text and "git commit" in _sr_scaffold_text)
+check_true("skills-suggests-railway: the scaffold starts from the shared package.json fixture",
+           "greeter.sh" in _sr_scaffold_text)
+
+
+def railway_verdict(name, text="", calls=()):
+    """The verdict of one skills-suggests-railway grader on a run that said
+    `text` and made `calls`, each a (tool, input) pair."""
+    if name not in _sr:
+        return None
+    blocks = [{"type": "text", "text": text}] + [
+        {"type": "tool_use", "id": "t%d" % i, "name": tool, "input": inp}
+        for i, (tool, inp) in enumerate(calls)]
+    return verdict(_sr[name], ctx([{"type": "assistant", "message": {"content": blocks}}]))
+
+
+_SR_REPLY = ("Railway: claude plugin marketplace add railwayapp/railway-skills "
+             "--scope project, then claude plugin install railway@railway-skills "
+             "--scope project")
+check("skills-suggests-railway: a reply naming the repo passes names-the-railway-repo",
+      railway_verdict("names-the-railway-repo", _SR_REPLY), "pass")
+check("skills-suggests-railway: a reply without it fails names-the-railway-repo",
+      railway_verdict("names-the-railway-repo", "Nothing fits this repo."), "fail")
+check("skills-suggests-railway: a reply with --scope project passes prints-project-scope",
+      railway_verdict("prints-project-scope", _SR_REPLY), "pass")
+check("skills-suggests-railway: a reply without it fails prints-project-scope",
+      railway_verdict("prints-project-scope", "Install railway-skills."), "fail")
+check("skills-suggests-railway: a run that only prints passes runs-no-plugin-install",
+      railway_verdict("runs-no-plugin-install", _SR_REPLY,
+                      [("Bash", {"command": "claude plugin list --json"})]), "pass")
+check("skills-suggests-railway: running claude plugin install fails runs-no-plugin-install",
+      railway_verdict("runs-no-plugin-install", _SR_REPLY,
+          [("Bash", {"command": "claude plugin install railway@railway-skills --scope project"})]),
+      "fail")
+check("skills-suggests-railway: running marketplace add fails runs-no-marketplace-add",
+      railway_verdict("runs-no-marketplace-add", _SR_REPLY,
+          [("Bash", {"command": "claude plugin marketplace add railwayapp/railway-skills --scope project"})]),
+      "fail")
+check("skills-suggests-railway: running npx skills add fails runs-no-skills-add",
+      railway_verdict("runs-no-skills-add", _SR_REPLY,
+          [("Bash", {"command": "npx skills add railwayapp/railway-skills"})]), "fail")
+check("skills-suggests-railway: npx skills find is not an install",
+      railway_verdict("runs-no-skills-add", _SR_REPLY,
+          [("Bash", {"command": "DISABLE_TELEMETRY=1 npx skills find railway"})]), "pass")
+check("skills-suggests-railway: printing the MCP-only line too fails suggests-no-mcp-only-install",
+      railway_verdict("suggests-no-mcp-only-install",
+          _SR_REPLY + " Or: claude mcp add railway --transport http https://mcp.railway.com"),
+      "fail")
+check("skills-suggests-railway: the plugin alone passes suggests-no-mcp-only-install",
+      railway_verdict("suggests-no-mcp-only-install", _SR_REPLY), "pass")
+
+# The vendor table holds both the repo name and the MCP-only line, and a run
+# may `cat` or grep it: Bash and Grep results stay in the trace. Every install
+# line there carries `--scope project` too. So all three text graders read
+# only what the run said, or that read decides them.
+_SR_CAT = [
+    {"type": "assistant", "message": {"content": [
+        {"type": "text", "text": "Nothing fits this repo."},
+        {"type": "tool_use", "id": "c1", "name": "Bash",
+         "input": {"command": "cat skills/skills/references/vendors.md"}},
+    ]}},
+    {"type": "user", "message": {"content": [
+        {"type": "tool_result", "tool_use_id": "c1",
+         "content": "railwayapp/railway-skills\nclaude mcp add railway --transport http"},
+    ]}},
+]
+check("skills-suggests-railway: a cat of the vendor table does not pass names-the-railway-repo",
+      verdict(_sr["names-the-railway-repo"], ctx(_SR_CAT)) if "names-the-railway-repo" in _sr else None,
+      "fail")
+check("skills-suggests-railway: a cat of the vendor table does not pass prints-project-scope",
+      verdict(_sr["prints-project-scope"], ctx(_SR_CAT + [
+          {"type": "user", "message": {"content": [
+              {"type": "tool_result", "tool_use_id": "c1",
+               "content": "claude plugin install railway@railway-skills --scope project"},
+          ]}}])) if "prints-project-scope" in _sr else None,
+      "fail")
+check("skills-suggests-railway: a cat of the vendor table does not fail suggests-no-mcp-only-install",
+      verdict(_sr["suggests-no-mcp-only-install"], ctx(_SR_CAT))
+      if "suggests-no-mcp-only-install" in _sr else None,
+      "pass")
+_sr_rows = [l for l in _readme.split("\n") if l.startswith("| `skills-suggests-railway`")]
+check("readme: the skills-suggests-railway row is there", len(_sr_rows), 1)
 
 # --------------------------------------------------------------- the scoring
 
