@@ -239,6 +239,7 @@ auth and permissions · secrets and keys · payments · public API or wire forma
 | Skill | What it does |
 |---|---|
 | `setup` | Once per project. Finds and verifies the check commands. You invoke it yourself, so it costs nothing at runtime |
+| `skills` | Suggests agent skills and plugins that fit this repo. Reads what it is built with and what is already installed, matches a short vendor table, searches the rest, and prints each install command at project scope. **Lists only: you run the installs.** Start it by hand; `setup` will call it later |
 | `flow` | Sizes the request. Routes it. Asks any questions in popup rounds |
 | `discuss` | Design talk and requests for advice — "let's discuss #92", "what should we do about X", "compare A and B". Starts one `researcher` per open question, at most 3, then recommends with every finding's source in the reply. Edits nothing and saves nothing; when the talk turns into work it hands its findings to `flow` |
 | `debug` | A bug nobody can point at, before `build` sees it: builds a red-capable loop, ranks 3 to 5 falsifiable causes, and hands the confirmed one to `build` as its first failing test. Called by `flow`, or start it by hand |
@@ -277,6 +278,7 @@ wrong.
 | [docs/ship.md](docs/ship.md) | Why `ship`'s steps are what they are. The boundary only a human crosses. Choosing a method the branch can take. The three real merge-error runs. The deploy block. |
 | [docs/tend.md](docs/tend.md) | Why `tend`'s steps are what they are. Getting on the PR's branch first. Triage before anything is changed. |
 | [docs/setup.md](docs/setup.md) | Why `setup`'s steps are what they are. Everything downstream trusts the `## Checks` block. Running each command before writing it down. |
+| [docs/skills.md](docs/skills.md) | Why `skills` lists and never installs. Why a repo with code is never asked a stack question. Why one design skill, not two. Why a vendor table and a capped search. |
 | [docs/pipeline.md](docs/pipeline.md) | Where work can sit, and what moves it. |
 | [docs/lessons.md](docs/lessons.md) | How `lesson` and `lesson-review` capture and act on real runs. Where waste counting reads from, and what it cannot see. The loop that turns a repeat into a fix and an eval case. |
 | [docs/web.md](docs/web.md) | Claude Code on the web. Start with "use the devflow flow skill". On Pro, say "run the review". `ship` is local only. |

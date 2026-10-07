@@ -1,0 +1,79 @@
+schema_version: "1.1"
+name: skills-suggests-railway
+description: A repo with a railway.json gets the Railway plugin suggested with its project-scope install command, and the skill installs nothing.
+tags: [skills, regression]
+
+context:
+  scaffold_script: ./scaffold.sh
+
+execution:
+  prompt: "/devflow:skills"
+  # Enough to read the repo and the installed list, match the vendor table and
+  # print the list. The wording of the list is not what this measures.
+  max_turns: 15
+  timeout_seconds: 300
+  # Bash stays in on purpose: with it out, "runs no install" could not fail.
+  # Edit and Write are left out because the skill only prints.
+  allowed_tools: [Bash, Read, Glob, Grep, Skill]
+
+runs: 1
+
+graders:
+  # The reason this case exists. A railway.json is the file signal for the
+  # Railway row, so the reply has to name the vendor's repo. Graded on what the
+  # run said, not the trace: vendors.md holds this name and the MCP-only line,
+  # and a `cat` or grep of it stays in the trace.
+  - type: regex
+    name: names-the-railway-repo
+    target: said
+    pattern: "railwayapp/railway-skills"
+    match: contains
+    weight: 3
+
+  # Install scope is the project's, so the commands the human copies carry it.
+  # On what was said: every install line in vendors.md carries it too.
+  - type: regex
+    name: prints-project-scope
+    target: said
+    pattern: "--scope project"
+    match: contains
+    weight: 2
+
+  # List only: the human runs each install. `tool_used` counts attempts, which
+  # is right here, because an attempt is the failure. One grader per command
+  # the skill might reach for, so the failure message says which.
+  - type: tool_used
+    name: runs-no-plugin-install
+    tool: Bash
+    input_match: "claude plugin install"
+    max: 0
+    weight: 3
+
+  - type: tool_used
+    name: runs-no-marketplace-add
+    tool: Bash
+    input_match: "claude plugin marketplace add"
+    max: 0
+    weight: 3
+
+  - type: tool_used
+    name: runs-no-skills-add
+    tool: Bash
+    input_match: "npx skills add"
+    max: 0
+    weight: 3
+
+  # The Railway plugin already carries the MCP server, so printing the MCP-only
+  # line as well is two installs of one thing.
+  - type: regex
+    name: suggests-no-mcp-only-install
+    target: said
+    pattern: "claude mcp add railway"
+    match: not_contains
+    weight: 2
+
+expected_outcome: >
+  Reads the repo, sees railway.json, and prints the Railway plugin
+  (railwayapp/railway-skills) with its marketplace add and plugin install
+  commands at --scope project, without running either and without printing the
+  MCP-only line as well.
