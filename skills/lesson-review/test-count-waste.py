@@ -590,5 +590,14 @@ with tempfile.TemporaryDirectory() as root:
     check("a popup answer that picks the recommended label on every question counts, and no other does",
           popped["yes_to_all"].get("devflow:flow") == 2, popped["yes_to_all"])
 
+# Issue #136: a project's own review agent is one more axis, with its own
+# `Project review:` line in Worst of each. A finding there is a finding.
+check("a Project review finding makes the review not clean",
+      cw.review_is_clean("## Worst of each\n- Built right: none\n- Security: none\n"
+                         "- Right thing: none\n- Project review: money math with Number") is False)
+check("a Project review line of none keeps it clean",
+      cw.review_is_clean("## Worst of each\n- Built right: none\n- Security: none\n"
+                         "- Right thing: none\n- **Project review:** none") is True)
+
 print(f"\n{passed} passed, {failed} failed")
 sys.exit(1 if failed else 0)

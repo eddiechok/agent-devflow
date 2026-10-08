@@ -1,6 +1,6 @@
 # evals
 
-Twenty-two cases. Run them before you push a change to a skill. Three are manual, see below.
+Twenty-three cases. Run them before you push a change to a skill. Three are manual, see below.
 
 ## Which runner
 
@@ -30,8 +30,8 @@ python3 evals/run.py --case sizing-* --runs 1
 python3 evals/run.py --dry-run                # parse and print, run nothing
 ```
 
-It scores **98 of the 113 graders** — every `regex`, `tool_used`, `tool_order`
-and `file_exists`. The fifteen `llm` graders come back `skip`, stay out of the
+It scores **102 of the 118 graders** — every `regex`, `tool_used`, `tool_order`
+and `file_exists`. The sixteen `llm` graders come back `skip`, stay out of the
 denominator, and are counted in the summary. **A skip is never a pass**, the
 same way `NOT RUN` is never `none`.
 
@@ -82,6 +82,7 @@ run may read the very line it looks for.
 | `sizing-deep` | low | A new subsystem gets built with no plan and no questions |
 | `danger-list` | low | Secrets work slips through at Quick with nobody told |
 | `project-danger-list` | low | A change in a folder the project's own CLAUDE.md calls dangerous slips through at Quick, because only `flow`'s fixed list is read |
+| `project-review-agent` | medium | `review` never starts the agent the project named with a `- Review agent:` line, buries its finding under Built right instead of Project review, or starts an agent no line names |
 | `ui-empty-state` | medium | A UI change that shows only in an empty state is "checked" on the normal page, so `submit`'s live check passes over text nobody saw |
 | `bug-routes-to-debug` | low | A bug only running can show — the code reads as correct — gets planned across many files instead of routed through `devflow:debug` |
 | `bug-routes-to-build` | low | A bug the request already points at takes the `devflow:debug` detour it does not need, instead of going straight to `devflow:build` |

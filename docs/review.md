@@ -7,7 +7,7 @@
 | `reviewer` | Is it built right | Reads the whole branch, committed and not. Reports only findings it can attach a concrete failing case to |
 | `security-reviewer` | Is it safe from an attacker | Reads the whole branch as an attacker would. Reports only findings it can build a concrete exploit case for — who, what input, what they get. Runs only when `reviewer`'s danger list names a security item |
 | `spec-reviewer` | Is it the right thing | Reads the plan, the issue, or the request the human typed, which `flow` passes down. Reports what is missing, what was built wrong, and what nobody asked for. Runs only when one of those was found |
-| `hardcase` | Is the first axis, or the security axis, right | Gets `reviewer`'s and `security-reviewer`'s findings and tries to **break** them. Reports which stand, which fall and why. Runs only when either found something |
+| `hardcase` | Is the first axis, or the security axis, right | Gets `reviewer`'s and `security-reviewer`'s findings, and any project review agent's, and tries to **break** them. Reports which stand, which fall and why. Runs only when one of them found something |
 
 `review` prints the axis reports side by side. It **never merges them, and never ranks one against another**.
 
@@ -36,6 +36,34 @@ All four pin `model: opus` and `effort: xhigh`. A review does not quietly become
 The three ranked axes pin the **same** pair on purpose. Their reports are never ranked against each other. A weaker model on one axis would rank them without saying so.
 
 `hardcase` pins it for a different reason. A refuter that cannot follow the code refutes nothing. It prints a clean sheet that reads like agreement.
+
+## A project's own review agent
+
+A project can name its own review agents, one `- Review agent: <name>` line each in the
+`## Workflow` block of `CLAUDE.md`. `review` starts each one as one more axis, with the same
+fixed point, file list and word ceiling as `reviewer`, and prints it under
+**Project review**. The first was bykare-medusa-admin's `medusa-convention-reviewer`, which
+checks that repo's own Medusa v2 and React rules. Nothing in devflow's review knew them.
+
+`review` never finds agents by itself. Issue #136 gave the reasons:
+
+- Finding them on each run means reading every agent file and guessing on every PR, and that
+  costs tokens on every review.
+- It could run an agent the human never chose: one that edits files, or calls the network.
+- A written line is easy to see and easy to change.
+
+So `devflow:skills` finds them and asks per agent, and the human's yes is the line.
+
+It is its own section, not part of **Built right**, for the reason the axes are kept apart:
+a blended list lets one reader's findings hide another's. It gets its own line in
+**Worst of each**, like **Security**, because it checks rules the other axes do not know.
+
+`hardcase` challenges its findings the same way it does `reviewer`'s. A plausible false
+finding costs the same round trip whoever wrote it. A project agent's finding that falls
+writes no devflow lesson: the agent is the project's, and its mistake is not devflow's.
+
+A project agent keeps its own `model:`. devflow does not own the file, and the axes are
+never ranked against each other, so a different model there ranks nothing without saying so.
 
 ## A change with no behaviour gets one reader
 

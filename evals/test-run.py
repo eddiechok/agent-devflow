@@ -1615,6 +1615,104 @@ if os.path.isfile(_lq_scaffold):
 _lq_rows = [l for l in _readme.split("\n") if l.startswith("| `look-question`")]
 check("readme: the look-question row is there", len(_lq_rows), 1)
 
+# ------------- project-review-agent: review runs the agent CLAUDE.md names (#136)
+#
+# The project names one agent with a `- Review agent:` line and has a second
+# it never named. Its house rule lives only in the named agent's file, so only
+# that agent can find the break. Pinned both ways, so no grader reads as
+# coverage while unable to fail.
+_pr_path = os.path.join(HERE, "project-review-agent", "case.yaml")
+pr_case = {}
+if os.path.isfile(_pr_path):
+    with open(_pr_path) as fh:
+        pr_case = run.parse_yaml(fh.read())
+_pr = {g["name"]: g for g in pr_case.get("graders", [])}
+_pr_ex = pr_case.get("execution", {})
+
+check_true("project-review-agent: the case exists", pr_case != {})
+check_true("project-review-agent: starts the review skill",
+           "/devflow:review" in _pr_ex.get("prompt", ""))
+check_true("project-review-agent: Agent is allowed, or the axis could never run",
+           {"Agent", "Bash", "Skill"} <= set(_pr_ex.get("allowed_tools", [])))
+for _n in ("runs-the-named-agent", "never-runs-the-unnamed-agent",
+           "prints-project-review", "project-review-names-the-break"):
+    check_true("project-review-agent: the %s grader is there" % _n, _n in _pr)
+
+_pr_scaffold_text = ""
+if os.path.isfile(os.path.join(HERE, "project-review-agent", "scaffold.sh")):
+    with open(os.path.join(HERE, "project-review-agent", "scaffold.sh")) as fh:
+        _pr_scaffold_text = fh.read()
+check_true("project-review-agent: the scaffold names one agent in ## Workflow",
+           "- Review agent: house-rules-reviewer" in _pr_scaffold_text
+           and ".claude/agents/house-rules-reviewer.md" in _pr_scaffold_text)
+check_true("project-review-agent: the scaffold has an agent it never names",
+           ".claude/agents/changelog-writer.md" in _pr_scaffold_text
+           and "- Review agent: changelog-writer" not in _pr_scaffold_text)
+check_true("project-review-agent: the scaffold starts from the shared fixture",
+           "greeter.sh" in _pr_scaffold_text)
+
+
+def pr_verdict(name, text="", calls=()):
+    """The verdict of one project-review-agent grader on a run that said
+    `text` and made `calls`, each a (tool, input) pair."""
+    if name not in _pr:
+        return None
+    blocks = [{"type": "text", "text": text}] + [
+        {"type": "tool_use", "id": "p%d" % i, "name": tool, "input": inp}
+        for i, (tool, inp) in enumerate(calls)]
+    return verdict(_pr[name], ctx([{"type": "assistant", "message": {"content": blocks}}]))
+
+
+_PR_NAMED = ("Agent", {"subagent_type": "house-rules-reviewer", "prompt": "review"})
+_PR_UNNAMED = ("Agent", {"subagent_type": "changelog-writer", "prompt": "write"})
+_PR_REPORT = ("## Project review\n### house-rules-reviewer\n- src/greet.js:2 calls "
+              "console.log; only src/cli.js may print")
+check("project-review-agent: starting the named agent passes runs-the-named-agent",
+      pr_verdict("runs-the-named-agent", calls=[_PR_NAMED]), "pass")
+check("project-review-agent: a run that never starts it fails runs-the-named-agent",
+      pr_verdict("runs-the-named-agent", calls=[("Agent", {"subagent_type": "devflow:reviewer"})]),
+      "fail")
+check("project-review-agent: starting the unnamed agent fails never-runs-the-unnamed-agent",
+      pr_verdict("never-runs-the-unnamed-agent", calls=[_PR_NAMED, _PR_UNNAMED]), "fail")
+check("project-review-agent: the named agent alone passes never-runs-the-unnamed-agent",
+      pr_verdict("never-runs-the-unnamed-agent", calls=[_PR_NAMED]), "pass")
+check("project-review-agent: the section passes prints-project-review",
+      pr_verdict("prints-project-review", _PR_REPORT), "pass")
+check("project-review-agent: no section fails prints-project-review",
+      pr_verdict("prints-project-review", "## Built right\nnone"), "fail")
+check("project-review-agent: the break under Project review passes project-review-names-the-break",
+      pr_verdict("project-review-names-the-break", _PR_REPORT), "pass")
+check("project-review-agent: the break under Built right alone fails project-review-names-the-break",
+      pr_verdict("project-review-names-the-break",
+                 "## Built right\n- console.log in src/greet.js\n\n## Project review\nnone"),
+      "fail")
+
+# The reviewer's case on this branch: review's own template puts Worst of each
+# and the hand-back line after Project review, so a break named only there and
+# under Built right must not pass as the agent's finding.
+check("project-review-agent: the break only in Worst of each's Built right line fails",
+      pr_verdict("project-review-names-the-break",
+                 "## Built right\n- src/greet.js:2 console.log\n\n## Project review\nnone\n\n"
+                 "## Worst of each\n- Built right: console.log in src/greet.js\n"
+                 "- Project review: none\n\nRemove the console.log first."),
+      "fail")
+check("project-review-agent: the break under the agent's own ### heading passes",
+      pr_verdict("project-review-names-the-break",
+                 "## Project review\n### house-rules-reviewer\n- src/greet.js:2 console.log\n\n"
+                 "## Worst of each\n- Project review: console.log in src/greet.js"),
+      "pass")
+
+# Review prints a project agent's report as the agent wrote it, and that
+# report may carry `## ` headings of its own (round 2 of this branch's review).
+check("project-review-agent: the break under the agent's own ## heading passes",
+      pr_verdict("project-review-names-the-break",
+                 "## Project review\n### house-rules-reviewer\n## Breaks\n"
+                 "- src/greet.js:2 console.log\n\n## Worst of each\n- Project review: none"),
+      "pass")
+
+_pr_rows = [l for l in _readme.split("\n") if l.startswith("| `project-review-agent`")]
+check("readme: the project-review-agent row is there", len(_pr_rows), 1)
+
 # The README opens with a case count in words. It rotted once (seventeen, with
 # twenty directories) because nothing compared it with the directories.
 _WORDS = {17: "Seventeen", 18: "Eighteen", 19: "Nineteen", 20: "Twenty",

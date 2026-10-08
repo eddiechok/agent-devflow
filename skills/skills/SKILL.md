@@ -1,6 +1,6 @@
 ---
 name: skills
-description: "Use when the human asks which agent skills, plugins or MCP servers would suit this project, or when setup wants to offer them. Reads the repo's files for what it is built with, reads what is already installed, then suggests skills that fit, each with why, what it carries and its size, and the exact install command. Lists only: the human runs every install."
+description: "Use when the human asks which agent skills, plugins or MCP servers would suit this project, or when setup wants to offer them. Reads the repo's files for what it is built with, reads what is already installed, then suggests skills that fit, each with why, what it carries and its size, and the exact install command. Lists only: the human runs every install. Also asks, per agent, whether the project's own review agents in .claude/agents/ should run in devflow's review, and writes one line in CLAUDE.md for each yes."
 ---
 
 # skills
@@ -18,6 +18,8 @@ Before suggesting anything, read, one command per call:
 - `claude plugin list --json`: installed plugins, with scope and enabled status
 - `claude mcp list`: MCP servers, including ones a plugin carries
 - the loose skills: `.claude/skills/*/SKILL.md` and `~/.claude/skills/*/SKILL.md`
+- the project's own agents: `.claude/agents/*.md`, each one's `name`, `description` and
+  `tools`, for step 6
 
 Both CLI commands only read. A suggestion that matches something already installed is
 dropped, with one line saying it is already installed, and a suggestion that would clash with
@@ -49,9 +51,10 @@ Look each signal up in [the vendor table](references/vendors.md). A row fires on
 signal and on nothing else.
 
 Then go through what the table missed, and search only what the repo is built with: its web
-framework, its test tools, its deploy target, and an API-docs skill only when an openapi file
-exists. Never search how-to-work categories, because devflow owns them: code quality and
-review, the testing process and TDD, productivity, workflow and git.
+framework, its test tools, its deploy target, an API-docs skill only when an openapi file
+exists, and a review agent for what it is built with, for step 6. Never search other
+how-to-work categories, because devflow owns them: code quality and generic review, the
+testing process and TDD, productivity, workflow and git.
 
 For each such search, run `DISABLE_TELEMETRY=1 npx skills find <query>`. The variable keeps
 the search from sending anonymous usage data. When npx is missing, skip the fallback and
@@ -142,11 +145,43 @@ server already has it. Print the plugin and leave the MCP-only line out.
 add`, not `npx skills add`, not `claude mcp add`. The list is the output; the human runs
 each command, and decides which ones.
 
+## 6. Review agents
+
+From the agents step 1 read in `.claude/agents/`, keep the ones whose `description` says
+they review code: they review, check or audit changes against rules. An agent that writes,
+builds or deploys is not one, whatever its name says.
+
+No review agent at all in `.claude/agents/` → print
+`– **agents** no review agent in .claude/agents/` and stop. **Already named** in a
+`- Review agent:` line in `CLAUDE.md` → ask nothing, print
+`– **agents** <name> already runs in review`. Every one already named → that is the step.
+
+For each one left, ask one question. Up to 4 go in one `AskUserQuestion` round; with no
+popup tool, ask them as a numbered list and take "yes to all":
+
+1. **Use `<name>` in devflow's review?**
+   - Yes (Recommended) — `review` runs it on every change, as an axis of its own.
+   - No — `review` never runs it.
+
+Recommend No instead when its `tools` grants `Edit` or `Write`, or names none, which grants
+every tool: a review must not change the code it reads. Say so in the option.
+
+**A yes writes one line**, `- Review agent: <name>`, at the end of the `## Workflow`
+block in `CLAUDE.md`: one line per agent. Then print `✓ **agents** <name> runs in review`.
+A no writes nothing: print `– **agents** <name> not used in review`. With no
+`## Workflow` block, print the line for the human and write nothing:
+`→ **agents** run /devflow:setup, then add the line`.
+
+**An installable review agent** for what the repo is built with may come up in step 3's search.
+It passes step 4's bar like any skill and is listed in step 5 with its install command.
+It is not asked about here: once it is in `.claude/agents/`, the next run asks.
+
 ## Rules
 
 - Never run an install command. Print it.
 - Never ask a stack question of a repo that has code.
 - Never suggest what is already installed.
 - Never suggest from a search result that failed the source bar.
-- Never write to `CONTEXT.md`, to `CLAUDE.md`, or to any file in the repo. This skill only
-  reads and prints.
+- Never write to `CONTEXT.md`, to `CLAUDE.md`, or to any file in the repo, except one
+  `- Review agent:` line in `## Workflow` after the human's yes for that agent (step 6).
+  Everything else this skill only reads and prints.
