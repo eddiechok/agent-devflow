@@ -69,6 +69,20 @@ change must have.
 This is the same rule `ship` step 5 applies to a deploy, and it has to stay the same rule —
 a green deploy is second-hand about a live site for exactly the same reason.
 
+### Why a UI change gets a browser check of its own
+
+[live-check.md](../skills/submit/references/live-check.md) already asked for first-hand proof of a page ("the page text showing the new label", "a screenshot of the layout you fixed") and said nothing about how to drive a browser. Every run improvised: a full-page dump into context, one width, the normal page when the change only shows in the empty state or the error state. [browser-check.md](../skills/submit/references/browser-check.md) holds the five checks once: log in once, make the exact state the change affects, a desktop and a mobile width, a clean console, and read only the text that proves the change. It runs for any UI change at any size, Quick included, because a one-line copy change in an empty state is exactly the change the normal page cannot prove.
+
+It is a reference, not a skill, and driver-agnostic. The driver is the one the project's `## Browser` block names when the session has it, else whatever driver the session has, said by name; with none, the run says so and falls back to the proof it gave before. It has to work with no `## Browser` block, because a project set up before the block existed never runs setup's driver question again. One driver for the whole check: bykare's `browser-self-qa` skill uses `agent-browser` as the single driver and warns that mixing drivers wastes tokens. Login uses only test credentials from the project's own files and never asks for a real password. Login, URLs and traps stay in the project's CLAUDE.md, as they do in bykare's (`CLAUDE.md:195-203`).
+
+What other tools do, read for this:
+
+- obra/superpowers has no UI verification step (`skills/verification-before-completion/SKILL.md:40-48`).
+- mattpocock/skills has no browser done-check; screenshots are "S-tier - when the environment is set up for it and the change is visual" (`skills/engineering/pr/SKILL.md:162-164`).
+- GSD `verify-work` runs automated UI verification only when `mcp__playwright__*` or `mcp__puppeteer__*` tools exist, and otherwise asks manual checkpoint questions (`workflows/verify-work.md:99-127`). It also warns that browser MCP servers "can cost 20k+ tokens each" (`references/context-budget.md:63`).
+- Microsoft's playwright-cli says "CLI invocations are more token-efficient: they avoid loading large tool schemas and verbose accessibility trees into the model context" (github.com/microsoft/playwright-cli). Playwright MCP's 21 tools cost about 13.7k tokens of schema (mariozechner.at, 2 Nov 2025).
+- No source gives a measured per-action token cost for any driver: unconfirmed. That is why the reference does not pick a driver for the project, and why it keeps reads small whichever driver runs.
+
 ### When it does not work
 
 An honest failure is useful. A green-looking PR over a broken feature is harmful.

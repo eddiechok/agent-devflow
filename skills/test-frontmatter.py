@@ -4322,6 +4322,8 @@ SLIM_CAPS = {"submit": 311, "review": 130}
 REFERENCE_STEPS = {
     "submit": {
         "live-check.md": ["## 4. "],
+        # read from live-check.md for a UI change, not from a step of SKILL.md
+        "browser-check.md": [],
         "findings.md": ["## 5. "],
         "lessons.md": ["## 6. "],
         "look.md": ["## 7. "],
@@ -6444,6 +6446,92 @@ check("bare paths: no skill or agent names a skill's file by a bare skills/ path
       not _bare_hits,
       "a bare path only resolves inside agent-devflow; link it relative to the file: "
       + "; ".join(_bare_hits))
+
+# ------------------ the browser check for a UI change, in the live check (#127)
+#
+# live-check.md asked for first-hand proof of a UI change ("the page text
+# showing the new label") and said nothing about driving a browser, so each run
+# improvised one: a full-page dump into context, one width, no look at the
+# empty or error state the change really affects. browser-check.md holds the
+# five checks once. It is driver-agnostic (the project's `## Browser` block if
+# the session has that driver, else the session's own, said by name, else
+# today's proof) and it runs for any UI change at any size, Quick included.
+
+BROWSER_CHECK_PATH = os.path.join(SKILLS_DIR, "submit", "references", "browser-check.md")
+LIVE_CHECK_PATH = os.path.join(SKILLS_DIR, "submit", "references", "live-check.md")
+browser_check_text = ""
+if os.path.exists(BROWSER_CHECK_PATH):
+    with open(BROWSER_CHECK_PATH, encoding="utf-8") as fh:
+        browser_check_text = fh.read()
+with open(LIVE_CHECK_PATH, encoding="utf-8") as fh:
+    live_check_text = fh.read()
+browser_flat = flat(browser_check_text)
+browser_lower = browser_flat.lower()
+
+check("browser-check: the reference exists",
+      browser_check_text != "", f"{BROWSER_CHECK_PATH} does not exist")
+
+check("browser-check: live-check.md sends any UI change there, at any size",
+      "](browser-check.md)" in live_check_text
+      and "UI change" in flat(live_check_text)
+      and "any size" in flat(live_check_text)
+      and "Quick" in live_check_text,
+      f"{LIVE_CHECK_PATH} never links browser-check.md for a UI change of any size")
+
+for needle, what in (
+        ("log in once", "log in once"),
+        ("keep the cookie", "keep the cookie"),
+        ("exact state", "make the exact state the change affects"),
+        ("empty", "the empty state"),
+        ("error", "the error state"),
+        ("loading", "the loading state"),
+        ("desktop", "a desktop width"),
+        ("mobile", "a mobile width"),
+        ("console", "a clean console"),
+        ("temp", "screenshots to a temp dir"),
+        ("full-page", "no full-page dumps")):
+    check(f"browser-check: the five checks name {what}",
+          needle in browser_lower,
+          f"{BROWSER_CHECK_PATH} never names {what!r}")
+
+check("browser-check: screenshots stay out of context",
+      re.search(r"[Nn]ever[^.]*(into|in) (your |the )?context", browser_flat) is not None,
+      f"{BROWSER_CHECK_PATH} never says screenshots stay out of context")
+
+check("browser-check: the driver is the `## Browser` block's, else the session's, said by name",
+      "`## Browser`" in browser_check_text
+      and "- Driver:" in browser_check_text
+      and "session" in browser_flat
+      and "by name" in browser_flat,
+      f"{BROWSER_CHECK_PATH} never states the driver order or says which driver ran")
+
+check("browser-check: works with no `## Browser` block",
+      re.search(r"no `## Browser` block", browser_flat) is not None,
+      f"{BROWSER_CHECK_PATH} never says what happens with no `## Browser` block")
+
+check("browser-check: no driver says so and falls back to today's proof",
+      "no driver at all" in browser_lower
+      and "live-check.md" in browser_check_text
+      and "first-hand" in browser_flat,
+      f"{BROWSER_CHECK_PATH} never says no driver falls back to first-hand proof")
+
+check("browser-check: login uses only test credentials from the project's own files",
+      "test credentials" in browser_flat
+      and re.search(r"[Nn]ever ask[^.]*real", browser_flat) is not None,
+      f"{BROWSER_CHECK_PATH} never limits login to test credentials")
+
+check("browser-check: project facts stay in the project's CLAUDE.md",
+      "CLAUDE.md" in browser_check_text,
+      f"{BROWSER_CHECK_PATH} never sends login, URLs and traps to CLAUDE.md")
+
+check("docs/submit: says why the browser check exists, with sources",
+      "browser-check.md" in docs_submit_text
+      and "browser-self-qa" in docs_submit_text
+      and "verify-work" in docs_submit_text
+      and "20k+" in docs_submit_text
+      and "token-efficient" in docs_submit_text
+      and "unconfirmed" in docs_submit_text,
+      "docs/submit.md never explains browser-check.md with its sources")
 
 # --------------------------------------------------------------------- report
 
