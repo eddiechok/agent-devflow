@@ -73,6 +73,11 @@ fresh, the review, and opens **one pull request** for the whole chain. Tell it t
 must carry a `Closes #<n>` line for every issue in the chain, one per line, and that nobody
 can answer it: where it would ask, it stops, and you report.
 
+**Tell it you are a sweeper, and that the live check always stops its server**, whatever
+`- Servers:` says in `## Workflow`: see "A kept server" in
+[live-check.md](../skills/submit/references/live-check.md). The human reads sweep PRs hours
+later, and up to four kept servers would hold their lanes until then.
+
 **Tell it your worktree path too**, from `git rev-parse --show-toplevel`, and that every agent
 the review starts must be given that path and read the files there. An agent starts in the
 session's main folder, not in your worktree, so without the path a reviewer reads the main
@@ -141,6 +146,7 @@ exists to protect.
 - Never ask a question, and never guess the answer to one. Stop and report.
 - Never build an issue outside your chain.
 - Never call `devflow:flow`: the main session sized every issue as Quick before you started.
+- Never keep a dev server running after the live check: a sweeper always stops its server.
 - Never merge. Never call `devflow:ship`: only a human ships.
 - Never push a chain that stopped, and never leave your branch.
 - Never comment on an issue, label it, close it or edit it. The PR's `Closes` lines close it

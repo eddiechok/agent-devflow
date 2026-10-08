@@ -301,6 +301,14 @@ Writing the plan, one builder per chain, and everything past the rounds of quest
 `devflow:plan`'s job now, not this skill's — see [docs/plan.md](plan.md) for why its rules
 are what they are.
 
+### Servers — ask once, and name the leftovers
+
+`submit` can keep the dev server running after its live check, when `## Workflow` says `- Servers: keep` (see [submit.md](submit.md)). `setup` asks that question, but a project set up before it existed has `## Workflow` already, and setup's step 1 skips its questions then. So `flow` asks it once, the way it asked the browser driver in #129: a Context line reads the setting, a reference holds the question ([servers-setting.md](../skills/flow/references/servers-setting.md)), and the answer is held and written at step 5, after `build` cuts its branch, so it never dirties a folder step 0c reads as clean. Every answer writes the line, so the question comes once per project. It is asked only in a project whose live check starts a server, and never inside `submit`, where the human has gone.
+
+The same read finds leftovers: servers an earlier run kept whose PR is merged or closed. Each is named with its stop command and an offer to stop it, only on the human's yes; a no leaves it on the list. Stopping uses the same PID check as `ship` ([ship.md](ship.md)).
+
+**The cost rule.** The Context line runs when the skill loads, so it takes no turn, and the model should not pay for servers that are not there. It reads only the local file, `~/.claude/devflow/servers.tsv`, and calls GitHub (one REST call per kept server of this repo, for its PR's state) only when the file has a line for this repo. With none, the model sees one short line, `Kept servers: none`, and the reference is never read. The list is never fetched from GitHub.
+
 ### Step 5 — submit it
 
 `submit` passes it to `review`, and `review`'s second axis judges the change against it.

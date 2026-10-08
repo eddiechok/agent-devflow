@@ -222,8 +222,8 @@ Write the block, exactly this shape, to the project's `CLAUDE.md`:
 - About: <one line, the human's own words>
 ```
 
-`Mode:` is `direct` or `pr`. Nothing else goes in this block. No block means "not set up",
-and every skill reads `Mode:` from here itself.
+`Mode:` is `direct` or `pr`. Step 6b may add a `- Servers:` line; nothing else goes in this
+block. No block means "not set up", and every skill reads `Mode:` from here itself.
 
 ## 6a. A browser driver, in a UI repo
 
@@ -270,6 +270,36 @@ One line. Nothing else goes in this block: login, URLs and traps stay in the pro
 `CLAUDE.md` notes. It is not a `## Checks` line, because `build` and `submit` run every one of
 those as a command.
 
+## 6b. Keep the dev server running?
+
+`submit`'s live check starts the project's server, and stops it when it is done. A slow app
+can ask for it to stay up instead ([live-check.md](../submit/references/live-check.md#a-kept-server)).
+Skip this step with `– **servers** skipped — nothing starts a server` when the repo's live
+check starts none (a library, a CLI, a one-shot script). When `## Workflow` already has a
+`- Servers:` line, keep it and say what it says.
+
+Otherwise read the start command (`package.json` scripts, a `Makefile` target, `Procfile`,
+`docker-compose.yml`, or the README's own) and ask one question, in the popup style of step 6:
+
+1. **Keep the dev server running after the live check?**
+   - Keep the server running — for an app that starts slowly: several servers, a database, a
+     heavy backend such as Medusa. You click through the PR without a wait.
+   - Stop the server — for an app that starts in seconds. Today's behaviour.
+
+   Mark the one the start command points to "(Recommended)". Keep applies in a local session
+   only: in a cloud session the live check always stops its server, because the human's
+   browser cannot reach the sandbox's localhost. Sweepers always stop too.
+
+Write the answer as one line in the `## Workflow` block of step 6, `- Servers: keep` or
+`- Servers: stop`. No line means stop.
+
+**A start command that binds one fixed port** (`--port 3000`, `PORT=3000`, a port in the
+dev script or its config) lets only one server run at a time, so a kept server blocks the
+next live check. Print a recommendation and write nothing: a lane script. It picks the
+lowest free lane, every port the app uses moves together, and the CORS or allowed-origins
+list names every lane. The human's own `scripts/dev.sh` in bykare-medusa-admin is the
+pattern. Then the live check reads the port the server printed, and never assumes one.
+
 ## 7. Report
 
 Keep it short, one shaped line per fact:
@@ -288,6 +318,8 @@ Keep it short, one shaped line per fact:
 ✓ **workflow** direct (private, 1 collaborator, no CI)
 
 ✓ **browser** playwright-cli 0.1.22 (UI repo)
+
+✓ **servers** keep (Medusa and a database start slowly)
 
 – **deploy** not written — that is ship's to add
 the first time it deploys and can prove the command works
@@ -341,7 +373,7 @@ the result — for example `✓ **checks** 3 of 3 pass, exit 0`.
 - Never write `Tracker: github` without that REST read having answered in this run.
 - Never overwrite an existing `## Workflow` block. Say what it says and keep it.
 - Never write `Mode:` as anything but `direct` or `pr`, and never write it without asking.
-- Never add anything to `CLAUDE.md` except the `## Checks`, `## Plans`, `## Workflow` and, in a UI repo, `## Browser` blocks, and never a block you did not prove. `- Driver: session` names no driver, so it has nothing to prove.
+- Never add anything to `CLAUDE.md` except the `## Checks`, `## Plans`, `## Workflow` (with its `- Servers:` line, step 6b) and, in a UI repo, `## Browser` blocks, and never a block you did not prove. `- Driver: session` names no driver, so it has nothing to prove.
 - Never run an install, the browser driver's included: step 6a prints its command. Step 8 offers `devflow:skills`, which only lists; the human installs.
 
 ## Where the shape came from

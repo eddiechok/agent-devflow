@@ -244,6 +244,10 @@ Preview: <link, if one appeared on the PR>
 5. Ctrl-C to stop the server when you are done
 
 I checked this locally before pushing. I stopped my own server; step 5 is for yours.
+(A kept server is still up: say so, drop step 5, and point at Running below.)
+
+## Running
+(only when the live check kept a server, else omit this section entirely; its lines are in live-check.md, "A kept server")
 
 ## Evidence
 - Tests: 48 passed, exit 0
@@ -257,6 +261,8 @@ I checked this locally before pushing. I stopped my own server; step 5 is for yo
 ```
 
 **An empty Assumptions section is a claim.** It reads as "nothing was assumed". If it is empty because the context holding the answers is gone rather than because there were none, say that in one line instead of omitting the section.
+
+**A server was kept?** Once the PR number is known, write it into that server's line in `~/.claude/devflow/servers.tsv`, replacing the `-` in the `pr` field.
 
 **Check whether a preview link appeared** on the PR. If one did, put it first. If none appeared, give the local steps and do not mention a link that is not coming.
 

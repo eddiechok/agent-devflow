@@ -40,6 +40,10 @@ Nobody can answer a helper agent: the question tool is removed from every subage
 `build` or `submit` would ask, or the change grows past Quick (a second file nobody
 expected), the sweeper stops and reports. Stopping costs one issue; a guess opens a PR.
 
+## Why a sweeper always stops its server
+
+A project can say `- Servers: keep`, and then `submit` leaves the live check's server up. A sweeper ignores that, whatever the setting: it always stops its server. The human reads a sweep's PRs later, hours later, and a kept server is best effort anyway ([submit.md](submit.md)). Up to four sweepers run at once, so up to four kept servers would hold ports or lanes for those hours, and the next live check, a sweeper's or the human's, would find every lane taken. A sweeper also cannot be asked, so it could not offer to stop a leftover. `agents/sweeper.md` tells `submit` it is a sweeper so the live check knows.
+
 ## Why 4 at a time
 
 Each sweeper is a full session with a checkout behind it, so a fifth costs more in rate
