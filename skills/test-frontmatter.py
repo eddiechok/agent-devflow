@@ -6822,6 +6822,46 @@ check("agents/sweeper: always stops its server, whatever the setting",
       and "Servers" in sweeper_body and "live-check.md" in sweeper_body,
       f"{SWEEPER_PATH} never says a sweeper always stops its server")
 
+# ------------------------------------------ ship stops a kept server (chain A)
+#
+# submit's live check can leave a server up (`- Servers: keep`). ship's cleanup
+# is where it comes down, from the local list, never from GitHub. A PID is only
+# a number: after the server died the OS may hand it to something else, so ship
+# kills only a PID that still leads its own process group AND still runs the
+# command the list recorded. Anything else is stale, and just comes off the list.
+
+ship_servers = flat(section(ship_text, "## 6. ")[
+    section(ship_text, "## 6. ").find("**Dev servers.**"):
+    section(ship_text, "## 6. ").find("**Temp artifacts.**")])
+
+check("ship: step 6 reads the kept server from the local list, this branch's line",
+      "~/.claude/devflow/servers.tsv" in ship_servers
+      and "branch" in ship_servers
+      and re.search(r"not (from )?GitHub", ship_servers) is not None,
+      f"{SHIP_PATH} step 6 never reads servers.tsv for this PR's branch")
+
+check("ship: a kept server is stopped only when its PID is still ours",
+      "ps -o pgid= -p" in ship_servers
+      and "ps -o command= -p" in ship_servers
+      and re.search(r"[Bb]oth[^.]*not ours", ship_servers) is not None
+      and "kill -TERM -- -" in ship_servers,
+      f"{SHIP_PATH} step 6 never checks group and command before a kill")
+
+check("ship: a server that is not ours is never killed, and its line comes off",
+      re.search(r"not ours[^.]*never kill", ship_servers, re.I) is not None
+      and re.search(r"stale", ship_servers) is not None
+      and re.search(r"line comes off|remove the line|take the line off",
+                    ship_servers) is not None,
+      f"{SHIP_PATH} step 6 never says a stale line comes off without a kill")
+
+check("ship: the cleaned line names a stopped or stale kept server",
+      re.search(r"cleaned[^.]*(kept server|names? it)", ship_servers) is not None,
+      f"{SHIP_PATH} step 6 never says the cleaned line names the kept server")
+
+check("ship: still stops only servers it was told about, never what is on a port",
+      "Never kill" in ship_servers and "port 3000" in ship_servers,
+      f"{SHIP_PATH} step 6 lost the never-kill-a-port rule")
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")
