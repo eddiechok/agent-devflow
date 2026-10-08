@@ -225,6 +225,48 @@ Write the block, exactly this shape, to the project's `CLAUDE.md`:
 `Mode:` is `direct` or `pr`. Nothing else goes in this block. No block means "not set up",
 and every skill reads `Mode:` from here itself.
 
+## 6a. A browser driver, in a UI repo
+
+`submit` checks a UI change in a browser, and reads a `## Browser` block for the driver to
+use ([browser-check.md](../submit/references/browser-check.md)). Skip this step with
+`– **browser** skipped — no UI` when the repo has no UI, by the same read as
+[the skills skill's step 3a](../skills/SKILL.md#3a-a-repo-with-a-ui) — and when a `## Browser`
+block is already there, keep it and say what it says.
+
+Otherwise ask one question, in the popup style of step 6:
+
+1. **Which browser driver should checks use?**
+   - Playwright CLI (Recommended) — it keeps a page's tree out of context, so a check costs
+     fewer tokens than a browser MCP server. The reason goes in the option, in one line.
+   - Research which fits me — start one `devflow:researcher`, giving it what the repo and
+     this machine already have: the UI dependencies, any `playwright.config.*`, which browser
+     CLIs are on the PATH and the browser tools this session has. Then recommend again, with
+     what it found, and without this option. Start it only when the human picks this option.
+   - Other — the human types their own driver.
+
+**Prove the driver runs.** For Playwright CLI that is `playwright-cli --version`, bare. For
+another driver, its own version command. A driver that is a tool of this session, such as an
+MCP server or the desktop browser pane, is proven by that tool being in the session.
+
+**Not installed** → print the install command and stop at that. Setup installs nothing:
+
+```
+npm install -g @playwright/cli@latest
+```
+
+Write no block for a driver that did not run. The human installs it and runs setup again.
+
+Proven → write the block, exactly this shape, to the project's `CLAUDE.md`:
+
+```markdown
+## Browser
+- Driver: playwright-cli
+```
+
+One line. Nothing else goes in this block: login, URLs and traps stay in the project's own
+`CLAUDE.md` notes. It is not a `## Checks` line, because `build` and `submit` run every one of
+those as a command.
+
 ## 7. Report
 
 Keep it short, one shaped line per fact:
@@ -241,6 +283,8 @@ Keep it short, one shaped line per fact:
 ✓ **plans** github (labels devflow:plan, devflow:backlog exist)
 
 ✓ **workflow** direct (private, 1 collaborator, no CI)
+
+✓ **browser** playwright-cli 0.1.22 (UI repo)
 
 – **deploy** not written — that is ship's to add
 the first time it deploys and can prove the command works
@@ -294,8 +338,8 @@ the result — for example `✓ **checks** 3 of 3 pass, exit 0`.
 - Never write `Tracker: github` without that REST read having answered in this run.
 - Never overwrite an existing `## Workflow` block. Say what it says and keep it.
 - Never write `Mode:` as anything but `direct` or `pr`, and never write it without asking.
-- Never add anything to `CLAUDE.md` except the `## Checks`, `## Plans` and `## Workflow` blocks, and never a block you did not prove.
-- Never run an install. Step 8 offers `devflow:skills`, which only lists; the human installs.
+- Never add anything to `CLAUDE.md` except the `## Checks`, `## Plans`, `## Workflow` and, in a UI repo, `## Browser` blocks, and never a block you did not prove.
+- Never run an install, the browser driver's included: step 6a prints its command. Step 8 offers `devflow:skills`, which only lists; the human installs.
 
 ## Where the shape came from
 

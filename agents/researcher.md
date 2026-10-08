@@ -1,6 +1,6 @@
 ---
 name: researcher
-description: "Answers one open question for a Deep plan before its pieces are written - what the repo has now, how others solve it, what an API really does. Reads any source, returns a short list of findings, and every finding names its source: a file and line, or a URL. Never edits. Started by the flow skill during its rounds, or by the plan skill before its pieces, one per open question and at most 3 from each. The discuss skill may also start it when the human asks to discuss a design, at most 3 per discussion."
+description: "Answers one open question for a Deep plan before its pieces are written - what the repo has now, how others solve it, what an API really does. Reads any source, returns a short list of findings, and every finding names its source: a file and line, or a URL. Never edits. Started by the flow skill during its rounds, or by the plan skill before its pieces, one per open question and at most 3 from each. The discuss skill may also start it when the human asks to discuss a design, at most 3 per discussion. The setup skill may start one when the human asks it to research which browser driver fits, and only then."
 tools: Read, Grep, Glob, Bash, WebFetch, WebSearch
 model: sonnet
 effort: medium
@@ -15,11 +15,13 @@ you drop.
 
 ## What you were given
 
-- **One open question**, in the words `flow`, `plan` or `discuss` wrote it. `discuss` starts
-  at most 3 per discussion, apart from the 3 each that `flow` and `plan` may start. Answer
+- **One open question**, in the words `flow`, `plan`, `discuss` or `setup` wrote it. `discuss` starts
+  at most 3 per discussion, apart from the 3 each that `flow` and `plan` may start. `setup` starts one
+  only when the human asks it to research which browser driver fits. Answer
   that question, not the one next to it. Other questions have their own researcher.
 - **What is already known** — the request, the rounds of questions and the repo facts
-  `flow`, `plan` or `discuss` has, so you do not spend a search on what it can already say.
+  `flow`, `plan` or `discuss` has, or what the repo and machine already have when `setup`
+  starts you, so you do not spend a search on what it can already say.
 
 ## How to look
 

@@ -2517,7 +2517,7 @@ check("build: a detached HEAD is no branch, so it cuts one",
 # two spellings, which is the exact drift this list exists to catch.
 
 SHAPED_LABELS = {
-    "backlog", "branch", "chains", "checks", "chips", "cleaned", "commit",
+    "backlog", "branch", "browser", "chains", "checks", "chips", "cleaned", "commit",
     "conflict", "debug", "deploy", "docs", "done", "features", "glossary",
     "green", "handback", "issue", "landed", "lesson", "lint", "live", "look", "merge", "merged",
     "no-behaviour", "open", "opinion", "override", "parked", "piece",
@@ -6532,6 +6532,82 @@ check("docs/submit: says why the browser check exists, with sources",
       and "token-efficient" in docs_submit_text
       and "unconfirmed" in docs_submit_text,
       "docs/submit.md never explains browser-check.md with its sources")
+
+# -------------------- setup asks for a browser driver in a UI repo (#127)
+#
+# browser-check.md reads a `## Browser` block, so setup writes it: in a UI repo
+# only (the detection is the skills skill's, linked and not copied), one
+# question with Playwright CLI recommended, "Research which fits me" starting
+# one devflow:researcher, and Other for the human's own driver. A driver that is
+# not installed gets its install command printed and nothing installed, and no
+# block is written for a driver nobody ran. The rules that said setup writes
+# three blocks and nothing else now allow this one.
+
+_browser_at = setup_text.find("## 6a. ")
+_browser = setup_text[_browser_at:setup_text.find("\n## 7. ", _browser_at + 1)] if _browser_at >= 0 else ""
+_browser_flat = flat(_browser)
+
+check("setup: step 6a sits between the workflow question and the report",
+      setup_text.find("## 6. How do you work here?") < _browser_at
+      < setup_text.find("## 7. Report"),
+      f"{SETUP_PATH} has no '## 6a. ' between step 6 and step 7")
+
+check("setup: the driver question is for a UI repo only, by the skills skill's detection",
+      "](../skills/SKILL.md" in _browser
+      and "UI" in _browser
+      and "– **browser** skipped" in _browser
+      and "no UI" in _browser_flat,
+      f"{SETUP_PATH} step 6a never limits itself to a UI repo or links the detection")
+
+check("setup: the driver question has its three options",
+      "Playwright CLI (Recommended)" in _browser
+      and "Research which fits me" in _browser
+      and "Other" in _browser,
+      f"{SETUP_PATH} step 6a never lists Playwright CLI (Recommended), research and Other")
+
+check("setup: research starts one devflow:researcher, then recommends again",
+      "one `devflow:researcher`" in _browser_flat
+      and "recommend" in _browser_flat
+      and "only" in _browser_flat,
+      f"{SETUP_PATH} step 6a never starts one devflow:researcher for the research option")
+
+check("setup: the driver is proven with its version command",
+      "playwright-cli --version" in _browser,
+      f"{SETUP_PATH} step 6a never runs playwright-cli --version")
+
+check("setup: a driver that is not installed gets its command printed, not installed",
+      "npm install -g @playwright/cli@latest" in _browser
+      and "installs nothing" in _browser_flat,
+      f"{SETUP_PATH} step 6a never prints the install command and installs nothing")
+
+check("setup: the block is `## Browser` with one `- Driver:` line, written only once proven",
+      "## Browser" in _browser and "- Driver: " in _browser
+      and "no block" in _browser_flat.lower(),
+      f"{SETUP_PATH} step 6a never shows the ## Browser block or writes it only when proven")
+
+check("setup: the report has a browser line",
+      "**browser**" in section(setup_text, "## 7. Report"),
+      f"{SETUP_PATH} step 7 never reports the browser driver")
+
+check("setup: the rules allow the Browser block and still never run an install",
+      "`## Browser`" in section(setup_text, "## Rules")
+      and "`## Checks`, `## Plans` and `## Workflow` blocks" not in setup_text
+      and "Never run an install" in setup_text,
+      f"{SETUP_PATH} rules still say setup writes only Checks, Plans and Workflow")
+
+check("agents/researcher: setup is a starter, only when the human asks for research",
+      "setup" in researcher_fields.get("description", "")
+      and "setup" in flat(section(researcher_text, "## What you were given"))
+      and "only when the human asks" in researcher_body,
+      f"{RESEARCHER_PATH} never names setup as a starter, only on the human's ask")
+
+with open(os.path.join(REPO_ROOT, "docs", "setup.md"), encoding="utf-8") as fh:
+    docs_setup_browser = fh.read()
+check("docs/setup: says why setup asks for a browser driver",
+      "## Step 6a" in docs_setup_browser
+      and "`## Browser`" in docs_setup_browser
+      and "`## Checks`" in docs_setup_browser,
+      "docs/setup.md has no '## Step 6a' explaining the Browser block")
 
 # --------------------------------------------------------------------- report
 
