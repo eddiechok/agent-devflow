@@ -1,0 +1,42 @@
+schema_version: "1.1"
+name: project-danger-list
+description: A one-line change in a folder the project's own CLAUDE.md puts on its danger list is never sized Quick, and the size names that project item.
+tags: [sizing, flow, danger-list]
+
+context:
+  scaffold_script: ./scaffold.sh
+
+execution:
+  # One line, one file, no test breaks: Quick by every rule flow has, except
+  # the project's own danger list. Nothing on flow's fixed list matches, so
+  # only that list can make this anything heavier.
+  prompt: "/devflow:flow in src/shared/format.js, trim the spaces around the name"
+  max_turns: 8
+  timeout_seconds: 300
+  allowed_tools: [Bash, Read, Edit, Glob, Grep, Skill]
+
+runs: 3
+
+graders:
+  - type: regex
+    name: never-quick
+    target: said
+    pattern: "Quick\\s*[—–-]"
+    match: not_contains
+    weight: 3
+
+  - type: llm
+    name: names-the-project-item
+    focus: trace
+    criteria: >
+      The project's CLAUDE.md has its own "Danger list" section naming
+      src/shared/. PASS only if the assistant sizes the work above Quick and
+      says the reason is that project danger list -- src/shared/ being on it,
+      or being used by both the greeter and the badge. FAIL if it sized the
+      work Quick, or sized it heavier for some other reason, such as an item
+      on devflow's own list (a public API, for example) or general caution.
+    weight: 2
+
+expected_outcome: >
+  Sizes the work at least Standard and says the src/shared/ entry in the
+  project's own CLAUDE.md danger list is what forced it.
