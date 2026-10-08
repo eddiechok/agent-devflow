@@ -4315,7 +4315,7 @@ SKILL_SIZE_CAP = 500
 # together; these keep each reference reachable, keep the no-behaviour path
 # in SKILL.md itself, and hold the two skills to the size that saves.
 
-SLIM_CAPS = {"submit": 311, "review": 130}
+SLIM_CAPS = {"submit": 317, "review": 130}
 
 # Which step reads each reference. A link anywhere in SKILL.md is not enough:
 # the step that needs the text has to be the one that sends the run there.
@@ -6727,6 +6727,100 @@ check("docs/flow: says why flow asks the browser driver",
 check("docs/setup: says why there is a session option",
       "Use whatever the session has" in docs_setup_browser,
       "docs/setup.md never explains the 'Use whatever the session has' option")
+
+# ------------------------------------- keep the dev server after the live check
+#
+# Slow apps (several servers, a database, a heavy backend) cost minutes to
+# start, so the live check can leave its server up for the human to click
+# through. It is a per-project line, `- Servers: keep`, and everything about
+# it is best effort: the docs promise nothing about a session closing. The
+# list of kept servers is one local file, never the repo. Shared spec: a
+# server is stopped only when its PID still leads its own process group AND
+# still runs the recorded command.
+
+lc_flat = flat(live_check_text)
+sub_flat = flat(submit_text)
+# `section` stops at the first `## ` line, and step 8's PR template has several
+# of its own, so step 8 is cut by hand, from its heading to step 9's.
+sub_step8 = submit_text[submit_text.find("## 8. "):submit_text.find("## 9. ")]
+SERVERS_LIST = "~/.claude/devflow/servers.tsv"
+
+check("live-check: keeps a server only on `- Servers: keep` in `## Workflow`",
+      "`- Servers: keep`" in lc_flat and "## Workflow" in lc_flat
+      and re.search(r"[Nn]o `Servers` line[^.]*stop", lc_flat) is not None,
+      f"{LIVE_CHECK_PATH} never ties keeping the server to - Servers: keep, "
+      f"or never says no line means stop")
+
+check("live-check: keep never applies in a cloud session",
+      '[ "$CLAUDE_CODE_REMOTE" = "true" ]' in live_check_text
+      and re.search(r"cloud[^.]*always stop", lc_flat) is not None,
+      f"{LIVE_CHECK_PATH} never checks CLAUDE_CODE_REMOTE or says a cloud "
+      f"session always stops its server")
+
+check("live-check: a sweeper always stops, whatever the setting",
+      re.search(r"[Ss]weeper[^.]*always stop", lc_flat) is not None,
+      f"{LIVE_CHECK_PATH} never says a sweeper always stops its server")
+
+check("live-check: starts detached in its own process group, log outside the repo",
+      "(set -m; nohup" in live_check_text
+      and "</dev/null" in live_check_text
+      and "echo $!" in live_check_text
+      and re.search(r"log[^.]*temp(orary)? directory[^.]*never the repo", lc_flat)
+      is not None,
+      f"{LIVE_CHECK_PATH} never gives the detached start or its log outside the repo")
+
+check("live-check: reads the printed port, never picks or assumes one",
+      re.search(r"never (pick|choose)[^.]*port", lc_flat, re.I) is not None
+      and re.search(r"printed", lc_flat) is not None
+      and re.search(r"never assume", lc_flat, re.I) is not None,
+      f"{LIVE_CHECK_PATH} never says to read the port the server printed")
+
+check("live-check: the list is one local file, with the fields in the spec",
+      SERVERS_LIST in live_check_text
+      and "never in the repo" in lc_flat
+      and all(f in live_check_text for f in
+              ("repo", "branch", "pr", "ports", "pid", "started", "command"))
+      and "`-`" in live_check_text,
+      f"{LIVE_CHECK_PATH} never names {SERVERS_LIST} and its seven fields")
+
+check("live-check: 'still ours' is the PID's group and its command, both",
+      "ps -o pgid= -p" in live_check_text
+      and "ps -o command= -p" in live_check_text
+      and "kill -TERM -- -" in live_check_text
+      and re.search(r"[Bb]oth[^.]*not ours", lc_flat) is not None,
+      f"{LIVE_CHECK_PATH} never checks group and command before a kill")
+
+check("live-check: ports all taken stops and names the kept servers, never kills",
+      re.search(r"taken[^.]*stop", lc_flat) is not None
+      and "kept servers" in lc_flat
+      and re.search(r"never kill", lc_flat) is not None,
+      f"{LIVE_CHECK_PATH} never says what happens when the ports are all taken")
+
+check("live-check: the PR section carries URLs, PID, start command and stop command",
+      "## Running" in live_check_text
+      and "Stop it: `kill -TERM -- -" in live_check_text
+      and "Not running? Start it again with" in live_check_text
+      and "PID" in live_check_text,
+      f"{LIVE_CHECK_PATH} never gives the ## Running section its lines")
+
+check("submit: the PR template has a ## Running section, only when a server was kept",
+      "## Running" in sub_step8
+      and re.search(r"only when[^.]*kept", sub_flat) is not None,
+      f"{SUBMIT_PATH} step 8 template has no ## Running section")
+
+check("submit: How to check says a kept server is still up",
+      re.search(r"still up", flat(sub_step8)) is not None,
+      f"{SUBMIT_PATH} step 8 never says a kept server is still up")
+
+check("submit: step 8 writes the PR number into the list line",
+      "servers.tsv" in sub_step8 and "PR number" in sub_step8,
+      f"{SUBMIT_PATH} step 8 never writes the PR number into the list line")
+
+check("agents/sweeper: always stops its server, whatever the setting",
+      re.search(r"always stop[^.]*server|server[^.]*always stop", sweeper_body)
+      is not None
+      and "Servers" in sweeper_body and "live-check.md" in sweeper_body,
+      f"{SWEEPER_PATH} never says a sweeper always stops its server")
 
 # --------------------------------------------------------------------- report
 
