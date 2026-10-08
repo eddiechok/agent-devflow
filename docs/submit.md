@@ -87,6 +87,18 @@ What other tools do, read for this:
 
 An honest failure is useful. A green-looking PR over a broken feature is harmful.
 
+### Why the server can stay up after the live check
+
+The live check used to stop its server every time. For an app that starts in seconds that is right. For one that starts slowly (several servers, a database, a heavy backend such as Medusa), the human then waits through the same start to click through the PR. So the project can say `- Servers: keep` in `## Workflow`, and the live check leaves the server up. `- Servers: stop`, or no `Servers` line, is today's behaviour: stop. The setting is per project because only the project knows how slow its start is, and `setup` recommends one from the start command and asks.
+
+**Keep is best effort, and nothing here promises more.** The docs say a background command from the Bash tool keeps running after the turn in an interactive session, with no time limit locally ([when a background command stops](https://code.claude.com/docs/en/tools-reference#when-a-background-command-stops), [the time limit](https://code.claude.com/docs/en/tools-reference#time-limit-for-background-commands)). With `-p`, background commands end shortly after the final result ([headless](https://code.claude.com/docs/en/headless#background-tasks-at-exit)). The docs do not say what happens at session close. Issues disagree: background processes are reported as not cleaned up on exit and reparented to PID 1 ([#43944](https://github.com/anthropics/claude-code/issues/43944), closed not planned); others report a SIGHUP kill at about five minutes on macOS, including with `nohup` and `run_in_background`, and a subshell that survived: `(nohup bash -c '…' </dev/null >/dev/null 2>&1 &)` ([#96255](https://github.com/anthropics/claude-code/issues/96255)). `setsid nohup` is reported immune ([#84625](https://github.com/anthropics/claude-code/issues/84625)), but macOS has no `setsid` by default. So the start is `(set -m; nohup <command> </dev/null >"<log>" 2>&1 & echo $!)`: job control gives the job a process group whose id is its PID, which is what lets the whole group be stopped later, and `nohup` plus closed stdin detach it. It is the shape that survived in the reports, not a guarantee.
+
+Because it can die, the PR body always carries the way back. A kept server adds a `## Running` section: the live URLs, the PID, when it started, the exact start command, and the command to stop it. "Not running? Start it again with `<command>`" is there for the day it is gone. A run that kept nothing has no such section.
+
+**devflow never picks a port.** A port chosen by devflow would collide with whatever the human already runs, and would be wrong for an app that picks its own. The live check reads the port the server printed (a lane banner, for one) and records that. When every port or lane is taken, the live check stops and names the kept servers for this repo, with their stop commands, from `~/.claude/devflow/servers.tsv`. It never kills them itself.
+
+The list is one local file, one tab-separated line per kept server: repo, branch, PR, ports, PID, start time, command. It sits in `~/.claude/devflow/`, where devflow kept its older `overrides.md`, and never in the repo. `ship` and the ports-full message read this file, not GitHub. `submit` writes the PR number into the line at step 8, once the PR exists. In a cloud session keep never applies, and a sweeper always stops: see [web.md](web.md#a-kept-server-never-applies-in-a-cloud-session) and [sweep.md](sweep.md).
+
 ## Step 5 — the review
 
 It pins the range, finds the plan or issue if there is one, and runs both axes in fresh agents, plus `security-reviewer` when the danger list names a security item.

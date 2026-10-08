@@ -7097,6 +7097,73 @@ check("flow: SKILL.md stays at or under 500 lines with the Servers lines",
       len(flow_text.splitlines()) <= 500,
       f"{FLOW_PATH} is {len(flow_text.splitlines())} lines, cap is 500")
 
+# ------------------------------------------- docs: the kept dev server (#133)
+# Chain A built the behaviour; the docs say why. Each doc has one section for
+# it, found by heading, so a line elsewhere in the file cannot satisfy a pin.
+
+def _doc133(name):
+    with open(os.path.join(REPO_ROOT, "docs", name), encoding="utf-8") as fh:
+        return fh.read()
+
+_d_submit = _doc_section(_doc133("submit.md"), "### Why the server can stay up")
+_d_ship = _doc_section(_doc133("ship.md"), "### Why a kept server is checked")
+_d_setup = _doc_section(_doc133("setup.md"), "## Step 6b")
+_d_flow = _doc_section(_doc133("flow.md"), "### Servers")
+_d_sweep = _doc_section(_doc133("sweep.md"), "## Why a sweeper always stops")
+_d_web = _doc_section(_doc133("web.md"), "## A kept server")
+
+check("docs/submit: keep is per project, best effort, and promises nothing at close",
+      "- Servers: keep" in _d_submit and "best effort" in _d_submit
+      and re.search(r"no `Servers` line[^.]*stop", _d_submit) is not None
+      and "session close" in _d_submit and "servers.tsv" in _d_submit,
+      "docs/submit.md has no '### Why the server can stay up' saying keep is "
+      "best effort")
+
+check("docs/submit: cites the docs and the three issues, and the macOS setsid gap",
+      "code.claude.com/docs/en/tools-reference" in _d_submit
+      and "code.claude.com/docs/en/headless" in _d_submit
+      and all(f"claude-code/issues/{n}" in _d_submit for n in ("43944", "96255", "84625"))
+      and "setsid" in _d_submit and "set -m" in _d_submit,
+      "docs/submit.md never cites the sources for keeping a server up")
+
+check("docs/submit: says why the PR carries the start command, and the port is read",
+      "## Running" in _d_submit and "start command" in _d_submit
+      and re.search(r"never picks a port", _d_submit) is not None,
+      "docs/submit.md never says why the PR records the start command or why "
+      "devflow never picks a port")
+
+check("docs/ship: a kept server is stopped only after the group and command check",
+      "ps -o pgid=" in _d_ship and "ps -o command=" in _d_ship
+      and "PID" in _d_ship and "reuse" in _d_ship
+      and "stale" in _d_ship and "never anything else" in _d_ship,
+      "docs/ship.md has no '### Why a kept server is checked' saying why")
+
+check("docs/setup: step 6b says why it asks, and credits bykare's dev.sh as the human's own",
+      "keep" in _d_setup and "stop" in _d_setup
+      and "bykare-medusa-admin" in _d_setup and "scripts/dev.sh" in _d_setup
+      and "the human's own" in _d_setup and "lane" in _d_setup
+      and "writes nothing" in _d_setup,
+      "docs/setup.md has no '## Step 6b' crediting scripts/dev.sh")
+
+check("docs/flow: asks once, names leftovers on a yes, and states the cost rule",
+      "once" in _d_flow and "Kept servers: none" in _d_flow
+      and "one REST call" in _d_flow and "local file" in _d_flow
+      and re.search(r"only on the human's yes", _d_flow) is not None
+      and "merged or closed" in _d_flow,
+      "docs/flow.md has no '### Servers' saying ask once, leftovers and cost")
+
+check("docs/sweep: a sweeper always stops its server, and says why",
+      "always stops" in _d_sweep and "whatever the setting" in _d_sweep
+      and "four" in _d_sweep.lower() and "lanes" in _d_sweep,
+      "docs/sweep.md has no '## Why a sweeper always stops' with the reason")
+
+check("docs/web: keep never applies in a cloud session, and why",
+      "CLAUDE_CODE_REMOTE" in _d_web and "localhost" in _d_web
+      and "code.claude.com/docs/en/env-vars" in _d_web
+      and "code.claude.com/docs/en/cloud-environments" in _d_web
+      and re.search(r"always stops", _d_web) is not None,
+      "docs/web.md has no '## A kept server' about cloud sessions")
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")

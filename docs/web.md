@@ -97,4 +97,8 @@ registries and GitHub, and nothing else. So a deploy command fails on policy rat
 on code. A `Verify:` URL against your own domain fails the same way. Merge from the web if
 you like. Run `ship` from your machine.
 
-Nothing here detects the harness. Every rule holds true in both places.
+Nothing here detects the harness, except the one check below. Every other rule holds true in both places.
+
+## A kept server never applies in a cloud session
+
+`- Servers: keep` makes the live check leave its server running so the human can click through the PR. In a cloud session that would keep a server nobody can reach: the sandbox's `localhost` is the sandbox's, and no documented port forwarding or preview URL lets the human's browser reach it ([env vars](https://code.claude.com/docs/en/env-vars), [cloud environments](https://code.claude.com/docs/en/cloud-environments)). So in a cloud session the live check always stops its server, whatever `Servers` says. It tells the two apart with `[ "$CLAUDE_CODE_REMOTE" = "true" ]`: that variable is `true` in a cloud session and is never true locally. The PR's `## Running` section is written only for a server that was kept, so a cloud PR has none.
