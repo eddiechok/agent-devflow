@@ -158,6 +158,12 @@ So `git branch -d` refuses, and for a while this step forbade `-D` outright, bec
 
 The hunch was the problem, not the delete. The forge records the exact commit it merged, `headRefOid`. A local branch whose tip is that commit, or behind it — a commit added on GitHub never reached the local branch — holds nothing the merge did not carry, so deleting it loses nothing; a tip that differs has a commit that never reached the PR, and that one is still kept and handed over. The session's own worktree branch gets the same kind of proof from its reflog: `flow` opens it and `build` never commits there, so a tip still at the commit it was created from is empty.
 
+### Why a kept server is checked before it is stopped
+
+`submit` can leave a dev server up and record it in `~/.claude/devflow/servers.tsv`. Step 6 stops it, from the line for this PR's branch, and the line comes off the list whatever happens. A PID is only a number. By the time `ship` runs, the server may have died and the number been handed to an unrelated process, and a `kill` on it would stop someone else's work. So the PID is stopped only when it is still ours, which needs both: `ps -o pgid= -p <pid>` prints `<pid>` (the job still leads the process group `submit` made for it), and `ps -o command= -p <pid>` contains the first word of the recorded command. PID reuse can fake one of these and is very unlikely to fake both.
+
+When both hold: `kill -TERM -- -<pid>`. The minus sign sends it to the whole group, because a dev server is pnpm, turbo, vite and a backend, and stopping only the parent leaves the children holding the ports. When either fails, nothing is killed: the server died or the PID was reused, so the line comes off as stale and the cleaned line says so. It is never anything else that gets stopped: `ship` stops a server it can name from that line and does not hunt for processes that look like dev servers. The older rule stays for the rest: stop only the dev servers this session started.
+
 ## Direct mode
 
 A project that works `direct` commits on main and pushes, so the work this session did has
