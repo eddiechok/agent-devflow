@@ -6137,10 +6137,10 @@ check("flow/look: a Rules line keeps it off Quick and out of the repo",
       and "never write a variant into the repo" in flow_skill_flat,
       f"{FLOW_PATH} has no Rules line for the look question")
 
-check("flow/look: lines 337 and 341 did not move (evals/README.md cites them)",
-      flow_text.splitlines()[336] == "Quick \u2014 single-file copy change."
-      and flow_text.splitlines()[340] == "Deep \u2014 new subsystem, touches auth (danger list).",
-      f"{FLOW_PATH} lines 337 and 341 are no longer the two size-line examples")
+check("flow/look: lines 335 and 339 did not move (evals/README.md cites them)",
+      flow_text.splitlines()[334] == "Quick \u2014 single-file copy change."
+      and flow_text.splitlines()[338] == "Deep \u2014 new subsystem, touches auth (danger list).",
+      f"{FLOW_PATH} lines 335 and 339 are no longer the two size-line examples")
 
 check("flow/look: the reference exists",
       look_text != "",
@@ -6927,6 +6927,175 @@ check("setup: the rules allow the Servers line, and the old 'only Mode' wording 
       "- Servers:" in section(setup_text, "## Rules")
       and "Nothing else goes in this block. No block" not in setup_text,
       f"{SETUP_PATH} still says the Workflow block holds Mode and About only")
+
+# ------------------- flow asks the Servers question once, and names leftovers
+#
+# The Context `!` commands run when the skill loads, so they cost no turn. The
+# `Kept servers` one reads only the local list (~/.claude/devflow/servers.tsv)
+# and calls GitHub, one REST call per listed server, only when the list has a
+# line for this repo. With none, the model sees one short line. These pins RUN
+# the command, in a scratch repo with a scratch HOME and a stand-in `gh`.
+
+SERVERS_REF_PATH = os.path.join(SKILLS_DIR, "flow", "references", "servers-setting.md")
+servers_ref_text = ""
+if os.path.exists(SERVERS_REF_PATH):
+    with open(SERVERS_REF_PATH, encoding="utf-8") as fh:
+        servers_ref_text = fh.read()
+servers_ref_flat = flat(servers_ref_text)
+flow_ctx = section(flow_text, "## Context")
+
+
+def context_command(label):
+    m = re.search(r"^- " + re.escape(label) + r": !`(.*)`$", flow_ctx, re.M)
+    return m.group(1) if m else None
+
+
+def run_context(cmd, home, repo, extra_path=None):
+    env = dict(os.environ, HOME=home)
+    if extra_path:
+        env["PATH"] = extra_path + os.pathsep + env["PATH"]
+    done = subprocess.run(["bash", "-c", cmd], cwd=repo, env=env,
+                          capture_output=True, text=True)
+    return done.returncode, done.stdout.strip()
+
+
+kept_cmd = context_command("Kept servers")
+servers_cmd = context_command("Servers")
+check("flow: Context has a Kept servers line and a Servers line",
+      kept_cmd is not None and servers_cmd is not None,
+      f"{FLOW_PATH} Context has no '- Kept servers: !`...`' or '- Servers: !`...`' line")
+
+with tempfile.TemporaryDirectory() as _scratch:
+    _scratch = os.path.realpath(_scratch)
+    _home = os.path.join(_scratch, "home")
+    _repo = os.path.join(_scratch, "repo")
+    _bin = os.path.join(_scratch, "bin")
+    for _d in (_home, _repo, _bin):
+        os.makedirs(_d)
+    subprocess.run(["git", "init", "-q", _repo], capture_output=True)
+    _gh_log = os.path.join(_scratch, "gh-calls")
+    with open(os.path.join(_bin, "gh"), "w") as fh:
+        fh.write('#!/bin/sh\necho "$@" >> "%s"\n'
+                 'case "$*" in *pulls/12*) echo merged;; *pulls/13*) echo open;; '
+                 '*) echo closed;; esac\n' % _gh_log)
+    os.chmod(os.path.join(_bin, "gh"), 0o755)
+    _list_dir = os.path.join(_home, ".claude", "devflow")
+
+    if kept_cmd:
+        code, out = run_context(kept_cmd, _home, _repo, _bin)
+        check("flow: no list at all prints `none`, and never calls gh",
+              code == 0 and out == "none" and not os.path.exists(_gh_log),
+              f"Kept servers printed {out!r} (exit {code}), gh called: "
+              f"{os.path.exists(_gh_log)}")
+
+        os.makedirs(_list_dir)
+        with open(os.path.join(_list_dir, "servers.tsv"), "w") as fh:
+            fh.write("\t".join(["/some/other/repo", "feat/x", "5", "3000", "999",
+                                "2026-10-08T14:02", "npm run dev"]) + "\n")
+        code, out = run_context(kept_cmd, _home, _repo, _bin)
+        check("flow: a list with only other repos' lines prints `none`, no gh call",
+              code == 0 and out == "none" and not os.path.exists(_gh_log),
+              f"Kept servers printed {out!r}, gh called: {os.path.exists(_gh_log)}")
+
+        with open(os.path.join(_list_dir, "servers.tsv"), "a") as fh:
+            fh.write("\t".join([_repo, "feat/a", "12", "5174,9001", "4821",
+                                "2026-10-08T14:02", "pnpm dev"]) + "\n")
+            fh.write("\t".join([_repo, "feat/b", "-", "5175", "4822",
+                                "2026-10-08T14:03", "pnpm dev"]) + "\n")
+        code, out = run_context(kept_cmd, _home, _repo, _bin)
+        calls = open(_gh_log).read().splitlines() if os.path.exists(_gh_log) else []
+        check("flow: a kept server of this repo is named with its PR state and PID",
+              code == 0 and "merged" in out and "4821" in out
+              and "feat/a" in out and "pnpm dev" in out
+              and "/some/other/repo" not in out and "999" not in out,
+              f"Kept servers printed {out!r}")
+        check("flow: one gh call for a listed PR, none for a server with no PR yet",
+              len(calls) == 1 and "pulls/12" in calls[0],
+              f"gh was called {calls!r}")
+
+    if servers_cmd:
+        code, out = run_context(servers_cmd, _home, _repo)
+        check("flow: no Servers line prints `none` with the start hints it found",
+              code == 0 and out.startswith("none"), f"printed {out!r}")
+        with open(os.path.join(_repo, "package.json"), "w") as fh:
+            fh.write('{"scripts": {"dev": "vite"}}\n')
+        code, out = run_context(servers_cmd, _home, _repo)
+        check("flow: a package.json dev script is a start hint",
+              code == 0 and out.startswith("none") and "dev" in out,
+              f"printed {out!r}")
+        with open(os.path.join(_repo, "CLAUDE.md"), "w") as fh:
+            fh.write("## Workflow\n- Mode: pr\n- Servers: keep\n")
+        code, out = run_context(servers_cmd, _home, _repo)
+        check("flow: a Servers line prints its value and no hints",
+              code == 0 and out == "keep", f"printed {out!r}")
+
+check("flow: the Kept servers command reads the list before it ever calls gh",
+      kept_cmd is not None and "servers.tsv" in kept_cmd
+      and kept_cmd.count("gh api") == 1
+      and kept_cmd.index("gh api") > kept_cmd.index("servers.tsv"),
+      f"{FLOW_PATH} Kept servers command does not read the list before gh")
+
+_before0 = flat(section(flow_text, "## Before step 0"))
+check("flow: Before step 0 sends both Context lines to the reference, after step 0c",
+      "servers-setting.md" in _before0 and "after step 0c" in _before0
+      and "Kept servers" in _before0 and "`Servers`" in _before0,
+      f"{FLOW_PATH} never sends the Servers lines to servers-setting.md")
+
+check("flow: step 5 writes a held Servers answer, like the Browser one",
+      "servers-setting.md" in section(flow_text, "## Step 5")
+      and "Servers" in section(flow_text, "## Step 5"),
+      f"{FLOW_PATH} step 5 never writes the held Servers answer")
+
+check("flow/servers-setting: the reference exists",
+      servers_ref_text != "", f"{SERVERS_REF_PATH} does not exist")
+
+check("flow/servers-setting: asks once through setup's step 6b, alone",
+      "../../setup/SKILL.md#6b-keep-the-dev-server-running" in servers_ref_text
+      and "alone" in servers_ref_flat,
+      f"{SERVERS_REF_PATH} never runs setup's step 6b alone")
+
+check("flow/servers-setting: held after the ask, written at step 5 into ## Workflow",
+      re.search(r"[Hh]old the answer", servers_ref_flat) is not None
+      and "step 5" in servers_ref_flat and "## Workflow" in servers_ref_text
+      and "after step 0c" in servers_ref_flat,
+      f"{SERVERS_REF_PATH} never holds the answer for step 5")
+
+check("flow/servers-setting: only a repo whose live check starts a server, once",
+      re.search(r"starts a server", servers_ref_flat) is not None
+      and "print nothing" in servers_ref_flat and "once" in servers_ref_flat,
+      f"{SERVERS_REF_PATH} never limits the question to a repo that starts a server")
+
+check("flow/servers-setting: never asked in submit, and not twice when setup ran",
+      "submit" in servers_ref_flat
+      and re.search(r"setup ran[^.]*this run", servers_ref_flat) is not None,
+      f"{SERVERS_REF_PATH} never keeps the question out of submit or out of a setup run")
+
+check("flow/servers-setting: a leftover is a kept server whose PR is merged or closed",
+      re.search(r"merged or closed", servers_ref_flat) is not None
+      and "stop command" in servers_ref_flat and "kill -TERM -- -" in servers_ref_text,
+      f"{SERVERS_REF_PATH} never names a leftover with its stop command")
+
+check("flow/servers-setting: a leftover is stopped only on the human's yes",
+      re.search(r"only on the human's yes", servers_ref_flat) is not None
+      and re.search(r"never[^.]*without (the human's|a) yes", servers_ref_flat, re.I)
+      is not None,
+      f"{SERVERS_REF_PATH} never makes a stop wait for a yes")
+
+check("flow/servers-setting: stopping checks the PID is still ours, both group and command",
+      "ps -o pgid= -p" in servers_ref_text and "ps -o command= -p" in servers_ref_text
+      and re.search(r"[Bb]oth[^.]*not ours", servers_ref_flat) is not None
+      and "stale" in servers_ref_flat,
+      f"{SERVERS_REF_PATH} never checks the PID before a kill")
+
+check("flow/servers-setting: the cost rule is stated",
+      "local file" in servers_ref_flat
+      and "one REST call per" in servers_ref_flat
+      and "Kept servers: none" in servers_ref_text,
+      f"{SERVERS_REF_PATH} never states what the Context line costs")
+
+check("flow: SKILL.md stays at or under 500 lines with the Servers lines",
+      len(flow_text.splitlines()) <= 500,
+      f"{FLOW_PATH} is {len(flow_text.splitlines())} lines, cap is 500")
 
 # --------------------------------------------------------------------- report
 

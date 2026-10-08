@@ -20,14 +20,12 @@ rule looks wrong.
 - Commits ahead of origin/HEAD: !`git rev-list --count origin/HEAD..HEAD 2>/dev/null || echo "unknown — origin/HEAD is not set"`
 - Plans on disk: !`ls .devflow/plans 2>/dev/null || echo none`
 - Browser block: !`grep -q '^## Browser' CLAUDE.md 2>/dev/null && echo set || echo "none; UI hints: $( (git ls-files 'tailwind.config.*' 'components/ui/*' '*.html' '*.jsx' '*.tsx' '*.vue' '*.svelte' '*.erb' '*.ejs' 2>/dev/null | head -2; grep -oE '"(react|preact|vue|svelte|solid-js|astro|next|nuxt|@angular/core|react-native|expo|electron|@tauri-apps/api)"' package.json 2>/dev/null) | head -3 | tr '\n' ' ')"`
+- Servers: !`S=$(sed -n 's/^- Servers: *//p' CLAUDE.md 2>/dev/null | head -1); if [ -n "$S" ]; then echo "$S"; else echo "none; start hints: $( (ls Procfile docker-compose.yml compose.yaml 2>/dev/null; grep -oE '"(dev|start)":' package.json 2>/dev/null) | head -3 | tr '\n' ' ')"; fi`
+- Kept servers: !`R=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)"); K=$(awk -F'\t' -v r="$R" '$1==r' "$HOME/.claude/devflow/servers.tsv" 2>/dev/null); if [ -z "$K" ]; then echo none; else echo "$K" | while IFS="$(printf '\t')" read -r _ b n p pid _ c; do if [ "$n" = - ]; then s="no PR yet"; else s=$(gh api "repos/{owner}/{repo}/pulls/$n" --jq 'if .merged_at then "merged" else .state end' 2>/dev/null || echo unknown); fi; echo "[$b #$n $s, pid $pid, ports $p, start: $c]"; done; fi`
 
 ## Before step 0 — is this project set up?
 
-Read `CLAUDE.md` for a `## Workflow` block. **None means not set up**: call `devflow:setup`,
-then carry on with the request. `Mode: direct` means read
-[references/direct.md](references/direct.md) now; it says which steps below change. `Mode: pr`
-changes nothing. **`Browser block` says `none` and names UI hints** — a UI repo with no `## Browser`
-block → after step 0c, before step 1, read [references/browser-driver.md](references/browser-driver.md).
+Read `CLAUDE.md` for a `## Workflow` block. **None means not set up**: call `devflow:setup`, then carry on with the request. `Mode: direct` means read [references/direct.md](references/direct.md) now; it says which steps below change. `Mode: pr` changes nothing. Then, after step 0c and before step 1, read the reference a Context line asks for: [browser-driver.md](references/browser-driver.md) when `Browser block` says `none` and names UI hints (a UI repo with no `## Browser` block); [servers-setting.md](references/servers-setting.md) when `Servers` says `none` and names start hints, or `Kept servers` names a server.
 
 ## Step 0 — is this a follow-up?
 
@@ -452,7 +450,7 @@ Anything the human does not answer takes the recommendation, and **goes into the
 
 ## Step 5 — submit it
 
-When `build` comes back — or the last builder's report, on a Deep job — call `devflow:submit` yourself, in the same turn. Write a held `## Browser` answer first ([references/browser-driver.md](references/browser-driver.md)).
+When `build` comes back — or the last builder's report, on a Deep job — call `devflow:submit` yourself, in the same turn. Write a held `## Browser` or `Servers` answer first ([browser-driver.md](references/browser-driver.md), [servers-setting.md](references/servers-setting.md)).
 
 **Hand it the request, word for word.** The text from step 1, or the issue body, goes to
 `submit` as `request: <text>`, on every size. On Deep the plan is the fuller spec and
@@ -461,9 +459,7 @@ When `build` comes back — or the last builder's report, on a Deep job — call
 Each kept tracker action goes too, one `tracker: <action>` line each, before the `request:` line.
 In direct mode `start:` and `size:` go too, and `mode: pr` on an override: references/direct.md.
 
-Do not stop at "ready for a PR" and hand it back.
-
-The only reasons not to call `submit` are a build that did not reach green (say what is red
+Do not stop at "ready for a PR" and hand it back. The only reasons not to call `submit` are a build that did not reach green (say what is red
 and stop) and the human saying not to. Both are said out loud, never in silence.
 
 ## Output
