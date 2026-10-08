@@ -2522,7 +2522,7 @@ SHAPED_LABELS = {
     "green", "handback", "issue", "landed", "lesson", "lint", "live", "look", "merge", "merged",
     "no-behaviour", "open", "opinion", "override", "parked", "piece",
     "pieces", "plan", "plans", "pr", "pushed", "red", "repo", "research", "retargeted", "review",
-    "see", "session", "settings", "skills", "stuck", "tended", "test", "theirs", "todo",
+    "see", "servers", "session", "settings", "skills", "stuck", "tended", "test", "theirs", "todo",
     "typecheck", "ux", "variants",
     "worktree", "workflow", "yours",
 }
@@ -6861,6 +6861,72 @@ check("ship: the cleaned line names a stopped or stale kept server",
 check("ship: still stops only servers it was told about, never what is on a port",
       "Never kill" in ship_servers and "port 3000" in ship_servers,
       f"{SHIP_PATH} step 6 lost the never-kill-a-port rule")
+
+# --------------------------------- setup asks keep or stop, and lanes (chain A)
+#
+# `- Servers: keep` or `- Servers: stop` goes in `## Workflow`, but only in a
+# repo whose live check starts a server. setup reads the start command: a slow
+# start (several servers, a database, a heavy backend) recommends keep, a start
+# in seconds recommends stop. A start command that binds one fixed port gets a
+# lane-script recommendation (printed, nothing written), after the human's own
+# bykare-medusa-admin scripts/dev.sh.
+
+_servers_at = setup_text.find("## 6b. ")
+_servers = setup_text[_servers_at:setup_text.find("\n## 7. ", _servers_at + 1)] if _servers_at >= 0 else ""
+_servers_flat = flat(_servers)
+
+check("setup: step 6b sits after the browser step and before the report",
+      setup_text.find("## 6a. ") < _servers_at < setup_text.find("## 7. Report"),
+      f"{SETUP_PATH} has no '## 6b. ' between step 6a and step 7")
+
+check("setup: the Servers question is only for a repo whose live check starts a server",
+      "– **servers** skipped" in _servers
+      and re.search(r"starts a server", _servers_flat) is not None
+      and re.search(r"nothing (to start|starts)", _servers_flat) is not None,
+      f"{SETUP_PATH} step 6b never limits itself to a repo that starts a server")
+
+check("setup: one keep-or-stop question, a recommended option first",
+      "Keep the server running" in _servers and "Stop the server" in _servers
+      and "(Recommended)" in _servers,
+      f"{SETUP_PATH} step 6b never lists Keep and Stop options with a recommended one")
+check("setup: slow start (several servers, a database, a heavy backend) means keep",
+      "several servers" in _servers_flat and "database" in _servers_flat
+      and "heavy backend" in _servers_flat and "seconds" in _servers_flat
+      and re.search(r"keep", _servers_flat) is not None
+      and re.search(r"stop", _servers_flat) is not None,
+      f"{SETUP_PATH} step 6b never says what makes a start slow or fast")
+
+check("setup: the answer is written as `- Servers: keep|stop` in `## Workflow`",
+      "- Servers: keep" in _servers and "- Servers: stop" in _servers
+      and "## Workflow" in _servers,
+      f"{SETUP_PATH} step 6b never writes the Servers line into ## Workflow")
+
+check("setup: keep applies in a local session only, said in the question",
+      re.search(r"cloud", _servers_flat) is not None
+      and re.search(r"always stop", _servers_flat) is not None,
+      f"{SETUP_PATH} step 6b never says a cloud session always stops")
+
+check("setup: a fixed port gets a lane-script recommendation, and nothing is written",
+      re.search(r"one fixed port", _servers_flat) is not None
+      and "lane" in _servers_flat
+      and "lowest free lane" in _servers_flat
+      and re.search(r"every port[^.]*together", _servers_flat) is not None
+      and re.search(r"CORS|allowed origins", _servers_flat) is not None
+      and re.search(r"writes? nothing", _servers_flat) is not None,
+      f"{SETUP_PATH} step 6b never recommends a lane script for a fixed port")
+
+check("setup: the lane pattern is credited to bykare-medusa-admin's scripts/dev.sh",
+      "bykare-medusa-admin" in _servers and "scripts/dev.sh" in _servers,
+      f"{SETUP_PATH} step 6b never credits the human's own scripts/dev.sh")
+
+check("setup: the report has a servers line",
+      "**servers**" in section(setup_text, "## 7. Report"),
+      f"{SETUP_PATH} step 7 never reports the Servers answer")
+
+check("setup: the rules allow the Servers line, and the old 'only Mode' wording is gone",
+      "- Servers:" in section(setup_text, "## Rules")
+      and "Nothing else goes in this block. No block" not in setup_text,
+      f"{SETUP_PATH} still says the Workflow block holds Mode and About only")
 
 # --------------------------------------------------------------------- report
 
