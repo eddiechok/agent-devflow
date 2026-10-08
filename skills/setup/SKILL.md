@@ -300,6 +300,56 @@ lowest free lane, every port the app uses moves together, and the CORS or allowe
 list names every lane. The human's own `scripts/dev.sh` in bykare-medusa-admin is the
 pattern. Then the live check reads the port the server printed, and never assumes one.
 
+## 6c. Env files in every worktree
+
+devflow makes many worktrees: `flow`'s step 0c, one per plan chain, one per sweeper. A
+gitignored env file such as `.env` never reaches a new one, so a test that needs the database,
+or a live check that starts the server, fails there for a reason the change did not cause.
+Claude Code copies what a `.worktreeinclude` at the repo root names into every worktree it
+makes with git: `claude --worktree`, the `EnterWorktree` tool, agents with `isolation: worktree`
+and the desktop app's sessions ([Worktrees](https://code.claude.com/docs/en/worktrees#copy-gitignored-files-into-worktrees)).
+It copies; it does not link.
+
+When a `.worktreeinclude` is already there, keep it and say how many paths it lists:
+`– **env** kept — .worktreeinclude lists 2 paths`.
+
+Otherwise read the paths with `flow`'s `Env files` Context line, without its `head -20`: each
+file or link named `.env*` in the main checkout, outside `node_modules`, `vendor`, `.venv` and
+other worktrees, that git ignores. Never a `.env.example`, `.env.sample` or
+`.env.template`: those are templates. None found → `– **env** skipped — no ignored env files`,
+and write nothing.
+
+**Paths only.** Never open, print or quote an env file — not in a question, a log, the PR or a
+commit. Its path is all this step reads.
+
+Ask one question, in the popup style of step 6, with the paths in its text:
+
+1. **Copy these env files into every worktree Claude Code makes?**
+   - Copy all of them (Recommended) — tests and the live check then work in a worktree as they
+     do in the main checkout.
+   - Never copy — for env files that hold keys an agent should not carry around.
+   - Other — the human names the paths to copy.
+
+Write `.worktreeinclude` at the repo root. It is committed, so the question comes once. Give
+each path a leading `/`: in its `.gitignore` syntax a name with no slash matches at any depth,
+so `.env` alone would copy `apps/api/.env` too.
+
+```
+# Copied into every worktree Claude Code makes. Paths only, never values.
+/.env
+/apps/api/.env
+```
+
+"Never copy" writes the file with one comment line, so it is not asked again:
+
+```
+# devflow: no env files are copied into worktrees.
+```
+
+Claude Code reads the file in the main checkout, so it takes effect once it is merged and
+pulled there. A copy is made when the worktree is, so a value changed later does not reach a
+worktree that already exists.
+
 ## 7. Report
 
 Keep it short, one shaped line per fact:
@@ -320,6 +370,8 @@ Keep it short, one shaped line per fact:
 ✓ **browser** playwright-cli 0.1.22 (UI repo)
 
 ✓ **servers** keep (Medusa and a database start slowly)
+
+✓ **env** .worktreeinclude lists 2 env files
 
 – **deploy** not written — that is ship's to add
 the first time it deploys and can prove the command works
@@ -374,6 +426,7 @@ the result — for example `✓ **checks** 3 of 3 pass, exit 0`.
 - Never overwrite an existing `## Workflow` block. Say what it says and keep it.
 - Never write `Mode:` as anything but `direct` or `pr`, and never write it without asking.
 - Never add anything to `CLAUDE.md` except the `## Checks`, `## Plans`, `## Workflow` (with its `- Servers:` line, step 6b) and, in a UI repo, `## Browser` blocks, and never a block you did not prove. `- Driver: session` names no driver, so it has nothing to prove.
+- Never print, quote or commit a value from an env file. Step 6c reads paths only, and writes them to `.worktreeinclude`.
 - Never run an install, the browser driver's included: step 6a prints its command. Step 8 offers `devflow:skills`, which only lists; the human installs.
 
 ## Where the shape came from
