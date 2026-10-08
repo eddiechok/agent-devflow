@@ -19,13 +19,15 @@ rule looks wrong.
 - Status: !`git status --short 2>/dev/null | head -20 || true`
 - Commits ahead of origin/HEAD: !`git rev-list --count origin/HEAD..HEAD 2>/dev/null || echo "unknown — origin/HEAD is not set"`
 - Plans on disk: !`ls .devflow/plans 2>/dev/null || echo none`
+- Browser block: !`grep -q '^## Browser' CLAUDE.md 2>/dev/null && echo set || echo "none; UI hints: $( (git ls-files 'tailwind.config.*' 'components/ui/*' '*.html' '*.jsx' '*.tsx' '*.vue' '*.svelte' '*.erb' '*.ejs' 2>/dev/null | head -2; grep -oE '"(react|preact|vue|svelte|solid-js|astro|next|nuxt|@angular/core|react-native|expo|electron|@tauri-apps/api)"' package.json 2>/dev/null) | head -3 | tr '\n' ' ')"`
 
 ## Before step 0 — is this project set up?
 
 Read `CLAUDE.md` for a `## Workflow` block. **None means not set up**: call `devflow:setup`,
 then carry on with the request. `Mode: direct` means read
 [references/direct.md](references/direct.md) now; it says which steps below change. `Mode: pr`
-changes nothing.
+changes nothing. **`Browser block` says `none` and names UI hints** — a UI repo with no `## Browser`
+block → after step 0c, before step 1, read [references/browser-driver.md](references/browser-driver.md).
 
 ## Step 0 — is this a follow-up?
 
@@ -87,8 +89,7 @@ you are resuming, not starting.**
 **A project whose `## Plans` block says `github` keeps them as issues too.** Look there
 as well — but only when `Commits ahead` is anything other than `0`, **including `unknown`**,
 the same test step 0 uses. A fresh Deep job has no pieces committed and nothing to resume,
-and step 0 already refuses the network for a `0`. Ask through whatever GitHub access this
-environment has:
+and step 0 already refuses the network for a `0`. Ask through any GitHub access you have:
 
 ```
 gh api 'repos/{owner}/{repo}/issues?labels=devflow:plan&state=open' --jq '.[] | select(.pull_request | not) | {number, title}'
@@ -271,8 +272,7 @@ already shape.
 **When the request is one feature, skip this step entirely** — no line, no question, go
 straight to step 2. Only a request that genuinely names more than one prints anything here.
 
-When it names more than one, say so first, so this step never opens with a bare question
-either:
+When it names more than one, say so first, so this step never opens with a bare question:
 
 ```
 ✓ **features** N found — one per run
@@ -452,7 +452,7 @@ Anything the human does not answer takes the recommendation, and **goes into the
 
 ## Step 5 — submit it
 
-When `build` comes back — or the last builder's report, on a Deep job — call `devflow:submit` yourself, in the same turn.
+When `build` comes back — or the last builder's report, on a Deep job — call `devflow:submit` yourself, in the same turn. Write a held `## Browser` answer first ([references/browser-driver.md](references/browser-driver.md)).
 
 **Hand it the request, word for word.** The text from step 1, or the issue body, goes to
 `submit` as `request: <text>`, on every size. On Deep the plan is the fuller spec and

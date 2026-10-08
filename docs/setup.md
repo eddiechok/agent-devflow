@@ -74,6 +74,8 @@ It is asked in a UI repo only, by the skills skill's own read of one (react-nati
 
 The driver is proven before the block is written, for the same reason every check command is: a block nobody ran is a claim, and `submit` would trust it. A driver that is not installed gets its install command printed and is not installed, since setup installs nothing (step 8 makes the same offer and leaves the install to the human). That meant changing two rules that said setup writes the Checks, Plans and Workflow blocks and nothing else: they now allow this one block, in a UI repo, once it is proven.
 
+"Use whatever the session has" came with #129, when `flow` started asking this question in projects set up before step 6a existed ([browser-driver.md](../skills/flow/references/browser-driver.md)). A project with no block is asked on every run, so "no preference" has to be an answer that is written down too: `- Driver: session`, which needs no proof because it names no driver, and which the browser check reads as "use the session's own". A driver that is not installed is the one answer that writes nothing, on purpose. Writing it would break the rule that every block was proven, so `flow` asks again on its next run, until the human installs it.
+
 ## Why the `disable-model-invocation` flag came off
 
 `flow` runs `setup` first when `CLAUDE.md` has no `## Workflow` block. A skill with

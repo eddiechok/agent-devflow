@@ -242,6 +242,8 @@ Otherwise ask one question, in the popup style of step 6:
      this machine already have: the UI dependencies, any `playwright.config.*`, which browser
      CLIs are on the PATH and the browser tools this session has. Then recommend again, with
      what it found, and without this option. Start it only when the human picks this option.
+   - Use whatever the session has — no preference. It writes `- Driver: session` and needs no
+     proof, so the question is not asked again.
    - Other — the human types their own driver.
 
 **Prove the driver runs.** For Playwright CLI that is `playwright-cli --version`, bare. For
@@ -254,7 +256,8 @@ MCP server or the desktop browser pane, is proven by that tool being in the sess
 npm install -g @playwright/cli@latest
 ```
 
-Write no block for a driver that did not run. The human installs it and runs setup again.
+Write no block for a driver that did not run. The human installs it, and `flow` asks again on
+its next run ([browser-driver.md](../flow/references/browser-driver.md)).
 
 Proven → write the block, exactly this shape, to the project's `CLAUDE.md`:
 
@@ -338,7 +341,7 @@ the result — for example `✓ **checks** 3 of 3 pass, exit 0`.
 - Never write `Tracker: github` without that REST read having answered in this run.
 - Never overwrite an existing `## Workflow` block. Say what it says and keep it.
 - Never write `Mode:` as anything but `direct` or `pr`, and never write it without asking.
-- Never add anything to `CLAUDE.md` except the `## Checks`, `## Plans`, `## Workflow` and, in a UI repo, `## Browser` blocks, and never a block you did not prove.
+- Never add anything to `CLAUDE.md` except the `## Checks`, `## Plans`, `## Workflow` and, in a UI repo, `## Browser` blocks, and never a block you did not prove. `- Driver: session` names no driver, so it has nothing to prove.
 - Never run an install, the browser driver's included: step 6a prints its command. Step 8 offers `devflow:skills`, which only lists; the human installs.
 
 ## Where the shape came from

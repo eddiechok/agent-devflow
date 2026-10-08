@@ -1601,6 +1601,11 @@ if os.path.isfile(_lq_scaffold):
                    "public/greetings.json" in _tracked
                    and '"name"' in _lread("public", "greetings.json"))
         check("look-question: it starts on main", _lgit("rev-parse", "--abbrev-ref", "HEAD"), "main")
+        # A UI repo with no `## Browser` block gets flow's driver question
+        # before the size (#129), and its answer edits CLAUDE.md, which the
+        # no-edit graders would count. The block is here so they grade the look.
+        check_true("look-question: CLAUDE.md has a ## Browser block, so flow asks no driver question",
+                   "## Browser\n- Driver: session" in _lread("CLAUDE.md"))
         check("look-question: it starts with a clean tree", _lgit("status", "--porcelain"), "")
         check("look-question: the work is pushed, so main has nothing ahead",
               _lgit("rev-list", "--count", "origin/main..main"), "0")
@@ -1757,8 +1762,10 @@ if os.path.isfile(_ue_scaffold):
         _umd = _uread("CLAUDE.md")
         check_true("ui-empty-state: CLAUDE.md says how to get the list empty",
                    "ORDERS_FILE=data/empty.json" in _umd)
-        check_true("ui-empty-state: CLAUDE.md has no ## Browser block, so the session's driver is used",
-                   "## Browser" not in _umd)
+        # A UI repo with no `## Browser` block gets flow's driver question
+        # first (#129). The block is here so this case grades the live check.
+        check_true("ui-empty-state: CLAUDE.md says Driver: session, so the session's driver is used",
+                   "## Browser\n- Driver: session" in _umd)
         check_true("ui-empty-state: the seeded orders are not empty",
                    '"id"' in _uread("data", "orders.json"))
         check("ui-empty-state: the empty data file is an empty list",

@@ -6616,6 +6616,118 @@ check("docs/setup: says why setup asks for a browser driver",
       and "`## Checks`" in docs_setup_browser,
       "docs/setup.md has no '## Step 6a' explaining the Browser block")
 
+# ------------------- flow asks the driver once, in a project set up before (#129)
+#
+# setup's step 1 sends a project that already has `## Workflow` past step 6, so
+# step 6a never ran for one set up before it existed. flow asks it instead, at
+# the start of the run where the human is at the keyboard, never in submit. The
+# answer is always written, "use whatever the session has" included, so the
+# question comes once; only a driver that is not installed is asked again.
+
+FLOW_BROWSER_PATH = os.path.join(SKILLS_DIR, "flow", "references", "browser-driver.md")
+flow_browser_text = ""
+if os.path.isfile(FLOW_BROWSER_PATH):
+    with open(FLOW_BROWSER_PATH, encoding="utf-8") as fh:
+        flow_browser_text = fh.read()
+flow_browser_flat = flat(flow_browser_text)
+
+check("flow: before step 0, no `## Browser` block sends the run to browser-driver.md",
+      "](references/browser-driver.md)" in section(flow_text, "## Before step 0")
+      and "`## Browser`" in section(flow_text, "## Before step 0"),
+      f"{FLOW_PATH} never checks for a ## Browser block before step 0")
+
+# Review of #129: written before step 0c, the block dirtied a folder step 0c
+# reads as clean and stayed behind when the run moved to a worktree. And every
+# repo with no UI paid a read on every run. So the Context line looks for the
+# block and for UI files at load, for free, and the question waits for step 0c.
+check("flow: a Context line looks for the Browser block and UI files at load",
+      "- Browser block: !`" in section(flow_text, "## Context")
+      and "^## Browser" in section(flow_text, "## Context")
+      and "UI hints" in section(flow_text, "## Context"),
+      f"{FLOW_PATH} has no Context line for the Browser block and UI hints")
+
+# Round 2 of #129's review: root-only hints missed UI code in a subfolder
+# (apps/web/) or in templates. git ls-files looks through the whole repo.
+check("flow: the UI hints look for UI files anywhere in the repo, not only at the root",
+      "git ls-files" in section(flow_text, "## Context")
+      and "'*.tsx'" in section(flow_text, "## Context")
+      and "'*.html'" in section(flow_text, "## Context"),
+      f"{FLOW_PATH} UI hints look only at the repo root")
+
+# Round 2 again: zsh aborts a command on a glob that matches nothing, so
+# `ls -d tailwind.config.*` lost every file hint. Quoted pathspecs never glob.
+check("flow: the UI hints use no shell glob, so zsh cannot abort them",
+      "ls -d" not in section(flow_text, "## Context")
+      and "'tailwind.config.*'" in section(flow_text, "## Context"),
+      f"{FLOW_PATH} UI hints still use a shell glob")
+
+# And a block written before `build` cuts its branch blocks the cut when
+# CLAUDE.md differs on the default branch. So it is held, and written at
+# step 5, once the run stands on the job's branch.
+check("flow: a held `## Browser` answer is written at step 5, before submit",
+      "browser-driver.md" in section(flow_text, "## Step 5")
+      and "step 5" in flow_browser_flat
+      and re.search(r"[Hh]old the answer", flow_browser_flat) is not None,
+      f"{FLOW_PATH} or {FLOW_BROWSER_PATH} writes the block before the branch is cut")
+
+check("flow: the driver question waits until after step 0c",
+      "after step 0c" in flat(section(flow_text, "## Before step 0"))
+      and "after step 0c" in flow_browser_flat
+      and "step 1" in flow_browser_flat,
+      f"{FLOW_PATH} or {FLOW_BROWSER_PATH} asks the driver before step 0c settles the folder")
+
+check("setup: the rules name `- Driver: session` as the block with nothing to prove",
+      "- Driver: session" in section(setup_text, "## Rules"),
+      f"{SETUP_PATH} rules still forbid every unproven block, Driver: session included")
+
+check("flow/browser-driver: a UI repo, by the skills skill's step 3a read",
+      "../../skills/SKILL.md#3a-a-repo-with-a-ui" in flow_browser_text
+      and "UI" in flow_browser_text,
+      f"{FLOW_BROWSER_PATH} never limits the question to a UI repo by skills step 3a")
+
+check("flow/browser-driver: no UI prints nothing and goes on",
+      re.search(r"[Nn]o UI[^.]*print nothing", flow_browser_flat) is not None,
+      f"{FLOW_BROWSER_PATH} never says a repo with no UI prints nothing")
+
+check("flow/browser-driver: runs setup's step 6a alone, not the rest of setup",
+      "../../setup/SKILL.md#6a-a-browser-driver-in-a-ui-repo" in flow_browser_text
+      and "alone" in flow_browser_flat,
+      f"{FLOW_BROWSER_PATH} never runs setup's step 6a alone")
+
+check("flow/browser-driver: not asked twice when setup ran this run",
+      re.search(r"setup ran[^.]*this run", flow_browser_flat) is not None,
+      f"{FLOW_BROWSER_PATH} never skips the question when setup already asked it this run")
+
+check("flow/browser-driver: a driver not installed is asked again next run",
+      "not installed" in flow_browser_flat and "next run" in flow_browser_flat,
+      f"{FLOW_BROWSER_PATH} never says a missing driver is asked again next run")
+
+check("flow/browser-driver: the question is never asked in submit",
+      "submit" in flow_browser_flat and "never" in flow_browser_flat,
+      f"{FLOW_BROWSER_PATH} never says the question stays out of submit")
+
+check("setup: step 6a offers 'Use whatever the session has', written as `- Driver: session`",
+      "Use whatever the session has" in _browser
+      and "- Driver: session" in _browser,
+      f"{SETUP_PATH} step 6a has no session option writing - Driver: session")
+
+check("setup: a driver not installed is asked again on flow's next run",
+      "flow" in _browser_flat and "next run" in _browser_flat
+      and "runs setup again" not in _browser_flat,
+      f"{SETUP_PATH} step 6a still says the human runs setup again")
+
+check("browser-check: `- Driver: session` means the session's own driver",
+      "`- Driver: session`" in browser_check_text,
+      f"{BROWSER_CHECK_PATH} never reads - Driver: session")
+
+check("docs/flow: says why flow asks the browser driver",
+      "browser-driver.md" in docs_flow_text and "`## Browser`" in docs_flow_text,
+      "docs/flow.md never explains why flow asks for the browser driver")
+
+check("docs/setup: says why there is a session option",
+      "Use whatever the session has" in docs_setup_browser,
+      "docs/setup.md never explains the 'Use whatever the session has' option")
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")

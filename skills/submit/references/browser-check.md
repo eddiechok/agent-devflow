@@ -9,7 +9,8 @@ decides what counts.
 One driver for the whole check. Mixing two wastes tokens and loses the login.
 
 1. **The project's `## Browser` block.** If the project's CLAUDE.md has one, its `- Driver:`
-   line names the driver. Use it when this session has it.
+   line names the driver. Use it when this session has it. `- Driver: session` names none:
+   the human chose no preference, so go to 2.
 2. **Otherwise the session's own driver.** With no `## Browser` block, or a named driver this
    session lacks, use whatever browser driver the session has.
 3. **Say which one you used, by name**, in the live line: `playwright-cli`, `agent-browser`, a

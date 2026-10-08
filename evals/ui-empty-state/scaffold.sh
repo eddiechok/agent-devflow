@@ -78,9 +78,13 @@ test("lists each order", () => {
 JS
 
 # Worded the way a real repo writes it: the login, URLs and traps of a project
-# live in its own CLAUDE.md, and there is no `## Browser` block, so the check
-# has to use whatever driver the session has.
+# live in its own CLAUDE.md. `- Driver: session` means the check uses whatever
+# driver the session has; with no `## Browser` block at all, flow would ask the
+# driver question first (#129) and this case would grade that instead.
 cat >> CLAUDE.md <<'MD'
+
+## Browser
+- Driver: session
 
 ## Running the app
 
