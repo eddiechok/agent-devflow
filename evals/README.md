@@ -1,6 +1,6 @@
 # evals
 
-Twenty cases. Run them before you push a change to a skill. Three are manual, see below.
+Twenty-one cases. Run them before you push a change to a skill. Three are manual, see below.
 
 ## Which runner
 
@@ -30,8 +30,8 @@ python3 evals/run.py --case sizing-* --runs 1
 python3 evals/run.py --dry-run                # parse and print, run nothing
 ```
 
-It scores **94 of the 108 graders** — every `regex`, `tool_used`, `tool_order`
-and `file_exists`. The fourteen `llm` graders come back `skip`, stay out of the
+It scores **95 of the 110 graders** — every `regex`, `tool_used`, `tool_order`
+and `file_exists`. The fifteen `llm` graders come back `skip`, stay out of the
 denominator, and are counted in the summary. **A skip is never a pass**, the
 same way `NOT RUN` is never `none`.
 
@@ -81,6 +81,7 @@ run may read the very line it looks for.
 | `sizing-standard` | low | Borderline work gets sized by coin flip, so Quick skips the questions |
 | `sizing-deep` | low | A new subsystem gets built with no plan and no questions |
 | `danger-list` | low | Secrets work slips through at Quick with nobody told |
+| `project-danger-list` | low | A change in a folder the project's own CLAUDE.md calls dangerous slips through at Quick, because only `flow`'s fixed list is read |
 | `bug-routes-to-debug` | low | A bug only running can show — the code reads as correct — gets planned across many files instead of routed through `devflow:debug` |
 | `bug-routes-to-build` | low | A bug the request already points at takes the `devflow:debug` detour it does not need, instead of going straight to `devflow:build` |
 | `auto-trigger` | low | Work never reaches `flow` at all, so nothing ever ships |
@@ -155,15 +156,15 @@ graders find the repo by its temp folder name, `devflow-eval-*`, which is `run.p
 `mkdtemp` prefix; `claude plugin eval` names its workspace differently, so there they
 pass for the wrong reason. A variant file in `mktemp`'s own folder is not a failure.
 
-`sizing-quick`, `sizing-standard`, `sizing-deep` and `danger-list` are the
-classifier, which is the part of `flow` most likely to
+`sizing-quick`, `sizing-standard`, `sizing-deep`, `danger-list` and
+`project-danger-list` are the classifier, which is the part of `flow` most likely to
 drift and the only part with correction data behind it, recorded through
 `devflow:lesson` into the lessons repo. They cut themselves off after a
 handful of turns — the size announcement is all they measure, and letting the
 work run would multiply the cost for no extra signal.
 
 `sizing-standard` is the odd one out and worth understanding before you trust a
-green run from it. The other three use requests nobody would argue about, which
+green run from it. The other four use requests nobody would argue about, which
 is what makes them stable — and blind to the middle. This one deliberately uses
 a borderline request, the same prompt `full-loop` builds, because that is where
 the classifier actually slips: over six observed runs of that prompt, five came
