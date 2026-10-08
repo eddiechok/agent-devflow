@@ -2517,7 +2517,7 @@ check("build: a detached HEAD is no branch, so it cuts one",
 # two spellings, which is the exact drift this list exists to catch.
 
 SHAPED_LABELS = {
-    "backlog", "branch", "chains", "checks", "chips", "cleaned", "commit",
+    "backlog", "branch", "browser", "chains", "checks", "chips", "cleaned", "commit",
     "conflict", "debug", "deploy", "docs", "done", "features", "glossary",
     "green", "handback", "issue", "landed", "lesson", "lint", "live", "look", "merge", "merged",
     "no-behaviour", "open", "opinion", "override", "parked", "piece",
@@ -4322,6 +4322,8 @@ SLIM_CAPS = {"submit": 311, "review": 130}
 REFERENCE_STEPS = {
     "submit": {
         "live-check.md": ["## 4. "],
+        # read from live-check.md for a UI change, not from a step of SKILL.md
+        "browser-check.md": [],
         "findings.md": ["## 5. "],
         "lessons.md": ["## 6. "],
         "look.md": ["## 7. "],
@@ -6444,6 +6446,168 @@ check("bare paths: no skill or agent names a skill's file by a bare skills/ path
       not _bare_hits,
       "a bare path only resolves inside agent-devflow; link it relative to the file: "
       + "; ".join(_bare_hits))
+
+# ------------------ the browser check for a UI change, in the live check (#127)
+#
+# live-check.md asked for first-hand proof of a UI change ("the page text
+# showing the new label") and said nothing about driving a browser, so each run
+# improvised one: a full-page dump into context, one width, no look at the
+# empty or error state the change really affects. browser-check.md holds the
+# five checks once. It is driver-agnostic (the project's `## Browser` block if
+# the session has that driver, else the session's own, said by name, else
+# today's proof) and it runs for any UI change at any size, Quick included.
+
+BROWSER_CHECK_PATH = os.path.join(SKILLS_DIR, "submit", "references", "browser-check.md")
+LIVE_CHECK_PATH = os.path.join(SKILLS_DIR, "submit", "references", "live-check.md")
+browser_check_text = ""
+if os.path.exists(BROWSER_CHECK_PATH):
+    with open(BROWSER_CHECK_PATH, encoding="utf-8") as fh:
+        browser_check_text = fh.read()
+with open(LIVE_CHECK_PATH, encoding="utf-8") as fh:
+    live_check_text = fh.read()
+browser_flat = flat(browser_check_text)
+browser_lower = browser_flat.lower()
+
+check("browser-check: the reference exists",
+      browser_check_text != "", f"{BROWSER_CHECK_PATH} does not exist")
+
+check("browser-check: live-check.md sends any UI change there, at any size",
+      "](browser-check.md)" in live_check_text
+      and "UI change" in flat(live_check_text)
+      and "any size" in flat(live_check_text)
+      and "Quick" in live_check_text,
+      f"{LIVE_CHECK_PATH} never links browser-check.md for a UI change of any size")
+
+for needle, what in (
+        ("log in once", "log in once"),
+        ("keep the cookie", "keep the cookie"),
+        ("exact state", "make the exact state the change affects"),
+        ("empty", "the empty state"),
+        ("error", "the error state"),
+        ("loading", "the loading state"),
+        ("desktop", "a desktop width"),
+        ("mobile", "a mobile width"),
+        ("console", "a clean console"),
+        ("temp", "screenshots to a temp dir"),
+        ("full-page", "no full-page dumps")):
+    check(f"browser-check: the five checks name {what}",
+          needle in browser_lower,
+          f"{BROWSER_CHECK_PATH} never names {what!r}")
+
+check("browser-check: screenshots stay out of context",
+      re.search(r"[Nn]ever[^.]*(into|in) (your |the )?context", browser_flat) is not None,
+      f"{BROWSER_CHECK_PATH} never says screenshots stay out of context")
+
+check("browser-check: the driver is the `## Browser` block's, else the session's, said by name",
+      "`## Browser`" in browser_check_text
+      and "- Driver:" in browser_check_text
+      and "session" in browser_flat
+      and "by name" in browser_flat,
+      f"{BROWSER_CHECK_PATH} never states the driver order or says which driver ran")
+
+check("browser-check: works with no `## Browser` block",
+      re.search(r"no `## Browser` block", browser_flat) is not None,
+      f"{BROWSER_CHECK_PATH} never says what happens with no `## Browser` block")
+
+check("browser-check: no driver says so and falls back to today's proof",
+      "no driver at all" in browser_lower
+      and "live-check.md" in browser_check_text
+      and "first-hand" in browser_flat,
+      f"{BROWSER_CHECK_PATH} never says no driver falls back to first-hand proof")
+
+check("browser-check: login uses only test credentials from the project's own files",
+      "test credentials" in browser_flat
+      and re.search(r"[Nn]ever ask[^.]*real", browser_flat) is not None,
+      f"{BROWSER_CHECK_PATH} never limits login to test credentials")
+
+check("browser-check: project facts stay in the project's CLAUDE.md",
+      "CLAUDE.md" in browser_check_text,
+      f"{BROWSER_CHECK_PATH} never sends login, URLs and traps to CLAUDE.md")
+
+check("docs/submit: says why the browser check exists, with sources",
+      "browser-check.md" in docs_submit_text
+      and "browser-self-qa" in docs_submit_text
+      and "verify-work" in docs_submit_text
+      and "20k+" in docs_submit_text
+      and "token-efficient" in docs_submit_text
+      and "unconfirmed" in docs_submit_text,
+      "docs/submit.md never explains browser-check.md with its sources")
+
+# -------------------- setup asks for a browser driver in a UI repo (#127)
+#
+# browser-check.md reads a `## Browser` block, so setup writes it: in a UI repo
+# only (the detection is the skills skill's, linked and not copied), one
+# question with Playwright CLI recommended, "Research which fits me" starting
+# one devflow:researcher, and Other for the human's own driver. A driver that is
+# not installed gets its install command printed and nothing installed, and no
+# block is written for a driver nobody ran. The rules that said setup writes
+# three blocks and nothing else now allow this one.
+
+_browser_at = setup_text.find("## 6a. ")
+_browser = setup_text[_browser_at:setup_text.find("\n## 7. ", _browser_at + 1)] if _browser_at >= 0 else ""
+_browser_flat = flat(_browser)
+
+check("setup: step 6a sits between the workflow question and the report",
+      setup_text.find("## 6. How do you work here?") < _browser_at
+      < setup_text.find("## 7. Report"),
+      f"{SETUP_PATH} has no '## 6a. ' between step 6 and step 7")
+
+check("setup: the driver question is for a UI repo only, by the skills skill's detection",
+      "](../skills/SKILL.md" in _browser
+      and "UI" in _browser
+      and "– **browser** skipped" in _browser
+      and "no UI" in _browser_flat,
+      f"{SETUP_PATH} step 6a never limits itself to a UI repo or links the detection")
+
+check("setup: the driver question has its three options",
+      "Playwright CLI (Recommended)" in _browser
+      and "Research which fits me" in _browser
+      and "Other" in _browser,
+      f"{SETUP_PATH} step 6a never lists Playwright CLI (Recommended), research and Other")
+
+check("setup: research starts one devflow:researcher, then recommends again",
+      "one `devflow:researcher`" in _browser_flat
+      and "recommend" in _browser_flat
+      and "only" in _browser_flat,
+      f"{SETUP_PATH} step 6a never starts one devflow:researcher for the research option")
+
+check("setup: the driver is proven with its version command",
+      "playwright-cli --version" in _browser,
+      f"{SETUP_PATH} step 6a never runs playwright-cli --version")
+
+check("setup: a driver that is not installed gets its command printed, not installed",
+      "npm install -g @playwright/cli@latest" in _browser
+      and "installs nothing" in _browser_flat,
+      f"{SETUP_PATH} step 6a never prints the install command and installs nothing")
+
+check("setup: the block is `## Browser` with one `- Driver:` line, written only once proven",
+      "## Browser" in _browser and "- Driver: " in _browser
+      and "no block" in _browser_flat.lower(),
+      f"{SETUP_PATH} step 6a never shows the ## Browser block or writes it only when proven")
+
+check("setup: the report has a browser line",
+      "**browser**" in section(setup_text, "## 7. Report"),
+      f"{SETUP_PATH} step 7 never reports the browser driver")
+
+check("setup: the rules allow the Browser block and still never run an install",
+      "`## Browser`" in section(setup_text, "## Rules")
+      and "`## Checks`, `## Plans` and `## Workflow` blocks" not in setup_text
+      and "Never run an install" in setup_text,
+      f"{SETUP_PATH} rules still say setup writes only Checks, Plans and Workflow")
+
+check("agents/researcher: setup is a starter, only when the human asks for research",
+      "setup" in researcher_fields.get("description", "")
+      and "setup" in flat(section(researcher_text, "## What you were given"))
+      and "only when the human asks" in researcher_body,
+      f"{RESEARCHER_PATH} never names setup as a starter, only on the human's ask")
+
+with open(os.path.join(REPO_ROOT, "docs", "setup.md"), encoding="utf-8") as fh:
+    docs_setup_browser = fh.read()
+check("docs/setup: says why setup asks for a browser driver",
+      "## Step 6a" in docs_setup_browser
+      and "`## Browser`" in docs_setup_browser
+      and "`## Checks`" in docs_setup_browser,
+      "docs/setup.md has no '## Step 6a' explaining the Browser block")
 
 # --------------------------------------------------------------------- report
 
