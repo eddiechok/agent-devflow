@@ -2518,7 +2518,7 @@ check("build: a detached HEAD is no branch, so it cuts one",
 
 SHAPED_LABELS = {
     "backlog", "branch", "browser", "chains", "checks", "chips", "cleaned", "commit",
-    "conflict", "debug", "deploy", "docs", "done", "features", "glossary",
+    "conflict", "debug", "deploy", "docs", "done", "env", "features", "glossary",
     "green", "handback", "issue", "landed", "lesson", "lint", "live", "look", "merge", "merged",
     "no-behaviour", "open", "opinion", "override", "parked", "piece",
     "pieces", "plan", "plans", "pr", "pushed", "red", "repo", "research", "retargeted", "review",
@@ -7358,6 +7358,160 @@ check("docs/skills: says why skills finds them and writes the one line",
 check("count-waste: reads the Project review line of Worst of each",
       "Project review" in _cw136,
       "count-waste.py's WORST_RE never reads the Project review line")
+# ------------------------- env files reach every worktree devflow makes (#135)
+#
+# A gitignored `.env` never reaches a new worktree, and devflow makes many:
+# flow's step 0c, one per plan chain, one per sweeper. Claude Code copies what a
+# committed `.worktreeinclude` names into every worktree it makes with git
+# (https://code.claude.com/docs/en/worktrees#copy-gitignored-files-into-worktrees),
+# so setup offers to write one, and flow asks once in a project set up before.
+# The paths are all anyone reads: no value from an env file is ever printed.
+
+_env_at = setup_text.find("## 6c. ")
+_env = setup_text[_env_at:setup_text.find("\n## 7. ", _env_at + 1)] if _env_at >= 0 else ""
+_env_flat = flat(_env)
+
+check("setup: step 6c sits after the servers step and before the report",
+      setup_text.find("## 6b. ") < _env_at < setup_text.find("## 7. Report"),
+      f"{SETUP_PATH} has no '## 6c. ' between step 6b and step 7")
+
+check("setup: step 6c writes .worktreeinclude, which Claude Code copies from",
+      ".worktreeinclude" in _env
+      and "code.claude.com/docs/en/worktrees" in _env
+      and re.search(r"copies", _env_flat) is not None
+      and "isolation: worktree" in _env_flat and "EnterWorktree" in _env_flat,
+      f"{SETUP_PATH} step 6c never says .worktreeinclude copies into every worktree")
+
+check("setup: step 6c reads paths only, never a value",
+      re.search(r"[Pp]aths only", _env_flat) is not None
+      and re.search(r"[Nn]ever open, print or quote an env file", _env_flat) is not None,
+      f"{SETUP_PATH} step 6c never forbids printing an env file's value")
+
+check("setup: step 6c never offers .env.example",
+      "`.env.example`" in _env,
+      f"{SETUP_PATH} step 6c never leaves out .env.example")
+
+check("setup: step 6c keeps an existing .worktreeinclude",
+      "– **env** kept" in _env,
+      f"{SETUP_PATH} step 6c never keeps an existing .worktreeinclude")
+
+check("setup: step 6c asks first, all recommended, never copy offered",
+      "Copy all of them (Recommended)" in _env and "Never copy" in _env,
+      f"{SETUP_PATH} step 6c never asks with Copy all and Never copy options")
+
+check("setup: each path is anchored with a leading slash",
+      "\n/.env\n" in _env and re.search(r"leading `/`", _env_flat) is not None,
+      f"{SETUP_PATH} step 6c never anchors paths, so .env would match at any depth")
+
+check("setup: a no writes a comment-only file, so the question comes once",
+      "# devflow: no env files are copied into worktrees." in _env,
+      f"{SETUP_PATH} step 6c never records a no")
+
+check("setup: the report has an env line",
+      "**env**" in section(setup_text, "## 7. Report"),
+      f"{SETUP_PATH} step 7 never reports the env files answer")
+
+check("setup: a rule forbids an env file's value anywhere",
+      re.search(r"[Nn]ever print[^.\n]*env file", section(setup_text, "## Rules")) is not None,
+      f"{SETUP_PATH} Rules never forbid printing an env file's value")
+
+ENV_REF_PATH = os.path.join(SKILLS_DIR, "flow", "references", "worktree-env.md")
+env_ref_text = ""
+if os.path.exists(ENV_REF_PATH):
+    with open(ENV_REF_PATH, encoding="utf-8") as fh:
+        env_ref_text = fh.read()
+env_ref_flat = flat(env_ref_text)
+
+check("flow: worktree-env.md asks after step 0c, writes at step 5, follows setup's 6c",
+      "after step 0c" in env_ref_flat and "step 5" in env_ref_flat
+      and "6c-env-files-in-every-worktree" in env_ref_text
+      and re.search(r"[Ii]f setup ran this run", env_ref_flat) is not None,
+      f"{ENV_REF_PATH} is missing, or never says when it asks and writes")
+
+_before0 = flat(section(flow_text, "## Before step 0"))
+check("flow: Before step 0 sends the Env files line to worktree-env.md",
+      "worktree-env.md" in _before0 and "`Env files`" in _before0,
+      f"{FLOW_PATH} Before step 0 never reads worktree-env.md")
+
+check("flow: step 5 writes a held .worktreeinclude before submit",
+      ".worktreeinclude" in section(flow_text, "## Step 5"),
+      f"{FLOW_PATH} step 5 never writes the held .worktreeinclude")
+
+env_cmd = context_command("Env files")
+check("flow: Context has an Env files line", env_cmd is not None,
+      f"{FLOW_PATH} Context has no '- Env files: !`...`' line")
+
+if env_cmd:
+    with tempfile.TemporaryDirectory() as _scratch:
+        _scratch = os.path.realpath(_scratch)
+        _main = os.path.join(_scratch, "main")
+        _wt = os.path.join(_main, ".claude", "worktrees", "wt")
+        _git = lambda *a, cwd=_main: subprocess.run(
+            ["git", *a], cwd=cwd, capture_output=True, text=True)
+        os.makedirs(_main)
+        _git("init", "-q")
+        with open(os.path.join(_main, ".gitignore"), "w") as fh:
+            fh.write(".env\n.env.*\n.envrc\n!.env.example\nnode_modules/\n.claude/\n")
+        _git("add", ".gitignore")
+        _git("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "init")
+
+        code, out = run_context(env_cmd, _scratch, _main)
+        check("flow: no env files prints `none` alone",
+              code == 0 and out == "none", f"printed {out!r} (exit {code})")
+
+        _secret = "SECRET-VALUE-135"
+        for rel in (".env.development", "apps/api/.env", ".env.local", ".env.example",
+                    ".env.sample", "node_modules/pkg/.env", ".envrc",
+                    "a/b/c/d/svc/.env"):
+            path = os.path.join(_main, rel)
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, "w") as fh:
+                fh.write(f"KEY={_secret}\n")
+        # #135's review: a `.env` that is a symlink, to a file beside it or to
+        # one outside the repo, is still an env file the worktree needs.
+        os.symlink(".env.development", os.path.join(_main, ".env"))
+        _outside = os.path.join(_scratch, "outside.env")
+        with open(_outside, "w") as fh:
+            fh.write(f"KEY={_secret}\n")
+        os.makedirs(os.path.join(_main, "apps", "web"))
+        os.symlink(_outside, os.path.join(_main, "apps", "web", ".env"))
+        _git("add", ".env.example")
+        _git("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "example")
+        _git("worktree", "add", "-q", "-b", "wt", _wt)
+
+        for where, cwd in (("the main checkout", _main), ("a linked worktree", _wt)):
+            code, out = run_context(env_cmd, _scratch, cwd)
+            names = out.split("env files:", 1)[-1].split()
+            check(f"flow: from {where}, names the main checkout's ignored env files",
+                  code == 0 and out.startswith("none; env files:")
+                  and sorted(names) == [".env", ".env.development", ".env.local",
+                                        ".envrc", "a/b/c/d/svc/.env", "apps/api/.env",
+                                        "apps/web/.env"],
+                  f"printed {out!r} (exit {code})")
+            check(f"flow: from {where}, never prints a value from an env file",
+                  _secret not in out, f"printed {out!r}")
+
+        with open(os.path.join(_wt, ".worktreeinclude"), "w") as fh:
+            fh.write("/.env\n")
+        code, out = run_context(env_cmd, _scratch, _wt)
+        check("flow: a .worktreeinclude here prints `set`",
+              code == 0 and out == "set", f"printed {out!r} (exit {code})")
+
+_d_env_setup = _doc_section(_doc133("setup.md"), "## Step 6c")
+_d_env_flow = _doc_section(_doc133("flow.md"), "### Env files")
+check("docs/setup: step 6c says why, copies not links, and credits bykare's script",
+      "copies" in _d_env_setup and "link" in _d_env_setup
+      and "sync-worktree-env.sh" in _d_env_setup
+      and "bykare-medusa-admin" in _d_env_setup
+      and "code.claude.com/docs/en/worktrees" in _d_env_setup,
+      "docs/setup.md has no '## Step 6c' saying why a .worktreeinclude")
+check("docs/flow: asks once, from the main checkout, paths only",
+      "once" in _d_env_flow and "main checkout" in _d_env_flow
+      and "paths" in _d_env_flow,
+      "docs/flow.md has no '### Env files' section")
+check("README: setup offers a .worktreeinclude for ignored env files",
+      ".worktreeinclude" in readme_text,
+      f"{README_PATH} never names .worktreeinclude")
 
 # --------------------------------------------------------------------- report
 

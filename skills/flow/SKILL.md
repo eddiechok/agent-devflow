@@ -22,15 +22,15 @@ rule looks wrong.
 - Browser block: !`grep -q '^## Browser' CLAUDE.md 2>/dev/null && echo set || echo "none; UI hints: $( (git ls-files 'tailwind.config.*' 'components/ui/*' '*.html' '*.jsx' '*.tsx' '*.vue' '*.svelte' '*.erb' '*.ejs' 2>/dev/null | head -2; grep -oE '"(react|preact|vue|svelte|solid-js|astro|next|nuxt|@angular/core|react-native|expo|electron|@tauri-apps/api)"' package.json 2>/dev/null) | head -3 | tr '\n' ' ')"`
 - Servers: !`S=$(sed -n 's/^- Servers: *//p' CLAUDE.md 2>/dev/null | head -1); if [ -n "$S" ]; then echo "$S"; else echo "none; start hints: $( (ls Procfile docker-compose.yml compose.yaml 2>/dev/null; grep -oE '"(dev|start)":' package.json 2>/dev/null; grep -oE '^(dev|start|serve|run):' Makefile 2>/dev/null) | head -3 | tr '\n' ' ')"; fi`
 - Kept servers: !`R=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)"); K=$(awk -F'\t' -v r="$R" '$1==r' "$HOME/.claude/devflow/servers.tsv" 2>/dev/null); if [ -z "$K" ]; then echo none; else echo "$K" | while IFS="$(printf '\t')" read -r _ b n p pid _ c; do if [ "$n" = - ]; then s="no PR yet"; else s=$(gh api "repos/{owner}/{repo}/pulls/$n" --jq 'if .merged_at then "merged" else .state end' 2>/dev/null || echo unknown); fi; echo "[$b #$n $s, pid $pid, ports $p, start: $c]"; done; fi`
+- Env files: !`[ -e .worktreeinclude ] && echo set || { R=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)"); F=$(find "$R" \( -name node_modules -o -name .git -o -name worktrees -o -name .worktrees -o -name .venv -o -name vendor \) -prune -o -name '.env*' \( -type f -o -type l \) -print 2>/dev/null | while read -r f; do echo "${f#"$R"/}"; done | grep -vE '\.(example|sample|template)$' | git check-ignore --stdin 2>/dev/null | head -20 | tr '\n' ' '); [ -n "$F" ] && echo "none; env files: $F" || echo none; }`
 
 ## Before step 0 — is this project set up?
 
-Read `CLAUDE.md` for a `## Workflow` block. **None means not set up**: call `devflow:setup`, then carry on with the request. `Mode: direct` means read [references/direct.md](references/direct.md) now; it says which steps below change. `Mode: pr` changes nothing. Then, after step 0c and before step 1, read the reference a Context line asks for: [browser-driver.md](references/browser-driver.md) when `Browser block` says `none` and names UI hints (a UI repo with no `## Browser` block); [servers-setting.md](references/servers-setting.md) when `Servers` says `none` and names start hints, or `Kept servers` names a server whose PR is merged or closed.
+Read `CLAUDE.md` for a `## Workflow` block. **None means not set up**: call `devflow:setup`, then carry on with the request. `Mode: direct` means read [references/direct.md](references/direct.md) now; it says which steps below change. `Mode: pr` changes nothing. Then, after step 0c and before step 1, read the reference a Context line asks for: [browser-driver.md](references/browser-driver.md) when `Browser block` says `none` and names UI hints (a UI repo with no `## Browser` block); [servers-setting.md](references/servers-setting.md) when `Servers` says `none` and names start hints, or `Kept servers` names a server whose PR is merged or closed; [worktree-env.md](references/worktree-env.md) when `Env files` says `none` and names env files (ignored env files and no `.worktreeinclude`).
 
 ## Step 0 — is this a follow-up?
 
-**Settle it with git before touching the network.** `Commits ahead` of `0` means there
-is nothing a pull request could be about, so **do not go and ask**:
+**Settle it with git before touching the network.** `Commits ahead` of `0` means there is nothing a pull request could be about, so **do not go and ask**:
 
 ```
 – **pr** none found, fresh branch
@@ -450,7 +450,7 @@ Anything the human does not answer takes the recommendation, and **goes into the
 
 ## Step 5 — submit it
 
-When `build` comes back — or the last builder's report, on a Deep job — call `devflow:submit` yourself, in the same turn. Write a held `## Browser` or `Servers` answer first ([browser-driver.md](references/browser-driver.md), [servers-setting.md](references/servers-setting.md)).
+When `build` comes back — or the last builder's report, on a Deep job — call `devflow:submit` yourself, in the same turn. Write a held `## Browser`, `Servers` or `.worktreeinclude` answer first ([browser-driver.md](references/browser-driver.md), [servers-setting.md](references/servers-setting.md), [worktree-env.md](references/worktree-env.md)).
 
 **Hand it the request, word for word.** The text from step 1, or the issue body, goes to
 `submit` as `request: <text>`, on every size. On Deep the plan is the fuller spec and

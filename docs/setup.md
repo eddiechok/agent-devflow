@@ -82,6 +82,16 @@ The driver is proven before the block is written, for the same reason every chec
 
 **The lane recommendation.** A start command that binds one fixed port (`--port 3000`, `PORT=3000`) lets one server run at a time, so a kept server blocks the next live check. Setup prints a recommendation for a lane script and writes nothing, because the script is the project's code and setup writes only the blocks it can prove. The script picks the lowest free lane, every port the app uses moves together, and the CORS or allowed-origins list names every lane. That pattern is the human's own: `scripts/dev.sh` in bykare-medusa-admin, which setup did not invent and credits here. Then the live check reads the port the server printed, since devflow never picks one.
 
+## Step 6c — why setup writes a `.worktreeinclude`
+
+devflow makes many worktrees, and a gitignored `.env` reaches none of them, so a test that needs the database or a live check that starts the server fails there for a reason the change did not cause. The human's own `scripts/sync-worktree-env.sh` in bykare-medusa-admin solved it inside that one project: it links each `.env` from the main checkout into the current worktree, and a run had to remember to call it. Claude Code has the same thing built in. A `.worktreeinclude` at the repo root, in `.gitignore` syntax, names gitignored files it copies into every worktree it makes with git: `claude --worktree`, agents with `isolation: worktree` and the desktop app's sessions ([code.claude.com/docs/en/worktrees](https://code.claude.com/docs/en/worktrees#copy-gitignored-files-into-worktrees)). devflow never runs `git worktree add` itself, so the one file reaches every worktree it makes, the builders' and sweepers' included, and no agent has to link anything.
+
+It copies rather than links. A value changed in the main checkout later does not reach a worktree that already exists, which is fine for worktrees that live as long as one job. A link would follow the change, but it would also let a worktree write back into the main checkout's file.
+
+The question is asked, not assumed, because the file is committed and because an env file can hold keys the human does not want in every agent's folder. "Never copy" writes a file with one comment line, so the answer is kept and the question comes once. Each path gets a leading `/` because a name with no slash matches at any depth, and `.env` alone would copy every `.env` in the tree. Templates (`.env.example`, `.env.sample`, `.env.template`) are left out by name.
+
+The read is paths only. No step opens an env file, and no value goes in a question, a log, the PR or a commit: the paths are all the decision needs.
+
 ## Why the `disable-model-invocation` flag came off
 
 `flow` runs `setup` first when `CLAUDE.md` has no `## Workflow` block. A skill with

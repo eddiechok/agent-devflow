@@ -64,6 +64,8 @@ A second block, `## Deploy`, is optional. You never write it by hand. `ship` off
 
 It also asks where Deep plans live. Local is the default: a file in `.devflow/plans/`. Pick `github` and each Deep plan becomes an issue, labelled `devflow:plan`, closed when the work merges. It writes a `## Plans` block only after `gh` has answered. Picking `github` also makes a second label, `devflow:backlog`, for the features `flow` parks rather than builds.
 
+It also finds the env files git ignores, such as `.env`, and offers to list them in a `.worktreeinclude`. Claude Code then copies them into every worktree it makes, so tests and the live check work in a plan chain's or a sweeper's worktree too. It shows paths only, never a value.
+
 Run it again if the commands change. It will not overwrite a block you wrote without asking.
 
 ### How the project works: `direct` or `pr`
