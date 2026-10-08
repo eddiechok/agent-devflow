@@ -18,8 +18,8 @@ finding fell to `hardcase`, a deploy's `Verify` line failed, a run wasted turns.
 what this skill records.
 
 **A fact about the current project is not a devflow lesson.** "The tests need the sandbox
-key" goes into that project's `CLAUDE.md` through `submit`, in the same PR as the work
-that found it out — never here, and never into `~/.claude` either. The session that did
+key" goes into that project's `CLAUDE.md` or `.claude/rules/` through `submit`, in the
+same PR as the work that found it out — never here, and never into `~/.claude` either. The session that did
 the run sorts each lesson; no subagent does.
 
 ## Input
@@ -119,7 +119,8 @@ Exactly one line, and nothing else:
 - Never edit a skill. A human approves every skill change; this skill only ever collects
   the evidence for `devflow:lesson-review` to propose one later.
 - A fact about this project is not a devflow lesson — that goes to the project's
-  `CLAUDE.md`, through `submit`, in the same PR as the work that found it.
+  `CLAUDE.md` or `.claude/rules/`, through `submit`, in the same PR as the work that
+  found it.
 - Never guess a `sha` or overwrite one you did not just read. A stale write loses whatever
   another session just appended.
 - Never print more than the one success line, or more than the fallback line and the

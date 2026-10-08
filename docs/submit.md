@@ -111,7 +111,7 @@ So the line is required in both directions, and `– **docs** nothing stale` is 
 
 ### Sorting a lesson by which repo it fits
 
-Step 6 is also where a fact this run learned about **this project** — not devflow — gets one line added to `CLAUDE.md`, in the same commit, with the fact listed in the PR body so the human approves it alongside the work rather than finding it later. A fact about devflow itself never goes there; it goes to `devflow:lesson`, and the lessons repo `docs/lessons.md` describes. Only the session that did the run can tell the two apart, which is why no subagent does this sort.
+Step 6 is also where a fact this run learned about **this project** — not devflow — gets one line added to `CLAUDE.md` — or, for a fact about one package, to a path-scoped `.claude/rules/` file ([docs/lessons.md](lessons.md#where-project-lessons-go)) — in the same commit, with the fact listed in the PR body so the human approves it alongside the work rather than finding it later. A fact about devflow itself never goes there; it goes to `devflow:lesson`, and the lessons repo `docs/lessons.md` describes. Only the session that did the run can tell the two apart, which is why no subagent does this sort.
 
 ## Step 7 — the commit
 

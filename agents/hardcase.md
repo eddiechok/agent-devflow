@@ -59,9 +59,9 @@ Take each one on its own. **Open the file.** Then look for any of these:
 4. **It was already broken.** If the same problem sits on the other side of the fixed
    point, this branch did not introduce it and it is out of scope by `reviewer`'s own
    rules.
-5. **It is not a finding at all.** A preference no `CLAUDE.md` asks for, something a
-   linter or typechecker already covers, or a `Worth knowing` entry whose quoted rule is
-   not in any `CLAUDE.md`.
+5. **It is not a finding at all.** A preference no `CLAUDE.md` or `.claude/rules/` file
+   asks for, something a linter or typechecker already covers, or a `Worth knowing` entry
+   whose quoted rule is in neither.
 
 **Default to `Falls`.** If you cannot confirm the finding from the code in front of you,
 it falls. A reviewer who could not point you at the failing case has not made the case,
