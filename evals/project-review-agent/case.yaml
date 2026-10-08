@@ -1,0 +1,66 @@
+schema_version: "1.1"
+name: project-review-agent
+description: review runs the review agent CLAUDE.md names, as its own Project review axis, and never starts an agent no line names.
+tags: [review, project-agent]
+
+context:
+  scaffold_script: ./scaffold.sh
+
+execution:
+  # The branch adds a console.log to src/greet.js. Only the named agent's
+  # house rule forbids it, so only that agent can report it.
+  prompt: "/devflow:review"
+  max_turns: 20
+  timeout_seconds: 900
+  allowed_tools: [Bash, Read, Glob, Grep, Skill, Agent]
+
+runs: 1
+
+graders:
+  - type: tool_used
+    name: runs-the-named-agent
+    tool: Agent
+    input_match: "house-rules-reviewer"
+    min: 1
+    weight: 3
+
+  - type: tool_used
+    name: never-runs-the-unnamed-agent
+    tool: Agent
+    input_match: "changelog-writer"
+    max: 0
+    weight: 3
+
+  - type: regex
+    name: prints-project-review
+    target: said
+    pattern: "## Project review"
+    match: contains
+    weight: 2
+
+  # Inside the section only: review's own template puts Worst of each and the
+  # hand-back line after Project review, and either may name the break too.
+  # It stops at review's own headings, not at any `## `: the agent's report is
+  # printed as it wrote it, and may carry `## ` headings of its own.
+  - type: regex
+    name: project-review-names-the-break
+    target: said
+    pattern: "## Project review(?:(?!\\n## (?:Worst of each|Built right|Challenged|Security|Right thing))[\\s\\S])*?console\\.log"
+    match: contains
+    weight: 2
+
+  - type: llm
+    name: finding-is-the-agents
+    focus: trace
+    criteria: >
+      The repo's CLAUDE.md names house-rules-reviewer in a "- Review agent:"
+      line. PASS only if the review started that agent and its report, under
+      a "Project review" section of its own, names the console.log added to
+      src/greet.js as a break of the rule that only src/cli.js may print.
+      FAIL if the finding appears only under Built right, if the section is
+      missing, or if changelog-writer was started.
+    weight: 2
+
+expected_outcome: >
+  Starts house-rules-reviewer beside reviewer, never starts changelog-writer,
+  and prints a Project review section naming the console.log in src/greet.js.

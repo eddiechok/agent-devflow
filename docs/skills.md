@@ -50,8 +50,9 @@ bar has been applied to it.
 A search for "testing" or "code review" finds skills that compete with `build` and `review`.
 devflow owns how work is done: code quality and review, the testing process and TDD,
 productivity, workflow and git. So the skill searches only what the repo is built with: the
-web framework, the test tools, the deploy target, and an API-docs skill only when an openapi
-file exists.
+web framework, the test tools, the deploy target, an API-docs skill only when an openapi
+file exists, and a review agent for that stack. A review agent for the stack checks rules
+`review`'s own agents do not know, so it adds to `review` rather than competing (#136).
 
 ## Why a repo with code is never asked a stack question
 
@@ -114,9 +115,30 @@ server is never listed together with its MCP-only install, since the plugin alre
 
 ## Why it is model-invocable and does not touch setup
 
-The skill has no `disable-model-invocation`, so the model can start it. `setup` is meant to
-call it later, as its last question, and that is issue #96. This change does not edit
-`skills/setup`. Until then you start it by hand, as `/devflow:skills`.
+The skill has no `disable-model-invocation`, so the model can start it. `setup` calls it
+as its last question (issue #96), and you can start it by hand, as `/devflow:skills`.
+
+## Why it finds review agents and writes one line
+
+A project can have its own review agent in `.claude/agents/`. bykare-medusa-admin's
+`medusa-convention-reviewer` checks its Medusa v2 and React rules: money math, RBAC,
+logging, table filtering. `review` never ran it, so those checks were lost. Issue #136
+gave each step one owner: `skills` finds the agents, the human chooses per agent, the
+choice is one `- Review agent:` line in `## Workflow`, and `review` runs only what the
+lines name.
+
+`skills` finds them because it already reads what is installed, and an agent file is one
+more thing installed. It picks by `description`, since that is what the agent says it is
+for.
+
+It writes the line itself, after a yes for that agent, and nothing else. An install is
+someone else's text running in every session, so the human runs it. One line naming an
+agent the repo already has is not that: the human said yes to that line in that moment,
+and pasting it by hand would be one more step for the same result. The line goes in
+`## Workflow` because that block already holds devflow's settings for this project.
+
+It recommends No for an agent whose `tools` can edit. A review reads; one that changes the
+code it reads is not a review, whatever its description says.
 
 ## Not in scope
 

@@ -51,7 +51,8 @@ COMMAND_NAME_RE = re.compile(r"<command-name>\s*/?([^<]+?)\s*</command-name>")
 # `review`'s step 4 report ends in this block, one line per axis. A run is
 # clean only when every line says none or skipped -- "nothing to challenge"
 # is printed when the first axis alone is clean, so it cannot decide this.
-WORST_RE = re.compile(r"^- (?:\*\*)?(Built right|Security|Right thing):(?:\*\*)?\s*(.*)$", re.M)
+# `Project review` is there only when the project names a review agent (#136).
+WORST_RE = re.compile(r"^- (?:\*\*)?(Built right|Security|Right thing|Project review):(?:\*\*)?\s*(.*)$", re.M)
 CLEAN_WORST = ("none", "skipped", "no spec")
 NOTHING_TO_REVIEW = "nothing to review since"
 

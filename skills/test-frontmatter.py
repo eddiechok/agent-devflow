@@ -7219,6 +7219,145 @@ check("docs/web: keep never applies in a cloud session, and why",
       and re.search(r"always stops", _d_web) is not None,
       "docs/web.md has no '## A kept server' about cloud sessions")
 
+# ------------------------------- a project's own review agent, as an axis (#136)
+# Find, choose, write down, run, each with one owner: `skills` finds the
+# agents in .claude/agents/ and asks per agent; the human's yes becomes one
+# `- Review agent: <name>` line in ## Workflow, which `skills` writes; `review`
+# runs only the agents those lines name, and never looks for one itself.
+
+def _read136(*parts):
+    path = os.path.join(REPO_ROOT, *parts)
+    if not os.path.isfile(path):
+        return ""
+    with open(path, encoding="utf-8") as fh:
+        return fh.read()
+
+_s136 = _read136("skills", "skills", "SKILL.md")
+_s136_step1 = flat(section(_s136, "## 1. "))
+_s136_agents = flat(section(_s136, "## 6. "))
+_s136_rules = flat(section(_s136, "## Rules"))
+_r136 = _read136("skills", "review", "SKILL.md")
+_r136_step3 = flat(section(_r136, "## 3. "))
+# The report is a code block of `## ` headings, so section() would stop at
+# the first of them. Read to step 5 instead.
+_r136_step4 = _r136[_r136.find("## 4. "):_r136.find("## 5. ")] if "## 4. " in _r136 else ""
+_r136_rules = flat(section(_r136, "## Rules"))
+_r136_nb = flat(section(_r136, "## No behaviour"))
+_axes136 = _read136("skills", "review", "references", "axes.md")
+_axes136_project = _doc_section(_axes136, "### Then the project's own review agents")
+_axes136_report = flat(section(_axes136, "## In the step 4 report"))
+_hc136 = flat(_read136("agents", "hardcase.md"))
+_setup136 = flat(section(_read136("skills", "setup", "SKILL.md"), "## 8. "))
+_d_review136 = _doc_section(_read136("docs", "review.md"), "## A project's own review agent")
+_d_skills136 = _doc_section(_read136("docs", "skills.md"), "## Why it finds review agents and writes one line")
+_cw136 = _read136("skills", "lesson-review", "count-waste.py")
+
+check("skills: step 1 reads the project's own agents in .claude/agents/",
+      "`.claude/agents/*.md`" in _s136_step1,
+      "skills/skills/SKILL.md step 1 never reads .claude/agents/*.md")
+
+check("skills: step 6 keeps only the agents whose description says they review code",
+      "description" in _s136_agents and "review" in _s136_agents
+      and "`.claude/agents/`" in _s136_agents,
+      "skills/skills/SKILL.md has no '## 6.' step picking review agents by description")
+
+check("skills: step 6 asks yes or no per agent, and recommends no for one that can edit",
+      "Use `<name>` in devflow's review?" in _s136_agents
+      and "Yes (Recommended)" in _s136_agents
+      and "`Edit`" in _s136_agents and "`Write`" in _s136_agents,
+      "skills/skills/SKILL.md step 6 never asks per agent, or never recommends no "
+      "for an agent whose tools can edit")
+
+check("skills: a yes writes one `- Review agent: <name>` line into ## Workflow",
+      "`- Review agent: <name>`" in _s136_agents and "`## Workflow`" in _s136_agents
+      and "one line per agent" in _s136_agents,
+      "skills/skills/SKILL.md step 6 never writes the Review agent line into ## Workflow")
+
+check("skills: no ## Workflow block means print the line, write nothing",
+      re.search(r"[Nn]o `## Workflow` block[^.]*print", _s136_agents) is not None
+      and "/devflow:setup" in _s136_agents,
+      "skills/skills/SKILL.md step 6 says nothing about a CLAUDE.md with no Workflow block")
+
+check("skills: a line already there is not asked again",
+      "already" in _s136_agents and "**agents**" in _s136_agents,
+      "skills/skills/SKILL.md step 6 asks again about an agent already named")
+
+check("skills: every agent already named is not also 'no review agent'",
+      re.search(r"No review agent at all in `\.claude/agents/`", _s136_agents) is not None
+      and "None left to ask about" not in _s136_agents,
+      "skills/skills/SKILL.md step 6 prints 'no review agent' after naming one "
+      "that already runs in review")
+
+check("skills: an installable review agent for the stack may be listed, under step 4's bar",
+      "what the repo is built with" in _s136_agents and "step 4" in _s136_agents
+      and "next run" in _s136_agents,
+      "skills/skills/SKILL.md step 6 never says how an installable review agent is offered")
+
+check("skills: the write rule allows that one line and nothing else",
+      "Never write to `CONTEXT.md`" in _s136_rules
+      and "except one `- Review agent:` line" in _s136_rules
+      and "after the human's yes" in _s136_rules,
+      "skills/skills/SKILL.md's rules still forbid the line, or allow more than it")
+
+check("review: step 3 runs the agents the `- Review agent:` lines name",
+      "`- Review agent:`" in _r136_step3,
+      "skills/review/SKILL.md step 3 never names the Review agent lines")
+
+check("review: step 4 has a Project review section and a Worst of each line",
+      "## Project review" in _r136_step4 and "- Project review:" in _r136_step4,
+      "skills/review/SKILL.md step 4's report has no Project review section or line")
+
+check("review: no behaviour skips the project agents too",
+      "Project review" in _r136_nb,
+      "skills/review/SKILL.md's no-behaviour path never says Project review is skipped")
+
+check("review: never runs an agent no line names, and never looks for one",
+      "Never run an agent that no `- Review agent:` line names" in _r136_rules
+      and "`.claude/agents/`" in _r136_rules,
+      "skills/review/SKILL.md's rules never stop it finding agents itself")
+
+check("review/axes: each named agent gets the same fixed point, file list and ceiling",
+      "`- Review agent: <name>`" in _axes136_project
+      and "`## Workflow`" in _axes136_project
+      and "same fixed point, file list and 400 word ceiling" in _axes136_project,
+      "axes.md has no '### Then the project's own review agents' with the same inputs")
+
+check("review/axes: a named agent that will not start is NOT RUN, not none",
+      "NOT RUN" in _axes136_project and "no agent named" in _axes136_project,
+      "axes.md never says what a named agent that does not exist prints")
+
+check("review/axes: hardcase gets the project agents' findings, and starts on them",
+      "project agent" in _axes136_project and "`hardcase`" in _axes136_project,
+      "axes.md never hands the project agents' findings to hardcase")
+
+check("review/axes: a project agent's finding that falls writes no lesson",
+      "no lesson" in _axes136_project,
+      "axes.md would write a devflow lesson for a project agent's mistake")
+
+check("review/axes: the report prints each agent under its name, and one worst line",
+      "Project review" in _axes136_report and "`### <name>`" in _axes136_report,
+      "axes.md's report section never says how Project review prints")
+
+check("hardcase: challenges the project's own review agents' findings too",
+      "project's own review agents" in _hc136 and "## Project review" in _hc136,
+      "agents/hardcase.md never names the project review agents' findings")
+
+check("setup: step 8 says skills asks about the project's review agents",
+      "review agent" in _setup136,
+      "skills/setup/SKILL.md step 8 never mentions the review agents")
+
+check("docs/review: says why review never finds agents itself",
+      "tokens" in _d_review136 and "never chose" in _d_review136
+      and "medusa-convention-reviewer" in _d_review136 and "#136" in _d_review136,
+      "docs/review.md has no '## A project's own review agent' with the reasons")
+
+check("docs/skills: says why skills finds them and writes the one line",
+      "`- Review agent:`" in _d_skills136 and "#136" in _d_skills136,
+      "docs/skills.md has no '## Why it finds review agents and writes one line'")
+
+check("count-waste: reads the Project review line of Worst of each",
+      "Project review" in _cw136,
+      "count-waste.py's WORST_RE never reads the Project review line")
 # ------------------------- env files reach every worktree devflow makes (#135)
 #
 # A gitignored `.env` never reaches a new worktree, and devflow makes many:

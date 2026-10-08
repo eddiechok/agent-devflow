@@ -397,7 +397,8 @@ setup runs:
 1. **Look for agent skills that fit this repo?**
    - Yes (Recommended) — call `devflow:skills`. It reads what the repo is built with and
      what is already installed, then lists the skills that fit, each with its install
-     command. Its list is the last thing setup prints.
+     command, and asks whether each review agent in `.claude/agents/` runs in review.
+     Its list and those questions are the last thing setup prints.
    - No — print one line and stop:
 
      ```
