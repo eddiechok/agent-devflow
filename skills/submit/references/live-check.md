@@ -7,6 +7,9 @@ Pick whichever of these the project actually is:
 - **Something that has to be launched** — a web app, a server, a desktop app. **Use the built-in `run` skill if this environment has it.** If it does not, launch the app the way the project's own README or scripts say to, under the rules below. Do not invent a launcher when the project already documents one.
 - **Something you just execute** — a CLI, a script, a one-shot command. **Run it directly**, with the arguments the change affects, and show the output.
 
+**A UI change — any size, Quick included — also gets the browser check.** Read
+[browser-check.md](browser-check.md) and follow it: one driver, login once, the exact state the change affects, a desktop and a mobile width, a clean console. It is how you get first-hand proof of a page.
+
 Either way the rule is the same: exercise the change the way a user would, and put the output on screen.
 
 ### What counts as proof

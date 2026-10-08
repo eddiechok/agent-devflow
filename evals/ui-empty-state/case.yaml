@@ -1,0 +1,65 @@
+schema_version: "1.1"
+name: ui-empty-state
+description: A UI change that shows only in the empty state is proven by making the list empty and looking at the page, not by opening the normal page.
+tags: [submit, live-check, browser-check]
+
+context:
+  scaffold_script: ./scaffold.sh
+
+execution:
+  # Quick by every sizing rule: one string in one file. The browser check runs
+  # at any size. The seeded list is never empty, so only a run that follows the
+  # project's CLAUDE.md and starts the server on data/empty.json ever sees the
+  # text change. There is no `## Browser` block, so the check uses whatever
+  # driver the session has, or falls back to curl: both reach the same page.
+  prompt: "/devflow:flow on the orders page, change the text shown when the list is empty from 'Nothing here yet.' to 'No orders yet.' Nobody is here to answer: yes to all, do not wait."
+  # Not measured from a trace yet. The loop has to size, build with a test,
+  # then reach submit's live check, which is where the empty state is made.
+  # If the graders that fail are the late ones, suspect this number first.
+  max_turns: 40
+  timeout_seconds: 900
+  allowed_tools: [Bash, Read, Edit, Write, Glob, Grep, Skill]
+
+runs: 1
+
+graders:
+  # The point of the case. The server appends each page it serves to
+  # served.log, a file no edit or test the run writes can hold. 0 means the
+  # list was empty, so the empty state was reached by running the app. The
+  # graders read the file, not the trace: a browser check reads only the
+  # element the change touched, so the page's HTML never reaches the trace.
+  - type: regex
+    name: reaches-the-empty-state
+    target:
+      source: file
+      path: served.log
+    pattern: "rendered 0 orders from"
+    match: contains
+    weight: 3
+
+  # First-hand proof of the change: the NEW text, served in the empty state. The
+  # old text there would have been true before the change, so it proves nothing.
+  - type: regex
+    name: shows-the-new-text-in-the-empty-state
+    target:
+      source: file
+      path: served.log
+    pattern: "rendered 0 orders from \\S+: <p data-state=\"empty\">No orders yet\\.</p>"
+    match: contains
+    weight: 3
+
+  # The change itself landed where the text lives.
+  - type: regex
+    name: changes-the-text
+    target:
+      source: file
+      path: src/orders.js
+    pattern: "No orders yet\\."
+    match: contains
+    weight: 2
+
+expected_outcome: >
+  Sizes the work Quick, changes the empty-state text and tests it, then at the
+  live check follows the project's CLAUDE.md to start the server on
+  data/empty.json and looks at the served page, which reads "No orders yet.".
+  Opening only the seeded page, with three orders in it, does not count.

@@ -103,6 +103,10 @@ cat > public/greetings.json <<'JSON'
 ]
 JSON
 
+# A UI repo with no `## Browser` block gets flow's driver question before the
+# size (#129), and its answer edits CLAUDE.md, which the no-edit graders count.
+printf '\n## Browser\n- Driver: session\n' >> CLAUDE.md
+
 git add -A
 git commit -qm "feat: a web page for the greeter"
 git push -q origin main

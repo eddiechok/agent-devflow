@@ -66,6 +66,16 @@ A project that already has `## Checks` but no `## Workflow` is asked only these 
 `## Workflow` that is already there is kept, the same as `## Checks` and `## Plans`: someone
 chose it.
 
+## Step 6a — why setup asks for a browser driver, in a UI repo only
+
+`submit` runs a browser check for any UI change, and it has to know which driver to use. A project that names none still gets the check with whatever driver the session has, so this question improves a run and is not a gate on one. The answer is stored in its own `## Browser` block, in the project's CLAUDE.md, and not as a line in `## Checks`, because `build` and `submit` run every `## Checks` line as a command and a driver's name is not one.
+
+It is asked in a UI repo only, by the skills skill's own read of one (react-native, expo, electron or tauri, a tailwind config, a `components/ui` folder), so a backend never sees it. One question, three options. Playwright CLI is recommended because Microsoft's own notes say a CLI call avoids loading large tool schemas and verbose accessibility trees into context, which is a cost every check would otherwise pay; no source measures it per action, so that is the reason given and no more. "Research which fits me" starts one `devflow:researcher` and only when the human picks it, so no one pays for research they did not ask for. "Other" is the human's own driver.
+
+The driver is proven before the block is written, for the same reason every check command is: a block nobody ran is a claim, and `submit` would trust it. A driver that is not installed gets its install command printed and is not installed, since setup installs nothing (step 8 makes the same offer and leaves the install to the human). That meant changing two rules that said setup writes the Checks, Plans and Workflow blocks and nothing else: they now allow this one block, in a UI repo, once it is proven.
+
+"Use whatever the session has" came with #129, when `flow` started asking this question in projects set up before step 6a existed ([browser-driver.md](../skills/flow/references/browser-driver.md)). A project with no block is asked on every run, so "no preference" has to be an answer that is written down too: `- Driver: session`, which needs no proof because it names no driver, and which the browser check reads as "use the session's own". A driver that is not installed is the one answer that writes nothing, on purpose. Writing it would break the rule that every block was proven, so `flow` asks again on its next run, until the human installs it.
+
 ## Why the `disable-model-invocation` flag came off
 
 `flow` runs `setup` first when `CLAUDE.md` has no `## Workflow` block. A skill with

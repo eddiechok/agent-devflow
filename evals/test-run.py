@@ -1601,6 +1601,11 @@ if os.path.isfile(_lq_scaffold):
                    "public/greetings.json" in _tracked
                    and '"name"' in _lread("public", "greetings.json"))
         check("look-question: it starts on main", _lgit("rev-parse", "--abbrev-ref", "HEAD"), "main")
+        # A UI repo with no `## Browser` block gets flow's driver question
+        # before the size (#129), and its answer edits CLAUDE.md, which the
+        # no-edit graders would count. The block is here so they grade the look.
+        check_true("look-question: CLAUDE.md has a ## Browser block, so flow asks no driver question",
+                   "## Browser\n- Driver: session" in _lread("CLAUDE.md"))
         check("look-question: it starts with a clean tree", _lgit("status", "--porcelain"), "")
         check("look-question: the work is pushed, so main has nothing ahead",
               _lgit("rev-list", "--count", "origin/main..main"), "0")
@@ -1628,6 +1633,158 @@ check_true("readme: the opening names how many cases are manual",
            ("%s are manual" % _NUM.get(len(_manual_dirs), "?")) in _readme.split("\n")[2])
 check_true("readme: every case directory has a row in the table",
            all(("| `%s`" % d) in _readme for d in _case_dirs))
+
+# ---------------- ui-empty-state: a UI change that only shows in its empty state
+#
+# Issue #127: submit's browser check has to make the exact state the change
+# affects. The request here changes only the empty-state text of a list page;
+# the seeded data is never empty, so a run that opens the page the usual way
+# proves nothing about it. The project's CLAUDE.md says how to get the list
+# empty. The graders read what the server printed, a line the run's own edits
+# and tests cannot contain, so the state can only be reached by running it.
+
+_ue_path = os.path.join(HERE, "ui-empty-state", "case.yaml")
+ue_case = {}
+if os.path.isfile(_ue_path):
+    with open(_ue_path) as fh:
+        ue_case = run.parse_yaml(fh.read())
+_ue = {g["name"]: g for g in ue_case.get("graders", [])}
+_ue_ex = ue_case.get("execution", {})
+
+check_true("ui-empty-state: the case exists", ue_case != {})
+check_true("ui-empty-state: starts flow", "/devflow:flow" in _ue_ex.get("prompt", ""))
+check_true("ui-empty-state: the prompt names the text and the empty state",
+           "No orders yet." in _ue_ex.get("prompt", "")
+           and "empty" in _ue_ex.get("prompt", ""))
+check_true("ui-empty-state: Bash, Edit and Skill are allowed",
+           {"Bash", "Edit", "Skill"} <= set(_ue_ex.get("allowed_tools", [])))
+for _n in ("reaches-the-empty-state", "shows-the-new-text-in-the-empty-state",
+           "changes-the-text"):
+    check_true("ui-empty-state: the %s grader is there" % _n, _n in _ue)
+
+
+def ue_verdict(name, served=None, commands=()):
+    """The verdict of one ui-empty-state grader on a run whose Bash calls were
+    `commands` and whose server wrote `served` to served.log (None: it never
+    served a page)."""
+    if name not in _ue:
+        return None
+    events = []
+    for i, cmd in enumerate(commands):
+        events.append({"type": "assistant", "message": {"content": [
+            {"type": "tool_use", "id": "u%d" % i, "name": "Bash",
+             "input": {"command": cmd}}]}})
+    workdir = tempfile.mkdtemp()
+    try:
+        if served is not None:
+            with open(os.path.join(workdir, "served.log"), "w") as fh:
+                fh.write(served)
+        return verdict(_ue[name], ctx(events, workdir))
+    finally:
+        shutil.rmtree(workdir, ignore_errors=True)
+
+
+# What the server writes to served.log for each page. The graders read this
+# file, not the trace: a browser check reads only the element the change
+# touched, so the page's HTML comment never reaches the trace. Found at the
+# live check of #127, where playwright-cli read "No orders yet." and nothing else.
+_UE_EMPTY_NEW = ('rendered 0 orders from data/empty.json: '
+                 '<p data-state="empty">No orders yet.</p>\n')
+_UE_EMPTY_OLD = ('rendered 0 orders from data/empty.json: '
+                 '<p data-state="empty">Nothing here yet.</p>\n')
+_UE_FULL = 'rendered 3 orders from data/orders.json: <ul><li>#1001</li></ul>\n'
+# What a test the run writes could hold: the markup and the text, with no
+# server behind it. It must never count as having reached the state.
+_UE_TEST_EDIT = ("const html = '<p data-state=\"empty\">No orders yet.</p>'; "
+                 "assert.match(render([]), /No orders yet\\./)")
+# A browser check, done right: the driver read the one element, and nothing in
+# the trace carries the server's stamp.
+_UE_BROWSER = ("playwright-cli -s=live eval \"() => document.querySelector("
+               "'[data-state=empty]').textContent\"")
+
+check("ui-empty-state: the page served empty passes reaches-the-empty-state",
+      ue_verdict("reaches-the-empty-state", _UE_EMPTY_NEW), "pass")
+check("ui-empty-state: only the full page fails reaches-the-empty-state",
+      ue_verdict("reaches-the-empty-state", _UE_FULL), "fail")
+check("ui-empty-state: a test that holds the markup fails reaches-the-empty-state",
+      ue_verdict("reaches-the-empty-state", commands=[_UE_TEST_EDIT]), "fail")
+check("ui-empty-state: the new text served empty passes shows-the-new-text",
+      ue_verdict("shows-the-new-text-in-the-empty-state", _UE_EMPTY_NEW), "pass")
+check("ui-empty-state: the old text served empty fails shows-the-new-text",
+      ue_verdict("shows-the-new-text-in-the-empty-state", _UE_EMPTY_OLD), "fail")
+check("ui-empty-state: the new text only in a test fails shows-the-new-text",
+      ue_verdict("shows-the-new-text-in-the-empty-state", commands=[_UE_TEST_EDIT]), "fail")
+check("ui-empty-state: a browser read of one element passes both  <-- the live check of #127",
+      [ue_verdict("reaches-the-empty-state", _UE_EMPTY_NEW, [_UE_BROWSER]),
+       ue_verdict("shows-the-new-text-in-the-empty-state", _UE_EMPTY_NEW, [_UE_BROWSER])],
+      ["pass", "pass"])
+
+_ue_scaffold = os.path.join(HERE, "ui-empty-state", "scaffold.sh")
+check_true("ui-empty-state: the scaffold exists", os.path.isfile(_ue_scaffold))
+
+# The real scaffold runs beside a stub greeter.sh that builds a repo with a
+# remote, as the real one does: the real one runs npm and node, and this test
+# needs python3 and git alone.
+if os.path.isfile(_ue_scaffold):
+    _tmp = tempfile.mkdtemp()
+    try:
+        os.makedirs(os.path.join(_tmp, "case"))
+        os.makedirs(os.path.join(_tmp, "fixtures"))
+        shutil.copy(_ue_scaffold, os.path.join(_tmp, "case", "scaffold.sh"))
+        with open(os.path.join(_tmp, "fixtures", "greeter.sh"), "w") as fh:
+            fh.write(
+                '#!/usr/bin/env bash\nset -e\nmkdir -p "$1"\ncd "$1"\n'
+                'git init -q -b main\ngit config user.email e@x\n'
+                'git config user.name e\ngit config commit.gpgsign false\n'
+                'printf "## Checks\\n- Test: npm test\\n\\n## Workflow\\n'
+                '- Mode: pr\\n- About: a tiny CLI\\n" > CLAUDE.md\n'
+                'git add -A\ngit commit -qm init\n'
+                'git init -q --bare "$1.origin.git"\n'
+                'git remote add origin "$1.origin.git"\n'
+                'git push -q -u origin main\n')
+        os.chmod(os.path.join(_tmp, "fixtures", "greeter.sh"), 0o755)
+        _ws = os.path.join(_tmp, "ws")
+        _sc = subprocess.run(["bash", os.path.join(_tmp, "case", "scaffold.sh"), _ws],
+                             capture_output=True, text=True)
+        check("ui-empty-state: the scaffold exits 0", _sc.returncode, 0)
+
+        def _uread(*parts):
+            path = os.path.join(_ws, *parts)
+            if not os.path.isfile(path):
+                return ""
+            with open(path) as fh:
+                return fh.read()
+
+        def _ugit(*args):
+            return subprocess.run(["git"] + list(args), cwd=_ws,
+                                  capture_output=True, text=True).stdout.strip()
+
+        _umd = _uread("CLAUDE.md")
+        check_true("ui-empty-state: CLAUDE.md says how to get the list empty",
+                   "ORDERS_FILE=data/empty.json" in _umd)
+        # A UI repo with no `## Browser` block gets flow's driver question
+        # first (#129). The block is here so this case grades the live check.
+        check_true("ui-empty-state: CLAUDE.md says Driver: session, so the session's driver is used",
+                   "## Browser\n- Driver: session" in _umd)
+        check_true("ui-empty-state: the seeded orders are not empty",
+                   '"id"' in _uread("data", "orders.json"))
+        check("ui-empty-state: the empty data file is an empty list",
+              _uread("data", "empty.json").strip(), "[]")
+        check_true("ui-empty-state: the old empty-state text is in the page",
+                   "Nothing here yet." in _uread("src", "orders.js"))
+        check_true("ui-empty-state: the server stamps how many orders it rendered",
+                   "rendered" in _uread("src", "server.js"))
+        check_true("ui-empty-state: the server writes each page it serves to served.log",
+                   "served.log" in _uread("src", "server.js"))
+        check_true("ui-empty-state: served.log is ignored, so serving leaves the tree clean",
+                   "served.log" in _uread(".gitignore"))
+        check("ui-empty-state: it starts on main", _ugit("rev-parse", "--abbrev-ref", "HEAD"), "main")
+        check("ui-empty-state: it starts with a clean tree", _ugit("status", "--porcelain"), "")
+    finally:
+        shutil.rmtree(_tmp, ignore_errors=True)
+
+_ue_rows = [l for l in _readme.split("\n") if l.startswith("| `ui-empty-state`")]
+check("readme: the ui-empty-state row is there", len(_ue_rows), 1)
 
 # --------------------------------------------------------------- the scoring
 
