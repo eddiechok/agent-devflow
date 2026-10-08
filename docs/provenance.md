@@ -443,6 +443,15 @@ Read on 2026-10-07 for issue #108, through `researcher` agents. The rule is in `
 | Formatters that write are not checks | **Real bug** — the review of 21 Sep | `black .` and `prettier --write src/` got the hook's own `allow`, with no prompt. A formatter rewrites the repo. The grant was sold as "check runners" |
 | The runner must start the command | **Real bug** — the review of 21 Sep | `cat docs/prettier.md` and `git log --author=black` matched on a word in an argument and got the allow. Anchored now, with env assignments and `npx`-style launchers permitted in front |
 
+## `secret-guard.py`
+
+| Change | From | Why |
+|---|---|---|
+| A hook on `Edit`, `Write` and `MultiEdit` for `.env` and `.env.*`, with `.env.example`, `.env.template`, `.env.sample` and `.env.test` let through | **Changed** — the human's own `.claude/hooks/protect-paths.sh` in bykare-medusa-admin, issue #137 | Same file list, read from the file. Theirs lives in one project; ours ships with the plugin, so every project that has devflow gets it |
+| It asks, not blocks | **Human's call**, 8 Oct 2026, against the issue's recommendation | Theirs exits 2 and blocks. The prompt is the opt-out, so no marker is needed. A marker in an Edit would be text Claude writes, so Claude could pass its own guard |
+| Lock files left out | **Ours**, issue #137 | Theirs blocks `pnpm-lock.yaml`, `package-lock.json` and `yarn.lock` too. They hold no secrets, and some projects edit them by hand. Kept for a separate issue |
+| Bash writes left out, and said in the docs | **Ours**, issue #137 | `echo KEY=1 >> .env` goes around any `Edit` or `Write` guard. Matching shell text for file writes is the guessing game bash-guard already says it does not win |
+
 ## `run.py`
 
 | Change | From | Why |

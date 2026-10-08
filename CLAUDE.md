@@ -2,11 +2,12 @@
 
 ## Checks
 
-No package manager here — the checks are scripts and the plugin CLI. Four test
+No package manager here — the checks are scripts and the plugin CLI. Five test
 commands, deliberately: there is no wrapper that runs all of them, and adding one
 would be changing the project to suit the tool.
 
 - Test: python3 hooks/test-bash-guard.py
+- Test: python3 hooks/test-secret-guard.py
 - Test: python3 skills/test-frontmatter.py
 - Test: python3 skills/lesson-review/test-count-waste.py
 - Test: python3 evals/test-run.py

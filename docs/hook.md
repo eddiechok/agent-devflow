@@ -1,7 +1,8 @@
-# The bash hook
+# The hooks
 
-What `hooks/bash-guard.py` does, why each part is there, and what it costs you. The short version is in the [README](../README.md).
+What `hooks/bash-guard.py` and `hooks/secret-guard.py` do, why each part is there, and what it costs you. The short version is in the [README](../README.md).
 
+## The bash hook
 
 `hooks/bash-guard.py` does three things. All are cheap, and all are worth knowing about.
 
@@ -54,5 +55,36 @@ read, or has no such line, the hook asks as before.
 > *gives* permission rather than withholding it. A hook allow beats your own settings. A
 > `"deny": ["Bash(npm:*)"]` entry does **not** stop it. That was tested, not assumed.
 > `npm test` runs whatever `package.json` says. So this is a real grant, even if a small
-> one. If you would rather keep that decision, drop the `PreToolUse` entry from
-> `hooks/hooks.json`. You lose the trimming and get the prompts back.
+> one. If you would rather keep that decision, drop the `"matcher": "Bash"` entry from
+> `PreToolUse` in `hooks/hooks.json`, and leave the other one. You lose the trimming and
+> get the prompts back. Dropping the whole `PreToolUse` block drops the secret hook too.
+
+## The secret hook
+
+`hooks/secret-guard.py` runs before every `Edit`, `Write` and `MultiEdit`. It does one
+thing.
+
+**Asks before Claude edits a secret env file.** That is `.env`, or any name that starts
+with `.env.`, such as `.env.local` or `.env.production`. The prompt names the file. Say no
+and edit it by hand if it holds real keys.
+
+Four names pass without a prompt, because they are meant to be committed: `.env.example`,
+`.env.template`, `.env.sample` and `.env.test`.
+
+Only the file's own name counts. A file inside a folder called `.env` is not asked about.
+A Python virtualenv is often a folder with that name, and its files are code.
+
+**It asks rather than blocks.** Your answer is the opt-out, so there is no `# devflow-ok`
+for it. Claude writes the file's text itself, so a marker in that text would let Claude
+pass its own guard.
+
+> ⚠️ **It sees only those three tools.** `echo KEY=1 >> .env` through Bash goes straight
+> past it, and so does any other way of writing a file. Lock files such as
+> `package-lock.json` are not covered. It fails open, like the bash hook: any error and
+> the edit goes ahead.
+>
+> **Bypass mode may skip the prompt.** The hooks docs say an `"ask"` prompts you. The
+> [permission modes](https://code.claude.com/docs/en/permission-modes#actions-no-mode-auto-approves)
+> page lists what `bypassPermissions` still asks about, and a hook's `"ask"` is not on
+> that list. In a `claude -p` run nobody can answer, so the edit is refused and Claude
+> reads the reason.
