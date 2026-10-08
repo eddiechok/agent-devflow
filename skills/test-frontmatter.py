@@ -3627,17 +3627,75 @@ check("docs/ship: mentions the lesson a failed Verify writes",
 # ------------------------------- submit sorts a lesson by which repo it fits
 #
 # docs/lessons.md draws the line: a fact about *this* project goes into that
-# project's `CLAUDE.md`, in the same PR as the work that found it, so the
+# project's `CLAUDE.md` or a `.claude/rules/` file, in the same PR as the work that found it, so the
 # human approves it with the work; a fact about devflow itself goes to
 # `devflow:lesson` and the private lessons repo instead. `submit` is the one
 # place that sorts, because it is the one place with both the finished run
 # and the commit the fact can ride along in -- no subagent does this sort.
 
-check("submit: adds a project fact to CLAUDE.md in the same commit",
-      "add one line for it to the project's CLAUDE.md" in flat(submit_text)
-      and "in this same commit" in flat(submit_text),
-      f"{SUBMIT_PATH} never says a project fact is added to CLAUDE.md in "
-      f"the same commit")
+check("submit: adds a project fact in the same commit",
+      "in this same commit" in flat(submit_text),
+      f"{SUBMIT_PATH} never says a project fact is added in the same commit")
+
+# The root CLAUDE.md loads into every session, and Claude Code's docs put a
+# CLAUDE.md under 200 lines. A fact about one package is moved into a
+# path-scoped rule, which loads only when Claude touches a file it matches.
+# The docs name path-scoped rules as the place for "instructions that matter
+# for only part of the codebase" (code.claude.com/docs/en/memory).
+check("submit: a fact about one package goes to a path-scoped rule",
+      ".claude/rules/<package>.md" in flat(submit_text)
+      and "paths: <package>/**" in flat(submit_text),
+      f"{SUBMIT_PATH} never sends a one-package fact to "
+      f".claude/rules/<package>.md with paths: <package>/**")
+
+check("submit: the package is the nearest folder with a package file",
+      "the nearest folder above those files that has its own package file"
+      in flat(submit_text),
+      f"{SUBMIT_PATH} never says how the package is found")
+
+check("submit: makes the rule file when it is missing, and says so",
+      "✓ **lesson** added to .claude/rules/" in submit_text
+      and "(new)" in submit_text,
+      f"{SUBMIT_PATH} never prints the rule-file line with (new) for a file "
+      f"it made")
+
+# Pinned on the rule's own sentence: "the root CLAUDE.md" alone also matches
+# the git check-ignore fallback, so deleting this rule left every pin green.
+check("submit: a fact for the whole repo still goes to the root CLAUDE.md",
+      "the package is the repo root, the fact spans packages, or it is about "
+      "no file — goes to the root CLAUDE.md" in flat(submit_text),
+      f"{SUBMIT_PATH} never keeps a repo-wide fact in the root CLAUDE.md")
+
+# A repo that ignores .claude/ would get a rule file nobody commits, and the
+# fact would vanish with the checkout.
+check("submit: an ignored .claude/rules/ falls back to the root CLAUDE.md",
+      "git check-ignore" in submit_text,
+      f"{SUBMIT_PATH} never checks that the rule file would be committed")
+
+# The reviewer judges "Worth knowing" against the written rules. A fact moved
+# into a rule file is still a written rule, so it has to read them -- and
+# hardcase, which refutes "a preference no CLAUDE.md asks for", has to count
+# them too or it knocks down a finding the rule file backs.
+check("reviewer: reads the path-scoped rules that match the change",
+      ".claude/rules/" in reviewer_text and "paths:" in reviewer_text,
+      f"{REVIEWER_PATH} never reads .claude/rules/ files whose paths: match "
+      f"a changed file")
+
+check("hardcase: a rule file counts as a written rule",
+      ".claude/rules/" in hardcase_text,
+      f"{HARDCASE_PATH} refutes a finding no CLAUDE.md backs, but never "
+      f"counts a .claude/rules/ file")
+
+check("lesson: a project fact can go to .claude/rules/ through submit",
+      ".claude/rules/" in lesson_text,
+      f"{LESSON_PATH} still says a project fact goes only to CLAUDE.md")
+
+with open(os.path.join(REPO_ROOT, "docs", "lessons.md"), encoding="utf-8") as fh:
+    docs_lessons_text = fh.read()
+
+check("docs/lessons: a project fact can go to .claude/rules/",
+      ".claude/rules/" in docs_lessons_text,
+      "docs/lessons.md still says a project fact goes only to CLAUDE.md")
 
 check("submit: a devflow fact goes to devflow:lesson, never to CLAUDE.md",
       "devflow:lesson" in submit_text,

@@ -24,11 +24,24 @@ Step 4 makes each lesson a test that stays. The same mistake cannot come back wi
 | Kind | Example | Goes to | When |
 |---|---|---|---|
 | devflow | "`flow` sized a checkout change Quick. It was Deep." | the lessons repo | when it happens |
-| project | "the tests need the sandbox key" | that repo's `CLAUDE.md` | at the end of `submit`, in the same PR |
+| project | "the tests need the sandbox key" | that repo's `CLAUDE.md`, or a `.claude/rules/` file for one package | at the end of `submit`, in the same PR |
 
 The session that did the run sorts each lesson. It knows what went wrong. A fresh agent does not, so no subagent does this.
 
 A project lesson goes in the PR, so the human sees it and approves it with the work.
+
+## Where project lessons go
+
+The root `CLAUDE.md` loads into every session. Claude Code's docs say to keep each `CLAUDE.md` under 200 lines, because a longer one costs context and is followed less well. They name path-scoped rules as the place for instructions that matter for only part of the codebase ([memory docs](https://code.claude.com/docs/en/memory)). A `.claude/rules/*.md` file with a `paths:` glob loads only when Claude reads or edits a file it matches.
+
+So `submit` sorts a project fact by the files it is about:
+
+- **One package** — the nearest folder above the files with its own `package.json`, `pyproject.toml`, `go.mod` or the like, below the repo root. The fact goes to `.claude/rules/<package>.md` with `paths: <package>/**`, and `submit` makes that file the first time. A monorepo's backend facts then load only when Claude works in the backend.
+- **Anything else** — a single-package repo, a fact across packages, a fact about no file. The root `CLAUDE.md`, as before.
+
+A `.claude/rules/` the repo ignores falls back to the root, because a file nobody commits is lost with the checkout. `reviewer` reads the rule files that match a change, and `hardcase` counts them as written rules, so a fact moved into one is still checked in review.
+
+Nested `CLAUDE.md` files also load only when needed, and were the other choice. Path-scoped rules won because the docs name them for this, and they keep the facts out of the code folders.
 
 ## Where devflow lessons go
 

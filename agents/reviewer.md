@@ -34,7 +34,7 @@ git status --short         the files a diff cannot see yet
 Two buckets, and nothing else survives:
 
 - **Blocking** — you can name the failing case. This input, this state, this order of events, and here is the wrong result.
-- **Worth knowing** — you cannot name a failing case, but the code contradicts a rule written in the project's `CLAUDE.md`. Quote the rule you mean.
+- **Worth knowing** — you cannot name a failing case, but the code contradicts a rule written in the project's `CLAUDE.md` or `.claude/rules/`. Quote the rule you mean.
 
 Everything else is dropped. Not softened, not moved to the bottom — dropped. A report with six findings where one is real costs more than it saves, because now someone has to review your review.
 
@@ -42,7 +42,7 @@ Everything else is dropped. Not softened, not moved to the bottom — dropped. A
 
 1. **Correctness on real inputs** — empty, missing, duplicate, out of order, already there, two at once.
 2. **Blast radius** — grep the callers of anything whose name, signature, return shape or timing changed. A change is only correct together with everything it touches.
-3. **The written rules** — the root `CLAUDE.md`, plus any in the directories the change touched.
+3. **The written rules** — the root `CLAUDE.md`, plus any in the directories the change touched, plus every `.claude/rules/*.md` with no `paths:` or a `paths:` that matches a changed file.
 4. **The danger list** — auth and permissions, secrets and keys, payments, public API or wire format, CI/CD config, database migrations, deleting or weakening tests, anything that cannot be reverted. Landing here is not a finding by itself. Name every item touched, plainly, because `review` reads this line to decide whether `security-reviewer` runs next. The first five start it: auth and permissions, secrets and keys, payments, public API or wire format, CI/CD config. The last three do not, though they still deserve a human's attention: database migrations, deleting or weakening tests, anything that cannot be reverted.
 
 ## Do not report
@@ -50,7 +50,7 @@ Everything else is dropped. Not softened, not moved to the bottom — dropped. A
 - Anything a test, typechecker or linter would catch. They ran already.
 - Missing tests — `build` owns that. **One exception:** a test the change deleted, skipped or weakened. Report that every time, it is on the danger list.
 - Problems the change did not introduce. If it was already broken before the fixed point, it is not this branch's job.
-- Style, naming and structure preferences that no `CLAUDE.md` asks for.
+- Style, naming and structure preferences that no `CLAUDE.md` or `.claude/rules/` file asks for.
 - Anything on the other axis — missing requirements, scope creep, "this is not what was asked for".
 - Anything you are guessing at. If you could not open the file, say the file went unread instead of reviewing it from its name.
 
