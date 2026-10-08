@@ -6761,8 +6761,63 @@ check("live-check: a sweeper always stops, whatever the setting",
       re.search(r"[Ss]weeper[^.]*always stop", lc_flat) is not None,
       f"{LIVE_CHECK_PATH} never says a sweeper always stops its server")
 
+# Under bash, never the session's own shell: zsh refuses `set -m` in a subshell
+# ("can't change option: -m"), so `(set -m; nohup ...)` started nothing at all
+# when the live check of #133 ran it on a Mac whose Bash tool runs zsh.
+# `nohup` runs one utility, so `nohup PORT=3000 pnpm dev` starts nothing and still
+# prints a PID; and `sh -c "<command>"` alone lets sh exec the last command, so ps
+# shows `pnpm dev` without the prefix. `sh -c "$1; :"` keeps sh alive, so ps shows
+# the whole recorded command. The command travels as one quoted argument, each `'`
+# in it written as `'\''`, or a command like `npx concurrently 'a' 'b'` splits into
+# several arguments. Found by #133's review and its look; reproduced locally.
+check("live-check: the start runs the command through sh -c, as an argument",
+      """nohup sh -c "$1; :\"""" in live_check_text
+      and "'\\''" in live_check_text,
+      f"{LIVE_CHECK_PATH} hands nohup the start command directly, which an env "
+      f"prefix breaks")
+
+_OWNERSHIP_FILES = {
+    "live-check": live_check_text,
+    "ship": with_references("ship"),
+    "flow": with_references("flow"),
+}
+for _name, _text in _OWNERSHIP_FILES.items():
+    check(f"{_name}: 'still ours' matches the whole recorded command",
+          "first word of the recorded" not in flat(_text)
+          and "contains the whole recorded command" in flat(_text),
+          f"{_name} checks only the first word of the recorded command, which an "
+          f"env-prefixed start never shows in ps")
+
+# #133's spec review: a project that starts its server from a Makefile target
+# showed no start hint, so flow never asked it the Servers question.
+with open(os.path.join(SKILLS_DIR, "flow", "SKILL.md"), encoding="utf-8") as fh:
+    FLOW_SERVERS_LINE = next((l for l in fh if l.startswith("- Servers: !`")), "")
+
+check("flow: a Makefile dev/start/serve/run target counts as a start hint",
+      "Makefile" in FLOW_SERVERS_LINE,
+      "flow's Servers Context line never looks at a Makefile")
+
+# And the reference is for leftovers only: a kept server whose PR is still open,
+# or has no PR yet, needs nothing from the human, so it costs no file read.
+check("flow: reads servers-setting.md for a merged or closed PR, not any kept server",
+      "names a server whose PR is merged or closed" in flat(with_references("flow"))
+      and "or `Kept servers` names a server." not in flat(with_references("flow")),
+      "flow reads servers-setting.md whenever any server is kept")
+
+# servers.tsv holds every repo on the machine. Two repos keeping a server on a
+# same-named branch (`fix/readme`) would let ship stop the other repo's server.
+check("ship: picks the kept-server line by repo and branch, not branch alone",
+      "whose `repo` is this repo's main checkout and whose `branch` is this PR's head branch"
+      in flat(with_references("ship")),
+      "skills/ship never filters servers.tsv by repo before stopping a server")
+
+check("live-check: the detached start runs under bash, not the session's shell",
+      "bash -c 'set -m; nohup" in live_check_text
+      and "(set -m; nohup" not in live_check_text,
+      f"{LIVE_CHECK_PATH} starts the server with `(set -m; ...)`, which zsh refuses")
+
 check("live-check: starts detached in its own process group, log outside the repo",
-      "(set -m; nohup" in live_check_text
+      "set -m; nohup" in live_check_text
       and "</dev/null" in live_check_text
       and "echo $!" in live_check_text
       and re.search(r"log[^.]*temp(orary)? directory[^.]*never the repo", lc_flat)

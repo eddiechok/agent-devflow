@@ -56,8 +56,13 @@ above:
 the repo. The command is the project's own start command, exactly as typed:
 
 ```
-(set -m; nohup <command> </dev/null >"<log>" 2>&1 & echo $!)
+bash -c 'set -m; nohup sh -c "$1; :" </dev/null >"$2" 2>&1 & echo $!' _ '<command>' '<log>'
 ```
+
+Under `bash -c`, whatever shell this session runs: zsh refuses `set -m` in a subshell. The
+command goes through `sh -c "$1; :"` as an argument: `nohup` alone cannot run an env prefix
+such as `PORT=3000 pnpm dev`, and the `; :` keeps `sh` alive, so `ps` shows the whole command. Inside
+`'<command>'`, write each `'` of the command as `'\''`, so it stays one argument.
 
 The PID it prints is the server's `pid`. **Never pick a port, never assume one.** Read the
 ports the server printed in its log (a lane banner, a "listening on" line) and use those, as
@@ -72,7 +77,7 @@ parent of `git rev-parse --path-format=absolute --git-common-dir`), `branch`, `p
 (ISO 8601) and `command`. Remove the line when the server is stopped or found dead.
 
 **Is it still ours?** Both must hold, or it is not ours: `ps -o pgid= -p <pid>` prints
-`<pid>`, and `ps -o command= -p <pid>` contains the first word of the recorded command. Only
+`<pid>`, and `ps -o command= -p <pid>` contains the whole recorded command. Only
 then `kill -TERM -- -<pid>` stops it (the whole group: pnpm, turbo, vite, the backend), and the
 line comes off the list. If it is not ours, never kill; take the line off as stale and say so.
 

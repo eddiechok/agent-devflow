@@ -51,8 +51,7 @@ where there is none):
 
 Stop one only on the human's yes. Never stop one without the human's yes, and a no leaves the line in the list.
 On a yes, stop it by the same check `ship` uses. It is ours only when both hold, or it is not
-ours: `ps -o pgid= -p <pid>` prints `<pid>`, and `ps -o command= -p <pid>` contains the first word
-of the recorded command. Ours → `kill -TERM -- -<pid>`, which stops the whole group, then take the
+ours: `ps -o pgid= -p <pid>` prints `<pid>`, and `ps -o command= -p <pid>` contains the whole recorded command. Ours → `kill -TERM -- -<pid>`, which stops the whole group, then take the
 line off `~/.claude/devflow/servers.tsv`. Not ours → never kill; the PID was reused or the server
 died, so take the line off as stale and say so. Never stop anything else.
 

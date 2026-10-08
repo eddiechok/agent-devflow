@@ -432,10 +432,8 @@ If the merge errored halfway, reconcile against the remote rather than assuming 
 
 **A kept server** is the one exception to "this session started": `submit` may have left one
 up (`- Servers: keep`) and recorded it in `~/.claude/devflow/servers.tsv`, tab-separated:
-`repo`, `branch`, `pr`, `ports`, `pid`, `started`, `command`. Read the line whose `branch`
-is this PR's head branch, from that local file, not from GitHub. It is ours only if both
-hold: `ps -o pgid= -p <pid>` prints `<pid>`, and `ps -o command= -p <pid>` contains the first
-word of the recorded `command`. Both, or it is not ours. Ours: `kill -TERM -- -<pid>` stops
+`repo`, `branch`, `pr`, `ports`, `pid`, `started`, `command`. Read the line whose `repo` is this repo's main checkout and whose `branch` is this PR's head branch, from that local file, not from GitHub. It is ours only if both
+hold: `ps -o pgid= -p <pid>` prints `<pid>`, and `ps -o command= -p <pid>` contains the whole recorded command. Both, or it is not ours. Ours: `kill -TERM -- -<pid>` stops
 the whole group. Not ours: never kill it, the PID was reused or the server died. Either way
 the line comes off the list; a not-ours line is stale, so say so. The `cleaned` line names
 the kept server it stopped, or the stale one it dropped.
