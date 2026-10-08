@@ -309,6 +309,10 @@ The same read finds leftovers: servers an earlier run kept whose PR is merged or
 
 **The cost rule.** The Context line runs when the skill loads, so it takes no turn, and the model should not pay for servers that are not there. It reads only the local file, `~/.claude/devflow/servers.tsv`, and calls GitHub (one REST call per kept server of this repo, for its PR's state) only when the file has a line for this repo. With none, the model sees one short line, `Kept servers: none`, and the reference is never read. The list is never fetched from GitHub.
 
+### Env files — ask once
+
+A gitignored `.env` never reaches a worktree, and `setup`'s step 6c offers a `.worktreeinclude` so Claude Code copies it into each one (see [setup.md](setup.md)). A project set up before step 6c existed skips setup's questions, so `flow` asks it once, the way it asks the browser driver and the Servers question: a Context line finds the env files, a reference holds the question ([worktree-env.md](../skills/flow/references/worktree-env.md)), and the answer is held and written at step 5. The Context line looks in the main checkout, because in a worktree the files are the very thing missing, and it prints paths only, never a value. A `.worktreeinclude` already there, or no ignored env files, prints one short line and the reference is never read.
+
 ### Step 5 — submit it
 
 `submit` passes it to `review`, and `review`'s second axis judges the change against it.
