@@ -2522,7 +2522,7 @@ SHAPED_LABELS = {
     "green", "handback", "issue", "landed", "lesson", "lint", "live", "look", "merge", "merged",
     "no-behaviour", "open", "opinion", "override", "parked", "piece",
     "pieces", "plan", "plans", "pr", "pushed", "red", "repo", "research", "retargeted", "review",
-    "see", "session", "settings", "skills", "stuck", "tended", "test", "theirs", "todo",
+    "see", "servers", "session", "settings", "skills", "stuck", "tended", "test", "theirs", "todo",
     "typecheck", "ux", "variants",
     "worktree", "workflow", "yours",
 }
@@ -4315,7 +4315,7 @@ SKILL_SIZE_CAP = 500
 # together; these keep each reference reachable, keep the no-behaviour path
 # in SKILL.md itself, and hold the two skills to the size that saves.
 
-SLIM_CAPS = {"submit": 311, "review": 130}
+SLIM_CAPS = {"submit": 317, "review": 130}
 
 # Which step reads each reference. A link anywhere in SKILL.md is not enough:
 # the step that needs the text has to be the one that sends the run there.
@@ -6137,10 +6137,10 @@ check("flow/look: a Rules line keeps it off Quick and out of the repo",
       and "never write a variant into the repo" in flow_skill_flat,
       f"{FLOW_PATH} has no Rules line for the look question")
 
-check("flow/look: lines 337 and 341 did not move (evals/README.md cites them)",
-      flow_text.splitlines()[336] == "Quick \u2014 single-file copy change."
-      and flow_text.splitlines()[340] == "Deep \u2014 new subsystem, touches auth (danger list).",
-      f"{FLOW_PATH} lines 337 and 341 are no longer the two size-line examples")
+check("flow/look: lines 335 and 339 did not move (evals/README.md cites them)",
+      flow_text.splitlines()[334] == "Quick \u2014 single-file copy change."
+      and flow_text.splitlines()[338] == "Deep \u2014 new subsystem, touches auth (danger list).",
+      f"{FLOW_PATH} lines 335 and 339 are no longer the two size-line examples")
 
 check("flow/look: the reference exists",
       look_text != "",
@@ -6727,6 +6727,375 @@ check("docs/flow: says why flow asks the browser driver",
 check("docs/setup: says why there is a session option",
       "Use whatever the session has" in docs_setup_browser,
       "docs/setup.md never explains the 'Use whatever the session has' option")
+
+# ------------------------------------- keep the dev server after the live check
+#
+# Slow apps (several servers, a database, a heavy backend) cost minutes to
+# start, so the live check can leave its server up for the human to click
+# through. It is a per-project line, `- Servers: keep`, and everything about
+# it is best effort: the docs promise nothing about a session closing. The
+# list of kept servers is one local file, never the repo. Shared spec: a
+# server is stopped only when its PID still leads its own process group AND
+# still runs the recorded command.
+
+lc_flat = flat(live_check_text)
+sub_flat = flat(submit_text)
+# `section` stops at the first `## ` line, and step 8's PR template has several
+# of its own, so step 8 is cut by hand, from its heading to step 9's.
+sub_step8 = submit_text[submit_text.find("## 8. "):submit_text.find("## 9. ")]
+SERVERS_LIST = "~/.claude/devflow/servers.tsv"
+
+check("live-check: keeps a server only on `- Servers: keep` in `## Workflow`",
+      "`- Servers: keep`" in lc_flat and "## Workflow" in lc_flat
+      and re.search(r"[Nn]o `Servers` line[^.]*stop", lc_flat) is not None,
+      f"{LIVE_CHECK_PATH} never ties keeping the server to - Servers: keep, "
+      f"or never says no line means stop")
+
+check("live-check: keep never applies in a cloud session",
+      '[ "$CLAUDE_CODE_REMOTE" = "true" ]' in live_check_text
+      and re.search(r"cloud[^.]*always stop", lc_flat) is not None,
+      f"{LIVE_CHECK_PATH} never checks CLAUDE_CODE_REMOTE or says a cloud "
+      f"session always stops its server")
+
+check("live-check: a sweeper always stops, whatever the setting",
+      re.search(r"[Ss]weeper[^.]*always stop", lc_flat) is not None,
+      f"{LIVE_CHECK_PATH} never says a sweeper always stops its server")
+
+check("live-check: starts detached in its own process group, log outside the repo",
+      "(set -m; nohup" in live_check_text
+      and "</dev/null" in live_check_text
+      and "echo $!" in live_check_text
+      and re.search(r"log[^.]*temp(orary)? directory[^.]*never the repo", lc_flat)
+      is not None,
+      f"{LIVE_CHECK_PATH} never gives the detached start or its log outside the repo")
+
+check("live-check: reads the printed port, never picks or assumes one",
+      re.search(r"never (pick|choose)[^.]*port", lc_flat, re.I) is not None
+      and re.search(r"printed", lc_flat) is not None
+      and re.search(r"never assume", lc_flat, re.I) is not None,
+      f"{LIVE_CHECK_PATH} never says to read the port the server printed")
+
+check("live-check: the list is one local file, with the fields in the spec",
+      SERVERS_LIST in live_check_text
+      and "never in the repo" in lc_flat
+      and all(f in live_check_text for f in
+              ("repo", "branch", "pr", "ports", "pid", "started", "command"))
+      and "`-`" in live_check_text,
+      f"{LIVE_CHECK_PATH} never names {SERVERS_LIST} and its seven fields")
+
+check("live-check: 'still ours' is the PID's group and its command, both",
+      "ps -o pgid= -p" in live_check_text
+      and "ps -o command= -p" in live_check_text
+      and "kill -TERM -- -" in live_check_text
+      and re.search(r"[Bb]oth[^.]*not ours", lc_flat) is not None,
+      f"{LIVE_CHECK_PATH} never checks group and command before a kill")
+
+check("live-check: ports all taken stops and names the kept servers, never kills",
+      re.search(r"taken[^.]*stop", lc_flat) is not None
+      and "kept servers" in lc_flat
+      and re.search(r"never kill", lc_flat) is not None,
+      f"{LIVE_CHECK_PATH} never says what happens when the ports are all taken")
+
+check("live-check: the PR section carries URLs, PID, start command and stop command",
+      "## Running" in live_check_text
+      and "Stop it: `kill -TERM -- -" in live_check_text
+      and "Not running? Start it again with" in live_check_text
+      and "PID" in live_check_text,
+      f"{LIVE_CHECK_PATH} never gives the ## Running section its lines")
+
+check("submit: the PR template has a ## Running section, only when a server was kept",
+      "## Running" in sub_step8
+      and re.search(r"only when[^.]*kept", sub_flat) is not None,
+      f"{SUBMIT_PATH} step 8 template has no ## Running section")
+
+check("submit: How to check says a kept server is still up",
+      re.search(r"still up", flat(sub_step8)) is not None,
+      f"{SUBMIT_PATH} step 8 never says a kept server is still up")
+
+check("submit: step 8 writes the PR number into the list line",
+      "servers.tsv" in sub_step8 and "PR number" in sub_step8,
+      f"{SUBMIT_PATH} step 8 never writes the PR number into the list line")
+
+check("agents/sweeper: always stops its server, whatever the setting",
+      re.search(r"always stop[^.]*server|server[^.]*always stop", sweeper_body)
+      is not None
+      and "Servers" in sweeper_body and "live-check.md" in sweeper_body,
+      f"{SWEEPER_PATH} never says a sweeper always stops its server")
+
+# ------------------------------------------ ship stops a kept server (chain A)
+#
+# submit's live check can leave a server up (`- Servers: keep`). ship's cleanup
+# is where it comes down, from the local list, never from GitHub. A PID is only
+# a number: after the server died the OS may hand it to something else, so ship
+# kills only a PID that still leads its own process group AND still runs the
+# command the list recorded. Anything else is stale, and just comes off the list.
+
+ship_servers = flat(section(ship_text, "## 6. ")[
+    section(ship_text, "## 6. ").find("**Dev servers.**"):
+    section(ship_text, "## 6. ").find("**Temp artifacts.**")])
+
+check("ship: step 6 reads the kept server from the local list, this branch's line",
+      "~/.claude/devflow/servers.tsv" in ship_servers
+      and "branch" in ship_servers
+      and re.search(r"not (from )?GitHub", ship_servers) is not None,
+      f"{SHIP_PATH} step 6 never reads servers.tsv for this PR's branch")
+
+check("ship: a kept server is stopped only when its PID is still ours",
+      "ps -o pgid= -p" in ship_servers
+      and "ps -o command= -p" in ship_servers
+      and re.search(r"[Bb]oth[^.]*not ours", ship_servers) is not None
+      and "kill -TERM -- -" in ship_servers,
+      f"{SHIP_PATH} step 6 never checks group and command before a kill")
+
+check("ship: a server that is not ours is never killed, and its line comes off",
+      re.search(r"not ours[^.]*never kill", ship_servers, re.I) is not None
+      and re.search(r"stale", ship_servers) is not None
+      and re.search(r"line comes off|remove the line|take the line off",
+                    ship_servers) is not None,
+      f"{SHIP_PATH} step 6 never says a stale line comes off without a kill")
+
+check("ship: the cleaned line names a stopped or stale kept server",
+      re.search(r"cleaned[^.]*(kept server|names? it)", ship_servers) is not None,
+      f"{SHIP_PATH} step 6 never says the cleaned line names the kept server")
+
+check("ship: still stops only servers it was told about, never what is on a port",
+      "Never kill" in ship_servers and "port 3000" in ship_servers,
+      f"{SHIP_PATH} step 6 lost the never-kill-a-port rule")
+
+# --------------------------------- setup asks keep or stop, and lanes (chain A)
+#
+# `- Servers: keep` or `- Servers: stop` goes in `## Workflow`, but only in a
+# repo whose live check starts a server. setup reads the start command: a slow
+# start (several servers, a database, a heavy backend) recommends keep, a start
+# in seconds recommends stop. A start command that binds one fixed port gets a
+# lane-script recommendation (printed, nothing written), after the human's own
+# bykare-medusa-admin scripts/dev.sh.
+
+_servers_at = setup_text.find("## 6b. ")
+_servers = setup_text[_servers_at:setup_text.find("\n## 7. ", _servers_at + 1)] if _servers_at >= 0 else ""
+_servers_flat = flat(_servers)
+
+check("setup: step 6b sits after the browser step and before the report",
+      setup_text.find("## 6a. ") < _servers_at < setup_text.find("## 7. Report"),
+      f"{SETUP_PATH} has no '## 6b. ' between step 6a and step 7")
+
+check("setup: the Servers question is only for a repo whose live check starts a server",
+      "– **servers** skipped" in _servers
+      and re.search(r"starts a server", _servers_flat) is not None
+      and re.search(r"nothing (to start|starts)", _servers_flat) is not None,
+      f"{SETUP_PATH} step 6b never limits itself to a repo that starts a server")
+
+check("setup: one keep-or-stop question, a recommended option first",
+      "Keep the server running" in _servers and "Stop the server" in _servers
+      and "(Recommended)" in _servers,
+      f"{SETUP_PATH} step 6b never lists Keep and Stop options with a recommended one")
+check("setup: slow start (several servers, a database, a heavy backend) means keep",
+      "several servers" in _servers_flat and "database" in _servers_flat
+      and "heavy backend" in _servers_flat and "seconds" in _servers_flat
+      and re.search(r"keep", _servers_flat) is not None
+      and re.search(r"stop", _servers_flat) is not None,
+      f"{SETUP_PATH} step 6b never says what makes a start slow or fast")
+
+check("setup: the answer is written as `- Servers: keep|stop` in `## Workflow`",
+      "- Servers: keep" in _servers and "- Servers: stop" in _servers
+      and "## Workflow" in _servers,
+      f"{SETUP_PATH} step 6b never writes the Servers line into ## Workflow")
+
+check("setup: keep applies in a local session only, said in the question",
+      re.search(r"cloud", _servers_flat) is not None
+      and re.search(r"always stop", _servers_flat) is not None,
+      f"{SETUP_PATH} step 6b never says a cloud session always stops")
+
+check("setup: a fixed port gets a lane-script recommendation, and nothing is written",
+      re.search(r"one fixed port", _servers_flat) is not None
+      and "lane" in _servers_flat
+      and "lowest free lane" in _servers_flat
+      and re.search(r"every port[^.]*together", _servers_flat) is not None
+      and re.search(r"CORS|allowed origins", _servers_flat) is not None
+      and re.search(r"writes? nothing", _servers_flat) is not None,
+      f"{SETUP_PATH} step 6b never recommends a lane script for a fixed port")
+
+check("setup: the lane pattern is credited to bykare-medusa-admin's scripts/dev.sh",
+      "bykare-medusa-admin" in _servers and "scripts/dev.sh" in _servers,
+      f"{SETUP_PATH} step 6b never credits the human's own scripts/dev.sh")
+
+check("setup: the report has a servers line",
+      "**servers**" in section(setup_text, "## 7. Report"),
+      f"{SETUP_PATH} step 7 never reports the Servers answer")
+
+check("setup: the rules allow the Servers line, and the old 'only Mode' wording is gone",
+      "- Servers:" in section(setup_text, "## Rules")
+      and "Nothing else goes in this block. No block" not in setup_text,
+      f"{SETUP_PATH} still says the Workflow block holds Mode and About only")
+
+# ------------------- flow asks the Servers question once, and names leftovers
+#
+# The Context `!` commands run when the skill loads, so they cost no turn. The
+# `Kept servers` one reads only the local list (~/.claude/devflow/servers.tsv)
+# and calls GitHub, one REST call per listed server, only when the list has a
+# line for this repo. With none, the model sees one short line. These pins RUN
+# the command, in a scratch repo with a scratch HOME and a stand-in `gh`.
+
+SERVERS_REF_PATH = os.path.join(SKILLS_DIR, "flow", "references", "servers-setting.md")
+servers_ref_text = ""
+if os.path.exists(SERVERS_REF_PATH):
+    with open(SERVERS_REF_PATH, encoding="utf-8") as fh:
+        servers_ref_text = fh.read()
+servers_ref_flat = flat(servers_ref_text)
+flow_ctx = section(flow_text, "## Context")
+
+
+def context_command(label):
+    m = re.search(r"^- " + re.escape(label) + r": !`(.*)`$", flow_ctx, re.M)
+    return m.group(1) if m else None
+
+
+def run_context(cmd, home, repo, extra_path=None):
+    env = dict(os.environ, HOME=home)
+    if extra_path:
+        env["PATH"] = extra_path + os.pathsep + env["PATH"]
+    done = subprocess.run(["bash", "-c", cmd], cwd=repo, env=env,
+                          capture_output=True, text=True)
+    return done.returncode, done.stdout.strip()
+
+
+kept_cmd = context_command("Kept servers")
+servers_cmd = context_command("Servers")
+check("flow: Context has a Kept servers line and a Servers line",
+      kept_cmd is not None and servers_cmd is not None,
+      f"{FLOW_PATH} Context has no '- Kept servers: !`...`' or '- Servers: !`...`' line")
+
+with tempfile.TemporaryDirectory() as _scratch:
+    _scratch = os.path.realpath(_scratch)
+    _home = os.path.join(_scratch, "home")
+    _repo = os.path.join(_scratch, "repo")
+    _bin = os.path.join(_scratch, "bin")
+    for _d in (_home, _repo, _bin):
+        os.makedirs(_d)
+    subprocess.run(["git", "init", "-q", _repo], capture_output=True)
+    _gh_log = os.path.join(_scratch, "gh-calls")
+    with open(os.path.join(_bin, "gh"), "w") as fh:
+        fh.write('#!/bin/sh\necho "$@" >> "%s"\n'
+                 'case "$*" in *pulls/12*) echo merged;; *pulls/13*) echo open;; '
+                 '*) echo closed;; esac\n' % _gh_log)
+    os.chmod(os.path.join(_bin, "gh"), 0o755)
+    _list_dir = os.path.join(_home, ".claude", "devflow")
+
+    if kept_cmd:
+        code, out = run_context(kept_cmd, _home, _repo, _bin)
+        check("flow: no list at all prints `none`, and never calls gh",
+              code == 0 and out == "none" and not os.path.exists(_gh_log),
+              f"Kept servers printed {out!r} (exit {code}), gh called: "
+              f"{os.path.exists(_gh_log)}")
+
+        os.makedirs(_list_dir)
+        with open(os.path.join(_list_dir, "servers.tsv"), "w") as fh:
+            fh.write("\t".join(["/some/other/repo", "feat/x", "5", "3000", "999",
+                                "2026-10-08T14:02", "npm run dev"]) + "\n")
+        code, out = run_context(kept_cmd, _home, _repo, _bin)
+        check("flow: a list with only other repos' lines prints `none`, no gh call",
+              code == 0 and out == "none" and not os.path.exists(_gh_log),
+              f"Kept servers printed {out!r}, gh called: {os.path.exists(_gh_log)}")
+
+        with open(os.path.join(_list_dir, "servers.tsv"), "a") as fh:
+            fh.write("\t".join([_repo, "feat/a", "12", "5174,9001", "4821",
+                                "2026-10-08T14:02", "pnpm dev"]) + "\n")
+            fh.write("\t".join([_repo, "feat/b", "-", "5175", "4822",
+                                "2026-10-08T14:03", "pnpm dev"]) + "\n")
+        code, out = run_context(kept_cmd, _home, _repo, _bin)
+        calls = open(_gh_log).read().splitlines() if os.path.exists(_gh_log) else []
+        check("flow: a kept server of this repo is named with its PR state and PID",
+              code == 0 and "merged" in out and "4821" in out
+              and "feat/a" in out and "pnpm dev" in out
+              and "/some/other/repo" not in out and "999" not in out,
+              f"Kept servers printed {out!r}")
+        check("flow: one gh call for a listed PR, none for a server with no PR yet",
+              len(calls) == 1 and "pulls/12" in calls[0],
+              f"gh was called {calls!r}")
+
+    if servers_cmd:
+        code, out = run_context(servers_cmd, _home, _repo)
+        check("flow: no Servers line prints `none` with the start hints it found",
+              code == 0 and out.startswith("none"), f"printed {out!r}")
+        with open(os.path.join(_repo, "package.json"), "w") as fh:
+            fh.write('{"scripts": {"dev": "vite"}}\n')
+        code, out = run_context(servers_cmd, _home, _repo)
+        check("flow: a package.json dev script is a start hint",
+              code == 0 and out.startswith("none") and "dev" in out,
+              f"printed {out!r}")
+        with open(os.path.join(_repo, "CLAUDE.md"), "w") as fh:
+            fh.write("## Workflow\n- Mode: pr\n- Servers: keep\n")
+        code, out = run_context(servers_cmd, _home, _repo)
+        check("flow: a Servers line prints its value and no hints",
+              code == 0 and out == "keep", f"printed {out!r}")
+
+check("flow: the Kept servers command reads the list before it ever calls gh",
+      kept_cmd is not None and "servers.tsv" in kept_cmd
+      and kept_cmd.count("gh api") == 1
+      and kept_cmd.index("gh api") > kept_cmd.index("servers.tsv"),
+      f"{FLOW_PATH} Kept servers command does not read the list before gh")
+
+_before0 = flat(section(flow_text, "## Before step 0"))
+check("flow: Before step 0 sends both Context lines to the reference, after step 0c",
+      "servers-setting.md" in _before0 and "after step 0c" in _before0
+      and "Kept servers" in _before0 and "`Servers`" in _before0,
+      f"{FLOW_PATH} never sends the Servers lines to servers-setting.md")
+
+check("flow: step 5 writes a held Servers answer, like the Browser one",
+      "servers-setting.md" in section(flow_text, "## Step 5")
+      and "Servers" in section(flow_text, "## Step 5"),
+      f"{FLOW_PATH} step 5 never writes the held Servers answer")
+
+check("flow/servers-setting: the reference exists",
+      servers_ref_text != "", f"{SERVERS_REF_PATH} does not exist")
+
+check("flow/servers-setting: asks once through setup's step 6b, alone",
+      "../../setup/SKILL.md#6b-keep-the-dev-server-running" in servers_ref_text
+      and "alone" in servers_ref_flat,
+      f"{SERVERS_REF_PATH} never runs setup's step 6b alone")
+
+check("flow/servers-setting: held after the ask, written at step 5 into ## Workflow",
+      re.search(r"[Hh]old the answer", servers_ref_flat) is not None
+      and "step 5" in servers_ref_flat and "## Workflow" in servers_ref_text
+      and "after step 0c" in servers_ref_flat,
+      f"{SERVERS_REF_PATH} never holds the answer for step 5")
+
+check("flow/servers-setting: only a repo whose live check starts a server, once",
+      re.search(r"starts a server", servers_ref_flat) is not None
+      and "print nothing" in servers_ref_flat and "once" in servers_ref_flat,
+      f"{SERVERS_REF_PATH} never limits the question to a repo that starts a server")
+
+check("flow/servers-setting: never asked in submit, and not twice when setup ran",
+      "submit" in servers_ref_flat
+      and re.search(r"setup ran[^.]*this run", servers_ref_flat) is not None,
+      f"{SERVERS_REF_PATH} never keeps the question out of submit or out of a setup run")
+
+check("flow/servers-setting: a leftover is a kept server whose PR is merged or closed",
+      re.search(r"merged or closed", servers_ref_flat) is not None
+      and "stop command" in servers_ref_flat and "kill -TERM -- -" in servers_ref_text,
+      f"{SERVERS_REF_PATH} never names a leftover with its stop command")
+
+check("flow/servers-setting: a leftover is stopped only on the human's yes",
+      re.search(r"only on the human's yes", servers_ref_flat) is not None
+      and re.search(r"never[^.]*without (the human's|a) yes", servers_ref_flat, re.I)
+      is not None,
+      f"{SERVERS_REF_PATH} never makes a stop wait for a yes")
+
+check("flow/servers-setting: stopping checks the PID is still ours, both group and command",
+      "ps -o pgid= -p" in servers_ref_text and "ps -o command= -p" in servers_ref_text
+      and re.search(r"[Bb]oth[^.]*not ours", servers_ref_flat) is not None
+      and "stale" in servers_ref_flat,
+      f"{SERVERS_REF_PATH} never checks the PID before a kill")
+
+check("flow/servers-setting: the cost rule is stated",
+      "local file" in servers_ref_flat
+      and "one REST call per" in servers_ref_flat
+      and "Kept servers: none" in servers_ref_text,
+      f"{SERVERS_REF_PATH} never states what the Context line costs")
+
+check("flow: SKILL.md stays at or under 500 lines with the Servers lines",
+      len(flow_text.splitlines()) <= 500,
+      f"{FLOW_PATH} is {len(flow_text.splitlines())} lines, cap is 500")
 
 # --------------------------------------------------------------------- report
 

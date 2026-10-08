@@ -430,6 +430,16 @@ If the merge errored halfway, reconcile against the remote rather than assuming 
 
 **Dev servers.** Stop only the ones this session started. Never kill "whatever is on port 3000" — that may be something the human is running. The same rule `submit` applies to its live check.
 
+**A kept server** is the one exception to "this session started": `submit` may have left one
+up (`- Servers: keep`) and recorded it in `~/.claude/devflow/servers.tsv`, tab-separated:
+`repo`, `branch`, `pr`, `ports`, `pid`, `started`, `command`. Read the line whose `branch`
+is this PR's head branch, from that local file, not from GitHub. It is ours only if both
+hold: `ps -o pgid= -p <pid>` prints `<pid>`, and `ps -o command= -p <pid>` contains the first
+word of the recorded `command`. Both, or it is not ours. Ours: `kill -TERM -- -<pid>` stops
+the whole group. Not ours: never kill it, the PID was reused or the server died. Either way
+the line comes off the list; a not-ours line is stale, so say so. The `cleaned` line names
+the kept server it stopped, or the stale one it dropped.
+
 **Temp artifacts.** Remove the screenshots and scratch files the live check wrote to temp directories. Nothing in the repo needs cleaning, because nothing should have been written there in the first place.
 
 **The session.** Once the PR is merged, the session is finished work. **Offer** to archive it. Offer, not do — an archived session the human still wanted open is an annoyance they have to go and undo.
