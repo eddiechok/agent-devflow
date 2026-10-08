@@ -178,6 +178,7 @@ Here is what the chart leaves out. All of it stops the flow rather than bending 
 
 - `flow` forces anything on the **danger list** to at least Standard size. When it is one of the security items, `review` starts `security-reviewer` on its own, inside `submit`'s own review step — nothing for you to remember to run.
 - The **hook asks** before any commit that would land on the default branch.
+- The **hook asks** before Claude edits a secret env file, such as `.env` or `.env.local`. Templates like `.env.example` pass. A write through Bash goes around it.
 - **Three failed attempts** at the same problem and `build` stops. It says what each attempt ruled out. It does not try a fourth.
 - If the **live check fails** twice, `submit` stops and does not open a PR. An honest failure beats a green-looking PR over a broken feature.
 - A **builder that says `stuck`** stops a Deep job. `plan` stops spawning new chains, lets the running ones finish, then says which chain and which piece, and what the builder ruled out, before handing it to you. It does not try that piece again.
@@ -302,7 +303,7 @@ wrong.
 | [docs/pipeline.md](docs/pipeline.md) | Where work can sit, and what moves it. |
 | [docs/lessons.md](docs/lessons.md) | How `lesson` and `lesson-review` capture and act on real runs. Where waste counting reads from, and what it cannot see. The loop that turns a repeat into a fix and an eval case. |
 | [docs/web.md](docs/web.md) | Claude Code on the web. Start with "use the devflow flow skill". On Pro, say "run the review". `ship` is local only. |
-| [docs/hook.md](docs/hook.md) | The bash hook. It trims check output, allows the bare check commands, and asks before a commit to the default branch. It stops mistakes, not attackers. |
+| [docs/hook.md](docs/hook.md) | The hooks. The bash hook trims check output, allows the bare check commands, and asks before a commit to the default branch. The secret hook asks before an edit to a secret env file. They stop mistakes, not attackers. |
 | [docs/provenance.md](docs/provenance.md) | Where every idea came from. Every bug that shaped a rule. Full credits. |
 
 Working on the plugin? The checks are in [CLAUDE.md](CLAUDE.md). `claude plugin validate .` prints exactly one warning, about `version`. That is on purpose.
