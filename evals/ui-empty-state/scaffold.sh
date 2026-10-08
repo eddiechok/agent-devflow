@@ -10,10 +10,12 @@ cd "$workspace"
 
 # A small web app with one list page. The seeded data is never empty, so the
 # empty state is a page the run has to make: the project's CLAUDE.md says how.
-# The server stamps how many orders it rendered into an HTML comment. That line
-# is what the graders read: a test or an edit the run writes cannot contain it,
-# so only a page actually served empty can.
+# The server appends each page it serves to served.log. That file is what the
+# graders read: a test or an edit the run writes cannot contain it, so only a
+# page actually served empty can. Not the trace: a browser check reads only the
+# element the change touched, so the page's HTML never reaches it.
 mkdir -p src test data
+printf 'served.log\n' >> .gitignore
 
 cat > src/orders.js <<'JS'
 export const EMPTY_TEXT = "Nothing here yet.";
@@ -42,10 +44,12 @@ http
       return;
     }
     const orders = JSON.parse(fs.readFileSync(file, "utf8"));
+    const list = renderOrders(orders);
+    fs.appendFileSync("served.log", `rendered ${orders.length} orders from ${file}: ${list}\n`);
     res.writeHead(200, { "content-type": "text/html" });
     res.end(
       `<!doctype html><title>Orders</title><h1>Orders</h1>\n` +
-        `${renderOrders(orders)}\n` +
+        `${list}\n` +
         `<!-- rendered ${orders.length} orders from ${file} -->\n`,
     );
   })

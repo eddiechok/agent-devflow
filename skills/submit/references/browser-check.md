@@ -37,8 +37,9 @@ Run all five. A page that renders is not a page that is right.
    caused is a finding. One that was already there is not yours; note it and move on.
 5. **Read only the text that proves the change.** Ask the driver for the one element, label
    or region the change touched. No full-page dumps and no whole accessibility tree in your
-   context. Save screenshots to a temp directory and never into the repo; never read a
-   screenshot into context unless you are reading that one image to judge the layout.
+   context. Save screenshots to a temp directory and never into the repo, and never read
+   one into your context. A layout change is proven by measuring it: ask the driver for the
+   element's size, position or computed style at each width.
 
 ## Project facts stay in the project
 

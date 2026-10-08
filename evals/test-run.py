@@ -1658,9 +1658,10 @@ for _n in ("reaches-the-empty-state", "shows-the-new-text-in-the-empty-state",
     check_true("ui-empty-state: the %s grader is there" % _n, _n in _ue)
 
 
-def ue_verdict(name, outputs=(), commands=(), workdir="."):
+def ue_verdict(name, served=None, commands=()):
     """The verdict of one ui-empty-state grader on a run whose Bash calls were
-    `commands` and whose tool results were `outputs`."""
+    `commands` and whose server wrote `served` to served.log (None: it never
+    served a page)."""
     if name not in _ue:
         return None
     events = []
@@ -1668,38 +1669,50 @@ def ue_verdict(name, outputs=(), commands=(), workdir="."):
         events.append({"type": "assistant", "message": {"content": [
             {"type": "tool_use", "id": "u%d" % i, "name": "Bash",
              "input": {"command": cmd}}]}})
-    for i, out in enumerate(outputs):
-        events.append({"type": "assistant", "message": {"content": [
-            {"type": "tool_use", "id": "o%d" % i, "name": "Bash",
-             "input": {"command": "curl -s localhost:4100/orders"}}]}})
-        events.append({"type": "user", "message": {"content": [
-            {"type": "tool_result", "tool_use_id": "o%d" % i, "content": out}]}})
-    return verdict(_ue[name], ctx(events, workdir))
+    workdir = tempfile.mkdtemp()
+    try:
+        if served is not None:
+            with open(os.path.join(workdir, "served.log"), "w") as fh:
+                fh.write(served)
+        return verdict(_ue[name], ctx(events, workdir))
+    finally:
+        shutil.rmtree(workdir, ignore_errors=True)
 
 
-_UE_EMPTY_NEW = ('<p data-state="empty">No orders yet.</p>\n'
-                 '<!-- rendered 0 orders from data/empty.json -->')
-_UE_EMPTY_OLD = ('<p data-state="empty">Nothing here yet.</p>\n'
-                 '<!-- rendered 0 orders from data/empty.json -->')
-_UE_FULL = ('<ul><li>#1001</li></ul>\n'
-            '<!-- rendered 3 orders from data/orders.json -->')
+# What the server writes to served.log for each page. The graders read this
+# file, not the trace: a browser check reads only the element the change
+# touched, so the page's HTML comment never reaches the trace. Found at the
+# live check of #127, where playwright-cli read "No orders yet." and nothing else.
+_UE_EMPTY_NEW = ('rendered 0 orders from data/empty.json: '
+                 '<p data-state="empty">No orders yet.</p>\n')
+_UE_EMPTY_OLD = ('rendered 0 orders from data/empty.json: '
+                 '<p data-state="empty">Nothing here yet.</p>\n')
+_UE_FULL = 'rendered 3 orders from data/orders.json: <ul><li>#1001</li></ul>\n'
 # What a test the run writes could hold: the markup and the text, with no
-# server stamp. It must never count as having reached the state.
+# server behind it. It must never count as having reached the state.
 _UE_TEST_EDIT = ("const html = '<p data-state=\"empty\">No orders yet.</p>'; "
                  "assert.match(render([]), /No orders yet\\./)")
+# A browser check, done right: the driver read the one element, and nothing in
+# the trace carries the server's stamp.
+_UE_BROWSER = ("playwright-cli -s=live eval \"() => document.querySelector("
+               "'[data-state=empty]').textContent\"")
 
 check("ui-empty-state: the page served empty passes reaches-the-empty-state",
-      ue_verdict("reaches-the-empty-state", [_UE_EMPTY_NEW]), "pass")
+      ue_verdict("reaches-the-empty-state", _UE_EMPTY_NEW), "pass")
 check("ui-empty-state: only the full page fails reaches-the-empty-state",
-      ue_verdict("reaches-the-empty-state", [_UE_FULL]), "fail")
+      ue_verdict("reaches-the-empty-state", _UE_FULL), "fail")
 check("ui-empty-state: a test that holds the markup fails reaches-the-empty-state",
       ue_verdict("reaches-the-empty-state", commands=[_UE_TEST_EDIT]), "fail")
 check("ui-empty-state: the new text served empty passes shows-the-new-text",
-      ue_verdict("shows-the-new-text-in-the-empty-state", [_UE_EMPTY_NEW]), "pass")
+      ue_verdict("shows-the-new-text-in-the-empty-state", _UE_EMPTY_NEW), "pass")
 check("ui-empty-state: the old text served empty fails shows-the-new-text",
-      ue_verdict("shows-the-new-text-in-the-empty-state", [_UE_EMPTY_OLD]), "fail")
+      ue_verdict("shows-the-new-text-in-the-empty-state", _UE_EMPTY_OLD), "fail")
 check("ui-empty-state: the new text only in a test fails shows-the-new-text",
       ue_verdict("shows-the-new-text-in-the-empty-state", commands=[_UE_TEST_EDIT]), "fail")
+check("ui-empty-state: a browser read of one element passes both  <-- the live check of #127",
+      [ue_verdict("reaches-the-empty-state", _UE_EMPTY_NEW, [_UE_BROWSER]),
+       ue_verdict("shows-the-new-text-in-the-empty-state", _UE_EMPTY_NEW, [_UE_BROWSER])],
+      ["pass", "pass"])
 
 _ue_scaffold = os.path.join(HERE, "ui-empty-state", "scaffold.sh")
 check_true("ui-empty-state: the scaffold exists", os.path.isfile(_ue_scaffold))
@@ -1754,6 +1767,10 @@ if os.path.isfile(_ue_scaffold):
                    "Nothing here yet." in _uread("src", "orders.js"))
         check_true("ui-empty-state: the server stamps how many orders it rendered",
                    "rendered" in _uread("src", "server.js"))
+        check_true("ui-empty-state: the server writes each page it serves to served.log",
+                   "served.log" in _uread("src", "server.js"))
+        check_true("ui-empty-state: served.log is ignored, so serving leaves the tree clean",
+                   "served.log" in _uread(".gitignore"))
         check("ui-empty-state: it starts on main", _ugit("rev-parse", "--abbrev-ref", "HEAD"), "main")
         check("ui-empty-state: it starts with a clean tree", _ugit("status", "--porcelain"), "")
     finally:

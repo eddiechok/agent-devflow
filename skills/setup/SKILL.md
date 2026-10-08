@@ -1,6 +1,6 @@
 ---
 name: setup
-description: Use when a project's CLAUDE.md has no `## Workflow` block, or the human asks to set devflow up. Reads the repo, detects the test, typecheck and lint commands and runs them to confirm they work, asks what the project is about and whether to work direct (commit on main) or pr (a branch and a pull request per job), then writes the Checks, Plans and Workflow blocks into the project CLAUDE.md. Called by flow first, when the Workflow block is missing.
+description: Use when a project's CLAUDE.md has no `## Workflow` block, or the human asks to set devflow up. Reads the repo, detects the test, typecheck and lint commands and runs them to confirm they work, asks what the project is about and whether to work direct (commit on main) or pr (a branch and a pull request per job), then writes the Checks, Plans and Workflow blocks, and in a UI repo a Browser block, into the project CLAUDE.md. Called by flow first, when the Workflow block is missing.
 ---
 
 # setup

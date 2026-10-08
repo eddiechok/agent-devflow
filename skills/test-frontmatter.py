@@ -6498,6 +6498,13 @@ check("browser-check: screenshots stay out of context",
       re.search(r"[Nn]ever[^.]*(into|in) (your |the )?context", browser_flat) is not None,
       f"{BROWSER_CHECK_PATH} never says screenshots stay out of context")
 
+# #127 keeps screenshots out of context with no exception. The first draft let
+# one in "to judge the layout"; a layout is proven by measuring it instead.
+check("browser-check: no screenshot is read into context, not even for a layout",
+      re.search(r"screenshot[^.]*context unless", browser_flat) is None
+      and "measur" in browser_lower,
+      f"{BROWSER_CHECK_PATH} lets a screenshot into context, or never says to measure a layout")
+
 check("browser-check: the driver is the `## Browser` block's, else the session's, said by name",
       "`## Browser`" in browser_check_text
       and "- Driver:" in browser_check_text
