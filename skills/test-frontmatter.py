@@ -858,6 +858,42 @@ check("docs/setup: says why setup offers devflow:skills",
       "devflow:skills" in _docs_setup and "#96" in _docs_setup,
       "docs/setup.md never says why setup offers devflow:skills")
 
+# #144: setup on a pnpm monorepo (meta-elearning). Its root scripts already
+# ran every package, so the old "ask which package" rule asked for nothing.
+# Its CI ran `pnpm build`, which Checks left out, and setup never said so.
+_cmds_at = setup_text.find("## 2. Work out the commands")
+_cmds = setup_text[_cmds_at:setup_text.find("\n## ", _cmds_at + 1)] if _cmds_at >= 0 else ""
+check("setup: a monorepo uses the root scripts that cover every package",
+      "root" in _cmds and "every package" in _cmds
+      and "Ask which package the human works in rather than picking one" not in _cmds,
+      f"{SETUP_PATH} step 2 still asks which package when root scripts cover all")
+check("setup: a monorepo asks which package only with no root script",
+      # A root script that misses a package asks too (round 2 of the review)
+      re.search(r"[Oo]nly when no root script reaches\s+every package", _cmds) is not None,
+      f"{SETUP_PATH} step 2 never says to ask only when the root has no script")
+# Review of #144: one root script must not turn the question off for every
+# check. Root `test` via turbo, `lint` only in apps/web -- lint still asks.
+check("setup: the monorepo rule is per check, not all-or-nothing",
+      "for that check" in _cmds,
+      f"{SETUP_PATH} step 2 decides the package question once for every check")
+_kept_at = setup_text.find("## 1. Already set up?")
+_kept = setup_text[_kept_at:setup_text.find("\n## ", _kept_at + 1)] if _kept_at >= 0 else ""
+check("setup: a kept Checks block still gets the CI lines",
+      "**ci**" in _kept,
+      f"{SETUP_PATH} step 1 skips step 2, so a kept block never prints a ci line")
+check("setup: step 2 reads the CI workflow's run steps",
+      ".github/workflows" in _cmds and "`run:`" in _cmds,
+      f"{SETUP_PATH} step 2 never reads the CI workflow's run steps")
+check("setup: a CI step left out of Checks gets its own line",
+      "– **ci** pnpm build runs in CI, not in Checks" in setup_text,
+      f"{SETUP_PATH} never prints the '– **ci**' line for a CI step left out")
+check("setup: a CI step left out is said, not written or asked",
+      re.search(r"[Ww]rite nothing for it, and ask nothing", _cmds) is not None,
+      f"{SETUP_PATH} step 2 never says the left-out CI step is only said")
+check("docs/setup: says why setup prints CI steps left out of Checks",
+      "#144" in _docs_setup,
+      "docs/setup.md never says why setup prints CI steps left out (#144)")
+
 
 # ------------------------------------ flow runs setup first, and has a direct path
 #
@@ -2517,7 +2553,7 @@ check("build: a detached HEAD is no branch, so it cuts one",
 # two spellings, which is the exact drift this list exists to catch.
 
 SHAPED_LABELS = {
-    "backlog", "branch", "browser", "chains", "checks", "chips", "cleaned", "commit",
+    "backlog", "branch", "browser", "chains", "checks", "ci", "chips", "cleaned", "commit",
     "conflict", "debug", "deploy", "docs", "done", "env", "features", "glossary",
     "green", "handback", "issue", "landed", "lesson", "lint", "live", "look", "merge", "merged",
     "no-behaviour", "open", "opinion", "override", "parked", "piece",

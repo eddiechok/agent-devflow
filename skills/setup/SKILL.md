@@ -45,7 +45,8 @@ Print what you found, one shaped line each:
 Read the project's `CLAUDE.md` and look for a `## Checks` block.
 
 If one exists, **do not overwrite it.** Run each command in it and print one shaped line per
-command, the same shape step 3 uses below. Then:
+command, the same shape step 3 uses below. Read the CI workflow as step 2 says, and print a
+`– **ci**` line for each check step it runs that the block does not. Then:
 
 - all pass → go to step 5 if there is no `## Plans` block yet
 - one fails or is missing → print it `✗`, suggest a fix, and ask before changing anything
@@ -67,7 +68,15 @@ Find the project's manifest and read the real script names. Do not guess from co
 
 Notes that matter:
 
-- **A monorepo may have several.** Ask which package the human works in rather than picking one.
+- **A monorepo may have several.** Read the root manifest first, and decide each check on its
+  own. A root script that already reaches every package with that script — `pnpm -r`, a
+  `--filter` to the one package that has it, `turbo run` — is the command for that check.
+  Ask which package the human works in only when no root script reaches every package
+  that has one for that check, and a package does.
+- **Read the CI workflow too.** Each `run:` step in `.github/workflows` that checks the code
+  on a pull request — a build, a test, a lint — is a check the project already trusts. One
+  that is not in the block gets a line, `– **ci** pnpm build runs in CI, not in Checks`.
+  Write nothing for it, and ask nothing: the human adds it if they want it.
 - **Not every project has all three.** A JavaScript project with no TypeScript has no typecheck. That is fine — omit the line. Do not invent a command to fill the row.
 - **Prefer the narrow command.** `pnpm test` beats `pnpm test:all` if the second one also builds and deploys.
 
@@ -362,6 +371,8 @@ Keep it short, one shaped line per fact:
 ✓ **typecheck** pnpm typecheck — pass
 
 ✓ **lint** pnpm lint — pass
+
+– **ci** pnpm build runs in CI, not in Checks
 
 ✓ **plans** github (labels devflow:plan, devflow:backlog exist)
 
