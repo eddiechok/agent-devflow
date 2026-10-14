@@ -27,6 +27,14 @@ and you are back to reading a wall of output and guessing the exit code.
 This matters more here than anywhere: a command you cannot read the exit code of
 is a command you have not really proven, and proving them is the whole job.
 
+## Step 2 — a monorepo, and what CI runs
+
+Setup on meta-elearning, a pnpm monorepo, showed both rules (#144). Its root scripts
+already reached every package, so asking which package to work in had no answer that
+changed the block. Its CI also ran `pnpm build`, which the block left out, and setup never
+said so; the first pull request then went red on that build. A line costs nothing and lets
+the human choose. Writing it unasked would make every job run a slow build.
+
 ## Step 4 — writing the block
 
 Two honest lines beat one invented wrapper script.
