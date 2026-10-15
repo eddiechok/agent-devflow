@@ -41,6 +41,10 @@ failing 2/8. `run.py` now raises with the fix instead. Note the trap: a session 
 desktop app does **not** pass its login to a child `claude -p`. Run the evals from a
 terminal where `claude auth status` says `loggedIn: true`.
 
+**An eval writes no lesson.** `run.py` sets `DEVFLOW_EVAL=1` on each session, and the
+bash hook then refuses the lessons repo ([docs/hook.md](../docs/hook.md)). A case that
+runs `review` still reaches `devflow:lesson`; the line is printed, not written.
+
 `evals/test-run.py` is its contract test — parser and graders, no model, no
 cost. It is in `CLAUDE.md`'s `## Checks` block. `run.py` itself is not, because
 it spends money.

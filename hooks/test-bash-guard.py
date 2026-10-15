@@ -37,15 +37,23 @@ passed = 0
 failed = 0
 
 
-def call(command=None, tool="Bash", cwd=None, tool_input=None):
-    """Run the hook on one payload and return its parsed decision."""
+def call(command=None, tool="Bash", cwd=None, tool_input=None, eval_run=False):
+    """Run the hook on one payload and return its parsed decision.
+
+    `eval_run` sets DEVFLOW_EVAL=1 the way evals/run.py does for its child
+    sessions. Off, the variable is removed, so a suite started from inside an
+    eval run still tests the normal path.
+    """
     payload = {"tool_name": tool, "cwd": cwd or os.getcwd()}
     payload["tool_input"] = (
         tool_input if tool_input is not None else {"command": command}
     )
+    env = {k: v for k, v in os.environ.items() if k != "DEVFLOW_EVAL"}
+    if eval_run:
+        env["DEVFLOW_EVAL"] = "1"
     proc = subprocess.run(
         [sys.executable, HOOK], input=json.dumps(payload),
-        capture_output=True, text=True, timeout=20,
+        capture_output=True, text=True, timeout=20, env=env,
     )
     assert proc.returncode == 0, f"hook exited {proc.returncode}: {proc.stderr}"
     return json.loads(proc.stdout or "{}")
@@ -217,6 +225,33 @@ unreadable = scratch_repo("main")
 os.mkdir(os.path.join(unreadable, "CLAUDE.md"))
 check("a CLAUDE.md that is a folder still asks",
       decision(call("git commit -m 'x'", cwd=unreadable)) == "ask")
+
+# ------------------------------- eval runs: the lessons repo is off limits
+
+# An eval session reaches devflow:lesson through review, and lesson writes to
+# the real lessons repo. Two false lines landed there before this guard.
+PUT = ("gh api -X PUT repos/eddiechok/devflow-lessons/contents/lessons.md "
+       "-f message=x -f content=eA== -f sha=abc")
+CLONE = "git clone https://github.com/eddiechok/devflow-lessons /tmp/l"
+
+for name, cmd in [("a gh api write", PUT), ("a clone for the web path", CLONE),
+                  ("a read", "gh api repos/eddiechok/devflow-lessons/contents/lessons.md"),
+                  ("the opt-out does not reach it", PUT + "  # devflow-ok")]:
+    out = call(cmd, eval_run=True)
+    check(f"an eval run is refused the lessons repo: {name}",
+          decision(out) == "deny", f"got {out!r}")
+
+reason = ((call(PUT, eval_run=True).get("hookSpecificOutput") or {})
+          .get("permissionDecisionReason") or "")
+check("the refusal says it is an eval and to print the line instead",
+      "eval" in reason and "print" in reason, reason)
+
+check("outside an eval the lessons repo is not touched by the guard",
+      call(PUT) == {}, f"got {call(PUT)!r}")
+check("an eval run still passes an unrelated command",
+      call("ls -la", eval_run=True) == {})
+check("an eval run still rewraps a check command",
+      decision(call("npm test", eval_run=True)) == "allow")
 
 # --------------------------------------------------------------------- report
 

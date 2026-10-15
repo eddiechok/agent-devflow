@@ -4,7 +4,7 @@ What `hooks/bash-guard.py` and `hooks/secret-guard.py` do, why each part is ther
 
 ## The bash hook
 
-`hooks/bash-guard.py` does three things. All are cheap, and all are worth knowing about.
+`hooks/bash-guard.py` does four things. All are cheap, and all are worth knowing about.
 
 **Trims long check output.** A 500-line test run becomes about 40 lines.
 
@@ -45,6 +45,14 @@ repo's `CLAUDE.md` has a `## Workflow` block with `- Mode: direct`, the hook doe
 since committing on main is the choice that project made. It finds the repo top with
 `git rev-parse --show-toplevel` and reads that file. If the file is missing, cannot be
 read, or has no such line, the hook asks as before.
+
+**Keeps an eval run out of the lessons repo.** `evals/run.py` sets `DEVFLOW_EVAL=1` for
+every `claude -p` it starts. With that set, the hook refuses any command that names
+`devflow-lessons`, even with `# devflow-ok` on the end. Review writes a lesson for each
+finding `hardcase` refutes, and in an eval that lesson is about a throwaway fixture. Two
+such lines, from the `greeter-origin` fixture, reached the real file before this. Refused,
+`devflow:lesson` prints its line instead, as it does whenever the write fails. Outside an
+eval nothing changes.
 
 > ⚠️ **This stops mistakes. It does not stop attackers.** It matches text in
 > command strings. Variable indirection, aliases, or a different binary get past it

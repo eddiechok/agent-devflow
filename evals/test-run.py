@@ -1901,6 +1901,18 @@ check("score: all-pass is a pass", run.score([("a", "pass", 1, "")])["ok"], True
 check("score: nothing scorable is not a pass",
       run.score([("a", "skip", 1, "")])["ok"], False)
 
+# ------------------------------------------- the child session is marked an eval
+
+# bash-guard.py refuses the lessons repo only when DEVFLOW_EVAL=1 is set, so the
+# runner must set it on every claude -p it starts, and keep the rest of the env
+# (PATH finds claude; the login lives in HOME).
+_env = run.child_env({"PATH": "/usr/bin", "HOME": "/h"})
+check("child_env: marks the session as an eval", _env.get("DEVFLOW_EVAL"), "1")
+check("child_env: keeps PATH", _env.get("PATH"), "/usr/bin")
+check("child_env: keeps HOME, where the login lives", _env.get("HOME"), "/h")
+check_true("run_once: hands child_env to claude -p",
+           "env=child_env(" in open(run.__file__).read())
+
 # ----------------------------------------------------------------------------
 
 print()
