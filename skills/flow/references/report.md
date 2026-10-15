@@ -105,6 +105,8 @@ this branch changed, each `✓`.
 
 ✗ **live** the settings page did not load
 
+→ **next** /devflow:ship
+
 ---
 ```
 
@@ -122,3 +124,6 @@ this branch changed, each `✓`.
   check that went green again, a finding that was fixed — is left out, and so is a
   finding the review rejected: it asks nothing of the human, so it stays in the PR body
   alone. A clean run has no Needs you.
+- **Next** — in pr mode the report ends with one line, `→ **next** /devflow:ship`, below
+  Needs you and right before the PR link. It never lists merge or deploy steps: `ship`
+  does both, and only a human starts it. Direct mode has no PR, so it prints no such line.
