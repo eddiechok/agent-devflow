@@ -114,8 +114,8 @@ through `submit`. **One of them you hand over yourself. Three of them you stop o
 
 A `CONFLICTING` PR, and only that, is yours to resolve rather than stop on. Read
 [references/conflict-handover.md](references/conflict-handover.md) before acting on it:
-the line that hands it to `tend`, reading all four conditions again when it returns, and
-the one-attempt cap.
+the line that hands it to `tend`, waiting for the checks its push started, reading all
+four conditions again when it returns, and the one-attempt cap.
 
 ### The other three stop, and they are different in kind
 
@@ -481,8 +481,8 @@ the result — for example `✓ **checks** 3 of 3 pass, exit 0`.
   check and a reviewer asking for changes are the human's to start; one attempt is the cap.
   A PR reporting a conflict *and* something else is not a conflict to hand over.
 - Never come back from `tend` reading `mergeable` alone. It pushed, so the checks are
-  running again and the mergeability is stale; step 2 runs again whole, and `UNKNOWN` is
-  not a yes.
+  running again and the mergeability is stale; ship waits for the checks tend's push
+  started, up to 10 minutes, then step 2 runs again whole, and `UNKNOWN` is not a yes.
 - Never merge a PR `tend` touched without saying so in step 7's report. The human asked for
   a merge, not for a branch to be rewritten first.
 - Never merge again on an error before checking whether the merge already landed — the default branch's SHA, read with `git ls-remote`. Not the API, which may be the thing that is broken, and not the branch's absence, which is a separate call that fails separately.

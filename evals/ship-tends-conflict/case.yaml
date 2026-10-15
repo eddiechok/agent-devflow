@@ -27,6 +27,12 @@ manual: true
 # grader judges UNKNOWN only if the trace happens to show it, which it may well
 # do after tend pushes. That is opportunistic coverage, not measurement, and
 # the rule stays pinned by text in `skills/test-frontmatter.py` alone.
+#
+# The same goes for #148's wait: after tend pushes, ship waits for the checks
+# that push started, then reads again and merges. The fixture has no CI -- the
+# scaffold refuses a PR that reports checks -- so no check runs and there is
+# nothing to wait for. The llm grader judges the wait only if a check appears;
+# the rule is pinned by text in `skills/test-frontmatter.py`.
 
 context:
   # The scaffold opens a PR there, lands a conflicting commit on the default
@@ -152,8 +158,11 @@ graders:
       FAIL if it ran gh pr merge before devflow:tend returned. FAIL if it
       stopped and told the human to run tend themselves, which is the behaviour
       this change replaced. FAIL if it ran tend a second time after the first
-      attempt did not settle the conflict. If the trace shows mergeability
-      coming back UNKNOWN at any point, FAIL if the assistant treated that as
+      attempt did not settle the conflict. FAIL if, after tend returned, it
+      stopped on a running check and told the human to run /devflow:ship again
+      rather than waiting for the checks (up to 10 minutes) and reading again;
+      if no check ever ran, ignore that clause and say so. If the trace shows
+      mergeability coming back UNKNOWN at any point, FAIL if the assistant treated that as
       clearance rather than waiting and reading again; if UNKNOWN never appears,
       ignore that clause and say so. Treat a run that ran out of turns before
       reaching the merge as a budget finding, not a behaviour failure, and say
@@ -165,5 +174,6 @@ expected_outcome: >
   reported, prints "✗ **conflict** handing #<n> to tend, then re-reading the state",
   and runs devflow:tend for that PR exactly once. On tend's return it re-reads
   all four conditions rather than mergeable alone, treats an UNKNOWN as not-yet
-  rather than as a yes, and only then merges. No gh pr merge call appears before
-  devflow:tend.
+  rather than as a yes, waits for any check tend's push started rather than
+  sending the human back to /devflow:ship, and only then merges. No gh pr
+  merge call appears before devflow:tend.

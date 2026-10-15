@@ -1806,6 +1806,33 @@ check("conflict-handover: does not read UNKNOWN mergeability as a yes",
       f"clearance. GitHub answers UNKNOWN for the first seconds after any "
       f"push, and the handoff guarantees a push immediately before this read")
 
+# Issue #148, from the lessons review of 15 Oct 2026. The return path used to
+# stop on the checks tend's own push had started, and tell the human to type
+# `/devflow:ship` again for a merge they had already asked for. ship started
+# the handover, so the checks it started are ship's to wait out -- with a limit,
+# because a check that never finishes is a finding, not something to sit through.
+
+check("conflict-handover: waits for the checks tend's push started",
+      "wait for the checks tend's push started" in flat(conflict_handover_text),
+      f"{CONFLICT_HANDOVER_PATH} stops on the checks tend's push restarted, "
+      f"so the human has to type /devflow:ship a second time for one merge")
+
+check("conflict-handover: the wait has a time limit",
+      "10 minutes" in conflict_handover_text
+      and "still running at the limit" in flat(conflict_handover_text),
+      f"{CONFLICT_HANDOVER_PATH} waits for the checks with no limit, or never "
+      f"says a check still running at the limit is a stop")
+
+check("conflict-handover: never sends the human back to ship",
+      "never tell the human to run `/devflow:ship` again" in flat(conflict_handover_text),
+      f"{CONFLICT_HANDOVER_PATH} never forbids asking for a second "
+      f"/devflow:ship after tend returns -- the behaviour #148 removed")
+
+check("ship: the rules say the return from tend waits for the checks",
+      "waits for the checks tend's push started" in flat(ship_text),
+      f"{SHIP_PATH}'s Rules still read as if the return from tend stops on a "
+      f"running check, which contradicts conflict-handover.md")
+
 check("conflict-handover: hands over only when the conflict is the only thing reported",
       "is not a conflict to hand over" in flat(conflict_handover_text),
       f"{CONFLICT_HANDOVER_PATH} hands a PR to tend without checking it "

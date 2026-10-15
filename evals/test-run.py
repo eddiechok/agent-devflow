@@ -618,6 +618,12 @@ if os.path.isfile(_SHIP_CASE):
     check_true("ship-tends-conflict: grades the handoff line, not just the outcome",
                "conflict\\*\\* handing #" in _ship_graders)
 
+    # Issue #148: stopping on the checks tend's push started, and telling the
+    # human to run ship again, is the behaviour that change removed. The llm
+    # grader is the only one that can see it, so it has to name it.
+    check_true("ship-tends-conflict: fails a run that sends the human back to ship",
+               "/devflow:ship again" in _ship_graders)
+
 _ship_rows = [l for l in _readme.split("\n")
               if l.startswith("| `ship-tends-conflict`")]
 check("readme: the ship-tends-conflict row is there", len(_ship_rows), 1)
