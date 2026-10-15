@@ -100,6 +100,44 @@ The question is asked, not assumed, because the file is committed and because an
 
 The read is paths only. No step opens an env file, and no value goes in a question, a log, the PR or a commit: the paths are all the decision needs.
 
+## Step 6d — why setup offers CI, and parks it instead of building it
+
+`submit` runs the checks before every push a Claude session makes, so a project with no CI is
+still checked, but only for that session's pushes. A second person's push, or one made by hand,
+reaches main unchecked. So a repo with no CI is asked once whether to add it, and the
+recommendation comes from the same facts step 0 already read: `pr` mode, more than one
+collaborator or a push that may go live says yes; a private, one-person `direct` repo says no,
+because there `submit` already checks every push and CI would spend private minutes on the
+same commands.
+
+None of the tools devflow borrows from does this. The setup skill in
+[mattpocock/skills](https://github.com/mattpocock/skills/blob/main/skills/engineering/setup-matt-pocock-skills/SKILL.md)
+has no CI step, and its nearest skill, `setup-pre-commit`, adds a commit hook rather than a
+workflow. [obra/superpowers](https://github.com/obra/superpowers) has no skill that sets up CI,
+and [GSD](https://github.com/gsd-build/get-shit-done) reads CI and waits for it but never
+creates it. So this step is devflow's own, asked for in #143.
+
+Setup does not write the workflow. Every block setup writes is one it ran first, and a
+workflow file only runs once GitHub runs it, on a push. A pull request is where that happens:
+the new workflow runs on the very PR that adds it, `review` reads it because CI/CD config is
+on the danger list, and `tend` fixes it if it goes red. So a yes parks the job, the way `flow`
+parks a feature it did not keep, and offers a chip that starts it. Starting `flow` directly
+was weighed and dropped: setup is often running inside `flow` already, and a second run there
+would put two jobs on one branch.
+
+The parked body names the commands and says to set up the runtime and install first, because
+the Checks block alone cannot run on a fresh runner. It also says no starter template: the
+workflow is built from this repo's own commands, not copied.
+
+The scope line is there because a push under `.github/workflows/` is refused without the
+token's `workflow` scope, and `gh auth login` does not always ask for it
+([cli/cli#7251](https://github.com/cli/cli/discussions/7251)). Reading `gh auth status` at
+setup time puts the one-line fix in front of the human before the CI PR's push fails.
+
+Branch protection, making the CI check required on main, was left out. A free private repo
+has none to set, `direct` mode would be blocked by it, and a required check that never reports
+blocks every PR. It can come later, once CI has run on real projects.
+
 ## Why the `disable-model-invocation` flag came off
 
 `flow` runs `setup` first when `CLAUDE.md` has no `## Workflow` block. A skill with
