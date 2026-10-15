@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """devflow bash-guard — PreToolUse hook for the Bash tool.
 
-Two jobs:
+Three jobs:
 
   1. truncate     Rewrap long check commands so failures and the exit code
                   survive but tens of thousands of tokens of noise do not.
@@ -15,6 +15,11 @@ Two jobs:
   2. branch-guard Ask before committing straight to the default branch,
                   unless the project's CLAUDE.md says `- Mode: direct` under
                   `## Workflow`.
+
+  3. eval-guard   In an eval run (DEVFLOW_EVAL=1, set by evals/run.py), refuse
+                  any command that names the lessons repo. Review writes a
+                  lesson for each refuted finding, and an eval's lesson is
+                  about a throwaway fixture, not a real run.
 
 This is an ergonomic speed bump, NOT a security control. It matches text in
 command strings and is trivially bypassed by variable indirection, aliases or
@@ -60,6 +65,11 @@ def main():
     if not isinstance(command, str) or not command.strip():
         passthrough()
 
+    # Before the opt-out: an eval session must not reach the lessons repo
+    # whatever it appends to the command.
+    if os.environ.get("DEVFLOW_EVAL") == "1" and LESSONS_REPO in command:
+        guard_eval()
+
     if "# devflow-ok" in command:
         passthrough()
 
@@ -72,6 +82,26 @@ def main():
         passthrough()
 
     truncate(command, tool_input)
+
+
+# ----------------------------------------------------------------- eval guard
+
+LESSONS_REPO = "devflow-lessons"
+
+
+def guard_eval():
+    print(json.dumps({
+        "hookSpecificOutput": {
+            "hookEventName": "PreToolUse",
+            "permissionDecision": "deny",
+            "permissionDecisionReason": (
+                "This is an eval run (DEVFLOW_EVAL=1). The lessons repo is off "
+                "limits: a lesson from an eval is about a throwaway fixture. "
+                "Do not write it - print the lesson line instead and carry on."
+            ),
+        }
+    }))
+    sys.exit(0)
 
 
 # --------------------------------------------------------------- branch guard

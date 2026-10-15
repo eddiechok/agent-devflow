@@ -502,6 +502,17 @@ def scaffold(case, workdir):
         raise CaseError("scaffold failed (exit %d):\n%s" % (done.returncode, done.stderr.strip()))
 
 
+def child_env(base=None):
+    """The environment for a case's claude -p: this one, marked as an eval.
+
+    hooks/bash-guard.py reads DEVFLOW_EVAL=1 and refuses the lessons repo, so
+    a lesson review writes no line about a throwaway fixture.
+    """
+    env = dict(os.environ if base is None else base)
+    env["DEVFLOW_EVAL"] = "1"
+    return env
+
+
 def run_once(case, workdir, permission_mode):
     ex = case.get("execution") or {}
     cmd = [
@@ -517,7 +528,7 @@ def run_once(case, workdir, permission_mode):
         cmd += ["--allowedTools"] + list(ex["allowed_tools"])
 
     done = subprocess.run(
-        cmd, cwd=workdir, capture_output=True, text=True,
+        cmd, cwd=workdir, capture_output=True, text=True, env=child_env(),
         timeout=ex.get("timeout_seconds", 900),
     )
     events = []
