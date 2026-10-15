@@ -1215,6 +1215,31 @@ check("submit: step 9 prints the Done report before the PR link  <-- #95",
       f"the report shape -- the run would end without saying what was done")
 
 
+# --------------------------------- a pr-mode Done report points at ship  <-- #149
+#
+# A pr-mode run ended by telling the human to merge the PR and run the deploy
+# command, not to run /devflow:ship. No skill printed the line, so a run got it
+# right only from the session's own memory. The Done report now ends with it,
+# before the PR link, and never lists merge or deploy steps. Direct mode has no
+# PR, so it is unchanged.
+
+SHIP_NEXT_LINE = "→ **next** /devflow:ship"
+with open(os.path.join(SKILLS_DIR, "flow", "references", "report.md"),
+          encoding="utf-8") as _fh:
+    _done_section = _fh.read().split("## Done — the end of the run")[-1]
+REPORT_PATH = os.path.join(SKILLS_DIR, "flow", "references", "report.md")
+
+check("report: the pr-mode Done report ends with the ship line  <-- #149",
+      SHIP_NEXT_LINE in _done_section,
+      f"no line {SHIP_NEXT_LINE!r} in the Done section of {REPORT_PATH} -- a "
+      f"pr-mode run would end without pointing at ship")
+
+check("report: the ship line is pr mode only, never merge or deploy steps  <-- #149",
+      "Direct mode" in _done_section
+      and "never lists merge or deploy steps" in flat(_done_section),
+      f"the Done section of {REPORT_PATH} does not keep the ship line to pr "
+      f"mode, or does not forbid listing merge and deploy steps")
+
 # ------------------------- a summary before the build, and one after the submit
 #
 # The size line says how big the work is, not what it will touch, so on Quick
@@ -2556,7 +2581,7 @@ SHAPED_LABELS = {
     "backlog", "branch", "browser", "chains", "checks", "ci", "chips", "cleaned", "commit",
     "conflict", "debug", "deploy", "docs", "done", "env", "features", "glossary",
     "green", "handback", "issue", "landed", "lesson", "lint", "live", "look", "merge", "merged",
-    "no-behaviour", "open", "opinion", "override", "parked", "piece",
+    "next", "no-behaviour", "open", "opinion", "override", "parked", "piece",
     "pieces", "plan", "plans", "pr", "pushed", "red", "repo", "research", "retargeted", "review",
     "see", "servers", "session", "settings", "skills", "stuck", "tended", "test", "theirs", "todo",
     "typecheck", "ux", "variants",
