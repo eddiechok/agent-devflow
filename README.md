@@ -66,6 +66,8 @@ It also asks where Deep plans live. Local is the default: a file in `.devflow/pl
 
 It also finds the env files git ignores, such as `.env`, and offers to list them in a `.worktreeinclude`. Claude Code then copies them into every worktree it makes, so tests and the live check work in a plan chain's or a sweeper's worktree too. It shows paths only, never a value.
 
+On a repo with no CI, it offers to add CI that runs the checks, and recommends yes or no from what it read. A yes parks the job and offers a chip, so the workflow is built as its own PR.
+
 Run it again if the commands change. It will not overwrite a block you wrote without asking.
 
 ### How the project works: `direct` or `pr`

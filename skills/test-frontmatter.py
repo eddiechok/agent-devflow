@@ -7549,6 +7549,90 @@ check("README: setup offers a .worktreeinclude for ignored env files",
       ".worktreeinclude" in readme_text,
       f"{README_PATH} never names .worktreeinclude")
 
+# ------------------------------------------- setup offers CI, flow builds it (#143)
+# A repo with no CI gets one question, recommended from the facts step 0 read.
+# A yes parks the job the way flow parks a feature, and a chip starts it: setup
+# is often run by flow mid-job, so it never starts a second flow run itself,
+# and it never writes a workflow file nobody has run.
+
+_ci_at = setup_text.find("## 6d. ")
+_ci = setup_text[_ci_at:setup_text.find("\n## 7. ", _ci_at + 1)] if _ci_at >= 0 else ""
+_ci_flat = flat(_ci)
+
+check("setup: step 6d sits after the env step and before the report",
+      setup_text.find("## 6c. ") < _ci_at < setup_text.find("## 7. Report"),
+      f"{SETUP_PATH} has no '## 6d. ' between step 6c and step 7")
+
+check("setup: step 6d asks only with no CI and a non-empty Checks block",
+      "Add CI that runs your checks?" in _ci
+      and "– **ci** skipped — CI already runs" in _ci
+      and "– **ci** skipped — no checks to run" in _ci,
+      f"{SETUP_PATH} step 6d never skips a repo with CI or with no checks")
+
+check("setup: step 6d recommends yes from pr, collaborators or deploy-on-push",
+      re.search(r"Recommend Yes when any", _ci_flat) is not None
+      and "`pr`" in _ci and "more than one collaborator" in _ci_flat
+      and "deploy-on-push" in _ci_flat
+      and re.search(r"Otherwise recommend No", _ci_flat) is not None,
+      f"{SETUP_PATH} step 6d never says when Yes and when No is recommended")
+
+check("setup: step 6d puts the reason in the option text",
+      "Yes (Recommended) — `pr` mode, so CI checks each PR before merge" in _ci,
+      f"{SETUP_PATH} step 6d never shows the reason inside the option")
+
+check("setup: a yes parks the job as flow does, and offers a chip",
+      "split-and-park.md" in _ci and "devflow:backlog" in _ci
+      and ".devflow/backlog/add-ci.md" in _ci
+      and "/devflow:flow #<n>" in _ci and "spawn_task" in _ci,
+      f"{SETUP_PATH} step 6d never parks the CI job and offers a chip")
+
+check("setup: the parked body names the checks and the install, no template",
+      re.search(r"install", _ci_flat) is not None
+      and "pull_request" in _ci
+      and re.search(r"[Nn]o starter template", _ci_flat) is not None,
+      f"{SETUP_PATH} step 6d's parked body never says what the workflow runs")
+
+check("setup: a yes reads the workflow scope and prints the refresh command",
+      "gh auth status" in _ci
+      and "gh auth refresh -h github.com -s workflow" in _ci,
+      f"{SETUP_PATH} step 6d never checks the token's workflow scope")
+
+check("setup: a repo with no GitHub remote is not asked",
+      "– **ci** skipped — no GitHub remote" in _ci,
+      f"{SETUP_PATH} step 6d asks about GitHub Actions with no GitHub remote")
+
+check("setup: only a workflow running a Checks test or lint is CI",
+      re.search(r"runs a test or lint command from `## Checks`", _ci_flat) is not None
+      and re.search(r"build-and-deploy workflow is not CI", _ci_flat) is not None,
+      f"{SETUP_PATH} step 6d counts a deploy-only workflow as CI")
+
+check("setup: the parked body carries the scope fix for the push",
+      _ci.count("gh auth refresh -h github.com -s workflow") >= 2,
+      f"{SETUP_PATH} step 6d's parked body never says how to fix a refused push")
+
+check("setup: a no prints one line and parks nothing",
+      "– **ci** not added" in _ci,
+      f"{SETUP_PATH} step 6d never says what a no prints")
+
+check("setup: the report has a ci line for the parked job",
+      "✓ **ci** parked #" in section(setup_text, "## 7. Report"),
+      f"{SETUP_PATH} step 7 never reports the parked CI job")
+
+check("setup: a rule forbids writing the workflow file itself",
+      re.search(r"Never write a CI workflow file", setup_text) is not None,
+      f"{SETUP_PATH} has no rule against writing the workflow itself")
+
+_d_ci_setup = _doc_section(_doc133("setup.md"), "## Step 6d")
+check("docs/setup: step 6d says why park, the scope trap, and what others do",
+      "workflow" in _d_ci_setup and "cli/cli/discussions/7251" in _d_ci_setup
+      and "mattpocock/skills" in _d_ci_setup and "superpowers" in _d_ci_setup
+      and "park" in _d_ci_setup,
+      "docs/setup.md has no '## Step 6d' saying why setup parks the CI job")
+
+check("README: setup offers to add CI",
+      re.search(r"offers[^\n]*CI", readme_text) is not None,
+      f"{README_PATH} never says setup offers CI")
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")

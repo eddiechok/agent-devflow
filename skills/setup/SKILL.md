@@ -359,6 +359,50 @@ Claude Code reads the file in the main checkout, so it takes effect once it is m
 pulled there. A copy is made when the worktree is, so a value changed later does not reach a
 worktree that already exists.
 
+## 6d. Add CI?
+
+CI runs the checks on every push, not only a Claude session's. Skip this step when:
+
+- a workflow already runs a test or lint command from `## Checks`, on a push or a pull
+  request; a build-and-deploy workflow is not CI → `– **ci** skipped — CI already runs`
+- the `## Checks` block has no command → `– **ci** skipped — no checks to run`
+- the remote is not on GitHub, or there is none → `– **ci** skipped — no GitHub remote`
+
+Otherwise ask one question, in the popup style of step 6:
+
+1. **Add CI that runs your checks?**
+   - Yes — park a job that builds a GitHub Actions workflow running the `## Checks` block.
+   - No — prints `– **ci** not added` and parks nothing; `submit` alone runs the checks.
+
+   **Recommend Yes when any** of these is true: the mode is `pr`; more than one collaborator;
+   a deploy-on-push sign was found. **Otherwise recommend No**: `submit` already checks every
+   push a one-person `direct` repo gets. A fact step 0 could not read counts for no Yes. The
+   reason goes in the option's own text, in one line:
+   "Yes (Recommended) — `pr` mode, so CI checks each PR before merge".
+
+**Yes** parks the job; setup never writes the workflow, nor starts `flow`. Park it as
+[flow's split-and-park.md](../flow/references/split-and-park.md) parks a feature: a
+`devflow:backlog` issue when `## Plans` says `github`, else `.devflow/backlog/add-ci.md`.
+Title it `Add CI that runs the checks`. The body says, in this order:
+
+- the commands from the `## Checks` block, one per line, word for word
+- set up the runtime the manifest names and install the dependencies first, as the lockfile
+  says, then run each command as its own step
+- run on `pull_request` and on a push to the default branch
+- no starter template: build it from this repo's own commands
+- a push refused for the `workflow` scope is fixed by `gh auth refresh -h github.com -s workflow`
+- `Parked from: devflow:setup`
+
+Then offer one chip by that reference's rules, when `spawn_task` is a tool you have:
+`/devflow:flow #<n>`, titled `Build CI for the checks`, or its file-case prompt for a file.
+
+A push under `.github/workflows/` needs the token's `workflow` scope ([cli/cli#7251](https://github.com/cli/cli/discussions/7251)).
+Read `gh auth status`, bare; when its scopes lack `workflow`, print, for the human to run:
+
+```
+→ **ci** run: gh auth refresh -h github.com -s workflow
+```
+
 ## 7. Report
 
 Keep it short, one shaped line per fact:
@@ -383,6 +427,8 @@ Keep it short, one shaped line per fact:
 ✓ **servers** keep (Medusa and a database start slowly)
 
 ✓ **env** .worktreeinclude lists 2 env files
+
+✓ **ci** parked #48 — the chip builds it as its own PR
 
 – **deploy** not written — that is ship's to add
 the first time it deploys and can prove the command works
@@ -438,6 +484,7 @@ the result — for example `✓ **checks** 3 of 3 pass, exit 0`.
 - Never overwrite an existing `## Workflow` block. Say what it says and keep it.
 - Never write `Mode:` as anything but `direct` or `pr`, and never write it without asking.
 - Never add anything to `CLAUDE.md` except the `## Checks`, `## Plans`, `## Workflow` (with its `- Servers:` line, step 6b) and, in a UI repo, `## Browser` blocks, and never a block you did not prove. `- Driver: session` names no driver, so it has nothing to prove.
+- Never write a CI workflow file. Step 6d parks the job, and `flow` builds it as its own PR.
 - Never print, quote or commit a value from an env file. Step 6c reads paths only, and writes them to `.worktreeinclude`.
 - Never run an install, the browser driver's included: step 6a prints its command. Step 8 offers `devflow:skills`, which only lists; the human installs.
 
