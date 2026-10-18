@@ -19,6 +19,15 @@ One driver for the whole check. Mixing two wastes tokens and loses the login.
    evidence [live-check.md](live-check.md) asks for, by whatever means the project has. Do not
    install a driver to make the check run.
 
+## The real page, first
+
+Check the change on the real page, running on a local server on this branch — the app
+started the way [live-check.md](live-check.md) says to start it, opened at the page a
+user of it visits. A story (a Storybook story, a fixture page, a sandbox build) is the
+fallback, only when the real page cannot run locally at all: a story renders the piece
+out of the routing, state and login the real page runs under, so it can look right while
+the page is broken.
+
 ## The five checks
 
 Run all five. A page that renders is not a page that is right.
@@ -26,8 +35,16 @@ Run all five. A page that renders is not a page that is right.
 1. **Log in once.** Use the project's seeded user, then keep the cookie (a named session or a
    saved state) so every later page reuses it. Use **test credentials from the project's own
    files** only: its CLAUDE.md, its seeds, its `.env.example`. Never ask the human for a real
-   password, and never type one you found anywhere else. No test login in the project's files
-   → say so, and check the pages that need no login.
+   password, and never type one you found anywhere else.
+
+   A login the browser already has — a session the human is signed into, kept by the
+   browser or by the driver's own profile — fits the same rule: you read it, you typed
+   nothing, so re-using a saved session is not typing a password. Take it when it is
+   there; that is what gets you the real page above. **No test login in the project's
+   files, and no saved session either** → say so, name the pages that were out of reach,
+   and check the pages that need no login. It is never a reason to check a story instead
+   of the real page — open the real page unauthenticated and say which states were out
+   of reach.
 2. **Make the exact state the change affects.** Not only the normal page. If the change is the
    empty state, get the list empty. If it is the error message, make the call fail. If it is
    a loading state, hold the request. A change that shows in one state is proven only in that
