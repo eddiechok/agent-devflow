@@ -268,6 +268,13 @@ I checked this locally before pushing. I stopped my own server; step 5 is for yo
 
 **The steps must be steps you actually ran.** Instructions you never followed will be wrong.
 
+**In a UI project, the steps are browser steps.** Every page you name is a full link
+the human can click — `http://localhost:<port>/<path>`, never a path that only makes
+sense in your context — and every step is an action the browser does: open the page,
+make the state, look at what changed. Test commands are not check steps: step 2 already
+ran them and print their outcome under **Evidence**, so the human who checks in the
+browser reads browser steps and nothing else.
+
 ## 9. Hand off, then stop
 
 **Never merge.** Opening the PR is where this skill ends.

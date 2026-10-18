@@ -8,7 +8,11 @@ Pick whichever of these the project actually is:
 - **Something you just execute** — a CLI, a script, a one-shot command. **Run it directly**, with the arguments the change affects, and show the output.
 
 **A UI change — any size, Quick included — also gets the browser check.** Read
-[browser-check.md](browser-check.md) and follow it: one driver, login once, the exact state the change affects, a desktop and a mobile width, a clean console. It is how you get first-hand proof of a page.
+[browser-check.md](browser-check.md) and follow it: one driver, login once, the exact state
+the change affects, a desktop and a mobile width, a clean console. It is how you get
+first-hand proof of a page, and it gets it from the real page on a local server on this
+branch first — a story is the fallback when the real page cannot run locally, never a
+shorter way to the same answer.
 
 Either way the rule is the same: exercise the change the way a user would, and put the output on screen.
 

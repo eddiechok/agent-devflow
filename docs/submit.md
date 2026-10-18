@@ -218,6 +218,29 @@ commit body nobody reads is the same as never raising it.
 If one did, put it
 first — a preview is a real build with real environment variables on a clean machine, and it catches things your laptop cannot.
 
+### The check steps are browser steps in a UI project (#150)
+
+A UI run wrote its steps as a test command and bare paths (`/some/page`). The human only
+checks in the browser, and the tests already sat under Evidence from step 2 — a check
+step naming a test asks the human to do a thing submit already did. So the steps a UI
+PR carries are browser steps: full links the human clicks (`http://localhost:<port>/<path>`,
+the port the live check read off the server, not one guessed) and the actions to perform
+there.
+
+### Why the real page comes first, and why a saved session counts (#150)
+
+The same run, finding no test login in the project's files, checked a throwaway
+Storybook story instead of the page that needed the login — "no test login" had read as
+"check only pages with no login". But a local server on the branch can reach the real
+page, and the browser's own saved session can carry it there: re-using a login the
+human is already signed into types no password, so it sits inside the same rule that
+limits login to credentials you were handed, rather than outside it. That is why
+browser-check.md starts "The real page, first" — a story renders the component out of
+the routing, state and auth the page runs under, so it is the fallback for a page that
+cannot run locally, not a stand-in for a page a saved session could have opened — and
+why the no-test-login line now names the pages that stayed out of reach instead of
+quietly shrinking the check to pages with no login.
+
 ## Step 9 — handing off
 
 This step used to work the danger list out from the diff a second time and offer the human `/code-review` and `/security-review` to type themselves — a manual opinion line, because the security question had nowhere automatic to run. That offer relied on `flow`'s original danger-list read surviving to here, which it did not always do: a compaction, a long Deep job, or a `submit` invoked directly all lost it, silently, and what it dropped was the only security gate in the loop.

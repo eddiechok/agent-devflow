@@ -4403,7 +4403,7 @@ SKILL_SIZE_CAP = 500
 # together; these keep each reference reachable, keep the no-behaviour path
 # in SKILL.md itself, and hold the two skills to the size that saves.
 
-SLIM_CAPS = {"submit": 317, "review": 130}
+SLIM_CAPS = {"submit": 324, "review": 130}
 
 # Which step reads each reference. A link anywhere in SKILL.md is not enough:
 # the step that needs the text has to be the one that sends the run there.
@@ -6627,6 +6627,64 @@ check("docs/submit: says why the browser check exists, with sources",
       and "token-efficient" in docs_submit_text
       and "unconfirmed" in docs_submit_text,
       "docs/submit.md never explains browser-check.md with its sources")
+
+# -------------------- the check steps are full links, browser only (#150)
+#
+# A UI run's "How to check this yourself" gave bare paths ("/some/page") and a
+# unit-test command. The human checks in the browser only; the tests already sit
+# under Evidence. And the live check had checked a throwaway Storybook story
+# instead of the real page, because "no test login in the project's files" was
+# read as "give up on the login" — when a local server on the branch plus the
+# browser's own saved session reaches the real page and types no password.
+
+submit_step8_at = submit_text.find("## 8. Open the PR")
+submit_step8_end = submit_text.find("## 9.", submit_step8_at) if submit_step8_at >= 0 else -1
+submit_step8 = (
+    submit_text[submit_step8_at:submit_step8_end]
+    if submit_step8_at >= 0 and submit_step8_end >= 0 else ""
+)
+step8_flat = flat(submit_step8)
+step8_lower = step8_flat.lower()
+
+check("submit: step 8's section carries the check-steps template",
+      submit_step8_at >= 0 and submit_step8_end >= 0 and "## How to check this yourself" in submit_step8,
+      f"{SUBMIT_PATH} lost the step 8 section around '## How to check this yourself'")
+
+check("submit: a UI change's check steps name full localhost links, not bare paths",
+      "http://localhost" in step8_flat
+      and "full link" in step8_lower
+      and re.search(r"never a path that only makes sense", step8_lower) is not None,
+      f"{SUBMIT_PATH} step 8 never says the steps carry full localhost links, not bare paths")
+
+check("submit: a UI change's check steps are browser actions only",
+      re.search(r"browser (steps|actions)", step8_lower) is not None
+      and re.search(r"(tests?|test commands?)[^.]*under \*\*evidence\*\*", step8_lower) is not None,
+      f"{SUBMIT_PATH} step 8 never says the steps are browser actions with tests left under Evidence")
+
+check("browser-check: the real page on a local server on the branch comes first",
+      "real page" in browser_flat
+      and "local server" in browser_flat
+      and "on this branch" in browser_flat
+      and re.search(r"story", browser_lower) is not None
+      and re.search(r"story[^.]*fallback|fallback[^.]*story|only when[^.]*story", browser_lower) is not None,
+      f"{BROWSER_CHECK_PATH} never says the real page on a branch's local server comes before a story")
+
+check("docs/submit: says why the check steps are browser steps and the real page comes first",
+      "real page" in docs_submit_text
+      and "full" in docs_submit_text.lower()
+      and re.search(r"type a password|typed no password|types no password", docs_submit_text.lower()) is not None,
+      "docs/submit.md never explains #150's two rules")
+
+check("browser-check: a saved browser session is a way in that types no password",
+      re.search(r"saved", browser_lower) is not None
+      and re.search(r"typing a password|types no password|typed no password", browser_lower) is not None
+      and re.search(r"fit", browser_lower) is not None,
+      f"{BROWSER_CHECK_PATH} never says how a saved session fits the test-credentials rule")
+
+check("browser-check: no test login is not the end of the check",
+      re.search(r"no test login", browser_lower) is not None
+      and re.search(r"say so[^.]*pages|out of reach", browser_lower) is not None,
+      f"{BROWSER_CHECK_PATH} lost the honest line for the pages a run could not reach")
 
 # -------------------- setup asks for a browser driver in a UI repo (#127)
 #
