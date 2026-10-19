@@ -16,12 +16,11 @@ Each Test line runs alone; there is no wrapper for them all.
 No typecheck: nothing here is typed.
 
 ## Deploy
-- Deploy: cd "$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")" && claude plugin update devflow@eddiechok-devflow --scope local
-- Verify: python3 -c 'import json,os,sys; d=json.load(open(os.path.expanduser("~/.claude/plugins/installed_plugins.json"))); sys.exit(0 if any(e.get("projectPath")==sys.argv[1] and e.get("gitCommitSha")==sys.argv[2] for e in d["plugins"]["devflow@eddiechok-devflow"]) else 1)' "$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")" "$(git rev-parse origin/main)"
+- Deploy: sh scripts/deploy.sh
+- Verify: python3 scripts/verify-deploy.py
 - Wait: 10s
 
-Restart the session after a deploy.
-A local-scope install is one entry per folder, so Deploy runs in the main checkout.
+The deploy copies the main checkout, wherever it runs from.
 
 ## Plans
 - Tracker: github

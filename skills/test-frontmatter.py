@@ -2378,14 +2378,67 @@ deploy_block = claude_md_text.split("## Deploy", 1)[-1].split("\n## ", 1)[0]
 deploy_lines = re.findall(r"^- Deploy: (.+)$", deploy_block, re.M)
 verify_lines = re.findall(r"^- Verify: (.+)$", deploy_block, re.M)
 
-MAIN_CHECKOUT = ('"$(dirname "$(git rev-parse --path-format=absolute '
-                 '--git-common-dir)")"')
+# The commands live in scripts/, so CLAUDE.md carries one short line each and
+# the reasons sit beside the code. The Deploy check runs the script from inside
+# a real linked worktree, with a fake claude, and asks where the update ran.
+DEPLOY_SCRIPT = os.path.join(REPO_ROOT, "scripts", "deploy.sh")
 
-check("CLAUDE.md: the Deploy line runs the update in the main checkout",
-      deploy_lines == [f"cd {MAIN_CHECKOUT} && claude plugin update "
-                       f"devflow@eddiechok-devflow --scope local"],
-      f"{CLAUDE_MD_PATH} runs the update wherever ship stands, which updates "
-      f"only that folder's install")
+check("CLAUDE.md: the Deploy line runs scripts/deploy.sh",
+      deploy_lines == ["sh scripts/deploy.sh"],
+      f"{CLAUDE_MD_PATH} Deploy lines are {deploy_lines!r}")
+check("CLAUDE.md: the Verify line runs scripts/verify-deploy.py",
+      verify_lines == ["python3 scripts/verify-deploy.py"],
+      f"{CLAUDE_MD_PATH} Verify lines are {verify_lines!r}")
+
+
+def run_deploy(claude_exit=0):
+    """Run deploy.sh from a linked worktree of a scratch repo.
+
+    The fake claude records the folder it ran in, resolved, and its args.
+    Returns (the script's process, what claude recorded, the main checkout).
+    """
+    with tempfile.TemporaryDirectory() as d:
+        main = os.path.join(d, "main")
+        os.makedirs(main)
+        g = lambda *a: subprocess.run(["git", *a], cwd=main, capture_output=True,
+                                      check=True)
+        g("init", "-q")
+        g("-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q",
+          "--allow-empty", "-m", "x")
+        wt = os.path.join(d, "wt")
+        g("worktree", "add", "-q", wt)
+        bindir = os.path.join(d, "bin")
+        os.makedirs(bindir)
+        log = os.path.join(d, "log")
+        fake = os.path.join(bindir, "claude")
+        with open(fake, "w") as fh:
+            fh.write(f'#!/bin/sh\necho "$(pwd -P)|$*" > "{log}"\nexit {claude_exit}\n')
+        os.chmod(fake, 0o755)
+        env = dict(os.environ, PATH=bindir + os.pathsep + os.environ["PATH"])
+        proc = subprocess.run(["sh", DEPLOY_SCRIPT], cwd=wt, env=env,
+                              capture_output=True, text=True)
+        ran = open(log).read().strip() if os.path.exists(log) else ""
+        return proc, ran, os.path.realpath(main)
+
+
+if os.path.isfile(DEPLOY_SCRIPT):
+    _dp, _dran, _dmain = run_deploy()
+    _dwhere, _, _dargs = _dran.partition("|")
+    check("scripts/deploy.sh: run from a worktree, updates in the main checkout",
+          _dwhere == _dmain,
+          f"claude ran in {_dwhere!r}, not the main checkout {_dmain!r}")
+    check("scripts/deploy.sh: runs the local-scope update for devflow",
+          _dargs == "plugin update devflow@eddiechok-devflow --scope local",
+          f"claude was given {_dargs!r}")
+    check("scripts/deploy.sh: says to restart the session",
+          _dp.returncode == 0 and "Restart the session" in _dp.stdout,
+          f"exit {_dp.returncode}: {_dp.stdout}{_dp.stderr}")
+    _dp_fail, _, _ = run_deploy(claude_exit=1)
+    check("scripts/deploy.sh: a failed update fails the deploy, no restart line",
+          _dp_fail.returncode != 0 and "Restart the session" not in _dp_fail.stdout,
+          f"exit {_dp_fail.returncode}: {_dp_fail.stdout}")
+else:
+    check("scripts/deploy.sh: exists", False, f"no {DEPLOY_SCRIPT}")
 
 
 def run_verify(entries):
@@ -2438,9 +2491,18 @@ else:
           f"{CLAUDE_MD_PATH} Verify passes when a worktree updated and the "
           f"main checkout did not")
 
-check("CLAUDE.md: says each folder has its own local-scope install",
-      "one entry per folder" in flat(deploy_block),
-      f"{CLAUDE_MD_PATH} never says why the update must run in the main "
+_deploy_script_text = (open(DEPLOY_SCRIPT, encoding="utf-8").read()
+                       if os.path.isfile(DEPLOY_SCRIPT) else "")
+# Found by review: ship picks the folder to check from the line it runs or
+# from what CLAUDE.md says the deploy copies -- it never opens the script. With
+# the cd inside deploy.sh, CLAUDE.md has to say it, or ship's in-use stop never
+# looks at the main checkout.
+check("CLAUDE.md: says the deploy copies the main checkout  <-- review",
+      "copies the main checkout" in flat(deploy_block),
+      f"{CLAUDE_MD_PATH} never tells ship which folder the deploy copies")
+check("scripts/deploy.sh: says each folder has its own local-scope install",
+      "one entry per folder" in flat(_deploy_script_text),
+      f"{DEPLOY_SCRIPT} never says why the update must run in the main "
       f"checkout")
 
 
