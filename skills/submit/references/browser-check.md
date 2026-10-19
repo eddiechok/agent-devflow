@@ -19,15 +19,30 @@ One driver for the whole check. Mixing two wastes tokens and loses the login.
    evidence [live-check.md](live-check.md) asks for, by whatever means the project has. Do not
    install a driver to make the check run.
 
+## The page
+
+Check the real page, on a local server running this branch, before anything else. A page
+that needs a login is still the real page: log in as below. A Storybook story is the last
+fallback, only when the real page cannot run here, and the live line says you used a story.
+
 ## The five checks
 
 Run all five. A page that renders is not a page that is right.
 
-1. **Log in once.** Use the project's seeded user, then keep the cookie (a named session or a
-   saved state) so every later page reuses it. Use **test credentials from the project's own
-   files** only: its CLAUDE.md, its seeds, its `.env.example`. Never ask the human for a real
-   password, and never type one you found anywhere else. No test login in the project's files
-   → say so, and check the pages that need no login.
+1. **Log in once**, then keep the cookie (a named session or a saved state) so every later
+   page reuses it. Take the first of these that works:
+   1. A login the driver's browser already has for this app.
+   2. The **test credentials** in the project's own files: its CLAUDE.md, its seeds, its
+      `.env.example`.
+   3. A test login the human gave in chat for this app.
+   4. None of these: ask the human once for a test login. No answer → say so, and check
+      the pages that need no login.
+
+   Type a test password only on a local server: `localhost`, `127.0.0.1`, `[::1]`, a
+   `.localhost` or `.test` name. Never ask the human for a real password, and never type one
+   you found anywhere else. Never type a password on a remote site, staging included.
+   Never write the password in the PR, the report or a tracked file. Never copy cookies
+   from the human's own browser profile into the driver.
 2. **Make the exact state the change affects.** Not only the normal page. If the change is the
    empty state, get the list empty. If it is the error message, make the call fail. If it is
    a loading state, hold the request. A change that shows in one state is proven only in that

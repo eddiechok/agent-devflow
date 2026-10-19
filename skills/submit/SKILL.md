@@ -244,7 +244,7 @@ Preview: <link, if one appeared on the PR>
 5. Ctrl-C to stop the server when you are done
 
 I checked this locally before pushing. I stopped my own server; step 5 is for yours.
-(A kept server is still up: say so, drop step 5, and point at Running below.)
+(A kept server is still up: say so, drop steps 1 and 5, and point at Running below.)
 
 ## Running
 (only when the live check kept a server, else omit this section entirely; its lines are in live-check.md, "A kept server")
@@ -267,6 +267,9 @@ I checked this locally before pushing. I stopped my own server; step 5 is for yo
 **Check whether a preview link appeared** on the PR. If one did, put it first. If none appeared, give the local steps and do not mention a link that is not coming.
 
 **The steps must be steps you actually ran.** Instructions you never followed will be wrong.
+A step is never a test command: Evidence has those. In a UI project, each step between the one
+that starts the app and the one that stops it is a full link, `http://localhost:<port>/<path>`,
+or a browser action. If no step is left, leave the section out.
 
 ## 9. Hand off, then stop
 

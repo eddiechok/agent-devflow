@@ -90,8 +90,8 @@ this branch changed, each `✓`.
 
 #### Check it yourself
 
-1. `python3 skills/test-frontmatter.py`
-2. Run `/devflow:build` on a small change and look for the red line
+1. Run `/devflow:build` on a small change
+2. Look for the red line before the first edit
 
 #### Assumptions
 
@@ -115,7 +115,8 @@ this branch changed, each `✓`.
   the file list. One to three bullets.
 - **Check it yourself** — the steps under the PR body's How to check this yourself, word
   for word. The `**live**` line is not shown: a passing one is noise, and a failing one is
-  a `✗` line, which goes under Needs you.
+  a `✗` line, which goes under Needs you. A PR body with no How to check section has
+  no Check it yourself either.
 - **Assumptions** — the PR body's Assumptions, word for word.
 - **Tracker** — each tracker action, with its result.
 - **Needs you** — every `✗` and `→` line this run printed that is still open, from the
