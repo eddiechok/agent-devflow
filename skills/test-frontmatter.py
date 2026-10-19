@@ -7775,6 +7775,49 @@ check("browser-check: never copies cookies from the human's own browser  <-- #15
       f"{BROWSER_CHECK_PATH} never stops cookies being copied from the human's "
       f"own browser profile")
 
+# ------------------------- a fix never grows an always-loaded file (#151)
+#
+# A docs-only change added a `## Deploy` block to a project's CLAUDE.md, and
+# submit's fix loop ran 5 rounds, each fixing a finding with one more prose
+# rule, so the block went from about 6 lines to about 40. The human: make it
+# a script whenever you can, so the rule file stays slim.
+
+_ALWAYS_LOADED = ("CLAUDE.md", "CLAUDE.local.md", "AGENTS.md", ".claude/rules/")
+_findings151 = flat(_read136("skills", "submit", "references", "findings.md"))
+_look151 = flat(_read136("skills", "submit", "references", "look.md"))
+
+for _name151, _text151 in (("findings", _findings151), ("look", _look151)):
+    check(f"submit/{_name151}: names every always-loaded file  <-- #151",
+          all(f in _text151 for f in _ALWAYS_LOADED),
+          f"submit's {_name151}.md does not name {', '.join(_ALWAYS_LOADED)}")
+    check(f"submit/{_name151}: a rule a fix would add becomes a script with a test  <-- #151",
+          re.search(r"never grows an always-loaded file", _text151) is not None
+          and "script with a test" in _text151
+          and "one-line pointer" in _text151,
+          f"submit's {_name151}.md lets a fix add a prose rule to CLAUDE.md")
+    check(f"submit/{_name151}: only a rule no script can check stays, as one line  <-- #151",
+          "no script can check" in _text151 and "one short line" in _text151,
+          f"submit's {_name151}.md has no exit for a rule a script cannot check")
+
+check("submit/look: a script too big for a small fix is a Known issue  <-- #151",
+      re.search(r"too big for a small fix[^.]*Known issues[^.]*make it a script",
+                _look151) is not None
+      and "rule is never added" in _look151,
+      "submit's look.md never parks a too-big script under Known issues")
+
+# Found by review: the look lets a fix touch only a file the branch already
+# changed, and a new script is a new file, so "whenever you can" was never.
+check("submit/look: the script and its test may be new files  <-- #151 review",
+      re.search(r"script and its test may be new files", _look151) is not None,
+      "submit's look.md blocks the script, a new file, by its own second condition")
+
+_d_submit151 = _doc_section(_doc133("submit.md"),
+                            "### Why a fix never grows an always-loaded file")
+check("docs/submit: says why a fix never grows an always-loaded file  <-- #151",
+      "every session" in _d_submit151 and "rule becomes a check" in _d_submit151
+      and "6 lines" in _d_submit151 and "40" in _d_submit151,
+      "docs/submit.md has no '### Why a fix never grows an always-loaded file'")
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")

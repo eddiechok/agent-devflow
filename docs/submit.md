@@ -121,6 +121,22 @@ A truncated review prints exactly like a clean one, which is the whole reason th
 
 Two agents disagreeing is not a majority vote; it is one of them having read something the other did not, and you are the one who can go and look.
 
+### Why a fix never grows an always-loaded file
+
+`CLAUDE.md`, `CLAUDE.local.md`, `AGENTS.md` and `.claude/rules/` are read at the start of
+every session, so each line there is paid for by every session, whether or not it is
+about the work in front of it. In #151 a docs-only change added a `## Deploy` block to a
+project's `CLAUDE.md`, and the fix loop ran five rounds. Each round fixed a finding by
+adding one more prose rule, and the block grew from about 6 lines to about 40. Every fix
+was right on its own; the loop never asked whether the rules belonged in that file at all.
+
+This is the lesson-review rule [a rule becomes a check](lessons.md#the-review-step) applied
+to the fix loop: a script with a test cannot be ignored and costs nothing until it runs,
+and the file keeps one line that points at it. A script too big for one of the look's
+small fixes is parked under Known issues rather than written as prose in the meantime,
+because the prose is the thing that grows. Only a rule no script can check — a matter of
+judgment — stays as prose, and then as one short line.
+
 ### Why `/code-review` is not here
 
 The built-in `/code-review` is a better review than this one, and it still does not belong here: it works on an **open pull request** and comments back on it, and there is no PR yet. It used to be offered to the human at step 9, where one exists — that offer is gone now, for the reason under step 9 below.
