@@ -7711,6 +7711,12 @@ check("submit: a UI project's steps may start and stop the app  <-- #150 review"
       "starts the app" in _s8_flat and "stops it" in _s8_flat,
       f"{SUBMIT_PATH} step 8 forbids the start and stop steps its own template has")
 
+# A kept server is already up, so the template's `pnpm dev` step would start a
+# second one. With the server kept, the steps drop the start as well as the stop.
+check("submit: a kept server drops the start step as well as the stop  <-- #150 follow-up",
+      "drop steps 1 and 5" in _s8_flat,
+      f"{SUBMIT_PATH} step 8 keeps `pnpm dev` when the server is still up")
+
 check("submit: no check step left leaves the section out  <-- #150",
       "no step is left" in _s8_flat and "leave the section out" in _s8_flat,
       f"{SUBMIT_PATH} step 8 never says to drop How to check when no step is left")

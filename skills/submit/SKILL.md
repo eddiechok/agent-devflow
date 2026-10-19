@@ -244,7 +244,7 @@ Preview: <link, if one appeared on the PR>
 5. Ctrl-C to stop the server when you are done
 
 I checked this locally before pushing. I stopped my own server; step 5 is for yours.
-(A kept server is still up: say so, drop step 5, and point at Running below.)
+(A kept server is still up: say so, drop steps 1 and 5, and point at Running below.)
 
 ## Running
 (only when the live check kept a server, else omit this section entirely; its lines are in live-check.md, "A kept server")
