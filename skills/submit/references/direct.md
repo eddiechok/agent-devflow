@@ -89,5 +89,5 @@ its own `landed` line in place of `pushed`.
 
 Skip step 8: there is no body file, no `gh api` call and no PR link. What step 8's body
 carries goes in the **Done report** in the chat instead: What, Why, Assumptions, How to
-check this yourself, and Evidence, in the same shape. The report's last line is the pushed
+check this yourself (only when it has a step), and Evidence, in the same shape. The report's last line is the pushed
 commit, not a link.

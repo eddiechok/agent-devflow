@@ -73,7 +73,7 @@ a green deploy is second-hand about a live site for exactly the same reason.
 
 [live-check.md](../skills/submit/references/live-check.md) already asked for first-hand proof of a page ("the page text showing the new label", "a screenshot of the layout you fixed") and said nothing about how to drive a browser. Every run improvised: a full-page dump into context, one width, the normal page when the change only shows in the empty state or the error state. [browser-check.md](../skills/submit/references/browser-check.md) holds the five checks once: log in once, make the exact state the change affects, a desktop and a mobile width, a clean console, and read only the text that proves the change. It runs for any UI change at any size, Quick included, because a one-line copy change in an empty state is exactly the change the normal page cannot prove.
 
-It is a reference, not a skill, and driver-agnostic. The driver is the one the project's `## Browser` block names when the session has it, else whatever driver the session has, said by name; with none, the run says so and falls back to the proof it gave before. It has to work with no `## Browser` block, because a project set up before the block existed never runs setup's driver question again. One driver for the whole check: bykare's `browser-self-qa` skill uses `agent-browser` as the single driver and warns that mixing drivers wastes tokens. Login uses only test credentials from the project's own files and never asks for a real password. Login, URLs and traps stay in the project's CLAUDE.md, as they do in bykare's (`CLAUDE.md:195-203`).
+It is a reference, not a skill, and driver-agnostic. The driver is the one the project's `## Browser` block names when the session has it, else whatever driver the session has, said by name; with none, the run says so and falls back to the proof it gave before. It has to work with no `## Browser` block, because a project set up before the block existed never runs setup's driver question again. One driver for the whole check: bykare's `browser-self-qa` skill uses `agent-browser` as the single driver and warns that mixing drivers wastes tokens. Login uses only test logins and never asks for a real password: a login the driver's browser already has, then the project's own files, then one the human gave in chat, then one question. A test password is typed on a local server only. Until #150 a page behind a login with no test login in the project's files sent the check to a Storybook story, and its check steps only worked after deploy, when a local server on the branch could have shown the real page. The human then asked why it was not shown locally first, and said typing a test password on a test site is fine. Login, URLs and traps stay in the project's CLAUDE.md, as they do in bykare's (`CLAUDE.md:195-203`).
 
 What other tools do, read for this:
 
@@ -212,6 +212,13 @@ Every `Concern:` line goes under **Assumptions**, one bullet each, with the subj
 commit it sits under — the format prints the subject before each body on purpose, because
 `%B` alone gives no boundary between one body and the next subject. That is where the human decides whether the doubt was warranted; leaving it in a
 commit body nobody reads is the same as never raising it.
+
+### The check steps
+
+A check step is what the human does to see the change, not a test to run again: Evidence already
+has the tests, and on #150 the human said they check in the browser only. So a UI project gets
+full links to click, not bare paths, and a change with nothing to see in a browser or by hand
+gets no How to check section at all, rather than a list that repeats Evidence.
 
 ### The preview link
 

@@ -4403,7 +4403,7 @@ SKILL_SIZE_CAP = 500
 # together; these keep each reference reachable, keep the no-behaviour path
 # in SKILL.md itself, and hold the two skills to the size that saves.
 
-SLIM_CAPS = {"submit": 317, "review": 130}
+SLIM_CAPS = {"submit": 320, "review": 130}
 
 # Which step reads each reference. A link anywhere in SKILL.md is not enough:
 # the step that needs the text has to be the one that sends the run there.
@@ -7684,6 +7684,90 @@ check("docs/setup: step 6d says why park, the scope trap, and what others do",
 check("README: setup offers to add CI",
       re.search(r"offers[^\n]*CI", readme_text) is not None,
       f"{README_PATH} never says setup offers CI")
+
+# ----------------------------- check steps a human can follow (#150)
+#
+# In a UI project the PR's check steps gave bare paths and a unit-test command,
+# and the human only checks in the browser; the tests are under Evidence
+# already. The live check also went to a Storybook story because the real page
+# needs a login and the project files had none, when a local server on the
+# branch and a login the browser already had would have shown the real page.
+
+_s8_flat = flat(sub_step8)
+check("submit: a check step is never a test command, Evidence has those  <-- #150",
+      "never a test command" in _s8_flat and "Evidence" in _s8_flat,
+      f"{SUBMIT_PATH} step 8 lets a test command be a check step")
+
+check("submit: a UI project's check steps are full links and browser actions  <-- #150",
+      "full link" in _s8_flat and "browser action" in _s8_flat
+      and "http://localhost:<port>/<path>" in sub_step8,
+      f"{SUBMIT_PATH} step 8 never says a UI project's steps are full links "
+      f"and browser actions only")
+
+# Found by review: the PR template starts the app with `pnpm dev` and stops it
+# with Ctrl-C, neither a link nor a browser action, so the rule has to allow
+# the commands that start and stop the app or the links open nothing.
+check("submit: a UI project's steps may start and stop the app  <-- #150 review",
+      "starts the app" in _s8_flat and "stops it" in _s8_flat,
+      f"{SUBMIT_PATH} step 8 forbids the start and stop steps its own template has")
+
+check("submit: no check step left leaves the section out  <-- #150",
+      "no step is left" in _s8_flat and "leave the section out" in _s8_flat,
+      f"{SUBMIT_PATH} step 8 never says to drop How to check when no step is left")
+
+_done_check = _done_example[_done_example.find("#### Check it yourself"):
+                            _done_example.find("#### Assumptions")]
+check("report: Done's check steps hold no test command  <-- #150",
+      _done_check != "" and "python3" not in _done_check
+      and "test" not in _done_check.lower().replace("#### check it yourself", ""),
+      f"{REPORT_PATH}'s Done example shows a test command as a check step")
+
+check("report: no How to check in the PR means no Check it yourself  <-- #150",
+      "no How to check section" in flat(report_done)
+      and "no Check it yourself" in flat(report_done),
+      f"{REPORT_PATH} never says Check it yourself goes when the PR has no steps")
+
+check("submit/direct: How to check goes in the Done report only with a step  <-- #150",
+      "only when it has a step" in flat(submit_direct_text),
+      f"{SUBMIT_DIRECT_PATH} carries How to check into the Done report even "
+      f"with no step left")
+
+check("browser-check: the real page on a local server first, a story last  <-- #150",
+      "real page" in browser_flat and "local server" in browser_flat
+      and re.search(r"[Ss]tory[^.]*last", browser_flat) is not None
+      and re.search(r"used a story", browser_flat) is not None,
+      f"{BROWSER_CHECK_PATH} never puts the real page first and a story last, "
+      f"said out loud")
+
+_login_order = [browser_flat.find(n) for n in (
+    "already has", "project's own files", "in chat", "ask the human once")]
+check("browser-check: login order is saved, project files, chat, ask once  <-- #150",
+      -1 not in _login_order and _login_order == sorted(_login_order),
+      f"{BROWSER_CHECK_PATH} lacks a login step, or has them out of order: "
+      f"a login the browser already has, the project's own files, one given "
+      f"in chat, then ask the human once")
+
+# Found by review: "on a local server only" headed the whole list, so a login
+# the browser already has could not be used on a remote page either. The human
+# limited typing a password, nothing more.
+check("browser-check: a test password is typed on a local server only  <-- #150",
+      "localhost" in browser_flat and "staging" in browser_flat
+      and re.search(r"[Nn]ever type a password on a remote", browser_flat) is not None
+      and re.search(r"[Tt]ype a test password only on a local server", browser_flat) is not None
+      and "On a local server only" not in browser_flat,
+      f"{BROWSER_CHECK_PATH} never limits typing a test password to a local server")
+
+check("browser-check: the password never goes in the PR, report or a tracked file  <-- #150",
+      re.search(r"[Nn]ever write the password[^.]*PR[^.]*report[^.]*tracked file",
+                browser_flat) is not None,
+      f"{BROWSER_CHECK_PATH} never keeps the password out of the PR, the report "
+      f"and tracked files")
+
+check("browser-check: never copies cookies from the human's own browser  <-- #150",
+      re.search(r"[Nn]ever copy cookies from the human's own browser", browser_flat)
+      is not None,
+      f"{BROWSER_CHECK_PATH} never stops cookies being copied from the human's "
+      f"own browser profile")
 
 # --------------------------------------------------------------------- report
 

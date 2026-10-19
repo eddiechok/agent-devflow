@@ -267,6 +267,9 @@ I checked this locally before pushing. I stopped my own server; step 5 is for yo
 **Check whether a preview link appeared** on the PR. If one did, put it first. If none appeared, give the local steps and do not mention a link that is not coming.
 
 **The steps must be steps you actually ran.** Instructions you never followed will be wrong.
+A step is never a test command: Evidence has those. In a UI project, each step between the one
+that starts the app and the one that stops it is a full link, `http://localhost:<port>/<path>`,
+or a browser action. If no step is left, leave the section out.
 
 ## 9. Hand off, then stop
 
