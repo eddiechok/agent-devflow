@@ -62,6 +62,25 @@ both worse:
 - **Skipping quietly.** A skill that says "no skipping" and then gets skipped teaches that
   the rest of it is optional too.
 
+## A rule for an always-loaded file
+
+`CLAUDE.md`, `CLAUDE.local.md`, `AGENTS.md` and `.claude/rules/` are read at the start of
+every session, so each line there is paid for by every session, whether or not it is
+about the work in front of it. In #151 a docs-only change added a `## Deploy` block to a
+project's `CLAUDE.md`, and `submit`'s fix loop ran five rounds. Each round fixed a finding
+by adding one more prose rule, and the block grew from about 6 lines to about 40. Every
+fix was right on its own; nothing asked whether the rules belonged in that file at all.
+
+The fix loop was only where it showed. The human asked for the rule on every change to
+`CLAUDE.md`, so it lives once, in `build`'s references, and the other writers of a project
+rule — `submit`'s fix loop and its step 6 lessons — point at it rather than carry a copy.
+
+This is the lesson-review rule [a rule becomes a check](lessons.md#the-review-step):
+a script with a test cannot be ignored and costs nothing until it runs, and the file keeps
+one line that points at it. Only a rule no script can check — a matter of judgment —
+stays as prose, and then as one short line. A human who asks for the text in the file
+still gets it; they can always overrule.
+
 ## Gate 1 — where the expected value comes from
 
 That one passes verify-RED as well — the function does not exist yet, so it fails, and it fails for the right reason. Every gate goes green and nothing was ever tested. You are the one writing both sides here, which is exactly why this is easy to do by accident.
