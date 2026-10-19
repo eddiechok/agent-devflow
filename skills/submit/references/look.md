@@ -23,6 +23,6 @@ Both hold → fix it, run the `## Checks` block again — bare, one per call, as
 ✓ **look** clean — the fix to skills/ship/SKILL.md reads right
 ```
 
-**A fix never grows an always-loaded file** — `CLAUDE.md`, `CLAUDE.local.md`, `AGENTS.md`, `.claude/rules/`. A rule a fix would add there becomes a script with a test, and the file gets a one-line pointer to it. The script and its test may be new files: they stand in for lines in a file this branch changed. A script too big for a small fix goes under **Known issues** as `make it a script`, and the rule is never added. Only a rule no script can check stays as prose, and as one short line.
+**A fix never grows an always-loaded file** — a rule a fix would add to `CLAUDE.md`, `CLAUDE.local.md`, `AGENTS.md` or `.claude/rules/` follows [build's always-loaded rule](../../build/references/always-loaded.md). The script and its test may be new files: they stand in for lines in a file this branch changed. A script too big for a small fix goes under **Known issues** as `make it a script`, and the rule is never added.
 
 **The last look only reports.** After the third fix, the look that reads it cannot fix anything: what it finds goes under **Known issues**, and a leftover bug is parked below. So the run always ends on a read, never on an edit. The loop stays bounded: review, round 2, look, at most 3 small fixes each read by its own look, done.

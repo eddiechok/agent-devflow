@@ -7775,29 +7775,55 @@ check("browser-check: never copies cookies from the human's own browser  <-- #15
       f"{BROWSER_CHECK_PATH} never stops cookies being copied from the human's "
       f"own browser profile")
 
-# ------------------------- a fix never grows an always-loaded file (#151)
+# ---------------------- a change never grows an always-loaded file (#151)
 #
 # A docs-only change added a `## Deploy` block to a project's CLAUDE.md, and
 # submit's fix loop ran 5 rounds, each fixing a finding with one more prose
 # rule, so the block went from about 6 lines to about 40. The human: make it
-# a script whenever you can, so the rule file stays slim.
+# a script whenever you can, so the rule file stays slim -- and not only in
+# the fix loop: any change to CLAUDE.md. So the rule lives once, in build's
+# references, and every writer of a project rule points at it.
 
 _ALWAYS_LOADED = ("CLAUDE.md", "CLAUDE.local.md", "AGENTS.md", ".claude/rules/")
+_RULE151 = "always-loaded.md"
+_rule151 = flat(_read136("skills", "build", "references", _RULE151))
+_build151 = _read136("skills", "build", "SKILL.md")
 _findings151 = flat(_read136("skills", "submit", "references", "findings.md"))
 _look151 = flat(_read136("skills", "submit", "references", "look.md"))
+_lessons151 = flat(_read136("skills", "submit", "references", "lessons.md"))
 
-for _name151, _text151 in (("findings", _findings151), ("look", _look151)):
-    check(f"submit/{_name151}: names every always-loaded file  <-- #151",
+check("build/always-loaded: names every always-loaded file  <-- #151",
+      all(f in _rule151 for f in _ALWAYS_LOADED),
+      f"skills/build/references/{_RULE151} does not name "
+      f"{', '.join(_ALWAYS_LOADED)}")
+check("build/always-loaded: a rule becomes a script with a test and a pointer  <-- #151",
+      "script with a test" in _rule151 and "one-line pointer" in _rule151,
+      f"skills/build/references/{_RULE151} lets a change add a prose rule")
+check("build/always-loaded: only a rule no script can check stays, as one line  <-- #151",
+      "no script can check" in _rule151 and "one short line" in _rule151,
+      f"skills/build/references/{_RULE151} has no exit for a judgment rule")
+check("build/always-loaded: the human asking for text still wins  <-- #151",
+      re.search(r"human[^.]*asks? for[^.]*text[^.]*wins", _rule151) is not None,
+      f"skills/build/references/{_RULE151} overrules a human who asked for text")
+
+check("build: a rule for an always-loaded file reads the reference  <-- #151",
+      f"](references/{_RULE151})" in _build151,
+      f"skills/build/SKILL.md never links references/{_RULE151}")
+
+# Found by review: the lines that send a rule to the reference named three of
+# the four files, so a rule for CLAUDE.local.md never reached it.
+_build_entry151 = flat(section(_build151, "## A rule for an always-loaded file"))
+for _name151, _text151 in (("build", _build_entry151), ("submit/findings", _findings151),
+                           ("submit/look", _look151)):
+    check(f"{_name151}: the line into the rule names every always-loaded file  <-- #151 review",
           all(f in _text151 for f in _ALWAYS_LOADED),
-          f"submit's {_name151}.md does not name {', '.join(_ALWAYS_LOADED)}")
-    check(f"submit/{_name151}: a rule a fix would add becomes a script with a test  <-- #151",
-          re.search(r"never grows an always-loaded file", _text151) is not None
-          and "script with a test" in _text151
-          and "one-line pointer" in _text151,
-          f"submit's {_name151}.md lets a fix add a prose rule to CLAUDE.md")
-    check(f"submit/{_name151}: only a rule no script can check stays, as one line  <-- #151",
-          "no script can check" in _text151 and "one short line" in _text151,
-          f"submit's {_name151}.md has no exit for a rule a script cannot check")
+          f"{_name151} sends only some of {', '.join(_ALWAYS_LOADED)} to {_RULE151}")
+
+for _name151, _text151 in (("findings", _findings151), ("look", _look151),
+                           ("lessons", _lessons151)):
+    check(f"submit/{_name151}: points at build's always-loaded rule  <-- #151",
+          f"build/references/{_RULE151})" in _text151,
+          f"submit's {_name151}.md never links build's {_RULE151}")
 
 check("submit/look: a script too big for a small fix is a Known issue  <-- #151",
       re.search(r"too big for a small fix[^.]*Known issues[^.]*make it a script",
@@ -7811,12 +7837,17 @@ check("submit/look: the script and its test may be new files  <-- #151 review",
       re.search(r"script and its test may be new files", _look151) is not None,
       "submit's look.md blocks the script, a new file, by its own second condition")
 
+_d_build151 = _doc_section(_read136("docs", "build.md"),
+                           "## A rule for an always-loaded file")
+check("docs/build: says why a rule never grows an always-loaded file  <-- #151",
+      "every session" in _d_build151 and "rule becomes a check" in _d_build151
+      and "6 lines" in _d_build151 and "40" in _d_build151,
+      "docs/build.md has no '## A rule for an always-loaded file' with the why")
 _d_submit151 = _doc_section(_doc133("submit.md"),
                             "### Why a fix never grows an always-loaded file")
-check("docs/submit: says why a fix never grows an always-loaded file  <-- #151",
-      "every session" in _d_submit151 and "rule becomes a check" in _d_submit151
-      and "6 lines" in _d_submit151 and "40" in _d_submit151,
-      "docs/submit.md has no '### Why a fix never grows an always-loaded file'")
+check("docs/submit: points at docs/build for the why  <-- #151",
+      "build.md#a-rule-for-an-always-loaded-file" in _d_submit151,
+      "docs/submit.md never sends the reader to docs/build.md for the why")
 
 # --------------------------------------------------------------------- report
 

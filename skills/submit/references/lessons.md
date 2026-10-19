@@ -9,6 +9,8 @@ does this sort, because a fresh agent was not there for the mistake.
 on this repo would get wrong without it, and that no `CLAUDE.md` or `.claude/rules/` file
 already says — gets one line, in this same commit, so the human approves it with the work
 rather than discovering it cold on a later run. List it under **What** in the PR body too.
+A fact that is a rule — "never do X" — follows
+[build's always-loaded rule](../../build/references/always-loaded.md).
 
 Where the line goes depends on the files the fact is about:
 

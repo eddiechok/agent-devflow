@@ -94,6 +94,12 @@ Then print the branch, once, before the first edit:
 ✓ **branch** <name>
 ```
 
+## A rule for an always-loaded file
+
+A change that adds a rule to `CLAUDE.md`, `CLAUDE.local.md`, `AGENTS.md` or
+`.claude/rules/` reads
+[references/always-loaded.md](references/always-loaded.md) before the edit.
+
 ## First: is there anything a test could catch?
 
 The gates below assume behaviour. When there is none, **print one line and skip to the

@@ -123,19 +123,10 @@ Two agents disagreeing is not a majority vote; it is one of them having read som
 
 ### Why a fix never grows an always-loaded file
 
-`CLAUDE.md`, `CLAUDE.local.md`, `AGENTS.md` and `.claude/rules/` are read at the start of
-every session, so each line there is paid for by every session, whether or not it is
-about the work in front of it. In #151 a docs-only change added a `## Deploy` block to a
-project's `CLAUDE.md`, and the fix loop ran five rounds. Each round fixed a finding by
-adding one more prose rule, and the block grew from about 6 lines to about 40. Every fix
-was right on its own; the loop never asked whether the rules belonged in that file at all.
-
-This is the lesson-review rule [a rule becomes a check](lessons.md#the-review-step) applied
-to the fix loop: a script with a test cannot be ignored and costs nothing until it runs,
-and the file keeps one line that points at it. A script too big for one of the look's
-small fixes is parked under Known issues rather than written as prose in the meantime,
-because the prose is the thing that grows. Only a rule no script can check — a matter of
-judgment — stays as prose, and then as one short line.
+The fix loop is where #151 showed, and the rule is `build`'s:
+[a rule for an always-loaded file](build.md#a-rule-for-an-always-loaded-file). The look
+adds one part of its own: a script too big for a small fix is parked under Known issues
+rather than written as prose in the meantime, because the prose is the thing that grows.
 
 ### Why `/code-review` is not here
 
