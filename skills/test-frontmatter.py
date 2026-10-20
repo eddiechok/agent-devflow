@@ -1223,16 +1223,29 @@ check("submit: step 9 prints the Done report before the PR link  <-- #95",
 # before the PR link, and never lists merge or deploy steps. Direct mode has no
 # PR, so it is unchanged.
 
-SHIP_NEXT_LINE = "→ **next** /devflow:ship"
+# #159 gave the human a second command: /devflow:merge merges without deploying,
+# so several PRs can go out in one /devflow:ship. The line shows both, except
+# where a merge deploys by itself (a `## Deploy` block with no `Deploy:` line),
+# where merging first would start the deploy and only ship makes sense.
+SHIP_NEXT_LINE = ("→ **next** /devflow:ship · or /devflow:merge to deploy "
+                  "later")
+SHIP_ONLY_NEXT_LINE = "→ **next** /devflow:ship"
 with open(os.path.join(SKILLS_DIR, "flow", "references", "report.md"),
           encoding="utf-8") as _fh:
     _done_section = _fh.read().split("## Done — the end of the run")[-1]
 REPORT_PATH = os.path.join(SKILLS_DIR, "flow", "references", "report.md")
 
-check("report: the pr-mode Done report ends with the ship line  <-- #149",
+check("report: the pr-mode Done report ends with the ship and merge line  <-- #149 #159",
       SHIP_NEXT_LINE in _done_section,
       f"no line {SHIP_NEXT_LINE!r} in the Done section of {REPORT_PATH} -- a "
-      f"pr-mode run would end without pointing at ship")
+      f"pr-mode run would end without pointing at ship and merge")
+
+check("report: where a merge deploys by itself the line is ship only  <-- #159",
+      SHIP_ONLY_NEXT_LINE + "`" in flat(_done_section)
+      and re.search(r"## Deploy[^.]*no `Deploy:` line[^.]*only",
+                    flat(_done_section)) is not None,
+      f"the Done section of {REPORT_PATH} does not drop /devflow:merge where "
+      f"the Deploy block has no Deploy: line, so a merge there starts the deploy")
 
 check("report: the ship line is pr mode only, never merge or deploy steps  <-- #149",
       "Direct mode" in _done_section
@@ -7910,6 +7923,205 @@ _d_submit151 = _doc_section(_doc133("submit.md"),
 check("docs/submit: points at docs/build for the why  <-- #151",
       "build.md#a-rule-for-an-always-loaded-file" in _d_submit151,
       "docs/submit.md never sends the reader to docs/build.md for the why")
+
+# ------------------------------ /devflow:merge merges and stops  <-- #159
+#
+# `ship` merges, deploys, live-checks and cleans up in one command, and a
+# deploy that copies the main checkout ships every PR merged before it. So a
+# human who wants several PRs in one deploy needs a way to merge without
+# deploying: `merge`. It is thin on purpose -- it reads ship's steps rather
+# than copying them, so the two cannot drift -- and it is human-only for the
+# same reason ship is. The Deploy block decides what it says: no `Deploy:`
+# line means CI deploys on merge, so a merge here would start the deploy and
+# merge refuses; no block at all is unknown, so it merges and says so; a
+# `Deploy:` line is left for ship to run.
+
+MERGE_PATH = os.path.join(SKILLS_DIR, "merge", "SKILL.md")
+MERGE_DOC_PATH = os.path.join(REPO_ROOT, "docs", "merge.md")
+merge_text = ""
+if os.path.isfile(MERGE_PATH):
+    with open(MERGE_PATH, encoding="utf-8") as fh:
+        merge_text = fh.read()
+merge_fm = dict(fields(frontmatter(merge_text) or ""))
+merge_flat = flat(merge_text)
+
+check("merge: the skill exists  <-- #159", "merge" in skills,
+      f"{MERGE_PATH} is missing")
+check("merge: is human-only, disable-model-invocation true  <-- #159",
+      merge_fm.get("disable-model-invocation") == "true",
+      f"{MERGE_PATH} does not close the automatic path")
+check("merge: takes a PR number or the current branch  <-- #159",
+      literal(merge_fm.get("argument-hint", ""))
+      == "[PR number, or blank for the current branch]",
+      f"{MERGE_PATH} has the wrong argument-hint")
+check("merge: reads ship's steps instead of copying them  <-- #159",
+      "../ship/SKILL.md" in merge_text
+      and "Context" in merge_text and "The boundary" in merge_text
+      and re.search(r"steps? 1, 2[^.]*3 and 6", merge_flat) is not None
+      and re.search(r"skip[^.]*4[^.]*5", merge_flat, re.I) is not None,
+      f"{MERGE_PATH} does not follow ship's Context, boundary and steps "
+      f"1, 2, 3 and 6 while skipping 4 and 5")
+check("merge: keeps ship's conflict handover  <-- #159",
+      "conflict-handover" in merge_text,
+      f"{MERGE_PATH} drops the conflict handover to tend")
+
+MERGE_CI_LINE = ("✗ **merge** a merge here starts the deploy — run "
+                 "/devflow:ship <n> <n> when all are ready")
+MERGE_NOBLOCK_LINE = ("– **deploy** no Deploy block — a merge may start one; "
+                      "/devflow:ship checks it live")
+MERGE_DEPLOYLINE_LINE = ("– **deploy** not run — /devflow:ship <n> <n> "
+                         "deploys them together")
+check("merge: a Deploy block with no Deploy line stops, merging nothing  <-- #159",
+      MERGE_CI_LINE in merge_text
+      and "no `Deploy:` line" in merge_flat
+      and "Stop and merge nothing" in merge_flat,
+      f"{MERGE_PATH} would merge where a merge starts the deploy")
+check("merge: no Deploy block merges and says it cannot tell  <-- #159",
+      MERGE_NOBLOCK_LINE in merge_text,
+      f"{MERGE_PATH} does not print the no-Deploy-block line")
+check("merge: a Deploy line merges and is not run  <-- #159",
+      MERGE_DEPLOYLINE_LINE in merge_text,
+      f"{MERGE_PATH} does not print the not-run line for a Deploy line")
+check("merge: direct mode has nothing to merge  <-- #159",
+      re.search(r"Mode: direct[^.]*nothing to merge", merge_flat) is not None,
+      f"{MERGE_PATH} does not stop in direct mode")
+check("merge: the report ends with the ship line naming the merged PR  <-- #159",
+      "→ **next** /devflow:ship <n> [<n>...]" in merge_text,
+      f"{MERGE_PATH} does not end by pointing at ship")
+check("merge: never deploys, never live-checks, never runs unstarted  <-- #159",
+      re.search(r"Never run a `Deploy` line", merge_flat) is not None
+      and re.search(r"Never run a live check", merge_flat) is not None
+      and re.search(r"Never run without a human starting it", merge_flat)
+      is not None,
+      f"{MERGE_PATH} Rules do not say it never deploys, never live-checks "
+      f"and never runs without a human")
+check("merge: has a why page that exists and is linked  <-- #159",
+      os.path.isfile(MERGE_DOC_PATH) and "docs/merge.md" in merge_text,
+      f"{MERGE_DOC_PATH} is missing or {MERGE_PATH} never links it")
+
+# ------------------- /devflow:ship takes several PRs, one deploy  <-- #159
+#
+# A deploy copies the main checkout, so it ships every PR merged before it.
+# `ship` with one number at a time deployed once per PR. With several numbers
+# it checks them all first and merges none if one is not ready (the human fixes
+# it and types the same command again), merges in the order typed, deploys
+# once, then live-checks each PR's own change -- including one that was already
+# merged, which skips the merge but not the check. The rules sit in a reference
+# because ship/SKILL.md is 497 lines against a cap of 500.
+
+SEVERAL_PATH = os.path.join(SKILLS_DIR, "ship", "references", "several-prs.md")
+several_text = ""
+if os.path.isfile(SEVERAL_PATH):
+    with open(SEVERAL_PATH, encoding="utf-8") as fh:
+        several_text = fh.read()
+several_flat = flat(several_text)
+ship_values = dict(fields(frontmatter(ship_text) or ""))
+
+check("ship: points at references/several-prs.md from step 1  <-- #159",
+      "](references/several-prs.md)" in section(ship_text, "## 1. "),
+      f"{SHIP_PATH} step 1 never links references/several-prs.md")
+check("ship: the argument-hint takes several PR numbers  <-- #159",
+      "PR number(s)" in ship_values.get("argument-hint", ""),
+      f"{SHIP_PATH} argument-hint still names one PR")
+check("ship: stays at or under 500 lines with the pointer  <-- #159",
+      len(ship_text.splitlines()) <= 500,
+      f"{SHIP_PATH} is {len(ship_text.splitlines())} lines")
+check("several-prs: runs steps 1 and 2 for every PR before merging any  <-- #159",
+      re.search(r"steps 1 and 2 for every PR[^.]*before[^.]*any", several_flat)
+      is not None,
+      f"{SEVERAL_PATH} never checks all before merging any")
+check("several-prs: one PR not ready means merge none and name it  <-- #159",
+      re.search(r"merge none", several_flat, re.I) is not None
+      and "name the first pr" in several_flat.lower()
+      and "same command again" in several_flat
+      and all(w in several_flat for w in
+              ("CHANGES_REQUESTED", "unfinished", "stacked")),
+      f"{SEVERAL_PATH} does not stop the whole batch on one unready PR")
+check("several-prs: a conflicting PR goes to tend, one attempt, before any merge  <-- #159",
+      "conflict-handover.md" in several_text
+      and re.search(r"one attempt", several_flat) is not None
+      and re.search(r"before anything (is )?merge", several_flat) is not None,
+      f"{SEVERAL_PATH} does not hand a conflict to tend before merging")
+check("several-prs: a merged PR skips the merge but still gets its live check  <-- #159",
+      "– **merge** #n already merged" in several_text
+      and re.search(r"already merged[^.]*(still|live check)", several_flat)
+      is not None,
+      f"{SEVERAL_PATH} would skip an already-merged PR's live check")
+check("several-prs: merges in the order typed, re-reading mergeable each time  <-- #159",
+      "order typed" in several_flat and "mergeable" in several_flat
+      and re.search(r"mid-batch", several_flat) is not None,
+      f"{SEVERAL_PATH} does not merge in order or re-read mergeable")
+check("several-prs: deploys once, then a live check and clean-up per PR  <-- #159",
+      re.search(r"step 4 once", several_flat, re.I) is not None
+      and re.search(r"step 5 for each PR", several_flat, re.I) is not None
+      and re.search(r"step 6 for each PR", several_flat, re.I) is not None
+      and re.search(r"first-hand", several_flat) is not None,
+      f"{SEVERAL_PATH} does not deploy once and check each PR")
+check("several-prs: the report has a merged line per PR, one deploy, a live line per PR  <-- #159",
+      re.search(r"one `merged` line per PR", several_flat) is not None
+      and re.search(r"one `deploy` line", several_flat) is not None
+      and re.search(r"one `live` line per PR", several_flat) is not None,
+      f"{SEVERAL_PATH} does not say what the report holds")
+
+# ---------- merge is as unreachable as ship, and no one is "the only"  <-- #159
+#
+# `/devflow:merge` merges, so the boundary that keeps `ship` human-only keeps it
+# too. Every Rules line that says never to call `devflow:ship` now names
+# `devflow:merge` in the same bullet, and no file still claims ship is the only
+# skill that merges. Those claims were written when ship was the only one.
+
+def _rules_bullets(text):
+    """The `- ` bullets of the last `## Rules` section, one string each."""
+    tail = text.split("\n## Rules")[-1]
+    return [flat(b) for b in re.split(r"\n(?=- )", tail) if b.startswith("- ")
+            or b.lstrip().startswith("- ")]
+
+
+for _rel in ("skills/flow/SKILL.md", "skills/submit/SKILL.md",
+             "skills/tend/SKILL.md", "skills/sweep/SKILL.md",
+             "skills/plan/SKILL.md", "agents/sweeper.md", "agents/builder.md"):
+    with open(os.path.join(REPO_ROOT, _rel), encoding="utf-8") as _fh:
+        _hits = [b for b in _rules_bullets(_fh.read()) if "`devflow:ship`" in b]
+    check(f"{_rel}: the never-call-ship rule names devflow:merge  <-- #159",
+          bool(_hits) and all("`devflow:merge`" in b for b in _hits),
+          f"{_rel} Rules forbid calling devflow:ship but not devflow:merge: "
+          f"{_hits}")
+
+check("ship: the boundary and the rules name devflow:merge  <-- #159",
+      "`devflow:merge`" in section(ship_text, "## The boundary")
+      and any("`devflow:merge`" in b for b in _rules_bullets(ship_text)),
+      f"{SHIP_PATH} boundary or Rules never say merge is closed the same way")
+
+_CLAIMS = ("skills/ship/SKILL.md", "docs/pipeline.md", "docs/plan.md",
+           "README.md")
+for _rel in _CLAIMS:
+    with open(os.path.join(REPO_ROOT, _rel), encoding="utf-8") as _fh:
+        _claim_text = flat(_fh.read())
+    check(f"{_rel}: no claim that ship is the only skill that merges  <-- #159",
+          not re.search(r"only (skill|thing) (that|which) merges",
+                        _claim_text, re.I)
+          and "the one skill nothing else can call" not in _claim_text,
+          f"{_rel} still says ship alone merges")
+
+with open(os.path.join(REPO_ROOT, "README.md"), encoding="utf-8") as _fh:
+    _readme159 = _fh.read()
+check("README: the usage block shows /devflow:merge 123  <-- #159",
+      "/devflow:merge 123" in _readme159,
+      "README.md usage block never shows /devflow:merge 123")
+check("README: the skills table has a merge row  <-- #159",
+      re.search(r"^\| `merge` \|", _readme159, re.M) is not None,
+      "README.md skills table has no `merge` row")
+check("README: the docs index lists docs/merge.md  <-- #159",
+      "[docs/merge.md](docs/merge.md)" in _readme159,
+      "README.md docs index never lists docs/merge.md")
+check("README: says ship and merge are the ones only a human starts  <-- #159",
+      "`ship` and `merge`" in _readme159,
+      "README.md never names merge beside ship at the boundary")
+with open(os.path.join(REPO_ROOT, "docs", "ship.md"), encoding="utf-8") as _fh:
+    _docs_ship159 = _fh.read()
+check("docs/ship: the boundary section names merge  <-- #159",
+      "`devflow:merge`" in section(_docs_ship159, "## The boundary"),
+      "docs/ship.md boundary never says merge shares it")
 
 # --------------------------------------------------------------------- report
 

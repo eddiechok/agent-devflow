@@ -495,6 +495,6 @@ the result — for example `✓ **plan** #45`.
 - Never start a builder on pieces that drifted from the approved todo before the human says go.
 - Never rewrite a piece already built. A change to it is a new piece, not an edit.
 - Never revise without appending a `## Changes` line — date, what changed, why.
-- Never call `devflow:submit`, `devflow:review` or `devflow:ship` from the by-hand path.
-  Only `flow` calls `submit`, and only a human starts `ship`.
+- Never call `devflow:submit`, `devflow:review`, `devflow:ship` or `devflow:merge` from the
+  by-hand path. Only `flow` calls `submit`, and only a human starts `ship` or `merge`.
 - Never ask a question `flow`'s rounds already settled. A resume skips the questions.

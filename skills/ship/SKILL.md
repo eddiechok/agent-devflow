@@ -1,7 +1,7 @@
 ---
 name: ship
-description: "Use after submit, when the pull request is open and you want it finished - merged, deployed, and cleaned up behind it. Merges the PR, runs or watches the deploy, checks the change is really live, then deletes the branch and tidies up the servers, temp files and session. This is the only skill that merges, and only a human can start it."
-argument-hint: "[PR number, or blank for the current branch]"
+description: "Use after submit, when the pull request is open and you want it finished - merged, deployed, and cleaned up behind it. Merges the PR, runs or watches the deploy, checks the change is really live, then deletes the branch and tidies up the servers, temp files and session. Only ship and merge merge, and only a human can start either."
+argument-hint: "[PR number(s), or blank for the current branch]"
 allowed-tools: Bash(git status:*), Bash(git rev-parse:*), Bash(git symbolic-ref:*), Bash(gh pr view:*), ExitWorktree
 disable-model-invocation: true
 ---
@@ -31,7 +31,7 @@ you say anything. Nothing here is a reason to guess.
 Two separate things keep this skill unreachable without you, and it matters which is which:
 
 - **`disable-model-invocation: true`** closes the automatic path, in the harness rather than by request.
-- **`flow` and `submit` are told never to call it.** That closes the deliberate path — and it is only an instruction, so it is the weaker half. It is written into their Rules as well as here.
+- **`flow` and `submit` are told never to call it, or `devflow:merge`.** That closes the deliberate path — and it is only an instruction, so it is the weaker half. It is written into their Rules as well as here.
 
 Do not remove either. If you ever see a chain of skills arrive here without a human typing `/devflow:ship`, stop and treat it as a bug in the boundary, not as a convenience.
 
@@ -57,6 +57,9 @@ path below.
 ## 1. Find the PR
 
 `$ARGUMENTS` is a PR number if you were given one. Otherwise take the PR for the current branch.
+
+**Several numbers** (`/devflow:ship 155 156 157`): read [references/several-prs.md](references/several-prs.md)
+and follow it. It runs the steps below across all of them and deploys once.
 
 **Write its head branch down, and keep using that name.** Step 6 deletes a branch, and
 "the local one" means *this PR's* branch, never whichever one you happen to be standing on.
@@ -475,7 +478,7 @@ the result — for example `✓ **checks** 3 of 3 pass, exit 0`.
 
 ## Rules
 
-- Never run without a human starting it. `disable-model-invocation: true` stays, and so does the rule in `flow` and `submit` not to call this.
+- Never run without a human starting it. `disable-model-invocation: true` stays, and so does the rule in `flow` and `submit` not to call this or `devflow:merge`.
 - Never merge a red PR, or one whose checks have not finished.
 - Never hand anything but a conflict to `tend` from here, and never hand one twice. A red
   check and a reviewer asking for changes are the human's to start; one attempt is the cap.
