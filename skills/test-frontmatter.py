@@ -7911,6 +7911,81 @@ check("docs/submit: points at docs/build for the why  <-- #151",
       "build.md#a-rule-for-an-always-loaded-file" in _d_submit151,
       "docs/submit.md never sends the reader to docs/build.md for the why")
 
+# ------------------------------ /devflow:merge merges and stops  <-- #159
+#
+# `ship` merges, deploys, live-checks and cleans up in one command, and a
+# deploy that copies the main checkout ships every PR merged before it. So a
+# human who wants several PRs in one deploy needs a way to merge without
+# deploying: `merge`. It is thin on purpose -- it reads ship's steps rather
+# than copying them, so the two cannot drift -- and it is human-only for the
+# same reason ship is. The Deploy block decides what it says: no `Deploy:`
+# line means CI deploys on merge, so a merge here would start the deploy and
+# merge refuses; no block at all is unknown, so it merges and says so; a
+# `Deploy:` line is left for ship to run.
+
+MERGE_PATH = os.path.join(SKILLS_DIR, "merge", "SKILL.md")
+MERGE_DOC_PATH = os.path.join(REPO_ROOT, "docs", "merge.md")
+merge_text = ""
+if os.path.isfile(MERGE_PATH):
+    with open(MERGE_PATH, encoding="utf-8") as fh:
+        merge_text = fh.read()
+merge_fm = dict(fields(frontmatter(merge_text) or ""))
+merge_flat = flat(merge_text)
+
+check("merge: the skill exists  <-- #159", "merge" in skills,
+      f"{MERGE_PATH} is missing")
+check("merge: is human-only, disable-model-invocation true  <-- #159",
+      merge_fm.get("disable-model-invocation") == "true",
+      f"{MERGE_PATH} does not close the automatic path")
+check("merge: takes a PR number or the current branch  <-- #159",
+      literal(merge_fm.get("argument-hint", ""))
+      == "[PR number, or blank for the current branch]",
+      f"{MERGE_PATH} has the wrong argument-hint")
+check("merge: reads ship's steps instead of copying them  <-- #159",
+      "../ship/SKILL.md" in merge_text
+      and "Context" in merge_text and "The boundary" in merge_text
+      and re.search(r"steps? 1, 2[^.]*3 and 6", merge_flat) is not None
+      and re.search(r"skip[^.]*4[^.]*5", merge_flat, re.I) is not None,
+      f"{MERGE_PATH} does not follow ship's Context, boundary and steps "
+      f"1, 2, 3 and 6 while skipping 4 and 5")
+check("merge: keeps ship's conflict handover  <-- #159",
+      "conflict-handover" in merge_text,
+      f"{MERGE_PATH} drops the conflict handover to tend")
+
+MERGE_CI_LINE = ("✗ **merge** a merge here starts the deploy — run "
+                 "/devflow:ship <n> <n> when all are ready")
+MERGE_NOBLOCK_LINE = ("– **deploy** no Deploy block — a merge may start one; "
+                      "/devflow:ship checks it live")
+MERGE_DEPLOYLINE_LINE = ("– **deploy** not run — /devflow:ship <n> <n> "
+                         "deploys them together")
+check("merge: a Deploy block with no Deploy line stops, merging nothing  <-- #159",
+      MERGE_CI_LINE in merge_text
+      and "no `Deploy:` line" in merge_flat
+      and "Stop and merge nothing" in merge_flat,
+      f"{MERGE_PATH} would merge where a merge starts the deploy")
+check("merge: no Deploy block merges and says it cannot tell  <-- #159",
+      MERGE_NOBLOCK_LINE in merge_text,
+      f"{MERGE_PATH} does not print the no-Deploy-block line")
+check("merge: a Deploy line merges and is not run  <-- #159",
+      MERGE_DEPLOYLINE_LINE in merge_text,
+      f"{MERGE_PATH} does not print the not-run line for a Deploy line")
+check("merge: direct mode has nothing to merge  <-- #159",
+      re.search(r"Mode: direct[^.]*nothing to merge", merge_flat) is not None,
+      f"{MERGE_PATH} does not stop in direct mode")
+check("merge: the report ends with the ship line naming the merged PR  <-- #159",
+      "→ **next** /devflow:ship <n> [<n>...]" in merge_text,
+      f"{MERGE_PATH} does not end by pointing at ship")
+check("merge: never deploys, never live-checks, never runs unstarted  <-- #159",
+      re.search(r"Never run a `Deploy` line", merge_flat) is not None
+      and re.search(r"Never run a live check", merge_flat) is not None
+      and re.search(r"Never run without a human starting it", merge_flat)
+      is not None,
+      f"{MERGE_PATH} Rules do not say it never deploys, never live-checks "
+      f"and never runs without a human")
+check("merge: has a why page that exists and is linked  <-- #159",
+      os.path.isfile(MERGE_DOC_PATH) and "docs/merge.md" in merge_text,
+      f"{MERGE_DOC_PATH} is missing or {MERGE_PATH} never links it")
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")
