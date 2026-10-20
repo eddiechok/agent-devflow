@@ -141,6 +141,8 @@ open PR is **checks that have not started**, which is the case this step already
 to guess at. Look before you say "no checks configured", and say which of the two you
 found.
 
+**A `- Test branch:` line in `## Workflow`?** Read [references/test-branch.md](references/test-branch.md) before the merge.
+
 Otherwise print the status, one shaped line each, and go:
 
 ```

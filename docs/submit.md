@@ -232,6 +232,14 @@ gets no How to check section at all, rather than a list that repeats Evidence.
 If one did, put it
 first — a preview is a real build with real environment variables on a clean machine, and it catches things your laptop cannot.
 
+### The test branch
+
+A `- Test branch:` line sends each PR to the test branch as well, so the human checks on the test site ([setup.md](setup.md)). It merges on GitHub, `POST /repos/{owner}/{repo}/merges`, which needs no checkout and answers 201, 204, 404 or 409 ([GitHub](https://docs.github.com/en/rest/branches/branches#merge-a-branch)), so each answer gets one route. A 404 is a new project whose test branch is not made yet, and is skipped rather than failed.
+
+A 409 is another branch on the test branch touching the same lines. It is fixed rather than reported, as `tend` fixes one on the PR, because the human's time on the test site costs more than one review run. The fix happens in a temporary worktree on the test branch only — merging the test branch into the PR branch would carry other branches' untested work to `main` ([gitworkflows](https://git-scm.com/docs/gitworkflows)). No PR reads the fix, so `devflow:reviewer` reads it: not through `devflow:review`, which diffs the session's own folder, but in the temporary worktree, through `git show --remerge-diff`, which shows only how the fix differs from git's own conflicted merge ([git-show](https://git-scm.com/docs/git-show)). The fix is pushed as a normal merge commit, never forced. One try, as `ship` gives `tend` one.
+
+`rerere` goes on first. git records the fix and reuses it when the same conflict comes back later, as the PR merges into `main` ([git-rerere](https://git-scm.com/docs/git-rerere)). The setting lives in `.git/config`, which every worktree shares ([gitrepository-layout](https://git-scm.com/docs/gitrepository-layout)), so `submit` turns it on rather than setup: a new clone or a cloud session would not have setup's.
+
 ## Step 9 — handing off
 
 This step used to work the danger list out from the diff a second time and offer the human `/code-review` and `/security-review` to type themselves — a manual opinion line, because the security question had nowhere automatic to run. That offer relied on `flow`'s original danger-list read surviving to here, which it did not always do: a compaction, a long Deep job, or a `submit` invoked directly all lost it, silently, and what it dropped was the only security gate in the loop.

@@ -199,7 +199,7 @@ The path it prints is `<body file>` below. Remove it once the PR has it.
 
 **`flow` passed `tracker:` lines?** Read [references/tracker-actions.md](references/tracker-actions.md) before you write the body — it changes the body — and do the actions it lists once the PR is open.
 
-**No PR** — push, then open one against the default branch:
+**No PR** — push (then [references/test-branch.md](references/test-branch.md), when `## Workflow` names a `- Test branch:`), then open one against the default branch:
 
 ```
 gh api repos/{owner}/{repo}/pulls -f title="<subject>" -F body=@<body file> -f head=<branch> -f base=<default branch> --jq '"#\(.number) \(.html_url)"'
@@ -234,7 +234,7 @@ Closes #123
 
 ## How to check this yourself
 
-Preview: <link, if one appeared on the PR>
+Test site: <link, if test-branch.md landed it> — or Preview: <link, if one appeared on the PR>
 (Preview data source: unknown. If pages look empty, check locally instead.)
 
 1. `pnpm dev`
@@ -264,7 +264,7 @@ I checked this locally before pushing. I stopped my own server; step 5 is for yo
 
 **A server was kept?** Once the PR number is known, write it into that server's line in `~/.claude/devflow/servers.tsv`, replacing the `-` in the `pr` field.
 
-**Check whether a preview link appeared** on the PR. If one did, put it first. If none appeared, give the local steps and do not mention a link that is not coming.
+**Check whether a preview link appeared** on the PR. If one did, put it first, after only a test site link that [test-branch.md](references/test-branch.md) landed. If none appeared, give the local steps and do not mention a link that is not coming.
 
 **The steps must be steps you actually ran.** Instructions you never followed will be wrong.
 A step is never a test command: Evidence has those. In a UI project, each step between the one
@@ -316,5 +316,5 @@ the result — for example `✓ **checks** 3 of 3 pass, exit 0`.
 - Never end a pr-mode run without a pull request.
 - Never open a PR when the live check failed.
 - Never invent check commands the project did not give you.
-- Never merge, and never call `devflow:ship`. The open PR is where a pr-mode run ends;
+- Never merge the PR, and never call `devflow:ship`. The open PR is where a pr-mode run ends;
   a direct run ends at its commit on main.

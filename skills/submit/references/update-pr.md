@@ -2,7 +2,7 @@
 
 `submit` step 8 reads this when the branch already has an open pull request.
 
-**A PR already open** — push to the same branch, then **update that PR**. Never open a second one for a branch that has one, and report the number you updated rather than announcing a new one. Read the body that is there first — `gh api repos/{owner}/{repo}/pulls/<n> --jq .body` — then write the new one back:
+**A PR already open** — push to the same branch (then [test-branch.md](test-branch.md), when `## Workflow` names a `- Test branch:`), then **update that PR**. Never open a second one for a branch that has one, and report the number you updated rather than announcing a new one. Read the body that is there first — `gh api repos/{owner}/{repo}/pulls/<n> --jq .body` — then write the new one back:
 
 ```
 gh api -X PATCH repos/{owner}/{repo}/pulls/<n> -F body=@<body file> --jq .html_url
