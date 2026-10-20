@@ -62,15 +62,24 @@ answers `UNKNOWN`. `UNKNOWN` is not a yes, in either field: read every 10 second
 A `BEHIND` PR is brought up to date by the forge, not by `tend`: there is nothing to
 resolve. The update adds a merge commit, which rules out `--rebase` in step 3, and a repo
 that requires linear history refuses `--merge` too: only a squash is sure to take it. So
-read `squashMergeAllowed` with `gh repo view` before the update. Not allowed: stop, as
-below. Allowed: write down its `headRefOid` and run
+read `squashMergeAllowed` and `mergeCommitAllowed` with `gh repo view` before the update.
+Neither allowed: stop, as below. Only merge commits allowed: `--merge` is the one method
+left, so first read the default branch's linear-history rule from both places it can live.
+`gh api repos/{owner}/{repo}/rules/branches/<default>` lists the ruleset rules, and
+`gh api repos/{owner}/{repo}/branches/<default>/protection` holds classic protection. A
+rule of type `required_linear_history` in the first, or a `required_linear_history.enabled`
+of true in the second, is a stop, as below. Classic protection answers only an
+admin, so any answer but its fields or `Branch not protected` cannot tell, and that is a
+stop too: an update `--merge` can never take is worse than a branch left untouched.
+Squash allowed, or no rule in either: write down its `headRefOid` and run
 `gh api -X PUT repos/{owner}/{repo}/pulls/<n>/update-branch`. If update-branch fails (a fork
 that refuses maintainer edits answers 403 or 422), stop, as below. The update runs after the
 call returns, so read `headRefOid` every 10 seconds, for up to 2 minutes, until it differs
 from the one written down: the checks before that are the old head's. A head that never
 moves is a stop. Once it moves, print `✓ **pr** #n was behind main — branch updated`, wait
 for the new head's checks, as [conflict-handover.md](conflict-handover.md) waits, and read
-step 2 whole again. Step 3 then merges it with `--squash`, whatever its ladder would pick.
+step 2 whole again. Step 3 then merges it with `--squash` where squash is allowed, and with
+`--merge` where it is not.
 
 A PR that has become conflicting mid-batch goes to `tend` as in step 2, one attempt, and
 step 2 is read whole again when it returns. Still not ready after that, or conflicting again:

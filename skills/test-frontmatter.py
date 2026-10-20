@@ -8315,6 +8315,29 @@ check("several-prs: the update is checked, its wait capped, and only a squash re
       f"{SEVERAL_PATH} prints success on a failed update, waits forever, or "
       f"updates a branch the repo can then never merge")
 
+# #160: a repo with squash off but merge commits on, and no linear-history
+# rule, can take the updated branch with --merge. The batch stopped there
+# anyway, half merged. Review round 1: updating first and letting the forge
+# refuse --merge leaves a merge commit that a linear-history repo can never
+# take, so the rule is read first, from a ruleset and from classic protection,
+# and a read that cannot tell is a stop with the branch untouched.
+check("several-prs: squash off, merge commits on, a BEHIND PR updates and merges  <-- #160",
+      "mergeCommitAllowed" in several_flat
+      and re.search(r"squashMergeAllowed[^.]*mergeCommitAllowed[^.]*before", several_flat) is not None
+      and re.search(r"Neither[^.]*stop", several_flat) is not None
+      and "whatever its ladder would pick" not in several_flat
+      and re.search(r"with `--merge` where it is not", several_flat) is not None,
+      f"{SEVERAL_PATH} stops on a BEHIND PR whenever squash is off, though "
+      f"--merge would take the updated branch")
+check("several-prs: squash off, the linear-history rule is read before the update  <-- #160",
+      "rules/branches/" in several_flat
+      and "/protection" in several_flat
+      and "`required_linear_history`" in several_flat
+      and "`required_linear_history.enabled` of true" in several_flat
+      and "Branch not protected" in several_flat
+      and re.search(r"cannot tell[^.]*stop", several_flat) is not None,
+      f"{SEVERAL_PATH} updates the branch before it knows --merge can take it")
+
 # ---------- merge is as unreachable as ship, and no one is "the only"  <-- #159
 #
 # `/devflow:merge` merges, so the boundary that keeps `ship` human-only keeps it
