@@ -227,8 +227,8 @@ agent exists to protect, and it will not be acted on.
 - Never start an agent of your own — not a helper, and never a reviewer. You do not have
   the tool, on purpose. Review is `submit`'s job, and a reviewer you spawned
   would be a second seat at the same diff, whose approval counts for nothing there.
-- Never call `devflow:submit`, `devflow:review` or `devflow:ship`. `plan` merges the last
-  chain and reports to `flow`, which submits; only a human ships.
+- Never call `devflow:submit`, `devflow:review`, `devflow:ship` or `devflow:merge`. `plan`
+  merges the last chain and reports to `flow`, which submits; only a human ships or merges.
 - Never write to the plan. It is the spec, not a tracker; the commit is the record.
 - Never write to `CONTEXT.md`. Only `flow` does, because only `flow` asks the human.
 - Never report a commit you did not make or a test run you did not watch.

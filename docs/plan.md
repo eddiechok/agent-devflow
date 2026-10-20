@@ -212,8 +212,8 @@ plan, not a patch buried in a merge commit.
 **The merge is local, and it is not a pull request merge.** `plan` merges each chain
 branch into your feature branch on your machine, with `git merge --no-ff`, so every chain
 leaves one merge commit naming it and the builders' own SHAs stay exactly as they reported
-them. The default branch is never touched. `submit` still opens the PR, `ship` is still
-the only thing that merges it, and only you can start `ship`.
+them. The default branch is never touched. `submit` still opens the PR, `ship` and
+`merge` are still the only things that merge it, and only you can start either.
 
 **Four chains at once.** A cap, not a target. Four is the middle of the working range the
 field has settled on for parallel coding agents, and the ceiling is real: each builder is a
