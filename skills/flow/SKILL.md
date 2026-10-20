@@ -492,5 +492,5 @@ the result — for example `✓ **checks** 3 of 3 pass, exit 0`.
 - Never finish without calling `submit`, or saying in one line why you did not.
 - Never write the plan's pieces, spawn a builder, or resolve a chain conflict yourself. That
   is `devflow:plan`'s job on Deep work, not flow's.
-- Never call `devflow:ship`. The open PR is where this loop ends; merging is the human's, and only they start it.
+- Never call `devflow:ship` or `devflow:merge`. The open PR is where this loop ends; merging is the human's, and only they start it.
 - If the human overrules you, they are right. Record it and move on.

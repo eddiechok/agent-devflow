@@ -8063,6 +8063,66 @@ check("several-prs: the report has a merged line per PR, one deploy, a live line
       and re.search(r"one `live` line per PR", several_flat) is not None,
       f"{SEVERAL_PATH} does not say what the report holds")
 
+# ---------- merge is as unreachable as ship, and no one is "the only"  <-- #159
+#
+# `/devflow:merge` merges, so the boundary that keeps `ship` human-only keeps it
+# too. Every Rules line that says never to call `devflow:ship` now names
+# `devflow:merge` in the same bullet, and no file still claims ship is the only
+# skill that merges. Those claims were written when ship was the only one.
+
+def _rules_bullets(text):
+    """The `- ` bullets of the last `## Rules` section, one string each."""
+    tail = text.split("\n## Rules")[-1]
+    return [flat(b) for b in re.split(r"\n(?=- )", tail) if b.startswith("- ")
+            or b.lstrip().startswith("- ")]
+
+
+for _rel in ("skills/flow/SKILL.md", "skills/submit/SKILL.md",
+             "skills/tend/SKILL.md", "skills/sweep/SKILL.md",
+             "skills/plan/SKILL.md", "agents/sweeper.md", "agents/builder.md"):
+    with open(os.path.join(REPO_ROOT, _rel), encoding="utf-8") as _fh:
+        _hits = [b for b in _rules_bullets(_fh.read()) if "`devflow:ship`" in b]
+    check(f"{_rel}: the never-call-ship rule names devflow:merge  <-- #159",
+          bool(_hits) and all("`devflow:merge`" in b for b in _hits),
+          f"{_rel} Rules forbid calling devflow:ship but not devflow:merge: "
+          f"{_hits}")
+
+check("ship: the boundary and the rules name devflow:merge  <-- #159",
+      "`devflow:merge`" in section(ship_text, "## The boundary")
+      and any("`devflow:merge`" in b for b in _rules_bullets(ship_text)),
+      f"{SHIP_PATH} boundary or Rules never say merge is closed the same way")
+
+_CLAIMS = ("skills/ship/SKILL.md", "docs/pipeline.md", "docs/plan.md",
+           "README.md")
+for _rel in _CLAIMS:
+    with open(os.path.join(REPO_ROOT, _rel), encoding="utf-8") as _fh:
+        _claim_text = flat(_fh.read())
+    check(f"{_rel}: no claim that ship is the only skill that merges  <-- #159",
+          not re.search(r"only (skill|thing) (that|which) merges",
+                        _claim_text, re.I)
+          and "the one skill nothing else can call" not in _claim_text,
+          f"{_rel} still says ship alone merges")
+
+with open(os.path.join(REPO_ROOT, "README.md"), encoding="utf-8") as _fh:
+    _readme159 = _fh.read()
+check("README: the usage block shows /devflow:merge 123  <-- #159",
+      "/devflow:merge 123" in _readme159,
+      "README.md usage block never shows /devflow:merge 123")
+check("README: the skills table has a merge row  <-- #159",
+      re.search(r"^\| `merge` \|", _readme159, re.M) is not None,
+      "README.md skills table has no `merge` row")
+check("README: the docs index lists docs/merge.md  <-- #159",
+      "[docs/merge.md](docs/merge.md)" in _readme159,
+      "README.md docs index never lists docs/merge.md")
+check("README: says ship and merge are the ones only a human starts  <-- #159",
+      "`ship` and `merge`" in _readme159,
+      "README.md never names merge beside ship at the boundary")
+with open(os.path.join(REPO_ROOT, "docs", "ship.md"), encoding="utf-8") as _fh:
+    _docs_ship159 = _fh.read()
+check("docs/ship: the boundary section names merge  <-- #159",
+      "`devflow:merge`" in section(_docs_ship159, "## The boundary"),
+      "docs/ship.md boundary never says merge shares it")
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")

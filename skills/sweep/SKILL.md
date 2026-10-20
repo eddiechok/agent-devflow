@@ -142,6 +142,6 @@ the result.
 - Never start a sweeper on an issue that dropped out of a filter, and never lower a filter
   to fill a chain.
 - Never run `gh issue` or `gh pr` commands, and never send a GraphQL request.
-- Never merge. Never call `devflow:ship`: only a human ships.
+- Never merge. Never call `devflow:ship` or `devflow:merge`: only a human starts them.
 - Never start a fifth sweeper while four are running.
 - Never write to `CONTEXT.md`. Only `flow` does, because only `flow` asks the human.
