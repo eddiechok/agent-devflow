@@ -1223,16 +1223,29 @@ check("submit: step 9 prints the Done report before the PR link  <-- #95",
 # before the PR link, and never lists merge or deploy steps. Direct mode has no
 # PR, so it is unchanged.
 
-SHIP_NEXT_LINE = "→ **next** /devflow:ship"
+# #159 gave the human a second command: /devflow:merge merges without deploying,
+# so several PRs can go out in one /devflow:ship. The line shows both, except
+# where a merge deploys by itself (a `## Deploy` block with no `Deploy:` line),
+# where merging first would start the deploy and only ship makes sense.
+SHIP_NEXT_LINE = ("→ **next** /devflow:ship · or /devflow:merge to deploy "
+                  "later")
+SHIP_ONLY_NEXT_LINE = "→ **next** /devflow:ship"
 with open(os.path.join(SKILLS_DIR, "flow", "references", "report.md"),
           encoding="utf-8") as _fh:
     _done_section = _fh.read().split("## Done — the end of the run")[-1]
 REPORT_PATH = os.path.join(SKILLS_DIR, "flow", "references", "report.md")
 
-check("report: the pr-mode Done report ends with the ship line  <-- #149",
+check("report: the pr-mode Done report ends with the ship and merge line  <-- #149 #159",
       SHIP_NEXT_LINE in _done_section,
       f"no line {SHIP_NEXT_LINE!r} in the Done section of {REPORT_PATH} -- a "
-      f"pr-mode run would end without pointing at ship")
+      f"pr-mode run would end without pointing at ship and merge")
+
+check("report: where a merge deploys by itself the line is ship only  <-- #159",
+      SHIP_ONLY_NEXT_LINE + "`" in flat(_done_section)
+      and re.search(r"## Deploy[^.]*no `Deploy:` line[^.]*only",
+                    flat(_done_section)) is not None,
+      f"the Done section of {REPORT_PATH} does not drop /devflow:merge where "
+      f"the Deploy block has no Deploy: line, so a merge there starts the deploy")
 
 check("report: the ship line is pr mode only, never merge or deploy steps  <-- #149",
       "Direct mode" in _done_section
