@@ -63,6 +63,10 @@ A conflict is not. It is what happens when another pull request merges first —
 
 `plan`'s chain loop keeps its hard stop on a merge conflict, and that is not an inconsistency. There, a conflict means two chains edited one file, which the plan promised they would not — so the conflict is a planning bug, and resolving the merge would bury it. Different cause, different answer.
 
+### A Verify that reads the test site
+
+With a test branch, `submit` has already put the change on the test site ([submit.md](submit.md#the-test-branch)). Before go-live that is right: `main` deploys to the test site, and `Verify` reads it. After go-live `main` deploys to the live domain, and a `Verify` line left on the test site link would pass on a site the merge never touched — a green check on the wrong server. The branch existing on GitHub is the sign go-live happened, so `ship` stops before the merge when both are true, and the human changes one line.
+
 ## Step 3 — choosing a method the branch can actually take
 
 **`tend`'s merge is what rules out a rebase, and the two halves were written a day apart.** `tend` merges the default branch in rather than rebasing it, deliberately: the branch is pushed and a reviewer may already be reading it, so rewriting its history underneath them is the worse of the two evils. That leaves a merge commit. GitHub then refuses outright to rebase a branch carrying one — `This branch can't be rebased` — while step 3's ladder says "linear history and rebase allowed → `--rebase`", which is true of every repo that keeps a linear history.

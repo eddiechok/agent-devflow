@@ -51,7 +51,7 @@ command, the same shape step 3 uses below. Read the CI workflow as step 2 says, 
 - all pass → go to step 5 if there is no `## Plans` block yet
 - one fails or is missing → print it `✗`, suggest a fix, and ask before changing anything
 
-A block someone wrote deliberately is not yours to replace. The same goes for `## Plans` and `## Workflow`: if one is there, leave it, and only say what it says. A project with `## Checks` but no `## Workflow` is asked only step 6's questions.
+A block someone wrote deliberately is not yours to replace. The same goes for `## Plans` and `## Workflow`: if one is there, leave it, and only say what it says. A project with `## Checks` but no `## Workflow` is asked only step 6's questions. A project with `## Workflow` but no `- Test branch:` line still gets step 6e on a rerun, and only that.
 
 ## 2. Work out the commands
 
@@ -231,8 +231,8 @@ Write the block, exactly this shape, to the project's `CLAUDE.md`:
 - About: <one line, the human's own words>
 ```
 
-`Mode:` is `direct` or `pr`. Step 6b may add a `- Servers:` line; nothing else goes in this
-block. No block means "not set up", and every skill reads `Mode:` from here itself.
+`Mode:` is `direct` or `pr`. Step 6b may add a `- Servers:` line and step 6e a
+`- Test branch:` line; nothing else goes in this block. No block means "not set up", and every skill reads `Mode:` from here itself.
 
 ## 6a. A browser driver, in a UI repo
 
@@ -355,10 +355,6 @@ so `.env` alone would copy `apps/api/.env` too.
 # devflow: no env files are copied into worktrees.
 ```
 
-Claude Code reads the file in the main checkout, so it takes effect once it is merged and
-pulled there. A copy is made when the worktree is, so a value changed later does not reach a
-worktree that already exists.
-
 ## 6d. Add CI?
 
 CI runs the checks on every push, not only a Claude session's. Skip this step when:
@@ -402,6 +398,10 @@ Read `gh auth status`, bare; when its scopes lack `workflow`, print, for the hum
 ```
 → **ci** run: gh auth refresh -h github.com -s workflow
 ```
+
+## 6e. A test branch?
+
+Read [references/test-branch.md](references/test-branch.md). Direct mode skips it.
 
 ## 7. Report
 
@@ -483,7 +483,7 @@ the result — for example `✓ **checks** 3 of 3 pass, exit 0`.
 - Never write `Tracker: github` without that REST read having answered in this run.
 - Never overwrite an existing `## Workflow` block. Say what it says and keep it.
 - Never write `Mode:` as anything but `direct` or `pr`, and never write it without asking.
-- Never add anything to `CLAUDE.md` except the `## Checks`, `## Plans`, `## Workflow` (with its `- Servers:` line, step 6b) and, in a UI repo, `## Browser` blocks, and never a block you did not prove. `- Driver: session` names no driver, so it has nothing to prove.
+- Never add anything to `CLAUDE.md` except the `## Checks`, `## Plans`, `## Workflow` (with its `- Servers:` line, step 6b, and `- Test branch:` line, step 6e) and, in a UI repo, `## Browser` blocks, and never a block you did not prove. `- Driver: session` names no driver, so it has nothing to prove.
 - Never write a CI workflow file. Step 6d parks the job, and `flow` builds it as its own PR.
 - Never print, quote or commit a value from an env file. Step 6c reads paths only, and writes them to `.worktreeinclude`.
 - Never run an install, the browser driver's included: step 6a prints its command. Step 8 offers `devflow:skills`, which only lists; the human installs.

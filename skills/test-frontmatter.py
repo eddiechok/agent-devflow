@@ -2685,7 +2685,8 @@ SHAPED_LABELS = {
     "green", "handback", "issue", "landed", "lesson", "lint", "live", "look", "merge", "merged",
     "next", "no-behaviour", "open", "opinion", "override", "parked", "piece",
     "pieces", "plan", "plans", "pr", "pushed", "red", "repo", "research", "retargeted", "review",
-    "see", "servers", "session", "settings", "skills", "stuck", "tended", "test", "theirs", "todo",
+    "see", "servers", "session", "settings", "skills", "stuck", "tended", "test", "testsite",
+    "theirs", "todo",
     "typecheck", "ux", "variants",
     "worktree", "workflow", "yours",
 }
@@ -4497,6 +4498,7 @@ REFERENCE_STEPS = {
         "tracker-actions.md": ["## 8. "],
         "direct.md": ["## 1. ", "## 5. ", "## 7. ", "## 8. "],
         "land-on-main.md": ["## 7. "],
+        "test-branch.md": ["## 8. "],
     },
     "review": {
         "find-the-spec.md": ["## 2. "],
@@ -7932,6 +7934,115 @@ _d_submit151 = _doc_section(_doc133("submit.md"),
 check("docs/submit: points at docs/build for the why  <-- #151",
       "build.md#a-rule-for-an-always-loaded-file" in _d_submit151,
       "docs/submit.md never sends the reader to docs/build.md for the why")
+
+# --------------------------------- a test branch deploys a test site
+#
+# Some projects keep main = live and a throw-away branch (develop) that
+# deploys a test site. The PR still goes to main; submit also merges the
+# branch into the test branch, so the human checks on the test site. setup
+# asks for the branch, even on a new project before it exists, and ship
+# stops when Verify still reads the test site, which already has the change.
+
+_setup_tb = flat(_read136("skills", "setup", "SKILL.md"))
+_tb_step = flat(_read136("skills", "setup", "references", "test-branch.md"))
+check("setup: step 6e asks about a test branch, from a reference",
+      "](references/test-branch.md)" in _doc_section(
+          _read136("skills", "setup", "SKILL.md"), "## 6e. A test branch?")
+      and _tb_step != "",
+      "skills/setup/SKILL.md has no '## 6e. A test branch?' step that links "
+      "references/test-branch.md")
+check("setup/6e: skipped in direct mode",
+      "– **testsite** skipped — direct mode" in _tb_step,
+      "step 6e never skips in direct mode, where no PR exists to test first")
+check("setup/6e: an existing Test branch line is kept",
+      "`- Test branch:` line" in _tb_step and "keep it" in _tb_step,
+      "step 6e does not keep a Test branch line already written")
+check("setup/6e: reads the remote branches, bare",
+      "git ls-remote --heads origin" in _tb_step,
+      "step 6e does not list the remote branches")
+check("setup/6e: looks for develop, staging and dev by name",
+      all(f"`{b}`" in _tb_step for b in ("develop", "staging", "dev")),
+      "step 6e does not name develop, staging and dev")
+check("setup/6e: writes the branch and its link, or none",
+      "`- Test branch: <branch> <url>`" in _tb_step
+      and "`- Test branch: none`" in _tb_step,
+      "step 6e does not write '- Test branch: <branch> <url>' or 'none'")
+check("setup/6e: a new project is asked too, and Not now writes nothing",
+      "before the branch exists" in _tb_step
+      and re.search(r"Not now[^.]*writes nothing", _tb_step) is not None,
+      "step 6e skips a new project, or 'Not now' writes a line")
+check("setup/6e: makes no branch",
+      "makes no branch" in _tb_step,
+      "step 6e does not say setup makes no branch")
+check("setup: the Workflow block allows the Test branch line",
+      "step 6e a `- Test branch:` line; nothing else goes in this block"
+      in _setup_tb,
+      "step 6 still says only a Servers line goes in the Workflow block")
+check("setup: the report prints a test branch line",
+      "✓ **testsite** develop https://" in _tb_step,
+      "step 7's report has no test branch line")
+
+_tb_ref = flat(_read136("skills", "submit", "references", "test-branch.md"))
+check("submit: step 8 links the test branch reference",
+      "(references/test-branch.md)" in submit_skill_md,
+      "submit/SKILL.md never sends a Test branch line to test-branch.md")
+check("submit/test-branch: merges on GitHub, no local checkout",
+      "repos/{owner}/{repo}/merges" in _tb_ref,
+      "test-branch.md does not use GitHub's merge call")
+check("submit/test-branch: 201, 204, 404 and 409 each have a route",
+      all(c in _tb_ref for c in ("201", "204", "404", "409")),
+      "test-branch.md leaves a GitHub answer with no route")
+check("submit/test-branch: a missing branch is skipped, not a failure",
+      "– **testsite** develop not on GitHub yet — skipped" in _tb_ref,
+      "test-branch.md has no skip line for a branch not made yet")
+check("submit/test-branch: rerere is turned on before a conflict fix",
+      "git config rerere.enabled" in _tb_ref,
+      "test-branch.md never turns on rerere")
+check("submit/test-branch: one try, never a force-push",
+      "One try" in _tb_ref and "never force-push" in _tb_ref,
+      "test-branch.md allows a second try or a force-push")
+check("submit/test-branch: the test branch never goes into the PR branch",
+      "Never merge the test branch into the PR branch" in _tb_ref,
+      "test-branch.md does not forbid merging the test branch into the PR")
+check("submit/test-branch: an unfixed conflict says so and stops",
+      "✗ **testsite** conflict not fixed — test site not updated" in _tb_ref,
+      "test-branch.md has no stop line for a conflict it could not fix")
+check("submit/test-branch: the test site link goes first in the PR",
+      "Test site:" in _tb_ref and "Test site: <link" in flat(submit_skill_md),
+      "the check steps never put the test site link first")
+
+_ship_tb = flat(_read136("skills", "ship", "references", "test-branch.md"))
+check("ship: stops when Verify still reads the test site",
+      "✗ **live** Verify points at the test site — change it to the live link"
+      in _ship_tb
+      and "(references/test-branch.md)" in _read136("skills", "ship", "SKILL.md"),
+      "ship would verify the test site, which already has the change")
+
+# Found by review: a rerun never reached step 6e, the conflict fix was
+# reviewed in the wrong folder, ship matched hosts so a shared host stopped
+# every merge, and a new project had no way to say never.
+check("setup: a set-up project still gets step 6e on a rerun  <-- review",
+      "still gets step 6e" in _setup_tb,
+      "setup's step 1 sends a project with ## Workflow past step 6e")
+check("setup/6e: a new project can say never, which writes none  <-- review",
+      re.search(r"No, never[^.]*`- Test branch: none`", _tb_step) is not None,
+      "a new project with no test site is asked again on every run")
+check("submit/test-branch: the reviewer reads the merge in its folder  <-- review",
+      "git -C <temp folder> show --remerge-diff HEAD" in _tb_ref
+      and "`devflow:reviewer`" in _tb_ref,
+      "the conflict fix is reviewed in the session's folder, not the merge")
+check("ship/test-branch: matches the test link, not its host  <-- review",
+      "a path under it" in _ship_tb and "host" not in _ship_tb,
+      "ship stops every merge when test and live share a host")
+
+for _doc_tb, _src_tb in (("setup.md", "gitworkflows"),
+                         ("submit.md", "git-rerere"),
+                         ("submit.md", "branches#merge-a-branch"),
+                         ("ship.md", "test site")):
+    check(f"docs/{_doc_tb}: cites {_src_tb} for the test branch",
+          _src_tb in _read136("docs", _doc_tb)
+          and "test branch" in _read136("docs", _doc_tb).lower(),
+          f"docs/{_doc_tb} does not give the test branch's why")
 
 # ------------------------------ /devflow:merge merges and stops  <-- #159
 #

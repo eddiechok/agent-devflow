@@ -100,6 +100,10 @@ The question is asked, not assumed, because the file is committed and because an
 
 The read is paths only. No step opens an env file, and no value goes in a question, a log, the PR or a commit: the paths are all the decision needs.
 
+Claude Code reads the file in the main checkout, so it takes effect once it is merged and
+pulled there. A copy is made when the worktree is, so a value changed later does not reach a
+worktree that already exists.
+
 ## Step 6d — why setup offers CI, and parks it instead of building it
 
 `submit` runs the checks before every push a Claude session makes, so a project with no CI is
@@ -137,6 +141,14 @@ setup time puts the one-line fix in front of the human before the CI PR's push f
 Branch protection, making the CI check required on main, was left out. A free private repo
 has none to set, `direct` mode would be blocked by it, and a required check that never reports
 blocks every PR. It can come later, once CI has run on real projects.
+
+## Step 6e — why setup asks for a test branch, even before it exists
+
+Some projects keep `main` live and a second branch, often `develop`, that deploys a test site. git's own guide calls that a throw-away integration branch: topics are merged into it only to test them together, and "you must never base any work on such a branch" ([gitworkflows](https://git-scm.com/docs/gitworkflows)). So the PR still goes to `main`, and `ship` still refuses any other base. The test branch only lets the human check a change on a real server with real data, where a local page can look empty.
+
+A new project usually has no `develop` yet: `main` deploys to a free test site or preview link, and only at go-live does the test site move to `develop` and the live domain to `main`. Setup asks anyway, and writes the line before the branch exists, so the human sets it all up once. `submit` skips a test branch GitHub does not have yet, and starts merging into it the day it is made. "Not now" writes nothing, so a later run asks again — step 1 sends a project that already has `## Workflow` past step 6, but not past 6e while it has no `- Test branch:` line; a "no" for a branch that is there writes `none`, as step 6a writes `- Driver: session`. Setup makes no branch: moving a site is the human's.
+
+A staging branch that gets all of `main` before live is a different job — GitLab flow's environment branches, where "commits flow downstream" ([GitLab flow](https://about.gitlab.com/topics/version-control/what-is-gitlab-flow/)) — and belongs to the project's CI. It waits for a real project to need it.
 
 ## Why the `disable-model-invocation` flag came off
 
