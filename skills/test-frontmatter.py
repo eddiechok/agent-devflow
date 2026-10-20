@@ -8063,6 +8063,46 @@ check("several-prs: the report has a merged line per PR, one deploy, a live line
       and re.search(r"one `live` line per PR", several_flat) is not None,
       f"{SEVERAL_PATH} does not say what the report holds")
 
+# Review of #159, round 1. merge read the Deploy block only after ship's step 2,
+# so a refusal came after tend had already rewritten a conflicting branch. A
+# batch re-read only `mergeable`, so on a repo that needs branches up to date
+# the first merge left the next PR BEHIND and the batch half merged. An
+# already-merged PR skipped step 1 too, so step 6 had no head branch to clean
+# up. And merge's next line promised PRs merged elsewhere, which nothing records.
+check("merge: reads the Deploy block before step 1, so a refusal touches nothing  <-- #159",
+      "## Read the Deploy block before step 1" in merge_text
+      and "before step 3" not in merge_text,
+      f"{MERGE_PATH} reads the Deploy block after steps 1 and 2 have run")
+check("merge: the next line names only the PRs this session knows  <-- #159",
+      "merged earlier in this session" in merge_flat
+      and "any others the human has merged" not in merge_flat,
+      f"{MERGE_PATH} promises PRs that nothing records")
+check("several-prs: a merged PR still runs step 1, which step 6 needs  <-- #159",
+      "Skip steps 2 and 3 for it" in several_flat
+      and "Skip steps 1 to 3" not in several_flat,
+      f"{SEVERAL_PATH} skips step 1 for a merged PR, so step 6 has no branch")
+check("several-prs: a PR left BEHIND mid-batch gets its branch updated  <-- #159",
+      "mergeStateStatus" in several_flat and "BEHIND" in several_flat
+      and "update-branch" in several_flat,
+      f"{SEVERAL_PATH} re-reads only mergeable, so a BEHIND PR stops the batch")
+# Round 2: the re-read lands seconds after the previous merge, when GitHub
+# answers UNKNOWN, and update-branch is asynchronous, so the old head's green
+# checks could pass the wait before the new head exists.
+check("several-prs: UNKNOWN mid-batch is waited out, never read as clear  <-- #159",
+      re.search(r"`UNKNOWN`[^.]*not a yes", several_flat) is not None,
+      f"{SEVERAL_PATH} treats UNKNOWN after a merge as neither BEHIND nor "
+      f"CONFLICTING, so step 3 runs and is refused")
+check("several-prs: after update-branch, waits for the new head before its checks  <-- #159",
+      "headRefOid" in several_flat
+      and re.search(r"new head", several_flat) is not None,
+      f"{SEVERAL_PATH} could read the old head's green checks as the new ones")
+check("several-prs: the update is checked, its wait capped, and only a squash repo updates  <-- #159",
+      re.search(r"update-branch[^.]*fails", several_flat) is not None
+      and re.search(r"headRefOid[^.]*2 minutes", several_flat) is not None
+      and re.search(r"squashMergeAllowed[^.]*before", several_flat) is not None,
+      f"{SEVERAL_PATH} prints success on a failed update, waits forever, or "
+      f"updates a branch the repo can then never merge")
+
 # ---------- merge is as unreachable as ship, and no one is "the only"  <-- #159
 #
 # `/devflow:merge` merges, so the boundary that keeps `ship` human-only keeps it

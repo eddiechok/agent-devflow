@@ -18,6 +18,8 @@ rule looks wrong.
 Read [../ship/SKILL.md](../ship/SKILL.md) and follow it, so the two cannot drift apart. This
 skill is only what is different:
 
+- Read the Deploy block below first, before ship's step 1. A refusal there comes before
+  any PR is read, handed to `tend` or touched.
 - Follow ship's Context, The boundary, and steps 1, 2 (including the conflict handover to
   `tend`, one attempt), 3 and 6. The handover is in
   [conflict-handover.md](../ship/references/conflict-handover.md).
@@ -32,7 +34,7 @@ With `Mode: direct` in the project's `## Workflow` block, no `mode: pr` line, an
 number in `$ARGUMENTS`, the work is already on main and there is nothing to merge. Print
 `– **merge** direct mode, nothing to merge` and stop.
 
-## Read the Deploy block before step 3
+## Read the Deploy block before step 1
 
 Look for a `## Deploy` block in the project's `CLAUDE.md`. It decides whether this merge
 may happen at all, and what to say after it. Three cases:
@@ -75,7 +77,8 @@ One shaped line per fact, then the next step. Name the PR that merged:
 ```
 
 The `deploy` line is the one the Deploy block chose above. The `next` line names the PR
-just merged, plus any others the human has merged and not yet shipped.
+just merged, and any merged earlier in this session. Nothing records a PR merged in another
+session: the human adds those.
 
 ## Rules
 

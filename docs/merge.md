@@ -20,7 +20,9 @@ many runs to get right. A second copy would drift. So `merge` points at `ship`'s
 ## Why it reads the Deploy block first
 
 Whether a merge starts a deploy depends on the project, and the `## Deploy` block is where
-the project says so.
+the project says so. It is read before ship's step 1, because step 2 can hand a conflicting
+PR to `tend`, which pushes to its branch. A refusal that came after that would leave a
+branch rewritten for a merge that was never going to happen.
 
 - **No `Deploy:` line** means CI deploys when the default branch moves. A merge here starts
   the deploy, so `merge` would defeat its own purpose. It stops and merges nothing, and

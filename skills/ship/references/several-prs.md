@@ -38,7 +38,8 @@ the batch with nothing merged.
 ## An already-merged PR skips the merge, not the check
 
 A PR that is already `MERGED` is not an error: it may have been merged by `/devflow:merge`,
-which is how the batch got here. Skip steps 1 to 3 for it, and print:
+which is how the batch got here. Run step 1 for it, since step 6 needs its head branch and
+what is stacked on it. Skip steps 2 and 3 for it, and print:
 
 ```
 – **merge** #n already merged
@@ -49,9 +50,27 @@ is already merged, there is nothing to merge and the deploy and checks still run
 
 ## Merge the open ones in the order typed
 
-For each open PR, in the order typed, run step 3. Before each one, read `mergeable` again:
-an earlier merge in this batch can make a later PR conflict, and the answer from the check
-pass is stale by then.
+For each open PR, in the order typed, run step 3. Before each one, read `mergeable` and
+`mergeStateStatus` again: an earlier merge in this batch can make a later PR conflict, or
+leave it `BEHIND` where the repo requires branches to be up to date, and the answer from the
+check pass is stale by then.
+
+That re-read lands seconds after the previous merge moved main, which is when GitHub
+answers `UNKNOWN`. `UNKNOWN` is not a yes, in either field: read every 10 seconds for up to
+2 minutes until both have an answer. Still `UNKNOWN` at the limit is a stop, as below.
+
+A `BEHIND` PR is brought up to date by the forge, not by `tend`: there is nothing to
+resolve. The update adds a merge commit, which rules out `--rebase` in step 3, and a repo
+that requires linear history refuses `--merge` too: only a squash is sure to take it. So
+read `squashMergeAllowed` with `gh repo view` before the update. Not allowed: stop, as
+below. Allowed: write down its `headRefOid` and run
+`gh api -X PUT repos/{owner}/{repo}/pulls/<n>/update-branch`. If update-branch fails (a fork
+that refuses maintainer edits answers 403 or 422), stop, as below. The update runs after the
+call returns, so read `headRefOid` every 10 seconds, for up to 2 minutes, until it differs
+from the one written down: the checks before that are the old head's. A head that never
+moves is a stop. Once it moves, print `✓ **pr** #n was behind main — branch updated`, wait
+for the new head's checks, as [conflict-handover.md](conflict-handover.md) waits, and read
+step 2 whole again. Step 3 then merges it with `--squash`, whatever its ladder would pick.
 
 A PR that has become conflicting mid-batch goes to `tend` as in step 2, one attempt, and
 step 2 is read whole again when it returns. Still not ready after that, or conflicting again:
@@ -75,7 +94,7 @@ Step 7's report, once for the batch:
 - one `merged` line per PR, or the `already merged` line
 - one `deploy` line
 - one `live` line per PR
-- the `tended` and `retargeted` lines as in step 7, one per PR they apply to
+- the `tended`, branch-updated and `retargeted` lines, one per PR they apply to
 - one `cleaned` line for the batch
 
 ```
