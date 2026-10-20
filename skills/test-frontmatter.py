@@ -7783,6 +7783,15 @@ check("submit: no check step left leaves the section out  <-- #150",
       "no step is left" in _s8_flat and "leave the section out" in _s8_flat,
       f"{SUBMIT_PATH} step 8 never says to drop How to check when no step is left")
 
+# On #161, a skill-text change with nothing to see, How to check still showed:
+# steps that opened a file to re-read the diff, and one only the deploy could
+# run. The rule that such a change gets no section lived in docs/submit.md alone.
+check("submit: nothing to see in any project, no file-reading or after-deploy step  <-- #161",
+      "any project" in _s8_flat and "opens a file" in _s8_flat
+      and "after the deploy" in _s8_flat,
+      f"{SUBMIT_PATH} step 8 lets a non-UI change keep How to check with steps "
+      f"that only re-read the diff or wait for the deploy")
+
 _done_check = _done_example[_done_example.find("#### Check it yourself"):
                             _done_example.find("#### Assumptions")]
 check("report: Done's check steps hold no test command  <-- #150",

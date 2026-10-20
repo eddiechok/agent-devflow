@@ -227,6 +227,10 @@ has the tests, and on #150 the human said they check in the browser only. So a U
 full links to click, not bare paths, and a change with nothing to see in a browser or by hand
 gets no How to check section at all, rather than a list that repeats Evidence.
 
+That rule first lived here alone, so on #161, a skill-text change, the section still showed:
+steps that opened a file to re-read what the diff already shows, and one that could only run
+after the deploy, which submit never reaches. Step 8 now says it for any project, not just UI.
+
 ### The preview link
 
 If one did, put it
