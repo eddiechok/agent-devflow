@@ -23,6 +23,11 @@ def git(*args):
 
 main_checkout = os.path.dirname(
     git("rev-parse", "--path-format=absolute", "--git-common-dir"))
+# A worktree cut before a deploy fix carries the old checks, so a copy that is
+# not the main checkout's hands over to it; that copy runs on with no re-exec.
+main_copy = os.path.join(main_checkout, "scripts", "verify-deploy.py")
+if os.path.realpath(__file__) != os.path.realpath(main_copy):
+    os.execv(sys.executable, [sys.executable, main_copy, *sys.argv[1:]])
 merged = git("rev-parse", "origin/main")
 
 path = os.path.expanduser("~/.claude/plugins/installed_plugins.json")

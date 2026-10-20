@@ -30,6 +30,7 @@ where it is not, the lint still stands on its own.
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -2412,12 +2413,20 @@ _UNTRACKED = [".claude/worktrees/wt-a/skills/x.md", ".claude/settings.local.json
 # What Claude Code itself writes into an install, which no git tracks either.
 # An empty folder is listed with a trailing slash.
 _CLAUDE_OWN = [".in_use/4242", ".orphaned_at", "node_modules/"]
+# A worktree cut before a deploy fix carries the old scripts. Seen 2026-10-20:
+# the session that shipped #165 stood in a worktree cut before #164, so its
+# deploy never pruned and its Verify never checked, and Verify passed on an
+# install holding 590 untracked files. This prune is that old one.
+_STUB_PRUNE = "import sys\nsys.exit(0)\n"
 
 
-def run_deploy(claude_exit=0, in_place=False):
+def run_deploy(claude_exit=0, in_place=False, stub_prune=False):
     """Run deploy.sh from a linked worktree of a scratch repo.
 
-    The fake claude records the folder it ran in, resolved, and its args, then
+    The scratch main checkout tracks this repo's deploy.sh and
+    prune-install.py, as the real one does. stub_prune swaps the worktree's
+    prune-install.py for one that does nothing, as a worktree cut before the
+    prune has, and runs the worktree's own deploy.sh. The fake claude records the folder it ran in, resolved, and its args, then
     does what a real update does: copies the whole folder into the cache (or,
     in_place, points the install at the folder itself) and writes the entry,
     after a user-scope entry, which names no folder, for another install.
@@ -2431,6 +2440,10 @@ def run_deploy(claude_exit=0, in_place=False):
             fh.write("x\n")
         with open(os.path.join(main, ".gitignore"), "w") as fh:
             fh.write(".claude/\n__pycache__/\n.DS_Store\n")
+        os.makedirs(os.path.join(main, "scripts"))
+        for name in ("deploy.sh", "prune-install.py"):
+            shutil.copy(os.path.join(REPO_ROOT, "scripts", name),
+                        os.path.join(main, "scripts", name))
         g = lambda *a: subprocess.run(["git", *a], cwd=main, capture_output=True,
                                       check=True)
         g("init", "-q")
@@ -2438,6 +2451,11 @@ def run_deploy(claude_exit=0, in_place=False):
         g("-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q", "-m", "x")
         wt = os.path.join(d, "wt")
         g("worktree", "add", "-q", wt)
+        script = DEPLOY_SCRIPT
+        if stub_prune:
+            with open(os.path.join(wt, "scripts", "prune-install.py"), "w") as fh:
+                fh.write(_STUB_PRUNE)
+            script = os.path.join(wt, "scripts", "deploy.sh")
         for rel in _UNTRACKED:
             os.makedirs(os.path.dirname(os.path.join(main, rel)), exist_ok=True)
             with open(os.path.join(main, rel), "w") as fh:
@@ -2470,7 +2488,7 @@ def run_deploy(claude_exit=0, in_place=False):
         os.chmod(fake, 0o755)
         env = dict(os.environ, HOME=home,
                    PATH=bindir + os.pathsep + os.environ["PATH"])
-        proc = subprocess.run(["sh", DEPLOY_SCRIPT], cwd=wt, env=env,
+        proc = subprocess.run(["sh", script], cwd=wt, env=env,
                               capture_output=True, text=True)
         ran = open(log).read().strip() if os.path.exists(log) else ""
 
@@ -2520,6 +2538,11 @@ if os.path.isfile(DEPLOY_SCRIPT):
     check("scripts/deploy.sh: says to restart the session",
           _dp.returncode == 0 and "Restart the session" in _dp.stdout,
           f"exit {_dp.returncode}: {_dp.stdout}{_dp.stderr}")
+    _dps, _, _, _dsinstall, _, _ = run_deploy(stub_prune=True)
+    check("scripts/deploy.sh: a worktree's own old prune is not the one that runs  <-- #165",
+          _dps.returncode == 0 and not any(u in _dsinstall for u in _UNTRACKED),
+          f"exit {_dps.returncode}: install holds {_dsinstall}: "
+          f"{_dps.stdout}{_dps.stderr}")
     _dp_fail, _, _, _, _, _ = run_deploy(claude_exit=1)
     check("scripts/deploy.sh: a failed update fails the deploy, no restart line",
           _dp_fail.returncode != 0 and "Restart the session" not in _dp_fail.stdout,
@@ -2528,72 +2551,88 @@ else:
     check("scripts/deploy.sh: exists", False, f"no {DEPLOY_SCRIPT}")
 
 
-def run_verify(entries, files=("CLAUDE.md",)):
-    """Run the Verify line against a fake ~/.claude holding these entries.
+def run_verify(entries, files=("CLAUDE.md",), stub_prune=False):
+    """Run the Verify line from a linked worktree of a scratch repo.
 
-    The merge's cache directory is always there, as it is once any folder
-    has updated -- which is why its presence proves nothing. It holds these
-    files, and is the installPath of every entry that names none.
+    The scratch main checkout tracks CLAUDE.md and this repo's
+    verify-deploy.py and prune-install.py, and its origin/main is its one
+    commit. Run from the real repo, a worktree's Verify would hand over to
+    the real main checkout's copy and test that instead. entries(main, merged)
+    gives the install entries. The merge's cache directory is always there,
+    as it is once any folder has updated -- which is why its presence proves
+    nothing. It holds these files, and is the installPath of every entry that
+    names none. stub_prune swaps the worktree's prune-install.py for one that
+    does nothing, as a worktree cut before the check has.
     """
-    with tempfile.TemporaryDirectory() as home:
-        plugins = os.path.join(home, ".claude", "plugins")
+    with tempfile.TemporaryDirectory() as d:
+        d = os.path.realpath(d)
+        main = os.path.join(d, "main")
+        os.makedirs(os.path.join(main, "scripts"))
+        open(os.path.join(main, "CLAUDE.md"), "w").close()
+        for name in ("verify-deploy.py", "prune-install.py"):
+            shutil.copy(os.path.join(REPO_ROOT, "scripts", name),
+                        os.path.join(main, "scripts", name))
+        g = lambda *a: subprocess.run(["git", *a], cwd=main, text=True,
+                                      capture_output=True, check=True).stdout
+        g("init", "-q")
+        g("add", ".")
+        g("-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q", "-m", "x")
+        g("update-ref", "refs/remotes/origin/main", "HEAD")
+        merged = g("rev-parse", "HEAD").strip()
+        wt = os.path.join(d, "wt")
+        g("worktree", "add", "-q", wt)
+        if stub_prune:
+            with open(os.path.join(wt, "scripts", "prune-install.py"), "w") as fh:
+                fh.write(_STUB_PRUNE)
+        plugins = os.path.join(d, "home", ".claude", "plugins")
         install = os.path.join(plugins, "cache", "eddiechok-devflow",
-                               "devflow", _merged[:12])
+                               "devflow", merged[:12])
         os.makedirs(install)
         for rel in files:
             os.makedirs(os.path.dirname(os.path.join(install, rel)),
                         exist_ok=True)
             open(os.path.join(install, rel), "w").close()
-        entries = [dict({"installPath": install}, **e) for e in entries]
+        entries = [dict({"installPath": install}, **e)
+                   for e in entries(main, merged)]
         with open(os.path.join(plugins, "installed_plugins.json"), "w") as fh:
             json.dump({"plugins": {"devflow@eddiechok-devflow": entries}}, fh)
-        env = dict(os.environ, HOME=home)
-        return subprocess.run(["bash", "-c", verify_lines[0]], cwd=REPO_ROOT,
+        env = dict(os.environ, HOME=os.path.join(d, "home"))
+        return subprocess.run(["bash", "-c", verify_lines[0]], cwd=wt,
                               env=env, capture_output=True).returncode
 
 
-_git = lambda *a: subprocess.run(["git", *a], cwd=REPO_ROOT, text=True,
-                                 capture_output=True).stdout.strip()
-_main_checkout = os.path.dirname(
-    _git("rev-parse", "--path-format=absolute", "--git-common-dir"))
-# --verify, and the exit code read: a bare rev-parse of a missing ref prints
-# the name back, and every run_verify check would then compare "origin/main"
-# with itself and pass.
-_merged_run = subprocess.run(["git", "rev-parse", "--verify", "--quiet",
-                              "origin/main^{commit}"], cwd=REPO_ROOT,
-                             text=True, capture_output=True)
-_merged = _merged_run.stdout.strip() if _merged_run.returncode == 0 else ""
+_on = lambda sha=None: lambda main, merged: [
+    {"scope": "local", "projectPath": main, "gitCommitSha": sha or merged}]
 
-if len(verify_lines) != 1 or not _merged:
-    check("CLAUDE.md: has one Verify line, and origin/main to check it by",
-          False, f"{len(verify_lines)} Verify line(s) in {CLAUDE_MD_PATH}, "
-          f"origin/main {'found' if _merged else 'missing -- fetch it'}")
+if len(verify_lines) != 1:
+    check("CLAUDE.md: has one Verify line", False,
+          f"{len(verify_lines)} Verify line(s) in {CLAUDE_MD_PATH}")
 else:
     check("CLAUDE.md: Verify passes when the main checkout has the merge",
-          run_verify([{"scope": "local", "projectPath": _main_checkout,
-                       "gitCommitSha": _merged}]) == 0,
+          run_verify(_on()) == 0,
           f"{CLAUDE_MD_PATH} Verify fails on a correct install")
     check("CLAUDE.md: Verify fails when the main checkout is on an old commit",
-          run_verify([{"scope": "local", "projectPath": _main_checkout,
-                       "gitCommitSha": "0" * 40}]) != 0,
+          run_verify(_on("0" * 40)) != 0,
           f"{CLAUDE_MD_PATH} Verify passes while the main checkout is stale")
     check("CLAUDE.md: Verify fails when only a worktree has the merge",
-          run_verify([{"scope": "local",
-                       "projectPath": os.path.join(_main_checkout, ".claude",
-                                                   "worktrees", "x"),
-                       "gitCommitSha": _merged}]) != 0,
+          run_verify(lambda main, merged: [
+              {"scope": "local",
+               "projectPath": os.path.join(main, ".claude", "worktrees", "x"),
+               "gitCommitSha": merged}]) != 0,
           f"{CLAUDE_MD_PATH} Verify passes when a worktree updated and the "
           f"main checkout did not")
     check("CLAUDE.md: Verify fails when the install holds a file git does not track  <-- 51e8e06",
-          run_verify([{"scope": "local", "projectPath": _main_checkout,
-                       "gitCommitSha": _merged}],
+          run_verify(_on(),
                      files=("CLAUDE.md", ".claude/worktrees/x/CLAUDE.md")) != 0,
           f"{CLAUDE_MD_PATH} Verify passes while the install carries another "
           f"session's worktree")
+    check("CLAUDE.md: Verify from a worktree with an old prune still checks  <-- #165",
+          run_verify(_on(), files=("CLAUDE.md", ".claude/worktrees/x/CLAUDE.md"),
+                     stub_prune=True) != 0,
+          f"{CLAUDE_MD_PATH} Verify run from a worktree uses the worktree's own "
+          f"prune-install.py, and passes an install with untracked files")
     check("CLAUDE.md: Verify passes when the install holds Claude Code's own files  <-- review",
-          run_verify([{"scope": "local", "projectPath": _main_checkout,
-                       "gitCommitSha": _merged}],
-                     files=("CLAUDE.md", ".in_use/4242", ".orphaned_at")) == 0,
+          run_verify(_on(), files=("CLAUDE.md", ".in_use/4242", ".orphaned_at")) == 0,
           f"{CLAUDE_MD_PATH} Verify fails a good deploy a session has loaded")
 
 _deploy_script_text = (open(DEPLOY_SCRIPT, encoding="utf-8").read()
