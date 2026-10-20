@@ -281,7 +281,7 @@ the result — for example `✓ **checks** 3 of 3 pass, exit 0`.
 
 ## Rules
 
-- Never merge, and never call `devflow:ship`. Merging is the human's.
+- Never merge, and never call `devflow:ship` or `devflow:merge`. Merging is the human's.
 - Never push a fix for a failure you have not attributed. Triage first.
 - Never delete, skip or weaken a test to turn a check green.
 - Never re-run a job hoping for a different answer. Once, for a reason you can name.

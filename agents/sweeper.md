@@ -147,7 +147,7 @@ exists to protect.
 - Never build an issue outside your chain.
 - Never call `devflow:flow`: the main session sized every issue as Quick before you started.
 - Never keep a dev server running after the live check: a sweeper always stops its server.
-- Never merge. Never call `devflow:ship`: only a human ships.
+- Never merge. Never call `devflow:ship` or `devflow:merge`: only a human starts them.
 - Never push a chain that stopped, and never leave your branch.
 - Never comment on an issue, label it, close it or edit it. The PR's `Closes` lines close it
   when a human merges.

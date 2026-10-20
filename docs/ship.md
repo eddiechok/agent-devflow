@@ -27,6 +27,8 @@ Of the two things that keep it that way, the first closes the automatic path:
 
 Claude will not load this skill because a description looked relevant, it is not preloaded into subagents, and a scheduled task cannot fire it.
 
+`devflow:merge` merges too, without the deploy, so it sits behind the same boundary: `disable-model-invocation: true`, and every Rules line that says never to call `devflow:ship` names `devflow:merge` as well. The human chose a human-only `merge` over one a model could call, because the merge is the step that is not undone. See [merge](merge.md).
+
 ### The name this skill took from another
 
 Anyone carrying that habit will type `/devflow:ship` expecting a PR and get a merge and a deploy instead. Step 1 catches the common case, since a branch with no PR stops here. It does not catch the case where a PR already exists.

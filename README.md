@@ -81,7 +81,7 @@ Run it again if the commands change. It will not overwrite a block you wrote wit
 ```
 
 - **`direct`** commits straight on main and pushes. No branch, no pull request. `flow` still sizes the work, `build` still goes test first, and `submit` still runs the checks and the app, but a Quick change is not reviewed, and what the PR body would say goes in the Done report in the chat. The recommendation: a private repo, one collaborator and no CI. If a push to main deploys live, `setup` says so and still recommends `direct` when the rest says direct.
-- **`pr`** is a branch and a pull request for each job, which is the default for everything else. `ship` merges it.
+- **`pr`** is a branch and a pull request for each job, which is the default for everything else. `ship` merges it, and so does `merge`.
 
 You do not have to run `/devflow:setup` yourself. When there is no `## Workflow` block, flow runs it first, then carries on with your request. A project that already has `## Checks` is asked only the new questions.
 
@@ -101,13 +101,16 @@ Then, once you have looked at the PR and want it finished:
 ```
 /devflow:ship
 /devflow:ship 123
+/devflow:merge 123
 ```
+
+`merge` merges without deploying. Merge several PRs, then run `/devflow:ship 123 124 125` once: it deploys once and checks each PR.
 
 `flow` sizes the work and routes it. You should not normally need to call the others directly.
 
 A request that names more than one feature keeps one and parks the rest — as a GitHub issue labelled `devflow:backlog`, or a file under `.devflow/backlog/` — so one run still ends as one PR and nothing named gets lost.
 
-There are two exceptions. `ship` is the one skill nothing else can call. `flow` does route to `tend`. But you will usually start `tend` yourself, when you see a red check.
+There are two exceptions. `ship` and `merge` are the skills nothing else can call. `flow` does route to `tend`. But you will usually start `tend` yourself, when you see a red check.
 
 ### The loop
 
@@ -235,9 +238,9 @@ Two rules decide what gets into a round.
 
 **It asks only what is answerable now.** A question that another question decides is held back, and asked in the next round if the answer that settles it opens it. A question no answer to which could change the build is not asked: it takes the recommendation.
 
-**Merge.** Always yours. `submit` opens the PR and stops. `/devflow:ship` does everything after it.
+**Merge.** Always yours. `submit` opens the PR and stops. `/devflow:ship` does everything after it, and `/devflow:merge` does the merge alone.
 
-`ship` is the one skill you have to start yourself. `disable-model-invocation: true` keeps it out of the automatic path. `flow` and `submit` are both told never to call it.
+`ship` and `merge` are the skills you have to start yourself. `disable-model-invocation: true` keeps them out of the automatic path. `flow` and `submit` are both told never to call either.
 
 **Committing to the default branch.** The hook asks first.
 
@@ -273,10 +276,11 @@ auth and permissions · secrets and keys · payments · public API or wire forma
 | `submit` | Runs the checks fresh. Runs the app. Calls `review`. Commits. Opens the PR, or updates the one already open. **Never merges** |
 | `tend` | After the PR is open. Works out what a red check or a review comment is really saying. Checks whether this branch caused it. Then fixes it and re-submits |
 | `ship` | Merges it. Watches the deploy. Checks it is really live. Cleans up. **Only you can start it** |
+| `merge` | Merges it and cleans up its branch, without the deploy, so several PRs can go out in one `ship`. **Only you can start it** |
 | `lesson` | Writes one line to the private lessons repo — a mistake, an idea, or an override — so a later review can spot a pattern |
 | `lesson-review` | Reads the lessons and counts waste from saved sessions. Proposes a skill change only on a repeat, each with an eval case. **A human approves every change**. You start it yourself |
 
-`submit` opens the PR. `ship` merges it. Only you can start `ship`. On a branch with no PR, `ship` stops and points you at `submit`. Where a PR exists, it merges.
+`submit` opens the PR. `ship` and `merge` merge it. Only you can start either. On a branch with no PR, `ship` stops and points you at `submit`. Where a PR exists, it merges.
 
 `review` runs agents that never saw the session: `reviewer` asks *is it built right*, `security-reviewer` asks *is it safe from an attacker* — only when the danger list names a security item — and `spec-reviewer` asks *is it the right thing*. A project can name its own review agents too, one `- Review agent:` line each in `CLAUDE.md`, and `review` runs only those, under **Project review**. Another, `hardcase`, tries to break `reviewer`'s, `security-reviewer`'s and the project agents' findings. The reports are never blended. `researcher` is not a reviewer either: on a Deep job, `flow` and `plan` start one per open question, at most 3 each, `flow` during its rounds and `plan` before it writes the pieces, and each finding it returns names its source. `discuss` starts them too when you ask to talk a design through, at most 3 per discussion. `builder` is not a reviewer: on a Deep job it builds one chain of the plan's pieces in its own git worktree, commits each one, and reports back a branch line plus five lines per piece. One builder per chain, up to four chains at once, and `plan` merges their branches back before it reports to `flow`, which then submits. `sweeper` is not a reviewer either: `sweep` starts one per chain of Quick issues, each in its own git worktree, and it runs `build` for every issue, one commit each, then `submit` once, so one PR closes the chain. It never asks: where `build` or `submit` would, it stops and keeps its worktree and branch on your machine, unpushed. Up to four sweepers at once.
 
@@ -299,6 +303,7 @@ wrong.
 | [docs/submit.md](docs/submit.md) | Why `submit`'s steps are what they are. Checks that postdate the last edit. The live check. The commit and the PR body. |
 | [docs/review.md](docs/review.md) | Why `review`'s steps are what they are. The four agents. Why the axes are separate and ranked apart. Why `hardcase` defaults to *falls*. Why a project's own review agent runs only when named. Why a change with no behaviour gets one reader. |
 | [docs/ship.md](docs/ship.md) | Why `ship`'s steps are what they are. The boundary only a human crosses. Choosing a method the branch can take. The three real merge-error runs. The deploy block. |
+| [docs/merge.md](docs/merge.md) | Why `merge` reads `ship` instead of copying it. Why it reads the Deploy block first. Why it is human-only. |
 | [docs/tend.md](docs/tend.md) | Why `tend`'s steps are what they are. Getting on the PR's branch first. Triage before anything is changed. |
 | [docs/setup.md](docs/setup.md) | Why `setup`'s steps are what they are. Everything downstream trusts the `## Checks` block. Running each command before writing it down. |
 | [docs/skills.md](docs/skills.md) | Why `skills` lists and never installs. Why a repo with code is never asked a stack question. Why one design skill, not two. Why a vendor table and a capped search. Why it writes the one review agent line. |
