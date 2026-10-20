@@ -2404,38 +2404,112 @@ check("CLAUDE.md: the Verify line runs scripts/verify-deploy.py",
       f"{CLAUDE_MD_PATH} Verify lines are {verify_lines!r}")
 
 
-def run_deploy(claude_exit=0):
+# What a real update copies besides the tracked files: everything else in the
+# main checkout, gitignored or not. Seen in the 51e8e06 install: 6.5M of other
+# sessions' worktrees, the local settings, __pycache__ and .DS_Store.
+_UNTRACKED = [".claude/worktrees/wt-a/skills/x.md", ".claude/settings.local.json",
+              "evals/__pycache__/run.pyc", ".DS_Store", "notes.txt"]
+# What Claude Code itself writes into an install, which no git tracks either.
+# An empty folder is listed with a trailing slash.
+_CLAUDE_OWN = [".in_use/4242", ".orphaned_at", "node_modules/"]
+
+
+def run_deploy(claude_exit=0, in_place=False):
     """Run deploy.sh from a linked worktree of a scratch repo.
 
-    The fake claude records the folder it ran in, resolved, and its args.
-    Returns (the script's process, what claude recorded, the main checkout).
+    The fake claude records the folder it ran in, resolved, and its args, then
+    does what a real update does: copies the whole folder into the cache (or,
+    in_place, points the install at the folder itself) and writes the entry,
+    after a user-scope entry, which names no folder, for another install.
+    Returns (the script's process, what claude recorded, the main checkout,
+    the files left in the install, in the main checkout, in the user install).
     """
     with tempfile.TemporaryDirectory() as d:
         main = os.path.join(d, "main")
-        os.makedirs(main)
+        os.makedirs(os.path.join(main, "skills"))
+        with open(os.path.join(main, "skills", "SKILL.md"), "w") as fh:
+            fh.write("x\n")
+        with open(os.path.join(main, ".gitignore"), "w") as fh:
+            fh.write(".claude/\n__pycache__/\n.DS_Store\n")
         g = lambda *a: subprocess.run(["git", *a], cwd=main, capture_output=True,
                                       check=True)
         g("init", "-q")
-        g("-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q",
-          "--allow-empty", "-m", "x")
+        g("add", ".")
+        g("-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q", "-m", "x")
         wt = os.path.join(d, "wt")
         g("worktree", "add", "-q", wt)
+        for rel in _UNTRACKED:
+            os.makedirs(os.path.dirname(os.path.join(main, rel)), exist_ok=True)
+            with open(os.path.join(main, rel), "w") as fh:
+                fh.write("junk\n")
+        home = os.path.join(d, "home")
+        plugins = os.path.join(home, ".claude", "plugins")
+        install = main if in_place else os.path.join(
+            plugins, "cache", "eddiechok-devflow", "devflow", "abc")
+        user = os.path.join(plugins, "cache", "eddiechok-devflow", "devflow",
+                            "user")
+        os.makedirs(user)
+        open(os.path.join(user, ".DS_Store"), "w").close()
         bindir = os.path.join(d, "bin")
         os.makedirs(bindir)
         log = os.path.join(d, "log")
         fake = os.path.join(bindir, "claude")
+        copy = "" if in_place else (
+            f'mkdir -p "{os.path.dirname(install)}"\n'
+            f'cp -R "$(pwd -P)" "{install}"\nrm -rf "{install}/.git"\n'
+            f'mkdir "{install}/.in_use"\n'
+            + "".join(f'mkdir -p "{install}/{c}"\n' if c.endswith("/")
+                      else f'touch "{install}/{c}"\n' for c in _CLAUDE_OWN))
+        entry = json.dumps({"plugins": {"devflow@eddiechok-devflow": [
+            {"scope": "user", "installPath": user},
+            {"scope": "local", "projectPath": main, "installPath": install}]}})
         with open(fake, "w") as fh:
-            fh.write(f'#!/bin/sh\necho "$(pwd -P)|$*" > "{log}"\nexit {claude_exit}\n')
+            fh.write(f'#!/bin/sh\necho "$(pwd -P)|$*" > "{log}"\n'
+                     f'[ {claude_exit} = 0 ] || exit {claude_exit}\n{copy}'
+                     f"echo '{entry}' > \"{plugins}/installed_plugins.json\"\n")
         os.chmod(fake, 0o755)
-        env = dict(os.environ, PATH=bindir + os.pathsep + os.environ["PATH"])
+        env = dict(os.environ, HOME=home,
+                   PATH=bindir + os.pathsep + os.environ["PATH"])
         proc = subprocess.run(["sh", DEPLOY_SCRIPT], cwd=wt, env=env,
                               capture_output=True, text=True)
         ran = open(log).read().strip() if os.path.exists(log) else ""
-        return proc, ran, os.path.realpath(main)
+
+        def files(top):
+            out = []
+            for r, ds, fs in os.walk(top):
+                ds[:] = [x for x in ds if x != ".git"]
+                out += [os.path.relpath(os.path.join(r, f), top) for f in fs]
+                if r != top and not ds and not fs:
+                    out.append(os.path.relpath(r, top) + "/")
+            return sorted(out)
+        return (proc, ran, os.path.realpath(main),
+                files(install) if os.path.isdir(install) else [], files(main),
+                files(user))
 
 
 if os.path.isfile(DEPLOY_SCRIPT):
-    _dp, _dran, _dmain = run_deploy()
+    _dp, _dran, _dmain, _dinstall, _, _duser = run_deploy()
+    check("scripts/deploy.sh: the install keeps only the files git tracks  <-- 51e8e06",
+          _dp.returncode == 0 and not any(u in _dinstall for u in _UNTRACKED)
+          and all(t in _dinstall for t in (".gitignore", "skills/SKILL.md")),
+          f"exit {_dp.returncode}: install holds {_dinstall}: "
+          f"{_dp.stdout}{_dp.stderr}")
+    # Found by review: Claude Code marks a loaded install with .in_use/<pid>
+    # and an unused one with .orphaned_at, and reads both when it cleans up.
+    check("scripts/deploy.sh: the prune leaves Claude Code's own files  <-- review",
+          all(c in _dinstall for c in _CLAUDE_OWN),
+          f"install holds {_dinstall}, not {_CLAUDE_OWN}")
+    # Found by review: a user-scope entry names no folder, and realpath("")
+    # is the folder deploy.sh stands in -- the main checkout.
+    check("scripts/deploy.sh: an entry naming no folder is not the checkout's  <-- review",
+          _duser == [".DS_Store"],
+          f"the user-scope install was pruned: it holds {_duser}")
+    _dpi, _, _, _, _dmain_files, _ = run_deploy(in_place=True)
+    check("scripts/deploy.sh: an install in the checkout itself is never pruned",
+          _dpi.returncode == 0
+          and all(u in _dmain_files for u in _UNTRACKED),
+          f"exit {_dpi.returncode}: checkout holds {_dmain_files}: "
+          f"{_dpi.stdout}{_dpi.stderr}")
     _dwhere, _, _dargs = _dran.partition("|")
     check("scripts/deploy.sh: run from a worktree, updates in the main checkout",
           _dwhere == _dmain,
@@ -2446,7 +2520,7 @@ if os.path.isfile(DEPLOY_SCRIPT):
     check("scripts/deploy.sh: says to restart the session",
           _dp.returncode == 0 and "Restart the session" in _dp.stdout,
           f"exit {_dp.returncode}: {_dp.stdout}{_dp.stderr}")
-    _dp_fail, _, _ = run_deploy(claude_exit=1)
+    _dp_fail, _, _, _, _, _ = run_deploy(claude_exit=1)
     check("scripts/deploy.sh: a failed update fails the deploy, no restart line",
           _dp_fail.returncode != 0 and "Restart the session" not in _dp_fail.stdout,
           f"exit {_dp_fail.returncode}: {_dp_fail.stdout}")
@@ -2454,16 +2528,23 @@ else:
     check("scripts/deploy.sh: exists", False, f"no {DEPLOY_SCRIPT}")
 
 
-def run_verify(entries):
+def run_verify(entries, files=("CLAUDE.md",)):
     """Run the Verify line against a fake ~/.claude holding these entries.
 
     The merge's cache directory is always there, as it is once any folder
-    has updated -- which is why its presence proves nothing.
+    has updated -- which is why its presence proves nothing. It holds these
+    files, and is the installPath of every entry that names none.
     """
     with tempfile.TemporaryDirectory() as home:
         plugins = os.path.join(home, ".claude", "plugins")
-        os.makedirs(os.path.join(plugins, "cache", "eddiechok-devflow",
-                                 "devflow", _merged[:12]))
+        install = os.path.join(plugins, "cache", "eddiechok-devflow",
+                               "devflow", _merged[:12])
+        os.makedirs(install)
+        for rel in files:
+            os.makedirs(os.path.dirname(os.path.join(install, rel)),
+                        exist_ok=True)
+            open(os.path.join(install, rel), "w").close()
+        entries = [dict({"installPath": install}, **e) for e in entries]
         with open(os.path.join(plugins, "installed_plugins.json"), "w") as fh:
             json.dump({"plugins": {"devflow@eddiechok-devflow": entries}}, fh)
         env = dict(os.environ, HOME=home)
@@ -2503,6 +2584,17 @@ else:
                        "gitCommitSha": _merged}]) != 0,
           f"{CLAUDE_MD_PATH} Verify passes when a worktree updated and the "
           f"main checkout did not")
+    check("CLAUDE.md: Verify fails when the install holds a file git does not track  <-- 51e8e06",
+          run_verify([{"scope": "local", "projectPath": _main_checkout,
+                       "gitCommitSha": _merged}],
+                     files=("CLAUDE.md", ".claude/worktrees/x/CLAUDE.md")) != 0,
+          f"{CLAUDE_MD_PATH} Verify passes while the install carries another "
+          f"session's worktree")
+    check("CLAUDE.md: Verify passes when the install holds Claude Code's own files  <-- review",
+          run_verify([{"scope": "local", "projectPath": _main_checkout,
+                       "gitCommitSha": _merged}],
+                     files=("CLAUDE.md", ".in_use/4242", ".orphaned_at")) == 0,
+          f"{CLAUDE_MD_PATH} Verify fails a good deploy a session has loaded")
 
 _deploy_script_text = (open(DEPLOY_SCRIPT, encoding="utf-8").read()
                        if os.path.isfile(DEPLOY_SCRIPT) else "")
