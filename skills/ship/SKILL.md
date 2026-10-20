@@ -144,7 +144,7 @@ open PR is **checks that have not started**, which is the case this step already
 to guess at. Look before you say "no checks configured", and say which of the two you
 found.
 
-Otherwise print the status, one shaped line each, and go — after [references/test-branch.md](references/test-branch.md) when `## Workflow` has a `- Test branch:` line:
+Otherwise — once [references/test-branch.md](references/test-branch.md) has run, when `## Workflow` has a `- Test branch:` line — print the status, one shaped line each, and go:
 
 ```
 ✓ **pr** #2 fix(flow): trigger on any repo change
