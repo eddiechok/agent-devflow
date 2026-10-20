@@ -7986,6 +7986,70 @@ check("merge: has a why page that exists and is linked  <-- #159",
       os.path.isfile(MERGE_DOC_PATH) and "docs/merge.md" in merge_text,
       f"{MERGE_DOC_PATH} is missing or {MERGE_PATH} never links it")
 
+# ------------------- /devflow:ship takes several PRs, one deploy  <-- #159
+#
+# A deploy copies the main checkout, so it ships every PR merged before it.
+# `ship` with one number at a time deployed once per PR. With several numbers
+# it checks them all first and merges none if one is not ready (the human fixes
+# it and types the same command again), merges in the order typed, deploys
+# once, then live-checks each PR's own change -- including one that was already
+# merged, which skips the merge but not the check. The rules sit in a reference
+# because ship/SKILL.md is 497 lines against a cap of 500.
+
+SEVERAL_PATH = os.path.join(SKILLS_DIR, "ship", "references", "several-prs.md")
+several_text = ""
+if os.path.isfile(SEVERAL_PATH):
+    with open(SEVERAL_PATH, encoding="utf-8") as fh:
+        several_text = fh.read()
+several_flat = flat(several_text)
+ship_values = dict(fields(frontmatter(ship_text) or ""))
+
+check("ship: points at references/several-prs.md from step 1  <-- #159",
+      "](references/several-prs.md)" in section(ship_text, "## 1. "),
+      f"{SHIP_PATH} step 1 never links references/several-prs.md")
+check("ship: the argument-hint takes several PR numbers  <-- #159",
+      "PR number(s)" in ship_values.get("argument-hint", ""),
+      f"{SHIP_PATH} argument-hint still names one PR")
+check("ship: stays at or under 500 lines with the pointer  <-- #159",
+      len(ship_text.splitlines()) <= 500,
+      f"{SHIP_PATH} is {len(ship_text.splitlines())} lines")
+check("several-prs: runs steps 1 and 2 for every PR before merging any  <-- #159",
+      re.search(r"steps 1 and 2 for every PR[^.]*before[^.]*any", several_flat)
+      is not None,
+      f"{SEVERAL_PATH} never checks all before merging any")
+check("several-prs: one PR not ready means merge none and name it  <-- #159",
+      re.search(r"merge none", several_flat, re.I) is not None
+      and "name the first pr" in several_flat.lower()
+      and "same command again" in several_flat
+      and all(w in several_flat for w in
+              ("CHANGES_REQUESTED", "unfinished", "stacked")),
+      f"{SEVERAL_PATH} does not stop the whole batch on one unready PR")
+check("several-prs: a conflicting PR goes to tend, one attempt, before any merge  <-- #159",
+      "conflict-handover.md" in several_text
+      and re.search(r"one attempt", several_flat) is not None
+      and re.search(r"before anything (is )?merge", several_flat) is not None,
+      f"{SEVERAL_PATH} does not hand a conflict to tend before merging")
+check("several-prs: a merged PR skips the merge but still gets its live check  <-- #159",
+      "– **merge** #n already merged" in several_text
+      and re.search(r"already merged[^.]*(still|live check)", several_flat)
+      is not None,
+      f"{SEVERAL_PATH} would skip an already-merged PR's live check")
+check("several-prs: merges in the order typed, re-reading mergeable each time  <-- #159",
+      "order typed" in several_flat and "mergeable" in several_flat
+      and re.search(r"mid-batch", several_flat) is not None,
+      f"{SEVERAL_PATH} does not merge in order or re-read mergeable")
+check("several-prs: deploys once, then a live check and clean-up per PR  <-- #159",
+      re.search(r"step 4 once", several_flat, re.I) is not None
+      and re.search(r"step 5 for each PR", several_flat, re.I) is not None
+      and re.search(r"step 6 for each PR", several_flat, re.I) is not None
+      and re.search(r"first-hand", several_flat) is not None,
+      f"{SEVERAL_PATH} does not deploy once and check each PR")
+check("several-prs: the report has a merged line per PR, one deploy, a live line per PR  <-- #159",
+      re.search(r"one `merged` line per PR", several_flat) is not None
+      and re.search(r"one `deploy` line", several_flat) is not None
+      and re.search(r"one `live` line per PR", several_flat) is not None,
+      f"{SEVERAL_PATH} does not say what the report holds")
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")

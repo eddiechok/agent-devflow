@@ -1,7 +1,7 @@
 ---
 name: ship
 description: "Use after submit, when the pull request is open and you want it finished - merged, deployed, and cleaned up behind it. Merges the PR, runs or watches the deploy, checks the change is really live, then deletes the branch and tidies up the servers, temp files and session. This is the only skill that merges, and only a human can start it."
-argument-hint: "[PR number, or blank for the current branch]"
+argument-hint: "[PR number(s), or blank for the current branch]"
 allowed-tools: Bash(git status:*), Bash(git rev-parse:*), Bash(git symbolic-ref:*), Bash(gh pr view:*), ExitWorktree
 disable-model-invocation: true
 ---
@@ -57,6 +57,9 @@ path below.
 ## 1. Find the PR
 
 `$ARGUMENTS` is a PR number if you were given one. Otherwise take the PR for the current branch.
+
+**Several numbers** (`/devflow:ship 155 156 157`): read [references/several-prs.md](references/several-prs.md)
+and follow it. It runs the steps below across all of them and deploys once.
 
 **Write its head branch down, and keep using that name.** Step 6 deletes a branch, and
 "the local one" means *this PR's* branch, never whichever one you happen to be standing on.
