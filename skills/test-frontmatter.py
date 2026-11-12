@@ -8852,6 +8852,186 @@ check("provenance: dispatch credits start_session, GSD and agent teams",
       and "agent-teams" in _prov_dispatch and "claude-squad" in _prov_dispatch,
       "docs/provenance.md's dispatch section never credits its sources")
 
+# ------------------------------------------------- the models skill's rules
+#
+# `models` reviews each agent's `model:` / `effort:` pin and the main session's
+# `model` / `effortLevel` against a short list of bookmarked pages. It edits
+# files, so it asks once, with one table, before the first edit, and only a
+# human starts it. The bookmark list is one file, so a new page is one line.
+
+MODELS_PATH = os.path.join(SKILLS_DIR, "models", "SKILL.md")
+MODELS_SOURCES_PATH = os.path.join(SKILLS_DIR, "models", "references", "sources.md")
+models_text = ""
+if os.path.isfile(MODELS_PATH):
+    with open(MODELS_PATH, encoding="utf-8") as fh:
+        models_text = fh.read()
+check("models: the skill file exists", models_text != "",
+      f"{MODELS_PATH} does not exist")
+models_values = parsed.get("models", (None, {}))[1]
+models_body = (flat(models_text.split("---", 2)[2])
+               if models_text.count("---") >= 2 else "")
+
+check("models: only a human starts it (disable-model-invocation: true)",
+      models_values.get("disable-model-invocation") == "true",
+      f"{models_values.get('disable-model-invocation')!r}. It edits agents and settings")
+
+check("models: one go before any edit, one table, one reply",
+      re.search(r"one (go|yes) before (any|the first) edit", models_body) is not None
+      and "one table" in models_body and "one reply" in models_body,
+      "models never says it asks once, with one table, before any edit")
+
+check("models: the table gives a URL for every number and flags disagreement",
+      "URL for every number" in models_body
+      and re.search(r"pages disagree", models_body) is not None,
+      "models never requires a URL per number or a note where pages disagree")
+
+check("models: the main session's settings keys are model and effortLevel",
+      "`model`" in models_body and "`effortLevel`" in models_body
+      and "~/.claude/settings.json" in models_body,
+      "models never names the settings.json keys model and effortLevel")
+
+check("models: agent pins are edited as model: and effort: in agents/*.md",
+      "agents/*.md" in models_body and "`model:`" in models_body
+      and "`effort:`" in models_body,
+      "models never names the model: and effort: lines of agents/*.md")
+
+check("models: agent changes go out as a PR through devflow:flow",
+      "devflow:flow" in models_body,
+      "models never hands the agent edits to devflow:flow")
+
+check("models: checks for the agent-devflow checkout before editing agents",
+      re.search(r"agent-devflow checkout", models_body) is not None
+      and re.search(r"stop", models_body) is not None,
+      "models never checks that agents/ is the agent-devflow checkout's")
+
+check("models: leaves the project's own .claude/agents/ alone",
+      ".claude/agents/" in models_body,
+      "models never says the project's own review agents are not touched")
+
+check("models: an agent the pages do not cover keeps its setting, the table says why",
+      re.search(r"keeps? (its|their) setting", models_body) is not None,
+      "models never says what happens where the pages are silent")
+
+check("models: pages are read in the session, not by researcher agents",
+      "WebFetch" in models_body and "researcher" in models_body,
+      "models never says the pages are read in the session")
+
+check("models: the bookmark list is skills/models/references/sources.md, linked",
+      "references/sources.md" in models_text
+      and os.path.isfile(MODELS_SOURCES_PATH),
+      "SKILL.md never links references/sources.md, or the file is missing")
+
+check("models: stays under the 500-line cap",
+      len(models_text.splitlines()) <= SKILL_SIZE_CAP,
+      f"{MODELS_PATH} is {len(models_text.splitlines())} lines, cap is {SKILL_SIZE_CAP}")
+
+models_sources = ""
+if os.path.isfile(MODELS_SOURCES_PATH):
+    with open(MODELS_SOURCES_PATH, encoding="utf-8") as fh:
+        models_sources = fh.read()
+_models_urls = re.findall(r"https?://[^\s)>\]`,]+", models_sources)
+check("models: sources.md lists pages",
+      len(_models_urls) >= 6,
+      f"{len(_models_urls)} URLs in sources.md")
+check("models: every URL in sources.md is an https link",
+      _models_urls != [] and all(u.startswith("https://") for u in _models_urls),
+      "non-https: " + ", ".join(u for u in _models_urls if not u.startswith("https://")))
+check("models: sources.md has the settings page and the model and effort pages",
+      "https://code.claude.com/docs/en/settings" in models_sources
+      and "https://platform.claude.com/docs/en/build-with-claude/effort" in models_sources
+      and "https://platform.claude.com/docs/en/about-claude/models/choosing-a-model"
+      in models_sources,
+      "sources.md lacks the settings, effort or choosing-a-model page")
+
+# ------------------------------------------- docs/models.md and the README rows
+#
+# docs/models.md holds why `models` is what it is, so SKILL.md stays a prompt.
+# The README names the skill in its table and the page in its docs index.
+
+MODELS_DOC_PATH = os.path.join(REPO_ROOT, "docs", "models.md")
+models_doc = ""
+if os.path.isfile(MODELS_DOC_PATH):
+    with open(MODELS_DOC_PATH, encoding="utf-8") as fh:
+        models_doc = flat(fh.read())
+check("docs/models: the page exists", models_doc != "",
+      f"{MODELS_DOC_PATH} does not exist")
+
+check("docs/models: says why the pages decide",
+      "## Why the pages decide" in models_doc
+      and "human corrects" in models_doc,
+      "docs/models.md never says why the pages decide")
+
+check("docs/models: says why one go, with one table",
+      "## Why one go" in models_doc and "one table" in models_doc
+      and "URL" in models_doc,
+      "docs/models.md never says why there is one go")
+
+check("docs/models: says why no test runs",
+      "## Why no test runs" in models_doc
+      and "12 Nov 2026" in models_doc,
+      "docs/models.md never says why there is no eval case")
+
+check("docs/models: says why the pages are read in the session",
+      "## Why the pages are read in the session" in models_doc
+      and "researcher" in models_doc and "garble" in models_doc,
+      "docs/models.md never says why the pages are read in the session")
+
+check("docs/models: links the skill and provenance",
+      "../skills/models/SKILL.md" in models_doc
+      and "provenance.md" in models_doc,
+      "docs/models.md never links the skill and provenance")
+
+_readme_models_row = next((line for line in readme_text.split("\n")
+                           if line.startswith("| `models` |")), "")
+check("README: the skills table lists models, hand-started, with the table and one go",
+      _readme_models_row != "" and "model" in _readme_models_row
+      and "effort" in _readme_models_row
+      and "Only you can start it" in _readme_models_row,
+      "README.md's skills table has no `models` row")
+
+check("README: the docs index points at docs/models.md",
+      "| [docs/models.md](docs/models.md) |" in readme_text,
+      "README.md's docs index has no row for docs/models.md")
+
+# ------------------- the review agents' pins follow /devflow:models (12 Nov 2026)
+#
+# The human's call: the four review agents follow the pages like every other
+# agent, instead of being held at opus/xhigh. The reasoning for pinning stays in
+# the docs; what changes is who moves the pin.
+
+with open(os.path.join(REPO_ROOT, "docs", "review.md"), encoding="utf-8") as fh:
+    _review_doc_models = flat(fh.read())
+check("docs/review: the four pins follow /devflow:models, the human's call",
+      "/devflow:models" in _review_doc_models
+      and "All four pin `model: opus` and `effort: xhigh`" not in _review_doc_models
+      and "still prints, and still reports nothing wrong" in _review_doc_models
+      and "12 Nov 2026" in _review_doc_models,
+      "docs/review.md still holds the four pins fixed at opus/xhigh")
+
+for _agent_heading in ("## `reviewer` agent", "## `hardcase` agent",
+                       "## `spec-reviewer` agent", "## `security-reviewer` agent"):
+    check(f"provenance: {_agent_heading[3:]} pin follows /devflow:models",
+          "/devflow:models" in section(_provenance, _agent_heading),
+          f"docs/provenance.md's {_agent_heading} section never says its pin "
+          f"follows /devflow:models")
+
+_prov_models = flat(section(_provenance, "## `models`"))
+check("provenance: a models section",
+      _prov_models != "",
+      "docs/provenance.md has no `models` section")
+
+check("provenance: models credits lesson-review and GSD",
+      "`lesson-review`" in _prov_models
+      and "gsd-build/get-shit-done" in _prov_models
+      and "FEATURES.md" in _prov_models,
+      "docs/provenance.md's models section never credits lesson-review and GSD")
+
+check("provenance: models records the human's call of 12 Nov 2026",
+      "Human's call" in _prov_models and "12 Nov 2026" in _prov_models
+      and "no eval case" in _prov_models.lower()
+      and "review agents" in _prov_models,
+      "docs/provenance.md's models section never records the human's call")
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")

@@ -31,9 +31,9 @@ A finding that falls is also one of the three clearest signs a devflow mistake h
 
 All four are agents, not prompt templates. `tools:` grants read, grep, glob and bash. None has Edit or Write, and none can start another agent. Those two limits are real. But bash can still write a file or run `git`. So "never edit" is a rule in each prompt, not a wall in the harness. Bash stays because `git diff` is how they read the change.
 
-All four pin `model: opus` and `effort: xhigh`. A review does not quietly become a cheaper review because of what you happened to have `/model` set to. An under-powered review still prints, and still reports nothing wrong.
+All four pin a `model:` and an `effort:` (today `opus` and `xhigh`), and the pins follow `/devflow:models`: the bookmarked pages decide, with no setting held fixed against them. That was the human's call on 12 Nov 2026. The reason to pin at all stays. A review does not quietly become a cheaper review because of what you happened to have `/model` set to. An under-powered review still prints, and still reports nothing wrong. `/devflow:models` shows each change in a table and edits only after a go, so a review gets cheaper when the human says so.
 
-The three ranked axes pin the **same** pair on purpose. Their reports are never ranked against each other. A weaker model on one axis would rank them without saying so.
+The three ranked axes pin the **same** pair on purpose, and `/devflow:models` moves them together. Their reports are never ranked against each other. A weaker model on one axis would rank them without saying so.
 
 `hardcase` pins it for a different reason. A refuter that cannot follow the code refutes nothing. It prints a clean sheet that reads like agreement.
 
