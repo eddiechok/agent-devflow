@@ -1,6 +1,6 @@
 ---
 name: models
-description: "Use to review which model and effort each devflow agent and the main session run on, against a short list of bookmarked benchmark and docs pages. Only a human starts it, because it edits agent files and ~/.claude/settings.json. Reads the pages in the session, shows one table of now, new and why with a URL for every number, waits for one go, then makes every edit. Agent changes go out as a PR through devflow:flow."
+description: "Use in the agent-devflow repo to review which model and effort each devflow agent, the main session and setup's main-session hint run on, against a short list of bookmarked benchmark and docs pages. Only a human starts it, because it edits agent files and ~/.claude/settings.json. Reads the pages in the session, shows one table of now, new and why with a URL for every number, waits for one go, then makes every edit. Agent and hint changes go out as a PR through devflow:flow."
 argument-hint: ""
 disable-model-invocation: true
 ---
@@ -9,8 +9,8 @@ disable-model-invocation: true
 
 Read the pages. Show one table. Edit only after one go.
 
-Why it is built this way: [docs/models.md](../../docs/models.md). Read it only if a rule
-looks wrong.
+Why it is built this way: [docs/models.md](../../../docs/models.md). Read it only if a
+rule looks wrong.
 
 ## What this is
 
@@ -22,23 +22,18 @@ as new models ship. This skill compares them against the pages in
 **It reads the pages, then asks once.** No test runs a setting: the pages decide, and the
 human corrects it in real sessions.
 
-**The agent edits need the agent-devflow checkout.** Editing `agents/*.md` only makes sense
-there, and the plugin is on in other projects too. Steps 1 to 3 only read, and
-`~/.claude/settings.json` is the human's own file, so they work from any folder. Before
-step 4's agent edits, check that `agents/` and `skills/test-frontmatter.py` exist in this
-folder. If they do not, still offer the settings.json rows, say this is not the
-agent-devflow checkout, and stop before editing any agent.
+**It runs only in this repo.** It is the agent-devflow repo's own skill, in
+`.claude/skills/`, not the plugin's, so a project that installs devflow never sees it.
 
 ## 1. Read what is set now
 
-Read `model:` and `effort:` from the top of each file in `agents/`, and `model` and
-`effortLevel` from `~/.claude/settings.json`. In the agent-devflow checkout, read `agents/`
-and `docs/provenance.md` from the checkout, because those are the files step 4 edits, and
-a merge that is not deployed yet leaves the installed copy behind. Anywhere else, read them
-from this skill's own directory: the installed plugin carries both. Put each pin's recorded
-reason from `docs/provenance.md` in its row, so the human sees what the change would undo.
+Read `model:` and `effort:` from the top of each file in this repo's `agents/`, `model` and
+`effortLevel` from `~/.claude/settings.json`, and the main-session hint: the pair on the
+`→ **model**` line in `skills/setup/SKILL.md` and the same pair in `README.md`. Put each
+pin's recorded reason from `docs/provenance.md` in its row, so the human sees what the
+change would undo.
 
-The project's own review agents in `.claude/agents/` are not devflow's. Leave them alone.
+A project's own review agents in `.claude/agents/` are not devflow's. Leave them alone.
 
 ## 2. Read the pages
 
@@ -49,7 +44,8 @@ disagrees with another, write that in the table instead of picking one.
 
 ## 3. Show one table
 
-One table, one reply. A row for each agent and one for the main session:
+One table, one reply. A row for each agent, one for the main session, and one for the
+hint: the pair `setup` suggests to other projects for their main session:
 
 | agent or session | now | new | why | URL for every number |
 |---|---|---|---|---|
@@ -73,8 +69,10 @@ On the go, edit every row the human left in, and nothing else.
 
 - **Main session:** set `model` and `effortLevel` in `~/.claude/settings.json`. Change only
   those two keys.
-- **Agents:** change the `model:` and `effort:` lines of `agents/*.md`. These go out as a
-  PR, so hand them to `devflow:flow` with the table as the request. Do not commit them here.
+- **Agents and the hint:** the `model:` and `effort:` lines of `agents/*.md`, and the pair
+  on the `→ **model**` line in `skills/setup/SKILL.md` and in `README.md`. They ship with
+  the plugin, so hand them to `devflow:flow` with the table as the request: it makes those
+  edits in one PR. Do not edit or commit them here.
 
 ## Output
 
@@ -93,4 +91,4 @@ the result — for example `✓ **checks** 3 of 3 pass, exit 0`.
 - Never change an agent the pages do not cover; it keeps its setting.
 - Never report a number without its URL, or hide a place where the pages disagree.
 - Never read the pages through a researcher agent.
-- Never commit an agent change here; `devflow:flow` opens the PR.
+- Never commit an agent or hint change here; `devflow:flow` opens the PR.

@@ -430,6 +430,8 @@ Keep it short, one shaped line per fact:
 
 ✓ **ci** parked #48 — the chip builds it as its own PR
 
+→ **model** opus at high for the main session — set it with /model and /effort
+
 – **deploy** not written — that is ship's to add
 the first time it deploys and can prove the command works
 ```
@@ -440,11 +442,9 @@ The `checks` line says `written` only when step 4 wrote the block. Otherwise it 
 The `workflow` line says `kept` when `## Workflow` was already there. A `Mode:` the human
 chose against the recommendation says so: `✓ **workflow** pr (direct was recommended)`.
 
-Then mention, once, only if relevant:
-
-- the project has no tests at all — worth knowing before trusting the flow
-- a check took a long time
-- the project is currently red
+The `model` line is only a hint, word for word as above: setup never edits the user's
+settings. Then mention, once and only if relevant: no tests at all, a slow check, or a
+project that is red now.
 
 ## 8. Offer agent skills
 

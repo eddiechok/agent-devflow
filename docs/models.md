@@ -1,8 +1,8 @@
 # models, in detail
 
 Why `models` is what it is. The steps themselves are in
-[the skill](../skills/models/SKILL.md), the bookmarked pages are in
-[its sources list](../skills/models/references/sources.md), and where each idea came from
+[the skill](../.claude/skills/models/SKILL.md), the bookmarked pages are in
+[its sources list](../.claude/skills/models/references/sources.md), and where each idea came from
 is in [provenance](provenance.md).
 
 `models` compares the `model:` and `effort:` pin in each `agents/*.md`, and the main
@@ -71,12 +71,27 @@ cost page has to be read in three parts because it is about 217k characters. The
 puts a URL on every number so the human can check it, and that only works when the session
 that writes the table has read the page itself.
 
-The bookmark list is one file, `skills/models/references/sources.md`, so a new page is
+The bookmark list is one file, `.claude/skills/models/references/sources.md`, so a new page is
 one line, and a page that stops fitting is moved to its "Not fit now" list with the reason.
 
-## Where it works
+## Why it is not in the plugin
 
-The agent edits need the agent-devflow checkout, because `agents/*.md` is edited there and
-goes out as a PR through `devflow:flow`. The installed plugin carries `agents/` and
-`docs/provenance.md`, so the table can be read from any folder. In another project, the
-skill can still change `~/.claude/settings.json`, and it stops before editing an agent.
+`models` lives in this repo's `.claude/skills/`, not in the plugin's `skills/`, so only this
+repo loads it, as `/models`. A plugin loads its skills from `skills/` and nowhere else
+([plugins reference](https://code.claude.com/docs/en/plugins-reference)), so a project that
+installs devflow never sees it. That was the human's call, on 12 Nov 2026.
+
+It is a tool for whoever maintains devflow, not for its users. The agent settings are the
+plugin's own files: in another project, a plugin update writes over them, and users get new
+settings when a release ships them. One person makes that call, in one place, as a PR.
+The main session setting still reaches every project, because `~/.claude/settings.json` is
+the user's own file and not the repo's.
+
+## Why setup suggests a main-session pair
+
+devflow pins every agent, but its own skills — `flow`, `plan`, `submit`, and every Quick and
+Standard build — run in the main session, on whatever the user set with `/model` and
+`/effort`. So `setup` prints one `→ **model**` line, once per project, with the pair to use,
+and `README.md` carries the same pair. It is a hint and never an edit: the user's settings
+change every project they work in, and that is their call. `/models` keeps the pair
+current, in the same PR as the agent changes, so users get a new hint with the next release.

@@ -70,6 +70,8 @@ On a repo with no CI, it offers to add CI that runs the checks, and recommends y
 
 Run it again if the commands change. It will not overwrite a block you wrote without asking.
 
+Last, it suggests a model and effort for your main session: opus at high, set with `/model` and `/effort`. devflow pins its own agents, but the main session runs on what you set. It is only a hint: `setup` never edits your settings.
+
 ### How the project works: `direct` or `pr`
 
 `setup` is a short questionnaire, not only a command finder. It reads the repo first (private or public, how many collaborators, whether CI runs), asks what the project is about, and asks how the work should land. It recommends one answer and says why. Then it writes a `## Workflow` block into `CLAUDE.md`:
@@ -280,7 +282,8 @@ auth and permissions · secrets and keys · payments · public API or wire forma
 | `merge` | Merges it and cleans up its branch, without the deploy, so several PRs can go out in one `ship`. **Only you can start it** |
 | `lesson` | Writes one line to the private lessons repo — a mistake, an idea, or an override — so a later review can spot a pattern |
 | `lesson-review` | Reads the lessons and counts waste from saved sessions. Proposes a skill change only on a repeat, each with an eval case. **A human approves every change**. You start it yourself |
-| `models` | Reviews the `model` and `effort` of each devflow agent and of the main session against a short list of bookmarked benchmark and docs pages. Shows one table of now, new and why, with a URL for every number, and edits only after one go. Agent changes go out as a PR through `flow`. **Only you can start it**, because it edits agent files and your settings |
+
+One more skill, `/models`, lives in this repo's `.claude/skills/` and runs only in this repo, so a project that installs devflow never sees it. It reviews the `model` and `effort` of each devflow agent, the main session and `setup`'s hint against a short list of bookmarked pages, and changes them after one go.
 
 `submit` opens the PR. `ship` and `merge` merge it. Only you can start either. On a branch with no PR, `ship` stops and points you at `submit`. Where a PR exists, it merges.
 

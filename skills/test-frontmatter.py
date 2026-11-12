@@ -2913,6 +2913,7 @@ SHAPED_LABELS = {
     "backlog", "branch", "browser", "chains", "checks", "ci", "chips", "cleaned", "commit",
     "conflict", "debug", "deploy", "docs", "done", "env", "features", "glossary",
     "green", "handback", "issue", "landed", "lesson", "lint", "live", "look", "merge", "merged",
+    "model",
     "next", "no-behaviour", "open", "opinion", "override", "parked", "piece",
     "pieces", "plan", "plans", "pr", "pushed", "red", "repo", "research", "retargeted", "review",
     "see", "servers", "session", "settings", "skills", "stuck", "tended", "test", "testsite",
@@ -8859,15 +8860,26 @@ check("provenance: dispatch credits start_session, GSD and agent teams",
 # files, so it asks once, with one table, before the first edit, and only a
 # human starts it. The bookmark list is one file, so a new page is one line.
 
-MODELS_PATH = os.path.join(SKILLS_DIR, "models", "SKILL.md")
-MODELS_SOURCES_PATH = os.path.join(SKILLS_DIR, "models", "references", "sources.md")
+#
+# It is this repo's own skill, not the plugin's: it sits in .claude/skills/,
+# which only this repo loads, so a project that installs devflow never sees it.
+
+MODELS_DIR = os.path.join(REPO_ROOT, ".claude", "skills", "models")
+MODELS_PATH = os.path.join(MODELS_DIR, "SKILL.md")
+MODELS_SOURCES_PATH = os.path.join(MODELS_DIR, "references", "sources.md")
 models_text = ""
 if os.path.isfile(MODELS_PATH):
     with open(MODELS_PATH, encoding="utf-8") as fh:
         models_text = fh.read()
-check("models: the skill file exists", models_text != "",
+check("models: the skill file exists in .claude/skills/", models_text != "",
       f"{MODELS_PATH} does not exist")
-models_values = parsed.get("models", (None, {}))[1]
+check("models: not in the plugin's skills/, so other repos never load it",
+      not os.path.exists(os.path.join(SKILLS_DIR, "models")),
+      "skills/models/ still exists, so every repo with devflow loads it")
+_models_fm = frontmatter(models_text) if models_text else None
+models_values = dict(fields(_models_fm)) if _models_fm else {}
+check("models: the frontmatter name is models",
+      models_values.get("name") == "models", f"{models_values.get('name')!r}")
 models_body = (flat(models_text.split("---", 2)[2])
                if models_text.count("---") >= 2 else "")
 
@@ -8899,10 +8911,15 @@ check("models: agent changes go out as a PR through devflow:flow",
       "devflow:flow" in models_body,
       "models never hands the agent edits to devflow:flow")
 
-check("models: checks for the agent-devflow checkout before editing agents",
-      re.search(r"agent-devflow checkout", models_body) is not None
-      and re.search(r"stop", models_body) is not None,
-      "models never checks that agents/ is the agent-devflow checkout's")
+check("models: runs only in this repo, with no installed-copy fallback",
+      "only in this repo" in models_body
+      and "own directory" not in models_body,
+      "models still reads an installed copy, or never says it runs only here")
+
+check("models: keeps setup's and README's main-session hint current",
+      "skills/setup/SKILL.md" in models_body and "README.md" in models_body
+      and "hint" in models_body,
+      "models never updates the main-session hint in setup and README")
 
 check("models: leaves the project's own .claude/agents/ alone",
       ".claude/agents/" in models_body,
@@ -8917,16 +8934,11 @@ check("models: the four review agents follow the pages, the ranked three as one 
       and "same new pair" in models_body,
       "models never makes the review agents follow the pages, or splits the three axes")
 
-check("models: reads agents/ from the checkout when it is there, not the stale copy",
-      re.search(r"read `agents/` and `docs/provenance.md` from the checkout",
-                models_body) is not None,
-      "models reads the installed copy even where it edits the checkout")
-
 check("models: pages are read in the session, not by researcher agents",
       "WebFetch" in models_body and "researcher" in models_body,
       "models never says the pages are read in the session")
 
-check("models: the bookmark list is skills/models/references/sources.md, linked",
+check("models: the bookmark list is references/sources.md beside it, linked",
       "references/sources.md" in models_text
       and os.path.isfile(MODELS_SOURCES_PATH),
       "SKILL.md never links references/sources.md, or the file is missing")
@@ -8987,23 +8999,55 @@ check("docs/models: says why the pages are read in the session",
       "docs/models.md never says why the pages are read in the session")
 
 check("docs/models: links the skill and provenance",
-      "../skills/models/SKILL.md" in models_doc
+      "../.claude/skills/models/SKILL.md" in models_doc
       and "provenance.md" in models_doc,
       "docs/models.md never links the skill and provenance")
 
-_readme_models_row = next((line for line in readme_text.split("\n")
-                           if line.startswith("| `models` |")), "")
-check("README: the skills table lists models, hand-started, with the table and one go",
-      _readme_models_row != "" and "model" in _readme_models_row
-      and "effort" in _readme_models_row
-      and "Only you can start it" in _readme_models_row,
-      "README.md's skills table has no `models` row")
+check("docs/models: says why it is this repo's skill, not the plugin's",
+      "## Why it is not in the plugin" in models_doc,
+      "docs/models.md never says why models stays out of the plugin")
+
+check("README: the plugin skills table has no models row",
+      not any(line.startswith("| `models` |") for line in readme_text.split("\n")),
+      "README.md still lists models as a plugin skill")
+
+check("README: says /models is this repo's own skill",
+      re.search(r"`/models`[^\n]*this repo", readme_text) is not None,
+      "README.md never says /models runs only in this repo")
+
+# ------------------------------------------------- the main-session hint
+#
+# devflow pins every agent, but the main session runs on whatever the user set.
+# `setup` suggests a pair once per project and never edits the user's settings.
+# README carries the same pair, and `/models` keeps both current.
+
+_HINT_PAIR = r"(opus|sonnet|haiku|fable) at (low|medium|high|xhigh|max)"
+_setup_text = open(os.path.join(SKILLS_DIR, "setup", "SKILL.md"),
+                   encoding="utf-8").read()
+_setup_hint = re.search(r"→ \*\*model\*\* [^\n]*?" + _HINT_PAIR, _setup_text)
+check("setup: prints one main-session hint line, with a model and effort",
+      _setup_hint is not None,
+      "skills/setup/SKILL.md has no `→ **model**` hint line naming a pair")
+check("setup: the hint says how to set it and never edits settings",
+      "/model" in _setup_text and "/effort" in _setup_text
+      and re.search(r"never (edit|change|write)s? [^.]*settings", flat(_setup_text))
+      is not None,
+      "setup never says the hint is only a hint")
+_readme_hint = re.search(_HINT_PAIR + r"[^\n]*`/model`[^\n]*`/effort`", readme_text)
+check("README: names the same main-session pair as setup",
+      _setup_hint is not None and _readme_hint is not None
+      and _readme_hint.group(1, 2) == _setup_hint.group(1, 2),
+      f"setup {_setup_hint and _setup_hint.group(1, 2)}, "
+      f"README {_readme_hint and _readme_hint.group(1, 2)}")
+check("setup: stays under the 500-line cap with the hint",
+      len(_setup_text.splitlines()) <= SKILL_SIZE_CAP,
+      f"skills/setup/SKILL.md is {len(_setup_text.splitlines())} lines")
 
 check("README: the docs index points at docs/models.md",
       "| [docs/models.md](docs/models.md) |" in readme_text,
       "README.md's docs index has no row for docs/models.md")
 
-# ------------------- the review agents' pins follow /devflow:models (12 Nov 2026)
+# ------------------- the review agents' pins follow /models (12 Nov 2026)
 #
 # The human's call: the four review agents follow the pages like every other
 # agent, instead of being held at opus/xhigh. The reasoning for pinning stays in
@@ -9011,8 +9055,8 @@ check("README: the docs index points at docs/models.md",
 
 with open(os.path.join(REPO_ROOT, "docs", "review.md"), encoding="utf-8") as fh:
     _review_doc_models = flat(fh.read())
-check("docs/review: the four pins follow /devflow:models, the human's call",
-      "/devflow:models" in _review_doc_models
+check("docs/review: the four pins follow /models, the human's call",
+      "`/models`" in _review_doc_models
       and "All four pin `model: opus` and `effort: xhigh`" not in _review_doc_models
       and "still prints, and still reports nothing wrong" in _review_doc_models
       and "12 Nov 2026" in _review_doc_models,
@@ -9020,10 +9064,10 @@ check("docs/review: the four pins follow /devflow:models, the human's call",
 
 for _agent_heading in ("## `reviewer` agent", "## `hardcase` agent",
                        "## `spec-reviewer` agent", "## `security-reviewer` agent"):
-    check(f"provenance: {_agent_heading[3:]} pin follows /devflow:models",
-          "/devflow:models" in section(_provenance, _agent_heading),
+    check(f"provenance: {_agent_heading[3:]} pin follows /models",
+          "`/models`" in section(_provenance, _agent_heading),
           f"docs/provenance.md's {_agent_heading} section never says its pin "
-          f"follows /devflow:models")
+          f"follows /models")
 
 _prov_models = flat(section(_provenance, "## `models`"))
 check("provenance: a models section",
