@@ -1132,6 +1132,158 @@ check("sweep-quick-issues: a comment on an issue fails comments-on-no-issue",
                     [("Bash", {"command": "gh api repos/o/r/issues/4/comments -f body=x"})]),
       "fail")
 
+# ------------------------- dispatch-top-three: the top 3 picked, each with a reason
+#
+# `dispatch` starts a session per pick through the app's session tool. A
+# `claude -p` run has no such tool, so the case grades what the skill prints
+# there: the list with a reason per pick, the Quick issue skipped toward
+# `/devflow:sweep`, the fourth skipped as not in the top 3, one
+# `/devflow:flow #<n>` line per pick, and no question. Five issues: a bug, two
+# older Standard and Deep features, a newer Standard one, and a Quick typo. The
+# case needs a real GitHub repo with real issues, so it is manual like
+# `sweep-quick-issues`. Pinned both ways, so no grader reads as coverage while
+# unable to fail.
+_dp_path = os.path.join(HERE, "dispatch-top-three", "case.yaml")
+dispatch_case = {}
+if os.path.isfile(_dp_path):
+    with open(_dp_path) as fh:
+        dispatch_case = run.parse_yaml(fh.read())
+_dp = {g["name"]: g for g in dispatch_case.get("graders", [])}
+_dp_ex = dispatch_case.get("execution", {})
+
+check_true("dispatch-top-three: the case exists", dispatch_case != {})
+check("dispatch-top-three: is manual, because it needs a real repo with real issues",
+      dispatch_case.get("manual"), True)
+check_true("dispatch-top-three: starts dispatch, not another skill",
+           "/devflow:dispatch" in _dp_ex.get("prompt", ""))
+check_true("dispatch-top-three: the prompt tells the run not to wait",
+           "do not wait" in _dp_ex.get("prompt", ""))
+check_true("dispatch-top-three: Agent is allowed, or a helper could never fail it",
+           {"Agent", "Skill", "Bash"} <= set(_dp_ex.get("allowed_tools", [])))
+for _n in ("prints-the-list", "picks-the-bug-first", "gives-each-pick-a-reason",
+           "skips-the-quick-issue-toward-sweep", "skips-the-fourth-as-not-in-the-top-3",
+           "prints-the-no-session-tool-line", "prints-one-flow-line-per-pick",
+           "prints-no-fourth-flow-line", "starts-no-helper-agent",
+           "asks-no-question", "comments-on-no-issue", "picks-the-right-three"):
+    check_true("dispatch-top-three: the %s grader is there" % _n, _n in _dp)
+
+_dp_scaffold = os.path.join(HERE, "dispatch-top-three", "scaffold.sh")
+_dp_scaffold_text = ""
+if os.path.isfile(_dp_scaffold):
+    with open(_dp_scaffold) as fh:
+        _dp_scaffold_text = fh.read()
+check("dispatch-top-three: the scaffold opens 5 issues through REST",
+      len(re.findall(r'^open_issue "', _dp_scaffold_text, re.M)), 5)
+check_true("dispatch-top-three: the scaffold writes the issue numbers for the prompt",
+           ".dispatch-issues" in _dp_scaffold_text
+           and ".dispatch-issues" in _dp_ex.get("prompt", ""))
+check_true("dispatch-top-three: the scaffold never runs a GraphQL issue command",
+           _dp_scaffold_text != "" and re.search(r"gh issue ", _dp_scaffold_text) is None)
+check_true("dispatch-top-three: the scaffold names the repo from DEVFLOW_EVAL_REPO",
+           "DEVFLOW_EVAL_REPO" in _dp_scaffold_text)
+_dp_rows = [l for l in _readme.split("\n") if l.startswith("| `dispatch-top-three`")]
+check("readme: the dispatch-top-three row is there", len(_dp_rows), 1)
+check_true("readme: the dispatch-top-three row says it is manual",
+           len(_dp_rows) == 1 and "**manual**" in _dp_rows[0])
+
+
+def dispatch_verdict(name, calls=(), said=""):
+    """The verdict of one dispatch-top-three grader on a run that said `said`
+    and made `calls`, each a (tool, input) pair."""
+    if name not in _dp:
+        return None
+    blocks = [{"type": "tool_use", "id": "t%d" % i, "name": tool, "input": inp}
+              for i, (tool, inp) in enumerate(calls)]
+    if said:
+        blocks.append({"type": "text", "text": said})
+    return verdict(_dp[name], ctx([{"type": "assistant", "message": {"content": blocks}}]))
+
+
+_DP_LIST = (
+    "→ **dispatch** 3 of 5 issues, 2 skipped\n"
+    "1. #12 Standard — bug\n"
+    "2. #11 Standard — oldest\n"
+    "3. #13 Deep — oldest\n"
+    "– skipped #14 not in the top 3\n"
+    "– skipped #15 Quick — use /devflow:sweep\n")
+_DP_FALLBACK = (
+    "– **sessions** no session tool here — run each in its own session\n"
+    "/devflow:flow #12\n/devflow:flow #11\n/devflow:flow #13\n")
+
+check("dispatch-top-three: the right list line passes prints-the-list",
+      dispatch_verdict("prints-the-list", said=_DP_LIST), "pass")
+check("dispatch-top-three: the list line without bold passes prints-the-list",
+      dispatch_verdict("prints-the-list",
+                       said="→ dispatch 3 of 5 issues, 2 skipped"), "pass")
+check("dispatch-top-three: four picks fail prints-the-list",
+      dispatch_verdict("prints-the-list",
+                       said="→ **dispatch** 4 of 5 issues, 1 skipped"), "fail")
+check("dispatch-top-three: the bug at number 1 passes picks-the-bug-first",
+      dispatch_verdict("picks-the-bug-first", said=_DP_LIST), "pass")
+check("dispatch-top-three: the bug at number 2 fails picks-the-bug-first",
+      dispatch_verdict("picks-the-bug-first",
+                       said="1. #11 Standard — oldest\n2. #12 Standard — bug\n"), "fail")
+check("dispatch-top-three: a reason on every pick passes gives-each-pick-a-reason",
+      dispatch_verdict("gives-each-pick-a-reason", said=_DP_LIST), "pass")
+check("dispatch-top-three: a pick with no reason fails gives-each-pick-a-reason",
+      dispatch_verdict("gives-each-pick-a-reason",
+                       said="1. #12 Standard — bug\n2. #11 Standard\n"
+                            "3. #13 Deep — oldest\n"), "fail")
+check("dispatch-top-three: an unblocks reason passes gives-each-pick-a-reason",
+      dispatch_verdict("gives-each-pick-a-reason",
+                       said="1. #12 Standard — unblocks #14\n2. #11 Standard — bug\n"
+                            "3. #13 Deep — oldest\n"), "pass")
+check("dispatch-top-three: the Quick skip toward sweep passes",
+      dispatch_verdict("skips-the-quick-issue-toward-sweep", said=_DP_LIST), "pass")
+check("dispatch-top-three: a bold skipped line passes the Quick skip too",
+      dispatch_verdict("skips-the-quick-issue-toward-sweep",
+                       said="– **skipped** #15 Quick — use /devflow:sweep"), "pass")
+check("dispatch-top-three: a Quick skip with no sweep hint fails",
+      dispatch_verdict("skips-the-quick-issue-toward-sweep",
+                       said="– skipped #15 Quick"), "fail")
+check("dispatch-top-three: the not-in-the-top-3 line passes",
+      dispatch_verdict("skips-the-fourth-as-not-in-the-top-3", said=_DP_LIST), "pass")
+check("dispatch-top-three: no not-in-the-top-3 line fails",
+      dispatch_verdict("skips-the-fourth-as-not-in-the-top-3",
+                       said="– skipped #15 Quick — use /devflow:sweep"), "fail")
+check("dispatch-top-three: the no-session-tool line passes",
+      dispatch_verdict("prints-the-no-session-tool-line", said=_DP_FALLBACK), "pass")
+check("dispatch-top-three: no such line fails prints-the-no-session-tool-line",
+      dispatch_verdict("prints-the-no-session-tool-line", said=_DP_LIST), "fail")
+check("dispatch-top-three: three flow lines pass prints-one-flow-line-per-pick",
+      dispatch_verdict("prints-one-flow-line-per-pick", said=_DP_FALLBACK), "pass")
+check("dispatch-top-three: two flow lines fail prints-one-flow-line-per-pick",
+      dispatch_verdict("prints-one-flow-line-per-pick",
+                       said="/devflow:flow #12\n/devflow:flow #11\n"), "fail")
+check("dispatch-top-three: one number three times fails prints-one-flow-line-per-pick",
+      dispatch_verdict("prints-one-flow-line-per-pick",
+                       said="/devflow:flow #12\n/devflow:flow #12\n"
+                            "/devflow:flow #12\n"), "fail")
+check("dispatch-top-three: three flow lines pass prints-no-fourth-flow-line",
+      dispatch_verdict("prints-no-fourth-flow-line", said=_DP_FALLBACK), "pass")
+check("dispatch-top-three: a fourth flow line fails prints-no-fourth-flow-line",
+      dispatch_verdict("prints-no-fourth-flow-line",
+                       said=_DP_FALLBACK + "/devflow:flow #14\n"), "fail")
+check("dispatch-top-three: a run that starts no agent passes starts-no-helper-agent",
+      dispatch_verdict("starts-no-helper-agent",
+                       [("Bash", {"command": "gh api repos/o/r/issues"})]), "pass")
+check("dispatch-top-three: a sweeper agent fails starts-no-helper-agent",
+      dispatch_verdict("starts-no-helper-agent",
+                       [("Agent", {"subagent_type": "devflow:sweeper", "prompt": "x"})]),
+      "fail")
+check("dispatch-top-three: a question fails asks-no-question",
+      dispatch_verdict("asks-no-question",
+                       [("AskUserQuestion", {"questions": []})]), "fail")
+check("dispatch-top-three: no question passes asks-no-question",
+      dispatch_verdict("asks-no-question",
+                       [("Bash", {"command": "gh api repos/o/r/issues"})]), "pass")
+check("dispatch-top-three: a comment on an issue fails comments-on-no-issue",
+      dispatch_verdict("comments-on-no-issue",
+                       [("Bash", {"command": "gh api repos/o/r/issues/4/comments -f body=x"})]),
+      "fail")
+check("dispatch-top-three: the llm grader is not scored here",
+      dispatch_verdict("picks-the-right-three"), "skip")
+
 # ------------------------------------- setup and direct mode have their cases
 #
 # `setup` became a questionnaire that writes `## Workflow`, and a direct
@@ -1297,7 +1449,8 @@ check("readme: the direct-mode row is there", len(_dm_rows), 1)
 # with no CLAUDE.md at all, on purpose.
 _EVALS = os.path.dirname(os.path.abspath(__file__))
 for _rel in ["fixtures/greeter.sh", "plans-on-tracker/scaffold.sh",
-             "ship-tends-conflict/scaffold.sh", "sweep-quick-issues/scaffold.sh"]:
+             "ship-tends-conflict/scaffold.sh", "sweep-quick-issues/scaffold.sh",
+             "dispatch-top-three/scaffold.sh"]:
     with open(os.path.join(_EVALS, _rel)) as fh:
         _src = fh.read()
     check_true(f"{_rel}: writes ## Checks", "## Checks" in _src)

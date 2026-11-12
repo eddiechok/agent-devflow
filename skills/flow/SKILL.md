@@ -2,7 +2,7 @@
 name: flow
 description: "Use when a request will change anything tracked in the repo - a feature, a bug fix, a refactor, a chore or a dependency bump, and equally copy, content, docs, config, styles, images or other assets. Editing a tracked file is the test, not whether the work sounds like coding. Enter here mid-task too, the moment an investigation turns into an edit. Sizes the work as Quick, Standard or Deep, then routes it through build and submit, so the work ends as a pull request (or, in a project set to direct, a commit on main) rather than uncommitted changes. Accepts free text, a GitHub issue number like #123, an issue URL, a backlog file path under .devflow/backlog/, or a plan to build - a devflow:plan issue or a path under .devflow/plans/. This is the entry point, start here."
 argument-hint: "[--quick|--deep] [--pr] what you want, #123, .devflow/backlog/<name>.md, or .devflow/plans/<name>.md"
-allowed-tools: Bash(git status:*), Bash(git branch:*), Bash(git rev-parse:*), Bash(git symbolic-ref:*), Bash(git rev-list:*), Bash(git remote show:*), Bash(ls:*), Bash(gh label create:*), Bash(rm .devflow/backlog/*), Bash(git log:*), EnterWorktree, mcp__ccd_session__spawn_task
+allowed-tools: Bash(git status:*), Bash(git branch:*), Bash(git rev-parse:*), Bash(git symbolic-ref:*), Bash(git rev-list:*), Bash(git remote show:*), Bash(ls:*), Bash(gh label create:*), Bash(rm .devflow/backlog/*), Bash(git log:*), EnterWorktree, mcp__ccd_session__start_session
 ---
 
 # flow
@@ -293,7 +293,7 @@ after this round has picked it.
 
 Once the kept feature is settled, park the others. Read
 [references/split-and-park.md](references/split-and-park.md) for how: the label and issue
-or file it goes to, the `parked:` line, and the chip `spawn_task` offers per parked
+or file it goes to, the `parked:` line, and the chip `start_session` offers per parked
 feature.
 
 Then step 2 sizes the kept feature alone.

@@ -149,6 +149,23 @@ Anything marked as a summary was not read on the page itself.
 | At most 4 sweepers at a time | **Same idea** — `plan`'s cap of four builders | Each is a full session with a checkout, and the reason is the same |
 | A skipped issue gets no comment; stopped work is not pushed | **Changed** — OpenHands' resolver opens a draft PR on success, pushes a branch only on failure and comments the result on the issue (a search summary, not page text) | Ours comments on nothing and pushes nothing from a stopped chain. The Done report is where a human reads it, and an unpushed branch cannot be mistaken for finished work |
 
+## `dispatch`
+
+Built from `sweep`, so its filters and its human opt-in are `sweep`'s rows above and are not
+repeated. Star counts below were taken with `gh api` on 2026-11-12.
+
+| Step | From | Why |
+|---|---|---|
+| The filters: plan issues, trust by the permission endpoint, an open PR, blocked | **Copied** — this repo's own `sweep` (`skills/sweep/SKILL.md`), in its order, with its REST calls | Same trust boundary: issue text comes from whoever filed it, and a started session builds from it |
+| Only Standard and Deep; Quick is skipped toward `/devflow:sweep` | **Ours** | Sized by `flow`'s table, so the two never disagree. Not sure between Quick and Standard means Standard, because the started session's `flow` sizes it again |
+| Rank: an issue that unblocks others, then bugs, then the oldest | **Human's call**, 12 Nov 2026 | Worked out in the plan's talk. No source ranked issues this way, so none is credited |
+| The skill picks the top 3 itself, and is named `dispatch` | **Human's call**, 12 Nov 2026 | Chosen when the plan was written |
+| A session per pick, not a helper | **Ours** | `sweep`'s helpers cannot ask, because the question tool is removed from every subagent. Standard and Deep wait for go and ask, so each needs its own session |
+| Started through `mcp__ccd_session__start_session`, `user_asked`, in a worktree | **Same idea** — `flow`'s chip step, which already starts a session in a fresh worktree with a prompt that stands alone. The tool's schema was read in the desktop session that planned this. [claude-code#105099](https://github.com/anthropics/claude-code/issues/105099) says `start_session` replaced `spawn_task`, always shows its dialog and cannot start another session on an automated turn | `user_asked` because the human asked for these sessions by running the skill. A card cannot name another repo ([claude-code#104205](https://github.com/anthropics/claude-code/issues/104205)). Whether a started session can use `AskUserQuestion` is not confirmed by any doc; `flow` has a numbered-list fallback |
+| At most 3 sessions | **Same idea** — GSD's `parallelization.max_concurrent_agents` defaults to 3 ([gsd-core](https://github.com/open-gsd/gsd-core/blob/main/docs/CONFIGURATION.md), 11,465 stars); [agent teams](https://code.claude.com/docs/en/agent-teams) say "Start with 3-5 teammates"; [agent-view](https://code.claude.com/docs/en/agent-view) says ten agents use quota roughly ten times as fast; [claude-squad](https://github.com/smtg-ai/claude-squad) (8,786 stars) runs one worktree per task | 3 is also what one human can answer at once, since each session waits for go. That last reason is ours |
+| Issues that share a file may run together | **Changed** — [agent teams](https://code.claude.com/docs/en/agent-teams): "Two teammates editing the same file leads to overwrites. Break the work so each teammate owns a different set of files" | **Human's call**, 12 Nov 2026. Each session has its own worktree and PR, and `ship` hands a CONFLICTING PR to `tend`, which resolves it. So no file is guessed and no chain is built |
+| Starts at once; tracks nothing; no Done report | **Same idea** — `sweep` prints its list and starts with no wait for go | The human started it knowing it starts sessions, and each session waits for go before it edits. The repo describes no result channel back from a started session, so the issue and its PR are the record |
+
 ## `debug`
 
 | Step | From | Why |
