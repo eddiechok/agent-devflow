@@ -8852,6 +8852,97 @@ check("provenance: dispatch credits start_session, GSD and agent teams",
       and "agent-teams" in _prov_dispatch and "claude-squad" in _prov_dispatch,
       "docs/provenance.md's dispatch section never credits its sources")
 
+# ------------------------------------------------- the models skill's rules
+#
+# `models` reviews each agent's `model:` / `effort:` pin and the main session's
+# `model` / `effortLevel` against a short list of bookmarked pages. It edits
+# files, so it asks once, with one table, before the first edit, and only a
+# human starts it. The bookmark list is one file, so a new page is one line.
+
+MODELS_PATH = os.path.join(SKILLS_DIR, "models", "SKILL.md")
+MODELS_SOURCES_PATH = os.path.join(SKILLS_DIR, "models", "references", "sources.md")
+models_text = ""
+if os.path.isfile(MODELS_PATH):
+    with open(MODELS_PATH, encoding="utf-8") as fh:
+        models_text = fh.read()
+check("models: the skill file exists", models_text != "",
+      f"{MODELS_PATH} does not exist")
+models_values = parsed.get("models", (None, {}))[1]
+models_body = (flat(models_text.split("---", 2)[2])
+               if models_text.count("---") >= 2 else "")
+
+check("models: only a human starts it (disable-model-invocation: true)",
+      models_values.get("disable-model-invocation") == "true",
+      f"{models_values.get('disable-model-invocation')!r}. It edits agents and settings")
+
+check("models: one go before any edit, one table, one reply",
+      re.search(r"one (go|yes) before (any|the first) edit", models_body) is not None
+      and "one table" in models_body and "one reply" in models_body,
+      "models never says it asks once, with one table, before any edit")
+
+check("models: the table gives a URL for every number and flags disagreement",
+      "URL for every number" in models_body
+      and re.search(r"pages disagree", models_body) is not None,
+      "models never requires a URL per number or a note where pages disagree")
+
+check("models: the main session's settings keys are model and effortLevel",
+      "`model`" in models_body and "`effortLevel`" in models_body
+      and "~/.claude/settings.json" in models_body,
+      "models never names the settings.json keys model and effortLevel")
+
+check("models: agent pins are edited as model: and effort: in agents/*.md",
+      "agents/*.md" in models_body and "`model:`" in models_body
+      and "`effort:`" in models_body,
+      "models never names the model: and effort: lines of agents/*.md")
+
+check("models: agent changes go out as a PR through devflow:flow",
+      "devflow:flow" in models_body,
+      "models never hands the agent edits to devflow:flow")
+
+check("models: checks for the agent-devflow checkout before editing agents",
+      re.search(r"agent-devflow checkout", models_body) is not None
+      and re.search(r"stop", models_body) is not None,
+      "models never checks that agents/ is the agent-devflow checkout's")
+
+check("models: leaves the project's own .claude/agents/ alone",
+      ".claude/agents/" in models_body,
+      "models never says the project's own review agents are not touched")
+
+check("models: an agent the pages do not cover keeps its setting, the table says why",
+      re.search(r"keeps? (its|their) setting", models_body) is not None,
+      "models never says what happens where the pages are silent")
+
+check("models: pages are read in the session, not by researcher agents",
+      "WebFetch" in models_body and "researcher" in models_body,
+      "models never says the pages are read in the session")
+
+check("models: the bookmark list is skills/models/references/sources.md, linked",
+      "references/sources.md" in models_text
+      and os.path.isfile(MODELS_SOURCES_PATH),
+      "SKILL.md never links references/sources.md, or the file is missing")
+
+check("models: stays under the 500-line cap",
+      len(models_text.splitlines()) <= SKILL_SIZE_CAP,
+      f"{MODELS_PATH} is {len(models_text.splitlines())} lines, cap is {SKILL_SIZE_CAP}")
+
+models_sources = ""
+if os.path.isfile(MODELS_SOURCES_PATH):
+    with open(MODELS_SOURCES_PATH, encoding="utf-8") as fh:
+        models_sources = fh.read()
+_models_urls = re.findall(r"https?://[^\s)>\]`,]+", models_sources)
+check("models: sources.md lists pages",
+      len(_models_urls) >= 6,
+      f"{len(_models_urls)} URLs in sources.md")
+check("models: every URL in sources.md is an https link",
+      _models_urls != [] and all(u.startswith("https://") for u in _models_urls),
+      "non-https: " + ", ".join(u for u in _models_urls if not u.startswith("https://")))
+check("models: sources.md has the settings page and the model and effort pages",
+      "https://code.claude.com/docs/en/settings" in models_sources
+      and "https://platform.claude.com/docs/en/build-with-claude/effort" in models_sources
+      and "https://platform.claude.com/docs/en/about-claude/models/choosing-a-model"
+      in models_sources,
+      "sources.md lacks the settings, effort or choosing-a-model page")
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")
