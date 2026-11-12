@@ -320,7 +320,7 @@ wrong.
 | [docs/hook.md](docs/hook.md) | The hooks. The bash hook trims check output, allows the bare check commands, asks before a commit to the default branch, and keeps an eval run out of the lessons repo. The secret hook asks before an edit to a secret env file. They stop mistakes, not attackers. |
 | [docs/provenance.md](docs/provenance.md) | Where every idea came from. Every bug that shaped a rule. Full credits. |
 
-Working on the plugin? The checks are in [CLAUDE.md](CLAUDE.md). `claude plugin validate .` prints exactly one warning, about `version`. That is on purpose.
+Working on the plugin? The checks are in [CLAUDE.md](CLAUDE.md). `claude plugin validate .` warns about `version`. That is on purpose. Newer CLIs add a few more known warnings; `scripts/validate-plugin.py` lists them and fails on any other.
 
 ## Borrowed from
 

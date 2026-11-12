@@ -26,10 +26,12 @@ in and your git config is gone. Bash runs in a sandbox with no network. So:
 
 - The four **manual** cases need a logged-in `gh` and a real repo. Run them with
   `run.py`.
-- Its scores do not match `run.py`'s. First run, `sizing-quick` at one run:
-  `run.py` passed it, `plugin eval` scored 0.33. With no `gh` login, `flow`
-  stopped before the edit, and it wrote `Quick:` where the grader wants `Quick —`.
-  Compare a score with a score from the same runner.
+- A case whose branch is ahead of origin sends `flow` to ask GitHub for a pull
+  request, and there that ask fails. `sizing-quick` did that, scored 0.33 here
+  and passed in `run.py`, until its scaffold pushed the typo commit. After that
+  fix both runners showed the same `flow` slip, going to `build` with no size
+  line: 3 runs each, `plugin eval` 1 printed the line, `run.py` 2.
+  Keep a scaffold's branch level with origin unless the case is about that.
 
 **Use `run.py` for the rest**, which drives the same `case.yaml` files through
 `claude -p --output-format stream-json` and scores everything that needs no

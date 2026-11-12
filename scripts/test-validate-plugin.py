@@ -4,8 +4,8 @@
     python3 scripts/test-validate-plugin.py
 
 The plugin has no `version` field on purpose: with none, `/plugin update`
-picks up every push. So `claude plugin validate .` passes with exactly one
-warning, about that field, and anything else is wrong. Each check runs the
+picks up every push. So `claude plugin validate .` warns about that field,
+plus a few known warnings newer CLIs add, and anything else is wrong. Each check runs the
 script against a fake `claude` on PATH that prints a fixed answer, so the
 whole contract costs nothing and needs no login.
 """
@@ -44,6 +44,34 @@ OTHER_WARNING = (HEAD + "⚠ Found 1 warning:\n\n"
                    "very short\n"
                  + "\n✔ Validation passed with warnings\n")
 NO_WARNING = HEAD + "✔ Validation passed\n"
+
+# What claude 2.1.322 printed on this repo, 2026-11-12: four more lines, all
+# known and none a defect. Trimmed to the lines the script reads.
+KNOWN_2_1_322 = (
+    HEAD + "⚠ Found 1 warning:\n\n" + VERSION_WARNING
+    + "\nValidating plugin: /repo/.claude-plugin/plugin.json\n\n"
+    + "⚠ Found 1 warning:\n\n"
+    + '  ❯ version: No version specified. Consider adding a version following '
+      'semver (e.g., "1.0.0")\n'
+    + "\nValidating plugin: /repo/CLAUDE.md\n\n⚠ Found 1 warning:\n\n"
+    + "  ❯ root: CLAUDE.md at the plugin root is not loaded as project "
+      "context. To ship context with your plugin, use a skill "
+      "(skills/<name>/SKILL.md) instead.\n"
+    + "\n⚠ Found 1 plugin directory warning:\n\n"
+    + "  ❯ .claude-plugin/plugin.json icon: No icon (ICON_MISSING). No icon "
+      "found in the plugin.\n"
+    + "\nAbout these checks:\n\n"
+    + "  ❯ This folder also holds a marketplace manifest. The plugin directory "
+      "treats such a folder as a plugin.\n"
+    + "\n✔ Validation passed with warnings\n")
+KNOWN_PLUS_OTHER = KNOWN_2_1_322.replace(
+    "\n✔ Validation passed",
+    "  ❯ plugins[0] plugin.json → description: Description is very short\n"
+    "\n✔ Validation passed")
+KNOWN_NO_VERSION = (HEAD + "⚠ Found 1 warning:\n\n"
+                    + "  ❯ root: CLAUDE.md at the plugin root is not loaded "
+                      "as project context.\n"
+                    + "\n✔ Validation passed with warnings\n")
 AN_ERROR = (HEAD + "✘ Found 1 error:\n\n"
             + "  ❯ plugins[0] → source: Path does not exist\n"
             + "\n✘ Validation failed\n")
@@ -103,6 +131,19 @@ check("fails on one warning that is not about version", code != 0,
 code, out, _ = run(NO_WARNING)
 check("fails when the version warning is gone -- the field was added", code != 0,
       f"exit {code}: {out}")
+
+code, out, _ = run(KNOWN_2_1_322)
+check("passes on claude 2.1.322's known warnings", code == 0,
+      f"exit {code}: {out}")
+
+code, out, _ = run(KNOWN_PLUS_OTHER)
+check("fails on an unknown warning beside the known ones", code != 0,
+      f"exit {code}: {out}")
+check("the failure names the unknown warning", "description" in out, out)
+
+code, out, _ = run(KNOWN_NO_VERSION)
+check("fails on known warnings with no version one -- the field was added",
+      code != 0, f"exit {code}: {out}")
 
 code, out, _ = run(AN_ERROR, code=1)
 check("fails when validate itself fails", code != 0, f"exit {code}: {out}")
