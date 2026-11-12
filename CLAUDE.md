@@ -20,7 +20,8 @@ No typecheck: nothing here is typed.
 - Verify: python3 scripts/verify-deploy.py
 - Wait: 10s
 
-The deploy copies the main checkout, wherever it runs from.
+The deploy copies the main checkout, wherever it runs from. Then it updates devflow in
+every other folder that has it installed.
 
 ## Plans
 - Tracker: github
