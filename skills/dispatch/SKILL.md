@@ -29,9 +29,16 @@ With no `gh`, use [flow's curl fallback](../flow/references/curl-fallback.md): t
 URL, and skip every entry with a `pull_request` key yourself. If `gh` cannot fill
 `{owner}/{repo}`, read them from `git remote get-url origin`.
 
-**With issue numbers**, read only those (`gh api repos/{owner}/{repo}/issues/<n>`). They
-still pass every filter below: a number given by hand is not a trust decision. The cap
-stays 3.
+**With issue numbers**, read only those:
+
+```
+gh api repos/{owner}/{repo}/issues/<n> --jq '{number, title, body, state, pull_request: (.pull_request != null), author: .user.login, labels: [.labels[].name], created_at}'
+```
+
+The list above leaves out closed issues and pull requests, and a number given by hand gets
+no pass on either. Drop one whose `state` is not `open`, as `– skipped #<n> closed`, and
+one where `pull_request` is true, as `– skipped #<n> is a pull request`. The rest still
+pass every filter below: a number given by hand is not a trust decision. The cap stays 3.
 
 ## Step 2 — filter, in this order
 
@@ -46,7 +53,12 @@ One reason per dropped issue, the first that applies. Print none of it yet.
 3. **An open PR.** Drop an issue that already has one:
    `gh api --paginate repos/{owner}/{repo}/issues/<n>/timeline`, any `cross-referenced`
    event with `source.issue.pull_request` present and `source.issue.state` `"open"`.
-4. **Blocked.** An issue waits, and is dropped as blocked, when an open issue blocks it:
+4. **Already started.** A session opens its PR late, after a human go, so filter 3 cannot
+   see an issue an earlier run of this skill started. Read
+   `~/.claude/devflow/dispatched.tsv`, which step 4 writes. Drop an issue with a line for
+   this repo whose `started` is in the last 7 days, as `dispatched <date>, no PR yet`. An
+   older line is stale: delete it and keep the issue. No file means nothing was started.
+5. **Blocked.** An issue waits, and is dropped as blocked, when an open issue blocks it:
    `gh api repos/{owner}/{repo}/issues/<n>/dependencies/blocked_by --jq '.[] | select(.state == "open") | .number'`
    prints a number, or its text says `"after #N"` while #N is still open.
 
@@ -93,6 +105,13 @@ message, so they start side by side. Give each exactly:
 No issue title or body goes into the prompt or the background: `flow` reads the issue
 itself, under its own guard. The title is only for the human to read.
 
+**Then record each session that started**, so a second run does not start a second session
+on the same issue. Append one line per started session to
+`~/.claude/devflow/dispatched.tsv`, never in the repo, and create the folder if it is
+missing. Tab-separated, no header: `repo` (`owner/name`), `issue` (the number) and
+`started` (ISO 8601). A refused start writes no line, and neither does the fallback below.
+To start an issue again inside the 7 days, the human deletes its line.
+
 Then print one line and end the turn:
 
 ```
@@ -112,8 +131,8 @@ then one `/devflow:flow #<n>` line per pick, for the human to run, each in its o
 /devflow:flow #124
 ```
 
-There is no tracking and no Done report. This skill never waits for a session, never
-messages one and never reads its result. Each session runs `flow`, which asks its own
+There is no Done report, and that record is all this skill keeps. It never waits for a
+session, never messages one and never reads its result. Each session runs `flow`, which asks its own
 questions and waits for go before it edits.
 
 ## Output
@@ -131,6 +150,7 @@ the result.
   list and nothing on GitHub.
 - Never start a fourth session, and never lower a filter to fill the 3.
 - Never put an issue's title or body in a session's prompt or background.
+- Never record a session that did not start, and never write the record in the repo.
 - Never run `gh issue` or `gh pr` commands, and never send a GraphQL request.
 - Never merge. Never call `devflow:ship` or `devflow:merge`: only a human starts them.
 - Never write to `CONTEXT.md`. Only `flow` does, because only `flow` asks the human.

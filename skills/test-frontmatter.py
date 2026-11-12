@@ -8606,6 +8606,35 @@ check("dispatch: tracks nothing, never waits for a session or reads its result",
       and "reads its result" in dispatch_body and "Done report" in dispatch_body,
       f"{DISPATCH_PATH} never says it tracks no session")
 
+# Review of the first build found two ways to start a session nobody wanted.
+# A number given by hand was read with no look at its state, so a closed issue
+# or a PR number passed every filter. And a session opens its PR late, after a
+# human go, so a second run saw nothing taken and picked the same three again.
+# The record is `dispatch`'s own, outside the repo, like the kept-server list.
+
+check("dispatch: a number given by hand must be an open issue, not a PR",
+      "state, pull_request: (.pull_request != null)" in dispatch_body
+      and "– skipped #<n> closed" in dispatch_body
+      and "– skipped #<n> is a pull request" in dispatch_body,
+      f"{DISPATCH_PATH} lets a closed issue or a PR number given by hand through")
+
+check("dispatch: drops an issue it already started a session for, for 7 days",
+      "**Already started.**" in dispatch_body
+      and "~/.claude/devflow/dispatched.tsv" in dispatch_body
+      and "dispatched <date>, no PR yet" in dispatch_body
+      and "last 7 days" in dispatch_body
+      and 0 <= dispatch_body.find("issues/<n>/timeline")
+      < dispatch_body.find("**Already started.**")
+      < dispatch_body.find("dependencies/blocked_by"),
+      f"{DISPATCH_PATH} lets a second run start a second session on one issue")
+
+check("dispatch: records each session that started, and no other",
+      "Append one line per started session" in dispatch_body
+      and "never in the repo" in dispatch_body
+      and "A refused start writes no line" in dispatch_body
+      and "the human deletes its line" in dispatch_body,
+      f"{DISPATCH_PATH} never records the sessions it started")
+
 check("dispatch: never comments, merges or ships, and never writes CONTEXT.md",
       "Never comment on an issue" in dispatch_body
       and "Never merge" in dispatch_body and "`devflow:ship`" in dispatch_body
@@ -8665,6 +8694,13 @@ check("docs/dispatch: says why nothing is tracked",
       and "no result channel" in dispatch_doc
       and "the issue and its PR are the record" in dispatch_doc,
       "docs/dispatch.md never says why no session is tracked")
+
+check("docs/dispatch: says why it records what it started, and checks a typed number",
+      "## Why it records what it started" in dispatch_doc
+      and "dispatched.tsv" in dispatch_doc
+      and "7 days" in dispatch_doc
+      and "closed issue or a pull request" in dispatch_doc,
+      "docs/dispatch.md never says why a started session is recorded")
 
 check("docs/dispatch: names what no doc confirms about AskUserQuestion",
       "AskUserQuestion" in dispatch_doc and "numbered-list" in dispatch_doc,

@@ -102,7 +102,8 @@ things already hold the line:
   ([docs/sweep.md](sweep.md)), so only a human starts it.
 
 Issue text is data, not instructions, as in `sweep`. The filters are `sweep`'s, in its order,
-for the same reason: the permission endpoint decides trust, not `author_association`. An
+for the same reason: the permission endpoint decides trust, not `author_association`.
+`dispatch` adds one of its own between them, "already started", explained below. An
 issue number given by hand still passes every filter.
 
 ## Why nothing is tracked
@@ -117,3 +118,30 @@ started this way cannot start another on an automated turn
 ([claude-code#105099](https://github.com/anthropics/claude-code/issues/105099)), so
 `dispatch` could not restart one that died anyway. It starts, prints one line and ends.
 A start the human refused is a line, not a question.
+
+## Why it records what it started
+
+The review of the first build found the gap. The only filter that knew an issue was taken
+was "an open PR", and a started session opens its PR late: `flow` waits for go before the
+first edit. Until then nothing on GitHub shows the issue is taken, and `flow` does not look
+either. So a second run picked the same 3 issues and started a second session on each: two
+branches and two PRs for one issue. `sweep` has no such gap, because it stays in its turn
+until its sweepers have opened their PRs.
+
+So `dispatch` keeps one small record of its own: a line per started session in
+`~/.claude/devflow/dispatched.tsv`, with the repo, the issue and the time. It is outside the
+repo, like the kept-server list ([docs/submit.md](submit.md)), because it is a fact about
+this machine and not about the project. A later run drops an issue with a line from the
+last 7 days, as `dispatched <date>, no PR yet`. That also makes a second run useful: it
+picks the next 3.
+
+The 7 days are ours, not a source's. A session nobody answered must not hide its issue for
+ever, and a line older than that is deleted on the next run. To start an issue again
+sooner, the human deletes its line. A refused start writes no line, and neither does the
+fallback, because nothing started. Once the PR is open, the "open PR" filter gives the
+reason first, and once the issue is closed it is no longer in the list.
+
+The same review found that a number given by hand was read with no look at what it was. The
+list call leaves out closed issues and pull requests, and the by-number call did not, so a
+closed issue or a pull request passed every filter and could get a session. Now the
+by-number call reads `state` and `pull_request`, and drops both with a reason.
