@@ -8993,6 +8993,45 @@ check("README: the docs index points at docs/models.md",
       "| [docs/models.md](docs/models.md) |" in readme_text,
       "README.md's docs index has no row for docs/models.md")
 
+# ------------------- the review agents' pins follow /devflow:models (12 Nov 2026)
+#
+# The human's call: the four review agents follow the pages like every other
+# agent, instead of being held at opus/xhigh. The reasoning for pinning stays in
+# the docs; what changes is who moves the pin.
+
+with open(os.path.join(REPO_ROOT, "docs", "review.md"), encoding="utf-8") as fh:
+    _review_doc_models = flat(fh.read())
+check("docs/review: the four pins follow /devflow:models, the human's call",
+      "/devflow:models" in _review_doc_models
+      and "All four pin `model: opus` and `effort: xhigh`" not in _review_doc_models
+      and "still prints, and still reports nothing wrong" in _review_doc_models
+      and "12 Nov 2026" in _review_doc_models,
+      "docs/review.md still holds the four pins fixed at opus/xhigh")
+
+for _agent_heading in ("## `reviewer` agent", "## `hardcase` agent",
+                       "## `spec-reviewer` agent", "## `security-reviewer` agent"):
+    check(f"provenance: {_agent_heading[3:]} pin follows /devflow:models",
+          "/devflow:models" in section(_provenance, _agent_heading),
+          f"docs/provenance.md's {_agent_heading} section never says its pin "
+          f"follows /devflow:models")
+
+_prov_models = flat(section(_provenance, "## `models`"))
+check("provenance: a models section",
+      _prov_models != "",
+      "docs/provenance.md has no `models` section")
+
+check("provenance: models credits lesson-review and GSD",
+      "`lesson-review`" in _prov_models
+      and "gsd-build/get-shit-done" in _prov_models
+      and "FEATURES.md" in _prov_models,
+      "docs/provenance.md's models section never credits lesson-review and GSD")
+
+check("provenance: models records the human's call of 12 Nov 2026",
+      "Human's call" in _prov_models and "12 Nov 2026" in _prov_models
+      and "no eval case" in _prov_models.lower()
+      and "review agents" in _prov_models,
+      "docs/provenance.md's models section never records the human's call")
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")
