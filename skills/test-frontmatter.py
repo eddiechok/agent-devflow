@@ -8912,6 +8912,16 @@ check("models: an agent the pages do not cover keeps its setting, the table says
       re.search(r"keeps? (its|their) setting", models_body) is not None,
       "models never says what happens where the pages are silent")
 
+check("models: the four review agents follow the pages, the ranked three as one pair",
+      "review agents follow the pages" in models_body
+      and "same new pair" in models_body,
+      "models never makes the review agents follow the pages, or splits the three axes")
+
+check("models: reads agents/ from the checkout when it is there, not the stale copy",
+      re.search(r"read `agents/` and `docs/provenance.md` from the checkout",
+                models_body) is not None,
+      "models reads the installed copy even where it edits the checkout")
+
 check("models: pages are read in the session, not by researcher agents",
       "WebFetch" in models_body and "researcher" in models_body,
       "models never says the pages are read in the session")

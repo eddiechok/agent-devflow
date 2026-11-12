@@ -32,10 +32,11 @@ agent-devflow checkout, and stop before editing any agent.
 ## 1. Read what is set now
 
 Read `model:` and `effort:` from the top of each file in `agents/`, and `model` and
-`effortLevel` from `~/.claude/settings.json`. The installed plugin carries `agents/` and
-`docs/provenance.md` beside this skill, so read them from this skill's own directory
-anywhere. Read the recorded reason for each pin in `docs/provenance.md`, because a reason
-that was a human's call is not undone by a benchmark alone: say it in the row.
+`effortLevel` from `~/.claude/settings.json`. In the agent-devflow checkout, read `agents/`
+and `docs/provenance.md` from the checkout, because those are the files step 4 edits, and
+a merge that is not deployed yet leaves the installed copy behind. Anywhere else, read them
+from this skill's own directory: the installed plugin carries both. Put each pin's recorded
+reason from `docs/provenance.md` in its row, so the human sees what the change would undo.
 
 The project's own review agents in `.claude/agents/` are not devflow's. Leave them alone.
 
@@ -57,7 +58,10 @@ One table, one reply. A row for each agent and one for the main session:
 - **Why** is in words a human can check against the page. Where the pages disagree, say so
   in the row.
 - **Where the pages do not cover an agent's job**, that agent keeps its setting, and the row
-  says why. A review has no row in Anthropic's matrix, for one.
+  says why.
+- **The four review agents follow the pages too.** Use the review page in the sources,
+  then the coding pages. `reviewer`, `spec-reviewer` and `security-reviewer` always get the
+  same new pair, because their reports are never ranked against each other.
 - An agent must pin both `model:` and `effort:`. `inherit` is not a pin.
 
 Then ask once: go, or change which rows. This is the one go before any edit. Do not edit a

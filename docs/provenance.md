@@ -174,13 +174,14 @@ there with each URL, and are not repeated here.
 
 | Step | From | Why |
 |---|---|---|
-| Hand-started only, `disable-model-invocation: true`; it proposes, and a human approves | **Copied** — this repo's own `lesson-review` (`skills/lesson-review/SKILL.md`) | It edits agent files and `~/.claude/settings.json`, so only a human starts it |
+| It proposes, and a human approves | **Copied** — this repo's own `lesson-review` (`skills/lesson-review/SKILL.md`) | It edits agent files and `~/.claude/settings.json`, so nothing changes without a yes |
+| Hand-started only, `disable-model-invocation: true` | **Copied** — `dispatch` and `sweep` carry the same flag | Only a human starts it, because it edits files that outlast the session |
 | Steps that edit `agents/*.md` check for the agent-devflow checkout first and stop elsewhere | **Copied** — `lesson-review`, which checks for `evals/run.py` before its edit steps | The plugin is on in other projects too; the agent files are only worth editing in this repo |
 | One table, one go, then every edit | **Ours** | A go per row is a long wait for one decision. A number with no URL cannot be checked, so each row carries its URLs and a note where pages disagree |
 | The bookmark pages decide the model and effort; no eval case, no test run on a setting | **Human's call**, 12 Nov 2026 | The human said small tests are not meaningful, and the pages decide while the human corrects in real sessions |
 | Pages are read in the session, not by researcher agents | **Ours** | A summarizing fetch can garble a number: the Qodo post disagrees with itself between its text and its table |
 | A hand switch, with the pages to look at first | **Changed** — GSD's fixed model profiles (quality, balanced, budget, inherit) are switched by hand and no leaderboard is checked ([README](https://github.com/gsd-build/get-shit-done/?tab=readme-ov-file), [FEATURES.md](https://github.com/gsd-build/get-shit-done/blob/main/docs/FEATURES.md)) | `models` keeps the human's go and adds the pages to look at before it |
-| Where the pages do not cover an agent's job, the agent keeps its setting | **Ours** | Anthropic's matrix has no code-review row, for one. A change with no page behind it is a guess |
+| Where the pages do not cover an agent's job, the agent keeps its setting | **Ours** | A change with no page behind it is a guess |
 | The four review agents follow the pages too, like every other agent | **Human's call**, 12 Nov 2026 | They were held at opus/xhigh so a review would not quietly get cheaper. The pages now decide, and the table shows each change before it is made. The `reviewer`, `hardcase`, `spec-reviewer` and `security-reviewer` rows below say the same |
 | The project's own review agents in `.claude/agents/` are not touched | **Same idea** — [docs/review.md](review.md) | devflow does not own them |
 

@@ -19,9 +19,10 @@ docs pages again and proposes the change.
 The pages decide, and not a number the skill makes up. Those pages are what a
 person would check by hand: Anthropic's own matrix for which model, its cost and effort
 pages for which effort, and a benchmark ranking as a second view. Where the pages do not
-cover an agent's job, the agent keeps its setting and the table says why. The pages have no
-code-review row, for one, so the review agents follow whatever the pages say about coding
-and the table says it is a stretch.
+cover an agent's job, the agent keeps its setting and the table says why. The review
+agents follow the pages too: Anthropic's matrix has no code-review row, so they read the
+review page in the sources first, then the coding pages, and the three ranked review axes
+move as one pair ([docs/review.md](review.md)).
 
 The pages do not settle everything, and the human corrects in real sessions. A pin that is
 a human's call, like the builder's sonnet pin on cost in [provenance](provenance.md), shows
@@ -44,8 +45,8 @@ would become, why, and a URL for every number. Where two pages disagree, the row
 The human can then drop a row and say go, and every remaining edit is made at once. A
 number with no URL cannot be checked, so it does not go in the table.
 
-`models` carries `disable-model-invocation: true`, as `lesson-review` does, so only a
-human starts it. The project's own review agents in `.claude/agents/` are not touched,
+`models` carries `disable-model-invocation: true`, as `dispatch` and `sweep` do, so only
+a human starts it. The project's own review agents in `.claude/agents/` are not touched,
 because devflow does not own them ([docs/review.md](review.md)).
 
 ## Why no test runs
