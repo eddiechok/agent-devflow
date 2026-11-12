@@ -587,7 +587,7 @@ check("split-and-park: falls back to the file on a gh failure",
 # --------------------------- step 1b offers a chip per parked feature, too
 #
 # In the desktop app a parked feature can be one click from its own flow run:
-# `spawn_task` puts a chip in front of the human, and the chip starts a new
+# `start_session` puts a chip in front of the human, and the chip starts a new
 # session in a fresh worktree. That worktree is cut from commits, so it cannot
 # see a backlog file this run has not committed yet -- a chip pointing at the
 # path would start a run with no request. So the issue case hands over the
@@ -597,9 +597,33 @@ check("split-and-park: falls back to the file on a gh failure",
 
 CHIP_ISSUE_PROMPT = "/devflow:flow #<n>"
 
-check("split-and-park: offers a chip per parked feature through spawn_task",
-      "mcp__ccd_session__spawn_task" in split_park_text,
-      f"{SPLIT_PARK_PATH} never names mcp__ccd_session__spawn_task")
+check("split-and-park: offers a chip per parked feature through start_session",
+      "mcp__ccd_session__start_session" in split_park_text,
+      f"{SPLIT_PARK_PATH} never names mcp__ccd_session__start_session")
+
+check("split-and-park: a parked feature's card is an own_initiative card in a worktree",
+      '`initiation: "own_initiative"`' in flat(split_park_text)
+      and "`use_worktree: true`" in flat(split_park_text)
+      and "`prompt`" in flat(split_park_text)
+      and "`background`" in flat(split_park_text)
+      and "80 characters or more" in flat(split_park_text),
+      f"{SPLIT_PARK_PATH} never says the card is own_initiative with a prompt, "
+      f"a background of 80 characters or more and use_worktree: true")
+
+SPAWN_TASK_FILES = [
+    "skills/flow/SKILL.md",
+    "skills/flow/references/split-and-park.md",
+    "skills/setup/SKILL.md",
+    "docs/flow.md",
+    "evals/backlog-parks-extras/case.yaml",
+]
+
+for _path in SPAWN_TASK_FILES:
+    check(f"{_path}: does not name the old spawn_task tool",
+          "spawn_task" not in open(
+              os.path.join(os.path.dirname(SKILLS_DIR), _path),
+              encoding="utf-8").read(),
+          f"{_path} still names spawn_task; start_session replaced it")
 
 check("split-and-park: the chip for a parked issue runs flow on the number",
       CHIP_ISSUE_PROMPT in split_park_text,
@@ -748,7 +772,7 @@ FLOW_BACKLOG_TOOLS = [
     "Bash(gh label create:*)",
     "Bash(rm .devflow/backlog/*)",
     "Bash(git log:*)",
-    "mcp__ccd_session__spawn_task",
+    "mcp__ccd_session__start_session",
 ]
 
 for tool in FLOW_BACKLOG_TOOLS:
@@ -7843,7 +7867,7 @@ check("setup: step 6d puts the reason in the option text",
 check("setup: a yes parks the job as flow does, and offers a chip",
       "split-and-park.md" in _ci and "devflow:backlog" in _ci
       and ".devflow/backlog/add-ci.md" in _ci
-      and "/devflow:flow #<n>" in _ci and "spawn_task" in _ci,
+      and "/devflow:flow #<n>" in _ci and "start_session" in _ci,
       f"{SETUP_PATH} step 6d never parks the CI job and offers a chip")
 
 check("setup: the parked body names the checks and the install, no template",

@@ -31,7 +31,7 @@ graders:
     match: contains
     weight: 3
 
-  # The CLI has no spawn_task, so step 1b must offer no chips and print
+  # The CLI has no start_session, so step 1b must offer no chips and print
   # nothing about them -- parking alone is the record here.
   - type: regex
     name: no-chips-without-the-tool
