@@ -20,9 +20,12 @@ Skip "Stand on the feature branch first": cut no feature branch, and never run
   chains merge into it, and `submit` lands it on main afterwards through
   [land-on-main.md](../../submit/references/land-on-main.md), which `flow` calls once this
   skill reports back. Do not push from here.
+- **On a pinned branch** (a cloud session's `claude/...` branch, which it may not leave; see
+  land-on-main.md). The same as a linked worktree: stay on it, the chains merge into it,
+  and `submit` lands it on main.
 
 The plan's `Branch:` line names the branch you stand on, as it always does: `main` in the
-main folder, the worktree's own branch in a linked worktree. The base tag is cut from that
+main folder, the worktree's own branch in a linked worktree, the pinned branch on one. The base tag is cut from that
 tip, and the base check at step 2 is unchanged.
 
 ## Merging the chains

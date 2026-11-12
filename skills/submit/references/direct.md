@@ -13,7 +13,8 @@ work was started by hand and the review's fixed point is found as step 5 says. W
 ## Step 1 — main is allowed
 
 Do not stop on the default branch, and do not cut a branch. A session in a linked worktree
-stays on that worktree's own branch. Print, unless `build` printed one this run:
+stays on that worktree's own branch, and a session on a pinned branch (a cloud session's
+`claude/...` branch, see [land-on-main.md](land-on-main.md)) stays on it. Print, unless `build` printed one this run:
 
 ```
 ✓ **branch** main — direct mode
@@ -75,8 +76,8 @@ is not yours to guess at: stop and say which files. **A pull that brought commit
 `HEAD` to a tip no check ran on: when `HEAD` changed across the pull, run the checks again,
 bare, before the push. After the push print `✓ **pushed** main, <sha>`.
 
-**In a linked worktree** the branch is not main, so none of that applies. Commit on the
-worktree's own branch, then land it as [land-on-main.md](land-on-main.md) says, which prints
+**In a linked worktree, or on a pinned branch,** the branch is not main, so none of that
+applies. Commit on the branch you stand on, then land it as [land-on-main.md](land-on-main.md) says, which prints
 its own `landed` line in place of `pushed`.
 
 **No remote** (`git remote` prints nothing): commit only, never push, and say so in one line:

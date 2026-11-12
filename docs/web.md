@@ -46,8 +46,10 @@ never appear.
 human explicitly asked. Invoking `submit` *is* that request. So is `flow`, which ends in
 it. `submit` says so rather than stopping to ask twice.
 
-**Your branch is already made.** The harness creates it, and forbids pushing anywhere
-else. So `build` keeps it instead of making a `<type>/<short-name>` one. Off the default
+**Your branch is already made.** The harness creates it, and may refuse a push anywhere
+else. So `build` keeps it instead of making a `<type>/<short-name>` one. In direct mode the
+session still lands it on the default branch, through `land-on-main.md`; where that push is
+refused, the work is pushed to the pinned branch instead and the `landed` line says so. Off the default
 branch was always the real requirement. The naming was never the point.
 
 **GitHub may refuse to delete the merged branch.** Pushing a ref works. Deleting one answers

@@ -30,8 +30,10 @@ thing that tells it this run is the exception. The block is never rewritten for 
   and the `gh api` call, and do not print the `pr` line.
 - **Step 0c, the fresh branch and the worktree.** Nothing is cut and no worktree is taken
   for the folder's sake. A session already in a linked worktree (`git-dir` differs from
-  `git-common-dir`) works on that worktree's own branch, and `submit` lands it on main. A
-  session in the main folder works on main. Do not tell `build` this is new work needing a
+  `git-common-dir`) works on that worktree's own branch, and `submit` lands it on main. So
+  does a session on a pinned branch (a cloud session's `claude/...` branch, which it may not
+  leave): `submit` lands it through land-on-main.md as well. A session in the main folder
+  works on main. Do not tell `build` this is new work needing a
   fresh branch; tell it this is direct mode.
 
 Everything else, sizing, the danger list, the rounds of questions, the wait for go and the
