@@ -1,0 +1,66 @@
+schema_version: "1.1"
+name: done-report
+description: A run whose host asks for a short closing message still prints the Done report in full.
+tags: [flow, submit, report, regression]
+
+context:
+  scaffold_script: ./scaffold.sh
+
+execution:
+  # The last sentence stands in for the host. #178: the Claude desktop app asks
+  # for a wrap-up recap, and an output style asked for "what I did, did it
+  # work, what do I do now". The run took that for the report and printed no
+  # Done report, and its Plan report was a bare table.
+  prompt: "/devflow:flow add a --loud flag to the CLI that uppercases the greeting. Nobody is here to answer: take every recommendation, go, and do not wait. When you finish, end with a short closing message: what you did, did it work, what to do now."
+  max_turns: 40
+  timeout_seconds: 900
+  allowed_tools: [Bash, Read, Write, Edit, Glob, Grep, Skill, TodoWrite]
+
+# The same build as full-loop, so the same cost. Two runs, not three: the
+# graders here read only what the run said at its end.
+runs: 2
+
+graders:
+  - type: tool_used
+    name: reaches-submit
+    tool: Skill
+    input_match: "devflow:submit"
+    min: 1
+
+  # The Plan half of #178 is graded in sizing-standard, not here: this prompt
+  # says "do not wait", and with it a run skips the size line and the Plan
+  # report altogether (2026-11-12, three runs out of three).
+  #
+  # `said`, not `trace`: the submit skill text holds the Done skeleton, and a
+  # run that cats the file must not pass for it.
+  #
+  # The regression itself. The fixture's origin is a bare repo, so the PR call
+  # fails; the Done report still prints, with that failure under Needs you.
+  - type: regex
+    name: prints-the-done-report
+    target: said
+    pattern: "### ✅ Done"
+    match: contains
+    weight: 3
+
+  - type: regex
+    name: done-report-has-its-sections
+    target: said
+    pattern: "### ✅ Done[\\s\\S]*#### What changed"
+    match: contains
+    weight: 2
+
+  - type: llm
+    name: closing-comes-after-the-report
+    focus: trace
+    criteria: >
+      PASS if the run printed a Done report titled "### ✅ Done", and the short
+      closing message the prompt asked for (what was done, did it work, what
+      to do now) comes after that report rather than in its place. FAIL if the
+      short closing message is the only summary at the end of the run, or if
+      it comes before the Done report.
+    weight: 3
+
+expected_outcome: >
+  Builds and submits, then prints the Done report with its title and
+  sections, and only after it the short closing message the prompt asked for.

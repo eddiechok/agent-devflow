@@ -1895,7 +1895,8 @@ check("readme: the project-review-agent row is there", len(_pr_rows), 1)
 # The README opens with a case count in words. It rotted once (seventeen, with
 # twenty directories) because nothing compared it with the directories.
 _WORDS = {17: "Seventeen", 18: "Eighteen", 19: "Nineteen", 20: "Twenty",
-          21: "Twenty-one", 22: "Twenty-two", 23: "Twenty-three", 24: "Twenty-four"}
+          21: "Twenty-one", 22: "Twenty-two", 23: "Twenty-three", 24: "Twenty-four",
+          25: "Twenty-five"}
 _case_dirs = [d for d in sorted(os.listdir(HERE))
               if os.path.isfile(os.path.join(HERE, d, "case.yaml"))]
 _manual_dirs = []

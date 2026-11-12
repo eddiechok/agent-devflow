@@ -203,7 +203,9 @@ The block was plain `→` lines at first, and the human found they did not stand
 looked like every other line of the run. A table did not stand out enough, and neither did
 a table in a quote box: the human did not read it as a report. So it is one — a rule above
 and below, a title, and a heading per section — and its shape lives in one reference,
-`references/report.md`, that `flow` and `plan` both link, so the two cannot drift apart. A
+`references/report.md`, that `flow` and `plan` both link, so the two cannot drift apart. Step 3
+also carries the skeleton itself, title and headings, since #178: a run that never opened the
+reference printed a bare table. What goes in each section stays in the reference. A
 title that waits ends `— waiting for your go`, and Quick, which does not wait, leaves those
 words off. The Pieces title does not wait, so it never says it does. `submit` ends the run
 with a Done report in the same shape, whose rows are the plan's rows marked done or not.

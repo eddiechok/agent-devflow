@@ -1,6 +1,6 @@
 # evals
 
-Twenty-four cases. Run them before you push a change to a skill. Four are manual, see below.
+Twenty-five cases. Run them before you push a change to a skill. Four are manual, see below.
 
 ## Which runner
 
@@ -30,8 +30,8 @@ python3 evals/run.py --case sizing-* --runs 1
 python3 evals/run.py --dry-run                # parse and print, run nothing
 ```
 
-It scores **114 of the 131 graders** — every `regex`, `tool_used`, `tool_order`
-and `file_exists`. The seventeen `llm` graders come back `skip`, stay out of the
+It scores **119 of the 137 graders** — every `regex`, `tool_used`, `tool_order`
+and `file_exists`. The eighteen `llm` graders come back `skip`, stay out of the
 denominator, and are counted in the summary. **A skip is never a pass**, the
 same way `NOT RUN` is never `none`.
 
@@ -82,7 +82,7 @@ run may read the very line it looks for.
 | Case | Cost | What breaks if it fails |
 |---|---|---|
 | `sizing-quick` | low | A typo fix drags the human through questions |
-| `sizing-standard` | low | Borderline work gets sized by coin flip, so Quick skips the questions |
+| `sizing-standard` | low | Borderline work gets sized by coin flip, so Quick skips the questions, or the Plan report comes out as a bare table with no title or sections |
 | `sizing-deep` | low | A new subsystem gets built with no plan and no questions |
 | `danger-list` | low | Secrets work slips through at Quick with nobody told |
 | `project-danger-list` | low | A change in a folder the project's own CLAUDE.md calls dangerous slips through at Quick, because only `flow`'s fixed list is read |
@@ -94,6 +94,7 @@ run may read the very line it looks for.
 | `setup-writes-checks` | medium | Every downstream check runs a command nobody verified, or the questionnaire writes no `## Workflow` block and every skill reads the project as not set up |
 | `direct-mode` | medium | A project set to `direct` still gets a branch, a review of a typo fix, or no word that the review was skipped, so the mode changes nothing the human can see |
 | `full-loop` | high | The skills stop handing off to each other |
+| `done-report` | high | A run whose host asks for its own short closing ends without the Done report, or puts the closing in its place |
 | `deep-coordinator` | high | A Deep job builds every chain in one session again and outgrows its window, or the chains never merge back and the PR is missing a chain's work |
 | `research-in-rounds` | medium | A Deep question that needs a fact from outside the repo goes to the human as a guess, or `flow` asks whether to research instead of starting a `researcher` itself |
 | `discuss-trigger` | medium | A request to discuss a design, typed with no slash command, never reaches `discuss`, or `discuss` answers what other tools do from memory with no `researcher`, or edits a file instead of handing to `flow` |

@@ -49,9 +49,7 @@ Run the project's test, typecheck and lint commands from the `## Checks` block i
 **Run each one bare** — exactly as the Checks block writes it, one command per
 call. No pipes, no redirects, no `&&`, no `; echo $?`.
 
-The real output **and the exit code** both have to reach the screen.
-
-Running bare is what lets the hook help.
+The real output **and the exit code** both have to reach the screen. Running bare is what lets the hook help.
 
 **But the hook only knows the runners on its own list** — `npm test`, `pytest`,
 `cargo test`, `tsc` and friends. So run it bare, read the result, and **say the
@@ -72,9 +70,7 @@ command is green, print:
 grep -rn "\[DBG-" . --exclude-dir=node_modules --exclude-dir=.git --exclude='*.md'
 ```
 
-Must return nothing.
-
-**Keep the quotes around `*.md`.**
+Must return nothing. **Keep the quotes around `*.md`.**
 
 **A hit in a file this branch did not touch is not yours.** Print `– **debug** <file> — not this branch's, left in place`.
 
@@ -281,11 +277,14 @@ If a check goes red on the PR after this, or a reviewer asks for something, that
 
 Never suggest throwing work away. If discarding a branch or force-pushing genuinely comes up, the human must type the word `discard` — "sure", "ok" and "go ahead" do not count.
 
-**Then the Done report**, right before the PR link: the plan's rows, each marked done or
-not, then what the user will see, the check steps, assumptions, tracker actions, and what
-needs the human. Its shape is the Done section of
-[flow's references/report.md](../flow/references/report.md). It is the one place a human can read the whole run without scrolling back
-through the tool output sitting between the steps.
+**Then the Done report**, right before the PR link — the one place a human can read the
+whole run without scrolling back through the tool output between the steps. Its skeleton:
+a `---` rule, `### ✅ Done`, `#### What changed` (the plan's rows, each marked `✓` or `✗`),
+`#### What you will see`, `#### Check it yourself`, `#### Assumptions`, `#### Tracker`,
+`#### Needs you`, the line `→ **next** /devflow:ship · or /devflow:merge to deploy later`
+(only `→ **next** /devflow:ship` where the `## Deploy` block has no `Deploy:` line, and no line
+in direct mode), and a closing `---`, a blank line between sections and an empty one left
+out. What goes in each: the Done section of [flow's references/report.md](../flow/references/report.md).
 
 Then, as the last thing this skill prints, the PR's link:
 
@@ -314,6 +313,7 @@ the result — for example `✓ **checks** 3 of 3 pass, exit 0`.
 - Never commit on the default branch in pr mode.
 - Never open a second pull request for a branch that already has one open.
 - Never end a pr-mode run without a pull request.
+- Never end a run without the Done report. A host's own summary comes after the Done report and does not replace it.
 - Never open a PR when the live check failed.
 - Never invent check commands the project did not give you.
 - Never merge the PR, and never call `devflow:ship` or `devflow:merge`. The open PR is where a pr-mode run ends;
