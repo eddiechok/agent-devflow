@@ -7533,6 +7533,27 @@ def context_command(label):
     return m.group(1) if m else None
 
 
+# Claude Code puts the request's words in place of `$0`, `$1` ... and
+# `$ARGUMENTS` in the skill body before a `!` command runs (#180). A trace of
+# `/devflow:flow fix the typo` ran the Kept servers awk as `'the==r'`, so it
+# never matched and always printed `none`. No Context command may hold one.
+_arg_dollar = re.compile(r"\$\{?(?:[0-9]|ARGUMENTS)")
+_arg_hits = []
+for _slug in sorted(os.listdir(SKILLS_DIR)):
+    _path = os.path.join(SKILLS_DIR, _slug, "SKILL.md")
+    if not os.path.isfile(_path):
+        continue
+    with open(_path, encoding="utf-8") as fh:
+        _ctx = section(fh.read(), "## Context")
+    for _cmd in re.findall(r"^- [^:\n]+: !`(.*)`$", _ctx, re.M):
+        if _arg_dollar.search(_cmd):
+            _arg_hits.append(f"skills/{_slug}/SKILL.md: {_cmd[:60]}...")
+check("every skill: no Context command holds $<digit> or $ARGUMENTS",
+      not _arg_hits,
+      "the request's words replace these before the command runs: "
+      + "; ".join(_arg_hits))
+
+
 def run_context(cmd, home, repo, extra_path=None):
     env = dict(os.environ, HOME=home)
     if extra_path:
