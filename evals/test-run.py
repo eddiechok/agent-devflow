@@ -1138,8 +1138,11 @@ check("sweep-quick-issues: a comment on an issue fails comments-on-no-issue",
 # `claude -p` run has no such tool, so the case grades what the skill prints
 # there: the list with a reason per pick, the Quick issue skipped toward
 # `/devflow:sweep`, the fourth skipped as not in the top 3, one
-# `/devflow:flow #<n>` line per pick, and no question. Five issues: a bug, two
-# older Standard and Deep features, a newer Standard one, and a Quick typo. The
+# `/devflow:flow #<n>` line per pick, and no question. Five issues, oldest
+# first: a Standard feature, a Deep feature, a bug, a leaked token, and a Quick
+# typo. The leak is the newest of the four that stay and must still come
+# first: the first rule let age decide, and a real run picked old bugs over a
+# new security audit. The
 # case needs a real GitHub repo with real issues, so it is manual like
 # `sweep-quick-issues`. Pinned both ways, so no grader reads as coverage while
 # unable to fail.
@@ -1160,7 +1163,8 @@ check_true("dispatch-top-three: the prompt tells the run not to wait",
            "do not wait" in _dp_ex.get("prompt", ""))
 check_true("dispatch-top-three: Agent is allowed, or a helper could never fail it",
            {"Agent", "Skill", "Bash"} <= set(_dp_ex.get("allowed_tools", [])))
-for _n in ("prints-the-list", "picks-the-bug-first", "gives-each-pick-a-reason",
+for _n in ("prints-the-list", "picks-the-security-issue-first",
+           "picks-the-bug-second", "gives-each-pick-a-reason",
            "skips-the-quick-issue-toward-sweep", "skips-the-fourth-as-not-in-the-top-3",
            "prints-the-no-session-tool-line", "prints-one-flow-line-per-pick",
            "prints-no-fourth-flow-line", "starts-no-helper-agent",
@@ -1201,14 +1205,14 @@ def dispatch_verdict(name, calls=(), said=""):
 
 _DP_LIST = (
     "→ **dispatch** 3 of 5 issues, 2 skipped\n"
-    "1. #12 Standard — bug\n"
-    "2. #11 Standard — oldest\n"
-    "3. #13 Deep — oldest\n"
-    "– skipped #14 not in the top 3\n"
+    "1. #14 Standard — security: the token is written to the log\n"
+    "2. #13 Standard — bug: users see hello undefined\n"
+    "3. #11 Standard — other: greet by the time of day\n"
+    "– skipped #12 not in the top 3\n"
     "– skipped #15 Quick — use /devflow:sweep\n")
 _DP_FALLBACK = (
     "– **sessions** no session tool here — run each in its own session\n"
-    "/devflow:flow #12\n/devflow:flow #11\n/devflow:flow #13\n")
+    "/devflow:flow #14\n/devflow:flow #13\n/devflow:flow #11\n")
 
 check("dispatch-top-three: the right list line passes prints-the-list",
       dispatch_verdict("prints-the-list", said=_DP_LIST), "pass")
@@ -1218,21 +1222,37 @@ check("dispatch-top-three: the list line without bold passes prints-the-list",
 check("dispatch-top-three: four picks fail prints-the-list",
       dispatch_verdict("prints-the-list",
                        said="→ **dispatch** 4 of 5 issues, 1 skipped"), "fail")
-check("dispatch-top-three: the bug at number 1 passes picks-the-bug-first",
-      dispatch_verdict("picks-the-bug-first", said=_DP_LIST), "pass")
-check("dispatch-top-three: the bug at number 2 fails picks-the-bug-first",
-      dispatch_verdict("picks-the-bug-first",
-                       said="1. #11 Standard — oldest\n2. #12 Standard — bug\n"), "fail")
+check("dispatch-top-three: the leak at number 1 passes picks-the-security-issue-first",
+      dispatch_verdict("picks-the-security-issue-first", said=_DP_LIST), "pass")
+check("dispatch-top-three: the bug at number 1 fails picks-the-security-issue-first",
+      dispatch_verdict("picks-the-security-issue-first",
+                       said="1. #13 Standard — bug: hello undefined\n"
+                            "2. #14 Standard — security: a leaked token\n"), "fail")
+check("dispatch-top-three: the old rule's list fails picks-the-security-issue-first",
+      dispatch_verdict("picks-the-security-issue-first",
+                       said="1. #13 Standard — bug\n2. #11 Standard — oldest\n"
+                            "3. #12 Deep — oldest\n"), "fail")
+check("dispatch-top-three: the bug at number 2 passes picks-the-bug-second",
+      dispatch_verdict("picks-the-bug-second", said=_DP_LIST), "pass")
+check("dispatch-top-three: a feature at number 2 fails picks-the-bug-second",
+      dispatch_verdict("picks-the-bug-second",
+                       said="1. #14 Standard — security: a leaked token\n"
+                            "2. #11 Standard — other: greet by the time of day\n"), "fail")
 check("dispatch-top-three: a reason on every pick passes gives-each-pick-a-reason",
       dispatch_verdict("gives-each-pick-a-reason", said=_DP_LIST), "pass")
 check("dispatch-top-three: a pick with no reason fails gives-each-pick-a-reason",
       dispatch_verdict("gives-each-pick-a-reason",
-                       said="1. #12 Standard — bug\n2. #11 Standard\n"
-                            "3. #13 Deep — oldest\n"), "fail")
+                       said="1. #14 Standard — security: a leak\n2. #13 Standard\n"
+                            "3. #11 Deep — other: a word\n"), "fail")
 check("dispatch-top-three: an unblocks reason passes gives-each-pick-a-reason",
       dispatch_verdict("gives-each-pick-a-reason",
-                       said="1. #12 Standard — unblocks #14\n2. #11 Standard — bug\n"
-                            "3. #13 Deep — oldest\n"), "pass")
+                       said="1. #12 Standard — money: a wrong total\n"
+                            "2. #11 Standard — unblocks #14: the type it needs\n"
+                            "3. #13 Deep — client: an export they asked for\n"), "pass")
+check("dispatch-top-three: the old reason, oldest, fails gives-each-pick-a-reason",
+      dispatch_verdict("gives-each-pick-a-reason",
+                       said="1. #12 Standard — bug: a crash\n2. #11 Standard — oldest\n"
+                            "3. #13 Deep — oldest\n"), "fail")
 check("dispatch-top-three: the Quick skip toward sweep passes",
       dispatch_verdict("skips-the-quick-issue-toward-sweep", said=_DP_LIST), "pass")
 check("dispatch-top-three: a bold skipped line passes the Quick skip too",
@@ -1263,7 +1283,7 @@ check("dispatch-top-three: three flow lines pass prints-no-fourth-flow-line",
       dispatch_verdict("prints-no-fourth-flow-line", said=_DP_FALLBACK), "pass")
 check("dispatch-top-three: a fourth flow line fails prints-no-fourth-flow-line",
       dispatch_verdict("prints-no-fourth-flow-line",
-                       said=_DP_FALLBACK + "/devflow:flow #14\n"), "fail")
+                       said=_DP_FALLBACK + "/devflow:flow #12\n"), "fail")
 check("dispatch-top-three: a run that starts no agent passes starts-no-helper-agent",
       dispatch_verdict("starts-no-helper-agent",
                        [("Bash", {"command": "gh api repos/o/r/issues"})]), "pass")

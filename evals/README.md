@@ -30,7 +30,7 @@ python3 evals/run.py --case sizing-* --runs 1
 python3 evals/run.py --dry-run                # parse and print, run nothing
 ```
 
-It scores **113 of the 130 graders** — every `regex`, `tool_used`, `tool_order`
+It scores **114 of the 131 graders** — every `regex`, `tool_used`, `tool_order`
 and `file_exists`. The seventeen `llm` graders come back `skip`, stay out of the
 denominator, and are counted in the summary. **A skip is never a pass**, the
 same way `NOT RUN` is never `none`.
@@ -102,7 +102,7 @@ run may read the very line it looks for.
 | `worktree-guard` | medium | A second session cuts its branch in the shared checkout and moves the folder out from under a session already working in it |
 | `ship-tends-conflict` | high, **manual** | A conflicting pull request gets merged, or `ship` goes back to stopping on a conflict and making the human type `tend` themselves |
 | `sweep-quick-issues` | high, **manual** | A sweep puts two issues that share a file in separate PRs, opens a PR for an issue that is not Quick, starts a sweeper per issue instead of per chain, or asks a question no sweeper can have answered |
-| `dispatch-top-three` | high, **manual** | A dispatch picks the Quick issue, ranks by age and misses the bug, picks a fourth issue, prints a pick with no reason, skips the Quick issue without pointing at `/devflow:sweep`, starts a helper agent, or asks a question |
+| `dispatch-top-three` | high, **manual** | A dispatch picks the Quick issue, lets age decide and puts an old feature before a new leaked token or before the bug, picks a fourth issue, prints a pick with no reason, skips the Quick issue without pointing at `/devflow:sweep`, starts a helper agent, or asks a question |
 | `skills-suggests-railway` | low | A repo with a `railway.json` is not told about the Railway plugin, gets an install command without `--scope project`, or has an install run for it instead of printed |
 | `look-question` | low | A Standard request with an open look decision never offers "Show me the variants", or edits the repo or drops a variant file in it before the human has picked |
 
@@ -161,8 +161,9 @@ real GitHub repo with issues on and a logged-in `gh`, and it opens five real iss
 opens no pull requests. Set `DEVFLOW_EVAL_REPO=owner/name` to a throwaway repo you own,
 never one with work in it, because the scaffold pushes a fixture commit to its default
 branch. Then `python3 evals/run.py --case dispatch-top-three`. The five issues are a
-Standard feature, a Deep feature, a bug nobody can point at (labelled `bug`), a newer
-Standard change, and a README typo that is Quick. The prompt names them through an
+Standard feature, a Deep feature, a bug nobody can point at, a token that leaks into the
+log, and a README typo that is Quick. The leak is the newest and must come first: the rank
+is by harm, and no issue carries a label to lean on. The prompt names them through an
 untracked `.dispatch-issues` file. `claude -p` has no session tool, so `dispatch` takes its
 fallback and prints one `/devflow:flow #<n>` line per pick; that printed list is what the
 graders read. **No grader here can see a `start_session` call**, so starting the sessions

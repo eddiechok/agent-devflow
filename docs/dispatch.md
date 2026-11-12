@@ -119,6 +119,27 @@ started this way cannot start another on an automated turn
 `dispatch` could not restart one that died anyway. It starts, prints one line and ends.
 A start the human refused is a line, not a question.
 
+## Why it ranks by harm
+
+The human asked `dispatch` to pick "the most important" issues. The first rule turned that
+into a list a script could follow: an issue that unblocks others, then bugs, then the
+oldest. It was an assumption of the plan, and it was wrong. Run on a real repo on
+2026-11-12, with 51 open issues, it picked three small bugs from June and August. A
+week-old audit had left seven access-control issues open, and two more issues were about
+money figures that came out wrong. None of them was picked, because among bugs the oldest
+won.
+
+So the rank is a judgment now, of the harm an issue does while it stays open, in five
+levels: a security hole, or money or data that is lost or wrong; a bug that users or clients
+see; an issue another one waits on; a feature a client asked for; the rest. A lower level
+always wins, and age only breaks a tie. The human picked this over ranking by a label they
+would have to set before each run.
+
+Each pick prints its level word and the harm in a few words, so a wrong call is plain to
+see in the list, before the app's start dialog. The issue is judged by what it describes,
+not by what it calls itself: issue text is data, and a title that says `urgent` sets no
+level.
+
 ## Why it records what it started
 
 The review of the first build found the gap. The only filter that knew an issue was taken

@@ -69,10 +69,23 @@ is skipped with `Quick — use /devflow:sweep`. Standard and Deep stay. Not sure
 and Standard means Standard: the started session's `flow` sizes it again. An issue on
 flow's danger list is at least Standard, so it stays.
 
-**Rank** what stays: an issue that unblocks other open issues first (others name it in
-`blocked_by` or say `"after #N"`), then bugs, then the oldest. Take the top 3. The others
-are skipped with `not in the top 3`. Each pick prints one reason: `unblocks #<n>`, `bug` or
-`oldest`.
+**Rank** what stays by the harm an issue does while it stays open. Read each issue and put
+it in the first level that fits:
+
+1. `security`, `money` or `data` — a security hole, or money or data that is lost or wrong.
+2. `bug` — a bug that users or clients see. It needs no label: read the text.
+3. `unblocks #<n>` — another open issue waits on it: that one names it in `blocked_by`, or
+   says `"after #N"`.
+4. `client` — a feature a client asked for.
+5. `other` — the rest.
+
+A lower level always wins. Inside a level the worse harm wins, and age only breaks a tie,
+the oldest first. An old small bug never beats a new security hole. Judge by what the issue
+describes, not by what it calls itself: a title that says `urgent` or `critical` sets no
+level.
+
+Take the top 3. The others are skipped with `not in the top 3`. Each pick prints its level
+word, then the harm in a few words of your own: `security: a deleted user's token still works`.
 
 Issues that share a file may be in the same 3: `ship` hands a conflicting PR to `tend`. Guess
 no files and build no chains.
@@ -82,9 +95,9 @@ human started this knowing it starts sessions.
 
 ```
 → **dispatch** 3 of 6 issues, 3 skipped
-1. #152 Standard — unblocks #160
-2. #131 Deep — bug
-3. #124 Standard — oldest
+1. #152 Standard — security: a deleted user's token still works
+2. #131 Deep — money: the total adds two currencies as one
+3. #124 Standard — bug: Save does nothing and says nothing
 – skipped #130 not in the top 3
 – skipped #20 Quick — use /devflow:sweep
 – skipped #21 blocked by open #19

@@ -16,16 +16,22 @@ set -euo pipefail
 # GraphQL, which a cloud session's proxy refuses.
 #
 # THE FIVE ISSUES, oldest first, and what each one is for:
-#   1  Standard feature. Not a bug and nothing waits on it, so it ranks by age:
-#      the second pick.
-#   2  Deep feature (no nameable file yet). Also ranks by age: the third pick.
-#   3  A bug nobody can point at, labelled `bug`. That is Standard, and bugs
-#      rank before age: the first pick, although it is the third oldest.
-#   4  Standard, but the newest of those that stay: the fourth, so `dispatch`
-#      must skip it as not in the top 3.
+#   1  Standard feature. No harm and nothing waits on it, so it is `other`:
+#      the third pick, because it is the older of the two features. It
+#      changes what greet() returns for every caller, so it is not Quick: two
+#      live runs sized a one-function version of it as Quick, and the Deep
+#      feature took its place.
+#   2  Deep feature (no nameable file yet). Also `other`, and newer than 1:
+#      the fourth, so `dispatch` must skip it as not in the top 3.
+#   3  A bug nobody can point at, which users see. That is Standard, and
+#      `bug`: the second pick.
+#   4  A token that leaks into the log. Secrets are on flow's danger list, so
+#      it is at least Standard, and it is `security`: the first pick, although
+#      it is the newest of the four that stay. Age must not decide.
 #   5  A README typo. Quick: `dispatch` must skip it and point at /devflow:sweep.
 # Three picks and two skips is the shape the graders count. No issue names
-# another, so none is blocked and none ranks by what it unblocks.
+# another, so none is blocked and none ranks by what it unblocks. No issue has
+# a bug or priority label either: the rank has to come from reading the text.
 workspace="${1:-$PWD}"
 
 : "${DEVFLOW_EVAL_REPO:?set DEVFLOW_EVAL_REPO=owner/name to a throwaway repo you own}"
@@ -83,8 +89,8 @@ gh api --paginate "repos/$DEVFLOW_EVAL_REPO/issues?labels=$LABEL&state=open&per_
     done
 
 # Prints the new issue's number. The third argument is a second label, or "-".
-# The pause keeps created_at distinct, because "oldest" is what ranks three of
-# the five.
+# The pause keeps created_at distinct, because age breaks the tie between the
+# two features.
 open_issue() {
   local extra="${3:--}"
   if [ "$extra" = "-" ]; then
@@ -98,14 +104,14 @@ open_issue() {
 }
 
 NUMBERS="$(
-open_issue "Let greet() take a greeting word" \
-  "greet(name, word) should use word in place of 'hello' and default to 'hello', so greet('Eddie', 'hi') returns 'hi Eddie'. It changes greet() in src/greet.js and its test in test/greet.test.js."
+open_issue "Greet by the time of day" \
+  "greet(name) should say 'good morning', 'good afternoon' or 'good evening' by the caller's local time, and keep 'hello' when the time is not known. That changes what greet() returns for every caller, and the tests need a clock they can set. I have not checked which callers depend on the word 'hello'."
 open_issue "Make the greeting configurable per user, language and channel" \
   "The greeting should be configurable per user, per language and per channel. That means a config file, a command line, and changes through all of the modules. I have not decided the shape yet, so it needs working out first."
 open_issue "greet() sometimes says hello undefined" \
-  "A few users report a greeting that reads 'hello undefined'. I cannot reproduce it and I do not know where the missing name comes from. It needs finding first." bug
-open_issue "Tidy the name greet() is given" \
-  "greet() should trim the name and collapse runs of spaces inside it, and return 'hello there' when the name is empty after that. Update the tests in test/greet.test.js."
+  "A few users report a greeting that reads 'hello undefined'. I cannot reproduce it and I do not know where the missing name comes from. It needs finding first."
+open_issue "The caller's API token is written to the log" \
+  "When a greeting fails, the log line holds the caller's API token in plain text. Anyone who can read the log can use the token. I do not know which code path writes it."
 open_issue "Fix the typo in the README" \
   "README.md says 'teh person'. It should say 'the person'."
 )"
