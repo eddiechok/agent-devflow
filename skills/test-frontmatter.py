@@ -6665,10 +6665,10 @@ check("flow/look: a Rules line keeps it off Quick and out of the repo",
       and "never write a variant into the repo" in flow_skill_flat,
       f"{FLOW_PATH} has no Rules line for the look question")
 
-check("flow/look: lines 335 and 339 did not move (evals/README.md cites them)",
-      flow_text.splitlines()[334] == "Quick \u2014 single-file copy change."
-      and flow_text.splitlines()[338] == "Deep \u2014 new subsystem, touches auth (danger list).",
-      f"{FLOW_PATH} lines 335 and 339 are no longer the two size-line examples")
+check("flow/look: lines 336 and 340 did not move (evals/README.md cites them)",
+      flow_text.splitlines()[335] == "Quick \u2014 single-file copy change."
+      and flow_text.splitlines()[339] == "Deep \u2014 new subsystem, touches auth (danger list).",
+      f"{FLOW_PATH} lines 336 and 340 are no longer the two size-line examples")
 
 check("flow/look: the reference exists",
       look_text != "",
@@ -7611,6 +7611,130 @@ with tempfile.TemporaryDirectory() as _scratch:
         code, out = run_context(servers_cmd, _home, _repo)
         check("flow: a Servers line prints its value and no hints",
               code == 0 and out == "keep", f"printed {out!r}")
+
+# ------------------- flow counts commits ahead without needing origin/HEAD
+#
+# #180: `refs/remotes/origin/HEAD` is set only by a clone or `git remote
+# set-head`. A repo made with `git init` and pushed has none, and the count
+# read `unknown`. Steps 0 and 0c then sent the model into git checks before
+# step 3, and a run that opens with tool calls went to build with no size
+# line: 1 of 3 runs printed `Quick —`. With the count at 0, 3 of 3 did. So the
+# count uses the same ref the `Default branch ref` line names. This pin RUNS
+# the command in a repo pushed level with a bare origin and no origin/HEAD.
+
+_ahead_m = re.search(r"^- (Commits ahead[^:]*): !`(.*)`$", flow_ctx, re.M)
+ahead_cmd = _ahead_m.group(2) if _ahead_m else None
+check("flow: Context has a Commits ahead line",
+      ahead_cmd is not None,
+      f"{FLOW_PATH} Context has no '- Commits ahead...: !`...`' line")
+check("flow: the Commits ahead line is a plain || chain, no capture",
+      ahead_cmd is not None and "$(" not in ahead_cmd and "if " not in ahead_cmd,
+      f"{FLOW_PATH} Commits ahead uses $(...) or if: an injected command the "
+      f"permission check cannot analyse aborts the whole skill")
+
+if ahead_cmd:
+    with tempfile.TemporaryDirectory() as _scratch:
+        _scratch = os.path.realpath(_scratch)
+        _origin = os.path.join(_scratch, "origin.git")
+        _repo = os.path.join(_scratch, "repo")
+        _g = lambda *a: subprocess.run(["git", *a], cwd=_repo,
+                                       capture_output=True, text=True)
+        subprocess.run(["git", "init", "-q", "--bare", "-b", "main", _origin],
+                       capture_output=True)
+        subprocess.run(["git", "init", "-q", "-b", "main", _repo],
+                       capture_output=True)
+        _g("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q",
+           "--allow-empty", "-m", "one")
+        _g("remote", "add", "origin", _origin)
+        _g("push", "-q", "-u", "origin", "main")
+        _unset = _g("symbolic-ref", "refs/remotes/origin/HEAD").returncode != 0
+        code, out = run_context(ahead_cmd, _scratch, _repo)
+        check("flow: a pushed repo with no origin/HEAD counts 0 commits ahead",
+              _unset and code == 0 and out == "0",
+              f"Commits ahead printed {out!r} (exit {code}), origin/HEAD "
+              f"unset: {_unset}. `unknown` here sends step 0 into git checks "
+              f"before the size line (#180)")
+
+        _g("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q",
+           "--allow-empty", "-m", "two")
+        code, out = run_context(ahead_cmd, _scratch, _repo)
+        check("flow: one local commit with no origin/HEAD counts 1 ahead",
+              code == 0 and out == "1",
+              f"Commits ahead printed {out!r} (exit {code})")
+
+        _g("remote", "set-head", "origin", "main")
+        code, out = run_context(ahead_cmd, _scratch, _repo)
+        check("flow: with origin/HEAD set the count is the same",
+              code == 0 and out == "1",
+              f"Commits ahead printed {out!r} (exit {code})")
+
+# The same cause by another road. `claude plugin eval` runs opened with
+# `cat CLAUDE.md`, as if the project's CLAUDE.md was not loaded, so "read
+# CLAUDE.md for a `## Workflow` block" was a tool call before step 3, and 0 of
+# 3 runs printed the size line. Every fact flow needs before the size line comes
+# from the Context block, so the line can be the first thing it sends.
+
+workflow_cmd = context_command("Workflow block")
+check("flow: Context has a Workflow block line",
+      workflow_cmd is not None,
+      f"{FLOW_PATH} Context has no '- Workflow block: !`...`' line. Without "
+      f"it a harness that does not load CLAUDE.md reads it with a tool "
+      f"before the size line, and the line is lost (#180)")
+check("flow: the Workflow block line is a plain command, no capture",
+      workflow_cmd is not None and "$(" not in workflow_cmd
+      and "if " not in workflow_cmd,
+      f"{FLOW_PATH} Workflow block uses $(...) or if")
+check("flow: Before step 0 reads the Workflow block from the Context line",
+      "The `Workflow block` Context line" in section(flow_text, "## Before step 0 — is this project set up?"),
+      f"{FLOW_PATH} Before step 0 still has the model read CLAUDE.md itself")
+
+if workflow_cmd:
+    with tempfile.TemporaryDirectory() as _scratch:
+        _scratch = os.path.realpath(_scratch)
+        code, out = run_context(workflow_cmd, _scratch, _scratch)
+        check("flow: no CLAUDE.md prints `none` for the Workflow block",
+              code == 0 and out.startswith("none"),
+              f"Workflow block printed {out!r} (exit {code})")
+        with open(os.path.join(_scratch, "CLAUDE.md"), "w") as fh:
+            fh.write("# x\n\n## Checks\n- Test: npm test\n")
+        code, out = run_context(workflow_cmd, _scratch, _scratch)
+        check("flow: a CLAUDE.md with no Workflow block prints `none`",
+              code == 0 and out.startswith("none"),
+              f"Workflow block printed {out!r} (exit {code})")
+        with open(os.path.join(_scratch, "CLAUDE.md"), "w") as fh:
+            fh.write("# x\n\n## Checks\n- Test: npm test\n\n## Workflow\n"
+                     "- Mode: direct\n- About: a greeter\n- Servers: keep\n\n"
+                     "## Deploy\n- Deploy: sh deploy.sh\n")
+        code, out = run_context(workflow_cmd, _scratch, _scratch)
+        check("flow: the Workflow block line prints the block and nothing else",
+              code == 0 and "- Mode: direct" in out and "- Servers: keep" in out
+              and "Deploy" not in out and "npm test" not in out,
+              f"Workflow block printed {out!r} (exit {code})")
+        # Review of #180's fix: markdownlint wants a blank line under a
+        # heading, and setup keeps a hand-written block as it is. A range that
+        # ends at the first blank line printed the heading alone.
+        with open(os.path.join(_scratch, "CLAUDE.md"), "w") as fh:
+            fh.write("# x\n\n## Workflow\n\n- Mode: direct\n- About: a greeter\n\n"
+                     "## Deploy\n\n- Deploy: sh deploy.sh\n")
+        code, out = run_context(workflow_cmd, _scratch, _scratch)
+        check("flow: a blank line under ## Workflow still prints its Mode",
+              code == 0 and "- Mode: direct" in out and "- About: a greeter" in out
+              and "Deploy" not in out,
+              f"Workflow block printed {out!r} (exit {code})")
+
+check("flow: the Workflow block line uses no $, which skill arguments replace",
+      workflow_cmd is not None and "$" not in workflow_cmd,
+      f"{FLOW_PATH} Workflow block has a $ in it: a skill's $1 or $0 is "
+      f"replaced by the request's words before the command runs")
+
+# The line reads ./CLAUDE.md only. Claude Code also loads a parent's, so a run
+# started in a subfolder of a set-up repo sees `none`. Before setup runs, the
+# skill has the model read the repo top's CLAUDE.md: one read, and only on the
+# path that calls setup, never before a Quick size line.
+check("flow: a `none` below the repo top is checked before setup runs",
+      "below the repo top" in section(flow_text, "## Before step 0 — is this project set up?")
+      and "git rev-parse --show-toplevel" in section(flow_text, "## Before step 0 — is this project set up?"),
+      f"{FLOW_PATH} calls setup on a `none` from a subfolder of a set-up repo")
 
 check("flow: the Kept servers command reads the list before it ever calls gh",
       kept_cmd is not None and "servers.tsv" in kept_cmd

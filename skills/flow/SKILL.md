@@ -17,16 +17,17 @@ rule looks wrong.
 - Branch: !`git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "no git"`
 - Default branch ref: !`git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null || echo origin/main`
 - Status: !`git status --short 2>/dev/null | head -20 || true`
-- Commits ahead of origin/HEAD: !`git rev-list --count origin/HEAD..HEAD 2>/dev/null || echo "unknown — origin/HEAD is not set"`
+- Commits ahead of the default branch ref: !`git rev-list --count origin/HEAD..HEAD 2>/dev/null || git rev-list --count origin/main..HEAD 2>/dev/null || echo "unknown — no origin/HEAD or origin/main"`
 - Plans on disk: !`ls .devflow/plans 2>/dev/null || echo none`
 - Browser block: !`grep -q '^## Browser' CLAUDE.md 2>/dev/null && echo set || echo "none; UI hints: $( (git ls-files 'tailwind.config.*' 'components/ui/*' '*.html' '*.jsx' '*.tsx' '*.vue' '*.svelte' '*.erb' '*.ejs' 2>/dev/null | head -2; grep -oE '"(react|preact|vue|svelte|solid-js|astro|next|nuxt|@angular/core|react-native|expo|electron|@tauri-apps/api)"' package.json 2>/dev/null) | head -3 | tr '\n' ' ')"`
 - Servers: !`S=$(sed -n 's/^- Servers: *//p' CLAUDE.md 2>/dev/null | head -1); if [ -n "$S" ]; then echo "$S"; else echo "none; start hints: $( (ls Procfile docker-compose.yml compose.yaml 2>/dev/null; grep -oE '"(dev|start)":' package.json 2>/dev/null; grep -oE '^(dev|start|serve|run):' Makefile 2>/dev/null) | head -3 | tr '\n' ' ')"; fi`
 - Kept servers: !`R=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)"); K=$(awk -F'\t' -v r="$R" '$1==r' "$HOME/.claude/devflow/servers.tsv" 2>/dev/null); if [ -z "$K" ]; then echo none; else echo "$K" | while IFS="$(printf '\t')" read -r _ b n p pid _ c; do if [ "$n" = - ]; then s="no PR yet"; else s=$(gh api "repos/{owner}/{repo}/pulls/$n" --jq 'if .merged_at then "merged" else .state end' 2>/dev/null || echo unknown); fi; echo "[$b #$n $s, pid $pid, ports $p, start: $c]"; done; fi`
 - Env files: !`[ -e .worktreeinclude ] && echo set || { R=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)"); F=$(find "$R" \( -name node_modules -o -name .git -o -name worktrees -o -name .worktrees -o -name .venv -o -name vendor \) -prune -o -name '.env*' \( -type f -o -type l \) -print 2>/dev/null | while read -r f; do echo "${f#"$R"/}"; done | grep -vE '\.(example|sample|template)$' | git check-ignore --stdin 2>/dev/null | head -20 | tr '\n' ' '); [ -n "$F" ] && echo "none; env files: $F" || echo none; }`
+- Workflow block: !`sed -n '/^## Workflow/,/^## /{/^## Workflow/p;/^## /!p;}' CLAUDE.md 2>/dev/null | grep . || echo "none — ./CLAUDE.md has no ## Workflow block"`
 
 ## Before step 0 — is this project set up?
 
-Read `CLAUDE.md` for a `## Workflow` block. **None means not set up**: call `devflow:setup`, then carry on with the request. `Mode: direct` means read [references/direct.md](references/direct.md) now; it says which steps below change. `Mode: pr` changes nothing. Then, after step 0c and before step 1, read the reference a Context line asks for: [browser-driver.md](references/browser-driver.md) when `Browser block` says `none` and names UI hints (a UI repo with no `## Browser` block); [servers-setting.md](references/servers-setting.md) when `Servers` says `none` and names start hints, or `Kept servers` names a server whose PR is merged or closed; [worktree-env.md](references/worktree-env.md) when `Env files` says `none` and names env files (ignored env files and no `.worktreeinclude`).
+The `Workflow block` Context line is the project's `## Workflow` block, so do not read `CLAUDE.md` for it. **None means not set up**: call `devflow:setup`, then carry on with the request. The line reads `./CLAUDE.md` only, so a `none` from a folder below the repo top is not proof: read the `CLAUDE.md` that `git rev-parse --show-toplevel` names first, and call setup only if it has no block either. `Mode: direct` means read [references/direct.md](references/direct.md) now; it says which steps below change. `Mode: pr` changes nothing. Then, after step 0c and before step 1, read the reference a Context line asks for: [browser-driver.md](references/browser-driver.md) when `Browser block` says `none` and names UI hints (a UI repo with no `## Browser` block); [servers-setting.md](references/servers-setting.md) when `Servers` says `none` and names start hints, or `Kept servers` names a server whose PR is merged or closed; [worktree-env.md](references/worktree-env.md) when `Env files` says `none` and names env files (ignored env files and no `.worktreeinclude`).
 
 ## Step 0 — is this a follow-up?
 
@@ -134,7 +135,7 @@ finished, and this is new work.
 **Only for new work.** A follow-up from step 0 and a resume from step 0b both belong on
 the branch this folder is already standing on, so they change nothing here and go straight
 to step 1. This step is for every run that decided **new work, fresh branch** — including
-the plain `Commits ahead of origin/HEAD: 0` one, which decides it without saying much.
+the plain `Commits ahead of the default branch ref: 0` one, which decides it without saying much.
 
 New work means `build` runs `git checkout -b`, and that moves **the whole folder**. Another
 session open on this same checkout is standing in that folder, and nothing tells it: its
@@ -157,7 +158,7 @@ ahead of the default branch ref with no pull request, `build` keeps it, and the 
 carries the other branch's commits.
 
 So read `Commits ahead`. **`0` means nothing changes** — go to step 1, and print nothing.
-**`unknown` is not a count**: it only means `origin/HEAD` is not set. Find the real default
+**`unknown` is not a count**: neither `origin/HEAD` nor `origin/main` exists. Find the default
 the way `build` does — `git remote show origin` names it — and count
 `git rev-list --count origin/<default>..HEAD` yourself. With no `origin` to ask there is no
 default branch to cut from, so nothing changes; go to step 1 and print nothing.

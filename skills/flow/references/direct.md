@@ -7,8 +7,8 @@ skill is written everywhere else. Read this when `Mode: direct` is in the projec
 
 ## Read the mode
 
-`Mode:` comes from `## Workflow` in the project's `CLAUDE.md`. Read it yourself; nothing
-else carries it. No block means "not set up", and the step before step 0 has already called
+`Mode:` comes from `## Workflow` in the project's `CLAUDE.md`, which flow's
+`Workflow block` Context line already shows. No block means "not set up", and the step before step 0 has already called
 `devflow:setup` for that.
 
 ## The override: one run in `pr`
