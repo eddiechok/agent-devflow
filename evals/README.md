@@ -28,7 +28,23 @@ judge:
 python3 evals/run.py                          # every case
 python3 evals/run.py --case sizing-* --runs 1
 python3 evals/run.py --dry-run                # parse and print, run nothing
+python3 evals/run.py --max-budget-usd 3       # cost limit per session
 ```
+
+**Each session has a hard cost limit.** `--max-budget-usd` sets it; with no flag, a
+case's `execution.max_budget_usd` does; with neither, it is $10. `claude` checks the
+limit between turns, so a session can end a little over it: a $0.01 limit on a one-line
+prompt stopped at $0.15. A run cut short by
+that limit or by `max_turns` says so on its run line — `(stopped: hit cost limit)` or
+`(stopped: hit turn limit)` — because a truncated run otherwise scores the same as
+one that chose not to act.
+
+**An eval session is not saved.** `run.py` passes `--no-session-persistence`, so
+an eval run writes no session file to `~/.claude/projects/` (the CLI still makes an empty
+folder there) and stays out of `lesson-review`'s waste count.
+It also passes `--include-hook-events`, so `bash-guard` and `secret-guard` firing
+shows in the event stream (and in the `--keep-temp` trace file). It never passes `--bare`: that skips plugins and hooks, the
+`--plugin-dir` one included.
 
 It scores **114 of the 131 graders** — every `regex`, `tool_used`, `tool_order`
 and `file_exists`. The seventeen `llm` graders come back `skip`, stay out of the
