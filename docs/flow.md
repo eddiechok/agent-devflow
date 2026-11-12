@@ -132,6 +132,22 @@ all of them to answer a question git already settled is a poor trade.
 Asking again for something the human has already told you is the interruption this plugin
 exists to avoid.
 
+**Everything flow needs before the size line comes from the Context block** (#180). A run
+that opens with a tool call tends to go to `build` with no text at all, so the size line
+never shows: the model sizes it right, but only says `Quick:` inside the `build` call. Two
+facts used to cost a tool call first. The count read `unknown` where `origin/HEAD` is
+unset — only a clone or `git remote set-head` sets it, and a repo made with `git init`
+and pushed has none — and steps 0 and 0c then had the model count it itself. And `claude
+plugin eval` runs opened with `cat CLAUDE.md`, as if the project's `CLAUDE.md` was not
+loaded, so "read `CLAUDE.md` for a `## Workflow` block" was a tool call first. On `sizing-quick`, 3 runs
+per runner: `run.py` went from 1 of 3 to 3 of 3 once the count fell back to `origin/main`,
+and `claude plugin eval` from 0 of 3 to 3 of 3 once the `Workflow block` line was added,
+the size line first every time. Six wordings of step 3 had been tried before and none
+fixed it without breaking the follow-up path, because the wording was never the cause.
+A wrong guess at `origin/main` costs little: `0` means every commit is already on
+`origin/main`, so no pull request could be about them, and `build` still finds the real
+default before it cuts.
+
 That is the whole reason `tend` exists: not every failure a pull request reports belongs to
 the pull request, and a fix pushed for a failure nobody attributed is worse than no fix.
 `tend` reads what is actually red, decides whose it is, and comes back through `build` and

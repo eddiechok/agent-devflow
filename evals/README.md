@@ -30,7 +30,11 @@ in and your git config is gone. Bash runs in a sandbox with no network. So:
   request, and there that ask fails. `sizing-quick` did that, scored 0.33 here
   and passed in `run.py`, until its scaffold pushed the typo commit. After that
   fix both runners showed the same `flow` slip, going to `build` with no size
-  line: 3 runs each, `plugin eval` 1 printed the line, `run.py` 2.
+  line, until #180 moved every fact flow needs before that line into its
+  Context block (see docs/flow.md, step 0).
+- Its runs opened with `cat CLAUDE.md` where `run.py`'s did not, as if the
+  project's `CLAUDE.md` was not loaded. A skill that needs a `CLAUDE.md` block
+  before its first line of text should get it from a Context line.
   Keep a scaffold's branch level with origin unless the case is about that.
 
 **Use `run.py` for the rest**, which drives the same `case.yaml` files through
@@ -82,8 +86,8 @@ it spends money.
 
 **A rendered `SKILL.md` is not part of the trace.** The `Skill` tool returns the
 whole skill body as a tool result, and `skills/flow/SKILL.md` contains its own
-worked examples — `Quick — single-file copy change.` at line 335 and `Deep — new
-subsystem, touches auth (danger list).` at 339. Count those as trace and three
+worked examples — `Quick — single-file copy change.` at line 336 and `Deep — new
+subsystem, touches auth (danger list).` at 340. Count those as trace and three
 weight-3 graders stop measuring anything:
 
 | Grader | What it would do |
