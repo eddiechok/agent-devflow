@@ -59,7 +59,7 @@ of the `parked` line, the same way step 4's plan falls back:
 ✗ **parked** github asked, wrote .devflow/backlog/<name>.md — gh said <the error>
 ```
 
-**Then offer a chip per parked feature, if `mcp__ccd_session__spawn_task` is a tool you
+**Then offer a chip per parked feature, if `mcp__ccd_session__start_session` is a tool you
 have.** Chips come on top of parking, never instead of parking: the issue or the file is
 the record, and a chip is one click to start it. A chip starts a new session in a fresh
 worktree, and a fresh worktree has only committed files, so the prompt must stand alone:
@@ -76,7 +76,11 @@ worktree, and a fresh worktree has only committed files, so the prompt must stan
   past step 1's guard. The file alone is the record; an issue-case chip is still fine,
   because the next run reads the issue through that guard.
 
-Title each chip `Build <feature>`. Then print exactly one line:
+Each chip is one `mcp__ccd_session__start_session` call: `initiation: "own_initiative"`
+(a card the human starts, never a session started for them), `context: "fresh"`,
+`use_worktree: true`, the `prompt` above, and a `background` of 80 characters or more that
+says `/devflow:flow` parked this feature and the prompt carries the rest. Title each chip
+`Build <feature>`, under 60 characters. Then print exactly one line:
 
 ```
 ✓ **chips** 2 offered — each starts its own flow run in a fresh worktree

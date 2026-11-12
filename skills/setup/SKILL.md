@@ -389,7 +389,7 @@ Title it `Add CI that runs the checks`. The body says, in this order:
 - a push refused for the `workflow` scope is fixed by `gh auth refresh -h github.com -s workflow`
 - `Parked from: devflow:setup`
 
-Then offer one chip by that reference's rules, when `spawn_task` is a tool you have:
+Then offer one chip by that reference's rules, when `start_session` is a tool you have:
 `/devflow:flow #<n>`, titled `Build CI for the checks`, or its file-case prompt for a file.
 
 A push under `.github/workflows/` needs the token's `workflow` scope ([cli/cli#7251](https://github.com/cli/cli/discussions/7251)).

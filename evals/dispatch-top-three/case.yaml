@@ -1,0 +1,165 @@
+schema_version: "1.1"
+name: dispatch-top-three
+description: A dispatch over five open issues picks the top 3 Standard and Deep ones with a reason each, skips the Quick one toward sweep and the fourth as not in the top 3, prints one flow line per pick where no session tool exists, and asks nobody anything.
+tags: [dispatch, issues]
+
+# MANUAL. This case needs a real GitHub repo with issues enabled and a gh that
+# is logged in. It opens real issues, so run.py leaves it out unless you name it:
+#   DEVFLOW_EVAL_REPO=owner/name python3 evals/run.py --case dispatch-top-three
+# Point it at a throwaway repo you own, never one with work in it: the scaffold
+# pushes a fixture commit to the default branch.
+manual: true
+
+context:
+  # The scaffold clones that repo, writes a tiny project and a Checks block,
+  # pushes one commit, and opens five issues, oldest first: a Standard feature,
+  # a Deep feature, a bug nobody can point at (labelled bug), a newer Standard
+  # change, and a README typo that is Quick. It writes their numbers to
+  # .dispatch-issues, untracked, for the prompt below to read.
+  scaffold_script: ./scaffold.sh
+
+execution:
+  # The numbers come from a file because the prompt is static and the issue
+  # numbers are not known until the scaffold has opened them. Passing numbers
+  # also keeps the run off any real issue the repo may have, and they still
+  # pass every filter, so the Quick one has to be skipped by `dispatch` itself.
+  #
+  # `claude -p` has no session tool, so `dispatch` takes its fallback: it
+  # starts nothing and prints one /devflow:flow line per pick. That printed list
+  # is what this case grades. The sessions themselves are not covered: no
+  # grader here can see a start_session call, so a run in the desktop app is a
+  # check by hand.
+  prompt: "/devflow:dispatch the issue numbers listed in the file .dispatch-issues in this folder. Nobody is here to answer: take every recommendation, yes to all, go, and do not wait."
+  max_turns: 40
+  timeout_seconds: 900
+  # No Edit or Write: dispatch changes no file. Agent stays allowed so a helper
+  # started by mistake can fail starts-no-helper-agent.
+  allowed_tools: [Bash, Read, Glob, Grep, Skill, Agent]
+
+# One run: it opens real issues, and one run is weak evidence about a model.
+# This file does not pretend otherwise: it catches a rule that is gone, not one
+# obeyed two times in three.
+runs: 1
+
+graders:
+  # The printed list is the contract: 3 picks out of 5 issues, with 2 skipped.
+  # A dispatch that took four prints a different count, and one that filtered
+  # the Quick issue late prints a different total.
+  - type: regex
+    name: prints-the-list
+    target: said
+    # Bold optional: inside a code block the markers get dropped, and the
+    # count of picks and issues is what this grader checks.
+    pattern: "dispatch(\\*\\*)? 3 of 5 issues, 2 skipped"
+    match: contains
+    weight: 4
+
+  # Bugs rank before age. The bug is the third oldest, so a dispatch that ranks
+  # by age alone puts it third, and one that ignores bugs never calls it one.
+  - type: regex
+    name: picks-the-bug-first
+    target: said
+    pattern: "1\\.\\s+#\\d+\\s+(Standard|Deep)\\s+—\\s+bug"
+    match: contains
+    weight: 4
+
+  # Each pick prints its size and one reason, in the order of the list.
+  - type: regex
+    name: gives-each-pick-a-reason
+    target: said
+    pattern: "(?s)1\\.\\s+#\\d+\\s+(Standard|Deep)\\s+—\\s+(unblocks #\\d+|bug|oldest).*?2\\.\\s+#\\d+\\s+(Standard|Deep)\\s+—\\s+(unblocks #\\d+|bug|oldest).*?3\\.\\s+#\\d+\\s+(Standard|Deep)\\s+—\\s+(unblocks #\\d+|bug|oldest)"
+    match: contains
+    weight: 3
+
+  # The Quick issue is sweep's, and the line says so.
+  - type: regex
+    name: skips-the-quick-issue-toward-sweep
+    target: said
+    pattern: "skipped\\*{0,2} #\\d+ Quick — use /devflow:sweep"
+    match: contains
+    weight: 4
+
+  # The fourth Standard issue is the newest, so it is the one left out.
+  - type: regex
+    name: skips-the-fourth-as-not-in-the-top-3
+    target: said
+    pattern: "skipped\\*{0,2} #\\d+ not in the top 3"
+    match: contains
+    weight: 4
+
+  # No session tool in `claude -p`: the skill says so and starts nothing.
+  - type: regex
+    name: prints-the-no-session-tool-line
+    target: said
+    pattern: "sessions(\\*\\*)? no session tool here — run each in its own session"
+    match: contains
+    weight: 3
+
+  # One /devflow:flow #<n> line per pick: three different numbers. The
+  # backreferences are what keep one number printed three times from passing.
+  - type: regex
+    name: prints-one-flow-line-per-pick
+    target: said
+    pattern: "(?s)/devflow:flow #(\\d+)\\b.*?/devflow:flow #(?!\\1\\b)(\\d+)\\b.*?/devflow:flow #(?!\\1\\b)(?!\\2\\b)\\d+\\b"
+    match: contains
+    weight: 4
+
+  # Never a fourth: four different numbers would be a pick past the cap.
+  - type: regex
+    name: prints-no-fourth-flow-line
+    target: said
+    pattern: "(?s)/devflow:flow #(\\d+)\\b.*?/devflow:flow #(?!\\1\\b)(\\d+)\\b.*?/devflow:flow #(?!\\1\\b)(?!\\2\\b)(\\d+)\\b.*?/devflow:flow #(?!\\1\\b)(?!\\2\\b)(?!\\3\\b)\\d+\\b"
+    match: not_contains
+    weight: 4
+
+  # dispatch starts sessions, never helper agents. Any Agent call at all means
+  # it worked an issue itself, which is sweep's job and only for Quick ones.
+  - type: tool_used
+    name: starts-no-helper-agent
+    tool: Agent
+    max: 0
+    weight: 3
+
+  # The main session was told nobody is here, and dispatch waits for no go.
+  # Any call at all is a failure of the rule that it never asks.
+  - type: tool_used
+    name: asks-no-question
+    tool: AskUserQuestion
+    max: 0
+    weight: 3
+
+  # A skipped issue gets a line in the list and nothing on GitHub.
+  - type: tool_used
+    name: comments-on-no-issue
+    tool: Bash
+    input_match: "/comments"
+    max: 0
+    weight: 2
+
+  - type: llm
+    name: picks-the-right-three
+    focus: trace
+    criteria: >
+      Five issues were opened, oldest first: a Standard feature (greeting
+      word), a Deep feature (configurable per user, language and channel), a
+      bug labelled bug (hello undefined), a newer Standard change (tidy the
+      name) and a README typo. PASS if dispatch picked the bug, the greeting
+      word feature and the configurable-greeting feature, in that order, each
+      with a reason, and printed a /devflow:flow #N line for exactly those
+      three. The tidy-the-name issue must be skipped as not in the top 3, and
+      the README typo as Quick with a pointer to /devflow:sweep. FAIL if it
+      picked the README typo, if it picked the tidy-the-name issue over an
+      older one, if it printed a fourth /devflow:flow line, or if the prompt
+      of any line carries an issue title or body.
+
+expected_outcome: >
+  A "→ **dispatch** 3 of 5 issues, 2 skipped" line appears. It lists the bug
+  first (reason: bug), then the greeting word feature and the configurable
+  greeting feature (reason: oldest). The tidy-the-name issue is skipped as not
+  in the top 3 and the README typo as "Quick — use /devflow:sweep". There is no
+  session tool in `claude -p`, so a "no session tool here" line follows, then
+  one /devflow:flow #N line for each of the three picks. Nothing is asked of
+  anybody, no agent starts and nothing is commented on any issue.
+
+  Afterwards, by hand: nothing to clean up on GitHub except the five open
+  issues, which the next run's scaffold closes itself.
