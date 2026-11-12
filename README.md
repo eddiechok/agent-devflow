@@ -280,6 +280,7 @@ auth and permissions · secrets and keys · payments · public API or wire forma
 | `merge` | Merges it and cleans up its branch, without the deploy, so several PRs can go out in one `ship`. **Only you can start it** |
 | `lesson` | Writes one line to the private lessons repo — a mistake, an idea, or an override — so a later review can spot a pattern |
 | `lesson-review` | Reads the lessons and counts waste from saved sessions. Proposes a skill change only on a repeat, each with an eval case. **A human approves every change**. You start it yourself |
+| `models` | Reviews the `model` and `effort` of each devflow agent and of the main session against a short list of bookmarked benchmark and docs pages. Shows one table of now, new and why, with a URL for every number, and edits only after one go. Agent changes go out as a PR through `flow`. **Only you can start it**, because it edits agent files and your settings |
 
 `submit` opens the PR. `ship` and `merge` merge it. Only you can start either. On a branch with no PR, `ship` stops and points you at `submit`. Where a PR exists, it merges.
 
@@ -311,6 +312,7 @@ wrong.
 | [docs/skills.md](docs/skills.md) | Why `skills` lists and never installs. Why a repo with code is never asked a stack question. Why one design skill, not two. Why a vendor table and a capped search. Why it writes the one review agent line. |
 | [docs/pipeline.md](docs/pipeline.md) | Where work can sit, and what moves it. |
 | [docs/lessons.md](docs/lessons.md) | How `lesson` and `lesson-review` capture and act on real runs. Where waste counting reads from, and what it cannot see. The loop that turns a repeat into a fix and an eval case. |
+| [docs/models.md](docs/models.md) | Why the pages decide the model and effort settings. Why one go before any edit. Why no test runs. Why the pages are read in the session. |
 | [docs/web.md](docs/web.md) | Claude Code on the web. Start with "use the devflow flow skill". On Pro, say "run the review". `ship` is local only. |
 | [docs/hook.md](docs/hook.md) | The hooks. The bash hook trims check output, allows the bare check commands, asks before a commit to the default branch, and keeps an eval run out of the lessons repo. The secret hook asks before an edit to a secret env file. They stop mistakes, not attackers. |
 | [docs/provenance.md](docs/provenance.md) | Where every idea came from. Every bug that shaped a rule. Full credits. |

@@ -8943,6 +8943,56 @@ check("models: sources.md has the settings page and the model and effort pages",
       in models_sources,
       "sources.md lacks the settings, effort or choosing-a-model page")
 
+# ------------------------------------------- docs/models.md and the README rows
+#
+# docs/models.md holds why `models` is what it is, so SKILL.md stays a prompt.
+# The README names the skill in its table and the page in its docs index.
+
+MODELS_DOC_PATH = os.path.join(REPO_ROOT, "docs", "models.md")
+models_doc = ""
+if os.path.isfile(MODELS_DOC_PATH):
+    with open(MODELS_DOC_PATH, encoding="utf-8") as fh:
+        models_doc = flat(fh.read())
+check("docs/models: the page exists", models_doc != "",
+      f"{MODELS_DOC_PATH} does not exist")
+
+check("docs/models: says why the pages decide",
+      "## Why the pages decide" in models_doc
+      and "human corrects" in models_doc,
+      "docs/models.md never says why the pages decide")
+
+check("docs/models: says why one go, with one table",
+      "## Why one go" in models_doc and "one table" in models_doc
+      and "URL" in models_doc,
+      "docs/models.md never says why there is one go")
+
+check("docs/models: says why no test runs",
+      "## Why no test runs" in models_doc
+      and "12 Nov 2026" in models_doc,
+      "docs/models.md never says why there is no eval case")
+
+check("docs/models: says why the pages are read in the session",
+      "## Why the pages are read in the session" in models_doc
+      and "researcher" in models_doc and "garble" in models_doc,
+      "docs/models.md never says why the pages are read in the session")
+
+check("docs/models: links the skill and provenance",
+      "../skills/models/SKILL.md" in models_doc
+      and "provenance.md" in models_doc,
+      "docs/models.md never links the skill and provenance")
+
+_readme_models_row = next((line for line in readme_text.split("\n")
+                           if line.startswith("| `models` |")), "")
+check("README: the skills table lists models, hand-started, with the table and one go",
+      _readme_models_row != "" and "model" in _readme_models_row
+      and "effort" in _readme_models_row
+      and "Only you can start it" in _readme_models_row,
+      "README.md's skills table has no `models` row")
+
+check("README: the docs index points at docs/models.md",
+      "| [docs/models.md](docs/models.md) |" in readme_text,
+      "README.md's docs index has no row for docs/models.md")
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")
