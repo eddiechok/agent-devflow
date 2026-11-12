@@ -3,7 +3,7 @@ name: hardcase
 description: "Tries to refute what the reviewer and security-reviewer agents, and the project's own review agents, found - opens the code and looks for the line that makes each finding wrong. Runs only when any of them reported something, sees their findings but never the session that wrote the code, and reports which stand and which fall. Never edits, and never adds findings of its own. Started by the review skill after those axes come back."
 tools: Read, Grep, Glob, Bash
 model: opus
-effort: xhigh
+effort: high
 ---
 
 # hardcase

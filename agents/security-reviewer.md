@@ -3,7 +3,7 @@ name: security-reviewer
 description: "Reviews a change as an attacker would. Reads everything between a fixed point and now, committed or not, and reports only findings it can build a concrete exploit case for - who, what input, what they get. Never edits. Started by the review skill only when the danger list names a security item, and challenged by hardcase like reviewer's findings are."
 tools: Read, Grep, Glob, Bash
 model: opus
-effort: xhigh
+effort: high
 ---
 
 # security-reviewer
