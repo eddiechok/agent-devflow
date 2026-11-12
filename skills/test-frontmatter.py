@@ -1278,6 +1278,93 @@ check("report: the ship line is pr mode only, never merge or deploy steps  <-- #
       f"the Done section of {REPORT_PATH} does not keep the ship line to pr "
       f"mode, or does not forbid listing merge and deploy steps")
 
+# --------------------------------- the report skeletons live in the step  <-- #178
+#
+# A run in bykare-medusa-admin ended with no Done report, and its Plan report
+# was a bare table with no title, rules or sections. Both shapes lived only in
+# flow's references/report.md, behind one pointer each, and the session never
+# opened it. The host's own closing rules (a wrap_up recap, an output style
+# asking for "what I did, did it work, what do I do now") read as the report
+# already given. The skeletons now sit in the steps that print them, and a
+# rule says the Done report is the host's summary too. A short summary after
+# it said the same things twice, so none follows it.
+
+with open(SUBMIT_PATH, encoding="utf-8") as _fh:
+    _submit_skill = _fh.read()
+_submit_step9 = _submit_skill.split("## 9. Hand off, then stop")[-1] \
+    .split("## Output")[0]
+_submit_rules = _submit_skill.split("## Rules")[-1]
+_flow_step3 = flow_text.split("## Step 3 — announce it")[-1] \
+    .split("## Step 4")[0]
+
+DONE_SKELETON = ("---", "### ✅ Done", "#### What changed",
+                 "#### What you will see", "#### Check it yourself",
+                 "#### Assumptions", "#### Tracker", "#### Needs you",
+                 SHIP_NEXT_LINE)
+check("submit: step 9 holds the Done skeleton itself  <-- #178",
+      all(part in _submit_step9 for part in DONE_SKELETON),
+      f"step 9 of {SUBMIT_PATH} is missing "
+      f"{[p for p in DONE_SKELETON if p not in _submit_step9]!r} -- the "
+      f"report lives only behind a pointer a long run skips")
+
+# The skeleton is copied literally, so its next line carries report.md's two
+# exceptions with it: ship only where a merge deploys by itself, none in direct.
+check("submit: step 9's next line keeps the ship-only and direct cases  <-- #178",
+      "(only `→ **next** /devflow:ship` where the `## Deploy` block has no "
+      "`Deploy:` line, and no line in direct mode)" in flat(_submit_step9),
+      f"step 9 of {SUBMIT_PATH} gives the full ship and merge line with no "
+      f"condition, so a direct run or a deploy-on-merge project prints it too")
+
+check("submit: a rule says no run ends without the Done report  <-- #178",
+      "Never end a run without the Done report" in flat(_submit_rules)
+      and "It is the host's summary too: do not repeat it after the report."
+      in flat(_submit_rules),
+      f"{SUBMIT_PATH}'s Rules let a host's own summary stand in for the "
+      f"Done report, or repeat it after the report")
+
+
+PLAN_SKELETON = ("---", "### 📋 Plan — waiting for your go", "**Size:**",
+                 "#### What changes", "| # | Change | Where |",
+                 "#### What you will see", "#### Tracker")
+check("flow: step 3 holds the Plan skeleton itself  <-- #178",
+      all(part in _flow_step3 for part in PLAN_SKELETON),
+      f"step 3 of {FLOW_PATH} is missing "
+      f"{[p for p in PLAN_SKELETON if p not in _flow_step3]!r} -- the "
+      f"report gets written from memory as a bare table")
+
+DONE_CASE_PATH = os.path.join(REPO_ROOT, "evals", "done-report", "case.yaml")
+_done_case = ""
+if os.path.isfile(DONE_CASE_PATH):
+    with open(DONE_CASE_PATH, encoding="utf-8") as _fh:
+        _done_case = _fh.read()
+check("evals: a case asks for a short closing and grades the Done report  <-- #178",
+      "short closing message" in _done_case
+      and "### ✅ Done" in _done_case and "target: said" in _done_case,
+      f"no {DONE_CASE_PATH} that asks for the host's short closing and "
+      f"still looks for the Done report in what the run said")
+
+check("evals: done-report fails a summary that repeats the Done report  <-- #178",
+      "repeats" in _done_case and "after the Done report" in flat(_done_case)
+      and "comes after that report rather than in its place" not in flat(_done_case),
+      f"{DONE_CASE_PATH} still asks for a short closing after the Done report")
+
+with open(os.path.join(REPO_ROOT, "evals", "README.md"),
+          encoding="utf-8") as _fh:
+    _evals_readme = _fh.read()
+_sizing_std = ""
+with open(os.path.join(REPO_ROOT, "evals", "sizing-standard", "case.yaml"),
+          encoding="utf-8") as _fh:
+    _sizing_std = _fh.read()
+check("evals: sizing-standard grades the Plan report's title  <-- #178",
+      'pattern: "### 📋 Plan"' in _sizing_std and "target: said" in _sizing_std,
+      "evals/sizing-standard/case.yaml has no said grader for the Plan "
+      "report's title -- a bare Plan table would pass every eval")
+
+check("evals: the README counts and names the done-report case  <-- #178",
+      "Twenty-five cases" in _evals_readme
+      and "| `done-report` |" in _evals_readme,
+      "evals/README.md does not count or list the done-report case")
+
 # ------------------------- a summary before the build, and one after the submit
 #
 # The size line says how big the work is, not what it will touch, so on Quick

@@ -58,6 +58,25 @@ graders:
     match: not_contains
     weight: 2
 
+  # #178: the Plan report at step 3 came out as a bare table, with no title,
+  # rules or sections, from a run that never opened report.md. Graded here,
+  # where the run stops at the Plan waiting for go; done-report's "do not wait"
+  # prompt skips the Plan altogether. `said`, not `trace`: flow's own text holds
+  # the skeleton.
+  - type: regex
+    name: plan-report-has-its-title
+    target: said
+    pattern: "### 📋 Plan"
+    match: contains
+    weight: 2
+
+  - type: regex
+    name: plan-report-has-its-sections
+    target: said
+    pattern: "### 📋 Plan[\\s\\S]*#### What changes"
+    match: contains
+    weight: 2
+
   # flow, step 3: "Exactly one line, before any other output."
   #
   # An llm grader rather than a regex because the promise is about POSITION,

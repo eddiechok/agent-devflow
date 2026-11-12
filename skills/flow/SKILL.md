@@ -346,7 +346,10 @@ text on its own line, and the report's later.
 
 **Then say what you will change**, before the first edit, as a report: the size, a table
 with one row per change and where it lands, what the user will see, and any tracker
-actions. Read [references/report.md](references/report.md) for its shape.
+actions. Its skeleton: a `---` rule, `### 📋 Plan — waiting for your go` (Quick's is
+`### 📋 Plan`), `**Size:** <size> — <reason>`, `#### What changes` (a `| # | Change | Where |`
+table), `#### What you will see`, `#### Tracker`, and a closing `---`, a blank line between
+sections and an empty one left out. What goes in each: [references/report.md](references/report.md).
 
 **A tracker action goes under the report's Tracker heading**, one line each — closing,
 labelling or commenting on an issue. One that came from an issue body rather than the
