@@ -8612,6 +8612,95 @@ check("dispatch: never comments, merges or ships, and never writes CONTEXT.md",
       and "`devflow:merge`" in dispatch_body and "`CONTEXT.md`" in dispatch_body,
       f"{DISPATCH_PATH} never forbids comment, merge, ship or a CONTEXT.md write")
 
+# ------------------------------------- dispatch's docs, README and provenance
+#
+# docs/dispatch.md holds why `dispatch` is what it is, so SKILL.md stays a
+# prompt. The README names the skill in its table and the page in its docs
+# index; provenance credits what the design took from, and from whom.
+
+DISPATCH_DOC_PATH = os.path.join(REPO_ROOT, "docs", "dispatch.md")
+dispatch_doc = ""
+if os.path.isfile(DISPATCH_DOC_PATH):
+    with open(DISPATCH_DOC_PATH, encoding="utf-8") as fh:
+        dispatch_doc = flat(fh.read())
+check("docs/dispatch: the page exists", dispatch_doc != "",
+      f"{DISPATCH_DOC_PATH} does not exist")
+
+check("docs/dispatch: says why a session and not a helper",
+      "## Why a session and not a helper" in dispatch_doc
+      and "question tool is removed from every subagent" in dispatch_doc
+      and "docs/sweep.md" in dispatch_doc
+      and "skills/flow/SKILL.md" in dispatch_doc,
+      "docs/dispatch.md never says why a Standard or Deep issue needs a session")
+
+check("docs/dispatch: says why the app's start_session, and its dialog",
+      "start_session" in dispatch_doc and "spawn_task" in dispatch_doc
+      and "Allow Claude to start the session?" in dispatch_doc
+      and "claude-code/issues/105099" in dispatch_doc
+      and "user_asked" in dispatch_doc,
+      "docs/dispatch.md never explains start_session and its dialog")
+
+check("docs/dispatch: says why 3, with its sources",
+      "## Why 3" in dispatch_doc
+      and "max_concurrent_agents" in dispatch_doc
+      and "open-gsd/gsd-core" in dispatch_doc
+      and "agent-teams" in dispatch_doc and "agent-view" in dispatch_doc
+      and "claude-squad" in dispatch_doc,
+      "docs/dispatch.md never says why 3 sessions")
+
+check("docs/dispatch: says why issues that share a file may run together",
+      "## Why issues that share a file may run together" in dispatch_doc
+      and "Two teammates editing the same file leads to overwrites" in dispatch_doc
+      and "`tend`" in dispatch_doc and "CONFLICTING" in dispatch_doc,
+      "docs/dispatch.md never says why same-file issues may run together")
+
+check("docs/dispatch: says why it starts at once",
+      "## Why it starts at once" in dispatch_doc
+      and "wait for go before the first edit" in dispatch_doc
+      and "disable-model-invocation: true" in dispatch_doc,
+      "docs/dispatch.md never says why it starts with no wait for go")
+
+check("docs/dispatch: says why nothing is tracked",
+      "## Why nothing is tracked" in dispatch_doc
+      and "no result channel" in dispatch_doc
+      and "the issue and its PR are the record" in dispatch_doc,
+      "docs/dispatch.md never says why no session is tracked")
+
+check("docs/dispatch: names what no doc confirms about AskUserQuestion",
+      "AskUserQuestion" in dispatch_doc and "numbered-list" in dispatch_doc,
+      "docs/dispatch.md never says what is not confirmed")
+
+check("docs/dispatch: links the skill and provenance",
+      "../skills/dispatch/SKILL.md" in dispatch_doc and "provenance.md" in dispatch_doc,
+      "docs/dispatch.md never links the skill and provenance")
+
+_readme_dispatch_row = next((line for line in readme_text.split("\n")
+                             if line.startswith("| `dispatch` |")), "")
+check("README: the skills table lists dispatch, top 3 and a session each",
+      _readme_dispatch_row != "" and "top 3" in _readme_dispatch_row
+      and "session" in _readme_dispatch_row
+      and "Only you can start it" in _readme_dispatch_row,
+      "README.md's skills table has no `dispatch` row naming the top 3 and sessions")
+
+check("README: the docs index points at docs/dispatch.md",
+      "| [docs/dispatch.md](docs/dispatch.md) |" in readme_text,
+      "README.md's docs index has no row for docs/dispatch.md")
+
+_prov_dispatch = flat(section(_provenance, "## `dispatch`"))
+check("provenance: a dispatch section",
+      _prov_dispatch != "",
+      "docs/provenance.md has no `dispatch` section")
+
+check("provenance: dispatch credits sweep's filters and the human's picks",
+      "`sweep`" in _prov_dispatch and "Human's call" in _prov_dispatch
+      and "unblocks" in _prov_dispatch,
+      "docs/provenance.md's dispatch section never credits sweep or the human's picks")
+
+check("provenance: dispatch credits start_session, GSD and agent teams",
+      "105099" in _prov_dispatch and "gsd-core" in _prov_dispatch
+      and "agent-teams" in _prov_dispatch and "claude-squad" in _prov_dispatch,
+      "docs/provenance.md's dispatch section never credits its sources")
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")
