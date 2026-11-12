@@ -70,6 +70,8 @@ On a repo with no CI, it offers to add CI that runs the checks, and recommends y
 
 Run it again if the commands change. It will not overwrite a block you wrote without asking.
 
+Last, it suggests a model and effort for your main session: opus at high, set with `/model` and `/effort`. devflow pins its own agents, but the main session runs on what you set. It is only a hint: `setup` never edits your settings.
+
 ### How the project works: `direct` or `pr`
 
 `setup` is a short questionnaire, not only a command finder. It reads the repo first (private or public, how many collaborators, whether CI runs), asks what the project is about, and asks how the work should land. It recommends one answer and says why. Then it writes a `## Workflow` block into `CLAUDE.md`:
@@ -281,6 +283,8 @@ auth and permissions · secrets and keys · payments · public API or wire forma
 | `lesson` | Writes one line to the private lessons repo — a mistake, an idea, or an override — so a later review can spot a pattern |
 | `lesson-review` | Reads the lessons and counts waste from saved sessions. Proposes a skill change only on a repeat, each with an eval case. **A human approves every change**. You start it yourself |
 
+One more skill, `/models`, lives in this repo's `.claude/skills/` and runs only in this repo, so a project that installs devflow never sees it. It reviews the `model` and `effort` of each devflow agent, the main session and `setup`'s hint against a short list of bookmarked pages, and changes them after one go.
+
 `submit` opens the PR. `ship` and `merge` merge it. Only you can start either. On a branch with no PR, `ship` stops and points you at `submit`. Where a PR exists, it merges.
 
 `review` runs agents that never saw the session: `reviewer` asks *is it built right*, `security-reviewer` asks *is it safe from an attacker* — only when the danger list names a security item — and `spec-reviewer` asks *is it the right thing*. A project can name its own review agents too, one `- Review agent:` line each in `CLAUDE.md`, and `review` runs only those, under **Project review**. Another, `hardcase`, tries to break `reviewer`'s, `security-reviewer`'s and the project agents' findings. The reports are never blended. `researcher` is not a reviewer either: on a Deep job, `flow` and `plan` start one per open question, at most 3 each, `flow` during its rounds and `plan` before it writes the pieces, and each finding it returns names its source. `discuss` starts them too when you ask to talk a design through, at most 3 per discussion. `builder` is not a reviewer: on a Deep job it builds one chain of the plan's pieces in its own git worktree, commits each one, and reports back a branch line plus five lines per piece. One builder per chain, up to four chains at once, and `plan` merges their branches back before it reports to `flow`, which then submits. `sweeper` is not a reviewer either: `sweep` starts one per chain of Quick issues, each in its own git worktree, and it runs `build` for every issue, one commit each, then `submit` once, so one PR closes the chain. It never asks: where `build` or `submit` would, it stops and keeps its worktree and branch on your machine, unpushed. Up to four sweepers at once.
@@ -311,6 +315,7 @@ wrong.
 | [docs/skills.md](docs/skills.md) | Why `skills` lists and never installs. Why a repo with code is never asked a stack question. Why one design skill, not two. Why a vendor table and a capped search. Why it writes the one review agent line. |
 | [docs/pipeline.md](docs/pipeline.md) | Where work can sit, and what moves it. |
 | [docs/lessons.md](docs/lessons.md) | How `lesson` and `lesson-review` capture and act on real runs. Where waste counting reads from, and what it cannot see. The loop that turns a repeat into a fix and an eval case. |
+| [docs/models.md](docs/models.md) | Why the pages decide the model and effort settings. Why one go before any edit. Why no test runs. Why the pages are read in the session. |
 | [docs/web.md](docs/web.md) | Claude Code on the web. Start with "use the devflow flow skill". On Pro, say "run the review". `ship` is local only. |
 | [docs/hook.md](docs/hook.md) | The hooks. The bash hook trims check output, allows the bare check commands, asks before a commit to the default branch, and keeps an eval run out of the lessons repo. The secret hook asks before an edit to a secret env file. They stop mistakes, not attackers. |
 | [docs/provenance.md](docs/provenance.md) | Where every idea came from. Every bug that shaped a rule. Full credits. |

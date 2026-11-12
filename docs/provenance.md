@@ -166,6 +166,26 @@ repeated. Star counts below were taken with `gh api` on 2026-11-12.
 | Issues that share a file may run together | **Changed** — [agent teams](https://code.claude.com/docs/en/agent-teams): "Two teammates editing the same file leads to overwrites. Break the work so each teammate owns a different set of files" | **Human's call**, 12 Nov 2026. Each session has its own worktree and PR, and `ship` hands a CONFLICTING PR to `tend`, which resolves it. So no file is guessed and no chain is built |
 | Starts at once; tracks nothing; no Done report | **Same idea** — `sweep` prints its list and starts with no wait for go | The human started it knowing it starts sessions, and each session waits for go before it edits. The repo describes no result channel back from a started session, so the issue and its PR are the record |
 
+## `models`
+
+Built from `lesson-review`, which proposes and never edits without a human's yes. The pages
+it reads are the ones in `.claude/skills/models/references/sources.md`; their numbers are quoted
+there with each URL, and are not repeated here.
+
+| Step | From | Why |
+|---|---|---|
+| It proposes, and a human approves | **Copied** — this repo's own `lesson-review` (`skills/lesson-review/SKILL.md`) | It edits agent files and `~/.claude/settings.json`, so nothing changes without a yes |
+| Hand-started only, `disable-model-invocation: true` | **Copied** — `dispatch` and `sweep` carry the same flag | Only a human starts it, because it edits files that outlast the session |
+| This repo's own skill, in `.claude/skills/`, not the plugin's `skills/` | **Human's call**, 12 Nov 2026 | It tunes the plugin's own agents, which only this repo can change. A plugin loads only `skills/` ([plugins reference](https://code.claude.com/docs/en/plugins-reference)), so other projects never see it |
+| `setup` suggests a main-session pair, once per project, and never edits settings; `/models` keeps it current | **Human's call**, 12 Nov 2026 | devflow's own skills run in the main session, on whatever the user set. A hint leaves the choice with the user |
+| One table, one go, then every edit | **Ours** | A go per row is a long wait for one decision. A number with no URL cannot be checked, so each row carries its URLs and a note where pages disagree |
+| The bookmark pages decide the model and effort; no eval case, no test run on a setting | **Human's call**, 12 Nov 2026 | The human said small tests are not meaningful, and the pages decide while the human corrects in real sessions |
+| Pages are read in the session, not by researcher agents | **Ours** | A summarizing fetch can garble a number: the Qodo post disagrees with itself between its text and its table |
+| A hand switch, with the pages to look at first | **Changed** — GSD's fixed model profiles (quality, balanced, budget, inherit) are switched by hand and no leaderboard is checked ([README](https://github.com/gsd-build/get-shit-done/?tab=readme-ov-file), [FEATURES.md](https://github.com/gsd-build/get-shit-done/blob/main/docs/FEATURES.md)) | `models` keeps the human's go and adds the pages to look at before it |
+| Where the pages do not cover an agent's job, the agent keeps its setting | **Ours** | A change with no page behind it is a guess |
+| The four review agents follow the pages too, like every other agent | **Human's call**, 12 Nov 2026 | They were held at opus/xhigh so a review would not quietly get cheaper. The pages now decide, and the table shows each change before it is made. The `reviewer`, `hardcase`, `spec-reviewer` and `security-reviewer` rows below say the same |
+| The project's own review agents in `.claude/agents/` are not touched | **Same idea** — [docs/review.md](review.md) | devflow does not own them |
+
 ## `debug`
 
 | Step | From | Why |
@@ -248,7 +268,7 @@ repeated. Star counts below were taken with `gh api` on 2026-11-12.
 | Missing tests are not a finding | **Ours** | `build` handles tests. There is one exception: a test deleted or watered down. That is on the danger list |
 | Check who calls the changed code | **Same idea** — superpowers asks something similar | Written as an action here. A question gets answered from memory |
 | "Nothing found" is a real answer | **Ours**, building on superpowers | Their rule forbids claiming it looks fine without checking. Ours says what to do instead: name what you read |
-| Pins `model: opus`, `effort: xhigh` | **Ours** | Neither source pins one. An agent with no `model:` inherits the session. So the same branch gets a different review depending on what the human last typed at `/model`. The weaker one still reports nothing wrong |
+| Pins `model: opus`, `effort: xhigh`; the pin follows `/models` | **Ours**; following the pages is the **Human's call**, 12 Nov 2026 | Neither source pins one. An agent with no `model:` inherits the session. So the same branch gets a different review depending on what the human last typed at `/model`. The weaker one still reports nothing wrong |
 
 ## `hardcase` agent — is the first axis right
 
@@ -260,7 +280,7 @@ repeated. Star counts below were taken with `gh api` on 2026-11-12.
 | `Could not check` is its own bucket | **Ours** — same shape as `NOT RUN` and `Not reported:` | A challenge that did not happen is not a challenge that failed. `submit` acts on the difference |
 | It gets no vote | **Ours** | Two agents disagreeing is not a majority. `submit` reads the refuting line itself before dropping a fix |
 | Never adds a finding of its own | **Ours** | There is no round for it. A challenger that can also accuse has an incentive to trade |
-| Pins `model` and `effort` like the axes | **Ours** | A refuter that cannot follow the code refutes nothing. It prints a clean sheet, which reads exactly like agreement |
+| Pins `model` and `effort` like the axes; the pins follow `/models` | **Ours**; following the pages is the **Human's call**, 12 Nov 2026 | A refuter that cannot follow the code refutes nothing. It prints a clean sheet, which reads exactly like agreement |
 
 ## `spec-reviewer` agent — is it the right thing
 
@@ -274,7 +294,7 @@ repeated. Star counts below were taken with `gh api` on 2026-11-12.
 | A silent spec is not a failing spec | **Ours** | The obvious way this agent goes wrong |
 | A later piece is not a missing piece | **Ours** | Deep plans list pieces in order |
 | Never judges code quality | **Copied** — mattpocock | If both agents report on style, the split was pointless |
-| Pins the same pair as `reviewer` | **Ours** | The two reports are never ranked against each other. Giving one axis a weaker model ranks them anyway, and silently |
+| Pins the same pair as `reviewer`; the pin follows `/models` | **Ours**; following the pages is the **Human's call**, 12 Nov 2026 | The two reports are never ranked against each other. Giving one axis a weaker model ranks them anyway, and silently |
 
 ## `researcher` agent — one open question, findings with sources
 
@@ -308,7 +328,7 @@ repeated. Star counts below were taken with `gh api` on 2026-11-12.
 | The "never report" list | **Copied** — the source's EXCLUSIONS and HARD EXCLUSIONS blocks | DOS, secrets already secured, rate limiting, a missing hardening measure with nothing concrete attached, outdated dependencies, memory-safety bugs in memory-safe languages, test-only files, docs files, log spoofing, path-only SSRF, regex injection and regex DoS, missing audit logs, theoretical race conditions, resource leaks, user content in AI prompts, and GitHub Actions or notebook findings with no concrete path for untrusted input. The source's 17-item list is condensed; nothing in it was dropped, only merged where two bullets said the same thing |
 | The precedents | **Copied** — the source's PRECEDENTS block | Trusted env vars and CLI flags, unguessable UUIDs, React/Angular's default escaping, client-side auth checks not being the finding, logging a URL or non-PII data versus logging a secret or PII, open redirects and their kin only when certain, and shell-script command injection needing a concrete untrusted-input path. The source's remaining precedents either restate an exclusion already carried over or apply to a sub-task pipeline this agent does not run |
 | Report shape mirrors `reviewer`'s | **Copied** — `reviewer`'s own report shape, itself from Anthropic's `code-review` plugin and mattpocock | `## Exploitable` and `## Reviewed` stand in for `reviewer`'s `## Blocking` and `## Reviewed`, same 400-word ceiling, same `Not reported:` line when the ceiling drops a real finding |
-| Pins `model: opus`, `effort: xhigh` | **Copied** — `reviewer` and `spec-reviewer` pin the same pair | The three review axes are never ranked against each other. Giving the security axis a weaker model ranks it below the other two, silently |
+| Pins `model: opus`, `effort: xhigh`; the pin follows `/models` | **Copied** — `reviewer` and `spec-reviewer` pin the same pair. Following the pages is the **Human's call**, 12 Nov 2026 | The three review axes are never ranked against each other. Giving the security axis a weaker model ranks it below the other two, silently |
 | Started only when the danger list names a security item | **Ours** | `security-reviewer` does not run on every change — most changes touch nothing security-shaped, and a fresh agent on every diff is a cost nobody asked to pay. `reviewer` already reads the danger list for every review, so it is the cheapest place to decide whether the security pass is worth starting |
 
 ## `submit`
