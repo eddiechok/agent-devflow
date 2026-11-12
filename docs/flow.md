@@ -148,6 +148,15 @@ A wrong guess at `origin/main` costs little: `0` means every commit is already o
 `origin/main`, so no pull request could be about them, and `build` still finds the real
 default before it cuts.
 
+**The pull request lookup and the linked-worktree check come from Context too**, and the
+skill says its first output is text, never a tool call (`worktree-guard`, 12 Nov 2026).
+With `Commits ahead` at 1, step 0 called `gh` first, and the run went quiet: 3 of 14 runs
+printed `✓ **worktree** this folder is on <branch>`, and 0 of 14 the size line. The 3 that
+printed it had printed step 0's `pr` line first; the 11 that did not wrote the line only in
+their thinking. Neither the output style, nor `EnterWorktree` being a deferred tool, nor
+the two Context lines alone changed that: the runs still opened by reading code. Context
+lines plus the rule printed both lines in 3 of 3.
+
 That is the whole reason `tend` exists: not every failure a pull request reports belongs to
 the pull request, and a fix pushed for a failure nobody attributed is worse than no fix.
 `tend` reads what is actually red, decides whose it is, and comes back through `build` and
@@ -177,6 +186,14 @@ worktree and outlive a stopped run, and the sequential path never makes one. A s
 on another branch stops the run rather than resuming on the wrong commits.
 
 ### Step 0c — is this folder yours to branch in?
+
+New work means `build` runs `git checkout -b`, and that moves **the whole folder**. Another
+session open on this same checkout is standing in that folder, and nothing tells it: its
+branch changes underneath it, mid-build. **The size of the work has nothing to do with
+it** — a Quick typo fix moves the folder exactly as a Deep job does.
+
+Branching anyway is the one outcome this whole step exists to prevent, and a fallback
+that does it is not a fallback.
 
 That is not a small difference: `build`'s own rule is *already on a branch, keep it, whatever it
 is called*, so nothing downstream will catch it, and the pull request ends up carrying

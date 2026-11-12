@@ -21,8 +21,10 @@ rule looks wrong.
 ## 1. Check the branch
 
 **Direct mode** — `Mode: direct` in the `## Workflow` block of `CLAUDE.md` and no `mode: pr`
-line — is not this skill as written below. Read [references/direct.md](references/direct.md)
-now: it says what changes at steps 1, 5, 7 and 8. Every other step runs as written.
+line — is not this skill as written below. With `size: Quick`, your first output, before
+any tool call, is `– **review** skipped — Quick, direct mode`. Then read
+[references/direct.md](references/direct.md) now: it says what changes at steps 1, 5, 7
+and 8. Every other step runs as written.
 
 If you are on the default branch, **stop**. Create a branch first:
 
@@ -100,9 +102,7 @@ git merge-base HEAD <default branch ref>
 
 **Pass `no-behaviour: <reason>` too, when `build` said there was nothing to test.** `build` has one gate for that, and it prints `– **no-behaviour** <reason> — running the checks instead`. Hand that reason on **as its own line**, `no-behaviour: <reason>`, after the fixed point and the request — `review` recognises it only at a line start. `review` then runs `reviewer` alone, to check the words still match the repo, and reports **Challenged**, **Security** and **Right thing** as `skipped — no behaviour`. Act on its findings like any others below; the skipped sections are nothing to fix. Under **Evidence** at step 8 write `Review: reviewer only, no behaviour`.
 
-Only `build` decides this, and only for the change in front of it. If `build` ran the gates, the axes run — never reach for the exit yourself because the diff looks small or because it is all markdown.
-
-Do not do the review here — a session reviewing the code it just wrote carries every assumption that produced it.
+Only `build` decides this, and only for the change in front of it. If `build` ran the gates, the axes run — never reach for the exit yourself because the diff looks small or because it is all markdown. Do not do the review here — a session reviewing the code it just wrote carries every assumption that produced it.
 
 Then act on what comes back. **A finding, an axis `NOT RUN`, or a `Not reported:` line** → read [references/findings.md](references/findings.md) first: what to fix, what you may reject, and how round 2 runs. A clean report has nothing to act on.
 

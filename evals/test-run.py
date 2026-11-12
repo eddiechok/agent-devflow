@@ -1404,6 +1404,40 @@ check("direct-mode: a dash-tolerant skipped line passes prints-review-skipped",
                  said="- **review** skipped - Quick, direct mode"), "pass")
 check("direct-mode: no skipped line fails prints-review-skipped",
       dm_verdict("prints-review-skipped", said="✓ **review** all three ran"), "fail")
+check("direct-mode: a skipped line with no leading mark passes",
+      dm_verdict("prints-review-skipped",
+                 said="**review** skipped — Quick, direct mode"), "pass")
+
+# `claude plugin eval` grades the same patterns against its own trace: one JSON
+# message per line, Skill bodies and Reads of skill files included, thinking
+# too. Its `tool_used` also reads a lone `max: 0` as 1..0. These pin the case
+# to that shape, so a grader cannot pass on the skill's text or the model's
+# thinking there (12 Nov 2026: one run passed and never printed the line).
+_pe = lambda o: json.dumps(o, separators=(",", ":"), ensure_ascii=False)
+_PE_LINE = "– **review** skipped — Quick, direct mode"
+_pe_said = _pe({"type": "assistant", "message": {"content": [
+    {"type": "text", "text": "✓ **debug** none found\n\n" + _PE_LINE}]}})
+_pe_thought = _pe({"type": "assistant", "message": {"content": [
+    {"type": "thinking", "thinking": _PE_LINE},
+    {"type": "tool_use", "name": "Bash", "input": {"command": "git commit -m x"}}]}})
+_pe_read = _pe({"type": "user", "message": {"content": [{"type": "tool_result",
+    "content": [{"type": "text", "text": "Run:\n```\ngit checkout -b <type>/<name>\n```\n" + _PE_LINE}]}]}})
+_pe_cut = _pe({"type": "assistant", "message": {"content": [{"type": "tool_use",
+    "name": "Bash", "input": {"command": "git checkout -b docs/typo main"}}]}})
+_dm_re = lambda name, trace: re.search(_dm[name]["pattern"], trace) is not None
+check_true("direct-mode/plugin eval: a printed line passes prints-review-skipped",
+           _dm_re("prints-review-skipped", _pe_said))
+check_true("direct-mode/plugin eval: the line in thinking only does not pass",
+           not _dm_re("prints-review-skipped", _pe_thought))
+check_true("direct-mode/plugin eval: the line in a skill Read does not pass",
+           not _dm_re("prints-review-skipped", _pe_read))
+check_true("direct-mode/plugin eval: skill text with checkout -b is not a cut",
+           not _dm_re("cuts-no-branch", _pe_read))
+check_true("direct-mode/plugin eval: a real checkout -b is a cut",
+           _dm_re("cuts-no-branch", _pe_cut))
+for _name in ("starts-no-review-agent", "calls-no-review"):
+    check_true("direct-mode/plugin eval: %s says min: 0 beside max: 0" % _name,
+               _dm[_name].get("min") == 0 and _dm[_name].get("max") == 0)
 
 _dm_scaffold = os.path.join(HERE, "direct-mode", "scaffold.sh")
 check_true("direct-mode: the scaffold exists", os.path.isfile(_dm_scaffold))

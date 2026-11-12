@@ -24,11 +24,15 @@ runs: 3
 graders:
   # The point of direct. A branch here is today's path leaking through. The
   # pattern covers both ways to cut one, and is a trace regex because the
-  # command may arrive spelled either way.
+  # command may arrive spelled either way. It reads commands only: `claude
+  # plugin eval`'s trace holds the Skill bodies too, and build's SKILL.md says
+  # `git checkout -b`, so a bare pattern failed every run there. A command is
+  # `"command": "..."` in run.py's trace and `"command":"..."` in plugin
+  # eval's; skill text inside a JSON string has its quotes escaped.
   - type: regex
     name: cuts-no-branch
     target: trace
-    pattern: "git (checkout -[bB]|switch -[cC])\\b"
+    pattern: "\"command\": ?\"[^\\n]*?git (checkout -[bB]|switch -[cC])\\b"
     match: not_contains
     weight: 4
 
@@ -49,6 +53,9 @@ graders:
     name: starts-no-review-agent
     tool: Agent
     input_match: "reviewer"
+    # `min: 0` too: `claude plugin eval` reads a lone `max: 0` as 1..0, which
+    # fails every run.
+    min: 0
     max: 0
     weight: 3
 
@@ -56,16 +63,25 @@ graders:
     name: calls-no-review
     tool: Skill
     input_match: "devflow:review"
+    min: 0
     max: 0
     weight: 2
 
   # A step that prints nothing cannot be told from a step that was skipped, so
   # the skip has to be said. Dash-tolerant: the line is the claim under test,
   # not whether the model reached for an em dash.
+  #
+  # Only what the model said counts. `claude plugin eval`'s trace holds the Read
+  # of submit's references/direct.md, which carries this very line, so a bare
+  # pattern passed a run that never printed it (12 Nov 2026). There the trace
+  # is one JSON message per line: the first branch takes a text block of an
+  # assistant line, never its thinking. run.py's trace is plain text with
+  # skill files and thinking dropped: the second branch takes a line that is
+  # not a JSON tool input, so not a `{` at its start.
   - type: regex
     name: prints-review-skipped
     target: trace
-    pattern: "\\*\\*review\\*\\* skipped\\s*[—–-]\\s*Quick, direct mode"
+    pattern: "\\{\"type\":\"assistant\"[^\\n]*?\"type\":\"text\",\"text\":\"(?:[^\"\\\\\\n]|\\\\.)*?\\*\\*review\\*\\* skipped\\s*[—–-]\\s*Quick, direct mode|(?:^|\\n)(?!\\{)[^\\n]*\\*\\*review\\*\\* skipped\\s*[—–-]\\s*Quick, direct mode"
     match: contains
     weight: 3
 

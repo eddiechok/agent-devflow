@@ -9,6 +9,10 @@ allowed-tools: Bash(git status:*), Bash(git branch:*), Bash(git rev-parse:*), Ba
 
 Size the work, then route it. One line before anything else.
 
+**Your first output is text, never a tool call, while a line is owed that does not wait on one.**
+Steps 0 to 0c read the Context block and the size line needs only the request, so their lines come before any read of code.
+A call a step names first — direct mode's reference, an issue, setup, a question — comes once every line that does not wait on it is printed.
+
 Why these rules are what they are: [docs/flow.md](../../docs/flow.md). Read it only if a
 rule looks wrong.
 
@@ -24,6 +28,8 @@ rule looks wrong.
 - Kept servers: !`R=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)"); K=$(awk -F'\t' -v r="$R" -v k=1 '$k==r' "$HOME/.claude/devflow/servers.tsv" 2>/dev/null); if [ -z "$K" ]; then echo none; else echo "$K" | while IFS="$(printf '\t')" read -r _ b n p pid _ c; do if [ "$n" = - ]; then s="no PR yet"; else s=$(gh api "repos/{owner}/{repo}/pulls/$n" --jq 'if .merged_at then "merged" else .state end' 2>/dev/null || echo unknown); fi; echo "[$b #$n $s, pid $pid, ports $p, start: $c]"; done; fi`
 - Env files: !`[ -e .worktreeinclude ] && echo set || { R=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)"); F=$(find "$R" \( -name node_modules -o -name .git -o -name worktrees -o -name .worktrees -o -name .venv -o -name vendor \) -prune -o -name '.env*' \( -type f -o -type l \) -print 2>/dev/null | while read -r f; do echo "${f#"$R"/}"; done | grep -vE '\.(example|sample|template)$' | git check-ignore --stdin 2>/dev/null | head -20 | tr '\n' ' '); [ -n "$F" ] && echo "none; env files: $F" || echo none; }`
 - Workflow block: !`sed -n '/^## Workflow/,/^## /{/^## Workflow/p;/^## /!p;}' CLAUDE.md 2>/dev/null | grep . || echo "none — ./CLAUDE.md has no ## Workflow block"`
+- Pull requests for this branch: !`(git rev-list --count origin/HEAD..HEAD || git rev-list --count origin/main..HEAD) 2>/dev/null | grep -qx 0 && echo "not asked — 0 commits ahead" || gh api 'repos/{owner}/{repo}/pulls?head={owner}%3A{branch}&state=all' --jq '.[] | "#\(.number) [\(if .merged_at then "MERGED" elif .state == "open" then "OPEN" else "CLOSED" end)] \(.head.ref)"' 2>&1 | head -5 | grep . || echo none`
+- Linked worktree: !`git rev-parse --path-format=absolute --git-dir --git-common-dir 2>/dev/null | uniq | awk 'END { print (NR == 2 ? "yes — git-dir and git-common-dir differ" : "no — git-dir and git-common-dir are the same") }'`
 
 ## Before step 0 — is this project set up?
 
@@ -39,17 +45,17 @@ The `Workflow block` Context line is the project's `## Workflow` block, so do no
 
 Then move to step 1.
 
-Anything other than `0` — including `unknown` — is when you ask:
+Anything other than `0` — including `unknown` — is when you ask. **The `Pull requests for
+this branch` Context line has already asked**, with this call; read it, do not run it again:
 
 ```
 gh api 'repos/{owner}/{repo}/pulls?head={owner}%3A<branch>&state=all' --jq '.[] | "#\(.number) [\(if .merged_at then "MERGED" elif .state == "open" then "OPEN" else "CLOSED" end)] \(.head.ref)"'
 ```
 
-or whatever GitHub access this environment has. Pull requests go through `gh api`, never
-the `gh pr` commands, for the reason issues do in step 0b: those send GraphQL. An empty
-answer is no pull request; several lines mean several, and the open one is this branch's.
-**A missing CLI is not a missing PR.**
-If the call fails rather than answering "no pull request", say which of the two you got.
+`none` is no pull request; several lines mean several, and the open one is this branch's.
+An error is the call failing, and **a missing CLI is not a missing PR**: say which you got,
+and ask again through whatever GitHub access this environment has — `gh api`, never the
+`gh pr` commands, which send GraphQL (see step 0b).
 
 Look at the branch before anything else. **If it already has an open pull request**, that work has been submitted and this request is one of three things.
 
@@ -137,14 +143,10 @@ the branch this folder is already standing on, so they change nothing here and g
 to step 1. This step is for every run that decided **new work, fresh branch** — including
 the plain `Commits ahead of the default branch ref: 0` one, which decides it without saying much.
 
-New work means `build` runs `git checkout -b`, and that moves **the whole folder**. Another
-session open on this same checkout is standing in that folder, and nothing tells it: its
-branch changes underneath it, mid-build. **The size of the work has nothing to do with
-it** — a Quick typo fix moves the folder exactly as a Deep job does.
-
 Two questions, in this order.
 
-**First: are you already in a linked worktree?**
+**First: are you already in a linked worktree?** The `Linked worktree` Context line has
+already asked, with this call; read it, do not run it again:
 
 ```
 git rev-parse --path-format=absolute --git-dir --git-common-dir
@@ -217,9 +219,7 @@ So say what is still owed, in the same breath as arriving:
 ```
 
 **If the worktree never happens** — no EnterWorktree tool in this harness, or the call
-fails, or it is refused — **stop. Do not carry on in this folder.** Branching anyway is
-the one outcome this whole step exists to prevent, and a fallback that does it is not a
-fallback:
+fails, or it is refused — **stop. Do not carry on in this folder:**
 
 ```
 ✗ **worktree** refused — this folder belongs to <branch>.

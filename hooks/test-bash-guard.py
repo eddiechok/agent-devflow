@@ -122,6 +122,25 @@ for cmd in ("pytest", "cargo test", "go test ./...", "tsc", "npm run lint",
     check(f"recognised as a check runner: {cmd!r}",
           decision(call(cmd)) == "allow")
 
+# `claude plugin eval` runs Bash in a sandbox that may deny the folder
+# `mktemp` writes to. The rewrite then sent the check's output to `""`, the
+# check never ran, and `npm test` read as failed in every such run (12 Nov
+# 2026, direct-mode: one run stopped, one committed with no checks). With no
+# temp file the check must still run, untrimmed, and keep its exit status.
+with tempfile.TemporaryDirectory() as _bin:
+    for _name, _body in (("mktemp", "echo 'mktemp: Operation not permitted' >&2\nexit 1\n"),
+                         ("npm", "echo ran-the-check\nexit 3\n")):
+        with open(os.path.join(_bin, _name), "w") as fh:
+            fh.write("#!/bin/sh\n" + _body)
+        os.chmod(os.path.join(_bin, _name), 0o755)
+    _env = dict(os.environ, PATH=_bin + os.pathsep + os.environ["PATH"])
+    _run = subprocess.run(["bash", "-c", rewritten(call("npm test"))],
+                          capture_output=True, text=True, env=_env)
+    check("no temp file: the check still runs and keeps its exit status",
+          "ran-the-check" in _run.stdout and _run.returncode == 3,
+          f"exit {_run.returncode}, stdout {_run.stdout!r}, "
+          f"stderr {_run.stderr[:120]!r}")
+
 # ------------------------------------------------------------ hands-off cases
 
 for name, cmd in [
