@@ -2093,6 +2093,58 @@ check("child_env: keeps HOME, where the login lives", _env.get("HOME"), "/h")
 check_true("run_once: hands child_env to claude -p",
            "env=child_env(" in open(run.__file__).read())
 
+# ------------------------------------------- the command: cost limit, no history
+
+# #176. Each paid session gets a hard cost limit, stays out of
+# ~/.claude/projects/ (lesson-review's waste count reads that folder), and puts
+# hook events in the trace. --bare would skip the --plugin-dir plugin and its
+# hooks, so it must never be there.
+_case = {"execution": {"prompt": "hi", "max_turns": 7}}
+_cmd = run.build_cmd(_case, "default", 10.0)
+check("build_cmd: starts claude -p with the prompt", _cmd[:3], ["claude", "-p", "hi"])
+check_true("build_cmd: keeps the session out of ~/.claude/projects/",
+           "--no-session-persistence" in _cmd)
+check_true("build_cmd: puts hook events in the trace",
+           "--include-hook-events" in _cmd)
+check_true("build_cmd: sets a cost limit",
+           "--max-budget-usd" in _cmd
+           and _cmd[_cmd.index("--max-budget-usd") + 1] == "10")
+check_true("build_cmd: a half-dollar limit is passed as written",
+           "2.5" in run.build_cmd(_case, "default", 2.5))
+check_true("build_cmd: still passes max_turns",
+           _cmd[_cmd.index("--max-turns") + 1] == "7")
+check_true("build_cmd: never --bare, which drops the plugin and its hooks",
+           "--bare" not in _cmd)
+check_true("run_once: runs the command build_cmd makes",
+           "build_cmd(" in open(run.__file__).read().split("def run_once", 1)[1])
+
+# The limit: the --max-budget-usd flag wins, then the case's own, then $10.
+_rich = {"execution": {"max_budget_usd": 25}}
+_half = {"execution": {"max_budget_usd": "2.5"}}
+check("budget_for: no flag, no case value is $10", run.budget_for({}, None), 10.0)
+check("budget_for: the case's own value", run.budget_for(_rich, None), 25.0)
+check("budget_for: a case value with cents", run.budget_for(_half, None), 2.5)
+check("budget_for: the flag beats the case", run.budget_for(_rich, 3.0), 3.0)
+check("budget_for: the flag beats the default", run.budget_for({}, 4.0), 4.0)
+try:
+    run.budget_for({"execution": {"max_budget_usd": "lots"}}, None)
+    check("budget_for: a case value that is not a number is refused", "no error", "CaseError")
+except run.CaseError:
+    check("budget_for: a case value that is not a number is refused", "CaseError", "CaseError")
+
+# A run cut short reads the same as a run that chose not to act (README,
+# worktree-guard). The result event says which limit stopped it; say it.
+def _result(subtype):
+    return [{"type": "assistant", "message": {"content": [{"type": "text", "text": "x"}]}},
+            {"type": "result", "subtype": subtype}]
+
+check("stop_note: the cost limit", run.stop_note(_result("error_max_budget_usd")),
+      "stopped: hit cost limit")
+check("stop_note: the turn limit", run.stop_note(_result("error_max_turns")),
+      "stopped: hit turn limit")
+check("stop_note: a run that finished says nothing", run.stop_note(_result("success")), "")
+check("stop_note: no result event says nothing", run.stop_note([]), "")
+
 # ----------------------------------------------------------------------------
 
 print()

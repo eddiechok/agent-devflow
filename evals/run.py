@@ -18,6 +18,11 @@ Usage:
     python3 evals/run.py --case sizing-*      # a glob
     python3 evals/run.py --case full-loop --runs 1
     python3 evals/run.py --case full-loop --dry-run   # parse and print, run nothing
+    python3 evals/run.py --max-budget-usd 3   # cost limit per session
+
+Each session stops at a cost limit: --max-budget-usd, else the case's
+`execution.max_budget_usd`, else $10. Sessions are not saved to
+~/.claude/projects/, and hook events go into the trace.
 
 When `claude plugin eval` is available to you, prefer it — it also scores the
 `llm` graders and the no-plugin baseline arm. This is the subset that works
@@ -513,19 +518,68 @@ def child_env(base=None):
     return env
 
 
-def run_once(case, workdir, permission_mode):
+DEFAULT_MAX_BUDGET_USD = 10.0
+
+
+def budget_for(case, flag_value):
+    """The cost limit for one session: the flag, else the case's own, else $10."""
+    if flag_value is not None:
+        return float(flag_value)
+    value = (case.get("execution") or {}).get("max_budget_usd")
+    if value is None:
+        return DEFAULT_MAX_BUDGET_USD
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        raise CaseError("max_budget_usd is not a number: %r" % (value,))
+
+
+def build_cmd(case, permission_mode, max_budget_usd):
+    """The claude -p command for one run of a case.
+
+    --no-session-persistence keeps eval sessions out of ~/.claude/projects/,
+    where lesson-review counts waste. Never --bare: it skips plugins and hooks,
+    the --plugin-dir one included.
+    """
     ex = case.get("execution") or {}
     cmd = [
         "claude", "-p", ex.get("prompt", ""),
         "--plugin-dir", PLUGIN_ROOT,
         "--output-format", "stream-json",
         "--verbose",
+        "--include-hook-events",
+        "--no-session-persistence",
+        "--max-budget-usd", "%g" % max_budget_usd,
         "--permission-mode", permission_mode,
     ]
     if ex.get("max_turns"):
         cmd += ["--max-turns", str(ex["max_turns"])]
     if ex.get("allowed_tools"):
         cmd += ["--allowedTools"] + list(ex["allowed_tools"])
+    return cmd
+
+
+_STOPS = {
+    "error_max_budget_usd": "stopped: hit cost limit",
+    "error_max_turns": "stopped: hit turn limit",
+}
+
+
+def stop_note(events):
+    """Which limit cut the run short, or "" when none did.
+
+    A truncated run and a run that chose not to act look the same to the
+    graders, so the run line has to say it.
+    """
+    for e in reversed(events or []):
+        if e.get("type") == "result":
+            return _STOPS.get(e.get("subtype"), "")
+    return ""
+
+
+def run_once(case, workdir, permission_mode, max_budget_usd=DEFAULT_MAX_BUDGET_USD):
+    ex = case.get("execution") or {}
+    cmd = build_cmd(case, permission_mode, max_budget_usd)
 
     done = subprocess.run(
         cmd, cwd=workdir, capture_output=True, text=True, env=child_env(),
@@ -569,19 +623,20 @@ def events_or_raise(events):
     return events
 
 
-def run_case(case, runs, permission_mode, keep_temp):
+def run_case(case, runs, permission_mode, keep_temp, max_budget_usd=None):
     ex = case.get("execution") or {}
     graders = case.get("graders") or []
     print("\n=== %s  (%d run%s, %d graders)" % (
         case["name"], runs, "" if runs == 1 else "s", len(graders)))
     print("    %s" % ex.get("prompt", "")[:100])
 
+    budget = budget_for(case, max_budget_usd)
     run_scores = []
     for n in range(runs):
         workdir = tempfile.mkdtemp(prefix="devflow-eval-")
         try:
             scaffold(case, workdir)
-            events = run_once(case, workdir, permission_mode)
+            events = run_once(case, workdir, permission_mode, budget)
             if keep_temp:
                 # The trace is the only record of what the session did. Without
                 # it a failed run costs a second paid run just to find out why.
@@ -596,8 +651,10 @@ def run_case(case, runs, permission_mode, keep_temp):
             s = score(results)
             run_scores.append(s)
             mark = "PASS" if s["ok"] else "FAIL"
-            print("  run %d: %s  %d/%d weighted, %d skipped" % (
-                n + 1, mark, s["earned"], s["scored"], s["skipped"]))
+            note = stop_note(events)
+            print("  run %d: %s  %d/%d weighted, %d skipped%s" % (
+                n + 1, mark, s["earned"], s["scored"], s["skipped"],
+                "  (%s)" % note if note else ""))
             for name, verdict, weight, detail in results:
                 glyph = {"pass": "ok  ", "fail": "FAIL", "skip": "skip"}[verdict]
                 print("    %s %-38s w=%d  %s" % (glyph, name, weight, detail))
@@ -618,6 +675,9 @@ def main():
     ap.add_argument("--runs", type=int, help="override each case's `runs`")
     ap.add_argument("--permission-mode", default="default")
     ap.add_argument("--keep-temp", action="store_true")
+    ap.add_argument("--max-budget-usd", type=float,
+                    help="cost limit per session; overrides the case's "
+                         "max_budget_usd (default $%g)" % DEFAULT_MAX_BUDGET_USD)
     ap.add_argument("--dry-run", action="store_true",
                     help="parse the cases and print them; run nothing")
     args = ap.parse_args()
@@ -642,7 +702,8 @@ def main():
     failed = []
     for case in cases:
         runs = args.runs or case.get("runs", 3)
-        scores = run_case(case, runs, args.permission_mode, args.keep_temp)
+        scores = run_case(case, runs, args.permission_mode, args.keep_temp,
+                          args.max_budget_usd)
         if not all(s["ok"] for s in scores):
             failed.append(case["name"])
 
