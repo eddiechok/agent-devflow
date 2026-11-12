@@ -313,7 +313,7 @@ the result — for example `✓ **checks** 3 of 3 pass, exit 0`.
 - Never commit on the default branch in pr mode.
 - Never open a second pull request for a branch that already has one open.
 - Never end a pr-mode run without a pull request.
-- Never end a run without the Done report. A host's own summary comes after the Done report and does not replace it.
+- Never end a run without the Done report. It is the host's summary too: do not repeat it after the report.
 - Never open a PR when the live check failed.
 - Never invent check commands the project did not give you.
 - Never merge the PR, and never call `devflow:ship` or `devflow:merge`. The open PR is where a pr-mode run ends;

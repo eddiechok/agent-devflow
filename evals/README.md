@@ -110,7 +110,7 @@ run may read the very line it looks for.
 | `setup-writes-checks` | medium | Every downstream check runs a command nobody verified, or the questionnaire writes no `## Workflow` block and every skill reads the project as not set up |
 | `direct-mode` | medium | A project set to `direct` still gets a branch, a review of a typo fix, or no word that the review was skipped, so the mode changes nothing the human can see |
 | `full-loop` | high | The skills stop handing off to each other |
-| `done-report` | high | A run whose host asks for its own short closing ends without the Done report, or puts the closing in its place |
+| `done-report` | high | A run whose host asks for its own short closing ends without the Done report, puts the closing in its place, or repeats the report after it |
 | `deep-coordinator` | high | A Deep job builds every chain in one session again and outgrows its window, or the chains never merge back and the PR is missing a chain's work |
 | `research-in-rounds` | medium | A Deep question that needs a fact from outside the repo goes to the human as a guess, or `flow` asks whether to research instead of starting a `researcher` itself |
 | `discuss-trigger` | medium | A request to discuss a design, typed with no slash command, never reaches `discuss`, or `discuss` answers what other tools do from memory with no `researcher`, or edits a file instead of handing to `flow` |

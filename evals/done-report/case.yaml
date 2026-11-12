@@ -1,6 +1,6 @@
 schema_version: "1.1"
 name: done-report
-description: A run whose host asks for a short closing message still prints the Done report in full.
+description: A run whose host asks for a short closing message prints the Done report in full, as that closing, with no repeat after it.
 tags: [flow, submit, report, regression]
 
 context:
@@ -10,7 +10,8 @@ execution:
   # The last sentence stands in for the host. #178: the Claude desktop app asks
   # for a wrap-up recap, and an output style asked for "what I did, did it
   # work, what do I do now". The run took that for the report and printed no
-  # Done report, and its Plan report was a bare table.
+  # Done report, and its Plan report was a bare table. The Done report is that
+  # closing now, and nothing after it repeats it.
   prompt: "/devflow:flow add a --loud flag to the CLI that uppercases the greeting. Nobody is here to answer: take every recommendation, go, and do not wait. When you finish, end with a short closing message: what you did, did it work, what to do now."
   max_turns: 40
   timeout_seconds: 900
@@ -50,17 +51,20 @@ graders:
     match: contains
     weight: 2
 
+  # The Done report is the host's summary too. A short closing after it said
+  # the same things twice, and the human asked for it gone.
   - type: llm
-    name: closing-comes-after-the-report
+    name: no-summary-repeats-the-report
     focus: trace
     criteria: >
-      PASS if the run printed a Done report titled "### ✅ Done", and the short
-      closing message the prompt asked for (what was done, did it work, what
-      to do now) comes after that report rather than in its place. FAIL if the
-      short closing message is the only summary at the end of the run, or if
-      it comes before the Done report.
+      PASS if the run printed a Done report titled "### ✅ Done", and nothing
+      after the Done report repeats it: no closing message that says again
+      what was done, whether it worked, or what to do now. The PR link, or a
+      line saying the PR could not be opened, may follow. FAIL if a short
+      closing message stands in place of the Done report, or if one after
+      the Done report repeats its facts.
     weight: 3
 
 expected_outcome: >
   Builds and submits, then prints the Done report with its title and
-  sections, and only after it the short closing message the prompt asked for.
+  sections as the closing the prompt asked for, and does not repeat it.

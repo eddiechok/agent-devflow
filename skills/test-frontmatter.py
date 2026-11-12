@@ -1286,7 +1286,8 @@ check("report: the ship line is pr mode only, never merge or deploy steps  <-- #
 # opened it. The host's own closing rules (a wrap_up recap, an output style
 # asking for "what I did, did it work, what do I do now") read as the report
 # already given. The skeletons now sit in the steps that print them, and a
-# rule says the host's summary comes after the Done report, never instead.
+# rule says the Done report is the host's summary too. A short summary after
+# it said the same things twice, so none follows it.
 
 with open(SUBMIT_PATH, encoding="utf-8") as _fh:
     _submit_skill = _fh.read()
@@ -1316,10 +1317,11 @@ check("submit: step 9's next line keeps the ship-only and direct cases  <-- #178
 
 check("submit: a rule says no run ends without the Done report  <-- #178",
       "Never end a run without the Done report" in flat(_submit_rules)
-      and "comes after the Done report and does not replace it"
+      and "It is the host's summary too: do not repeat it after the report."
       in flat(_submit_rules),
       f"{SUBMIT_PATH}'s Rules let a host's own summary stand in for the "
-      f"Done report")
+      f"Done report, or repeat it after the report")
+
 
 PLAN_SKELETON = ("---", "### 📋 Plan — waiting for your go", "**Size:**",
                  "#### What changes", "| # | Change | Where |",
@@ -1340,6 +1342,11 @@ check("evals: a case asks for a short closing and grades the Done report  <-- #1
       and "### ✅ Done" in _done_case and "target: said" in _done_case,
       f"no {DONE_CASE_PATH} that asks for the host's short closing and "
       f"still looks for the Done report in what the run said")
+
+check("evals: done-report fails a summary that repeats the Done report  <-- #178",
+      "repeats" in _done_case and "after the Done report" in flat(_done_case)
+      and "comes after that report rather than in its place" not in flat(_done_case),
+      f"{DONE_CASE_PATH} still asks for a short closing after the Done report")
 
 with open(os.path.join(REPO_ROOT, "evals", "README.md"),
           encoding="utf-8") as _fh:
