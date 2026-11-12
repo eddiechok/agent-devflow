@@ -68,8 +68,9 @@ graders:
     weight: 2
 
   # A step that prints nothing cannot be told from a step that was skipped, so
-  # the skip has to be said. Dash-tolerant: the line is the claim under test,
-  # not whether the model reached for an em dash.
+  # the skip has to be said. Dash-tolerant, and a colon counts too: the line
+  # is the claim under test, not whether the model reached for an em dash. An
+  # output style that rewrites dashes printed `skipped: Quick, direct mode`.
   #
   # Only what the model said counts. `claude plugin eval`'s trace holds the Read
   # of submit's references/direct.md, which carries this very line, so a bare
@@ -81,7 +82,7 @@ graders:
   - type: regex
     name: prints-review-skipped
     target: trace
-    pattern: "\\{\"type\":\"assistant\"[^\\n]*?\"type\":\"text\",\"text\":\"(?:[^\"\\\\\\n]|\\\\.)*?\\*\\*review\\*\\* skipped\\s*[—–-]\\s*Quick, direct mode|(?:^|\\n)(?!\\{)[^\\n]*\\*\\*review\\*\\* skipped\\s*[—–-]\\s*Quick, direct mode"
+    pattern: "\\{\"type\":\"assistant\"[^\\n]*?\"type\":\"text\",\"text\":\"(?:[^\"\\\\\\n]|\\\\.)*?\\*\\*review\\*\\* skipped\\s*[—–:-]\\s*Quick, direct mode|(?:^|\\n)(?!\\{)[^\\n]*\\*\\*review\\*\\* skipped\\s*[—–:-]\\s*Quick, direct mode"
     match: contains
     weight: 3
 

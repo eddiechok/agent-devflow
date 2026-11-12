@@ -1404,6 +1404,9 @@ check("direct-mode: a dash-tolerant skipped line passes prints-review-skipped",
                  said="- **review** skipped - Quick, direct mode"), "pass")
 check("direct-mode: no skipped line fails prints-review-skipped",
       dm_verdict("prints-review-skipped", said="✓ **review** all three ran"), "fail")
+check("direct-mode: a skipped line with a colon passes prints-review-skipped",
+      dm_verdict("prints-review-skipped",
+                 said="– **review** skipped: Quick, direct mode."), "pass")
 check("direct-mode: a skipped line with no leading mark passes",
       dm_verdict("prints-review-skipped",
                  said="**review** skipped — Quick, direct mode"), "pass")
