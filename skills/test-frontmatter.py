@@ -2444,7 +2444,8 @@ _CLAUDE_OWN = [".in_use/4242", ".orphaned_at", "node_modules/"]
 _STUB_PRUNE = "import sys\nsys.exit(0)\n"
 
 
-def run_deploy(claude_exit=0, in_place=False, stub_prune=False):
+def run_deploy(claude_exit=0, in_place=False, stub_prune=False, others=False,
+               hang=False, env_extra=None):
     """Run deploy.sh from a linked worktree of a scratch repo.
 
     The scratch main checkout tracks this repo's deploy.sh and
@@ -2454,6 +2455,12 @@ def run_deploy(claude_exit=0, in_place=False, stub_prune=False):
     does what a real update does: copies the whole folder into the cache (or,
     in_place, points the install at the folder itself) and writes the entry,
     after a user-scope entry, which names no folder, for another install.
+    others adds four more local-scope entries after the main checkout's, as a
+    machine with devflow in other projects has: `other` and `later`, which
+    exist; `gone`, which was deleted; and `failing`, where the fake claude
+    exits 1. hang adds `hanging` before `later`, where the fake claude never
+    answers. env_extra goes into the script's environment. Every call is one
+    line in what claude recorded.
     Returns (the script's process, what claude recorded, the main checkout,
     the files left in the install, in the main checkout, in the user install).
     """
@@ -2465,9 +2472,10 @@ def run_deploy(claude_exit=0, in_place=False, stub_prune=False):
         with open(os.path.join(main, ".gitignore"), "w") as fh:
             fh.write(".claude/\n__pycache__/\n.DS_Store\n")
         os.makedirs(os.path.join(main, "scripts"))
-        for name in ("deploy.sh", "prune-install.py"):
-            shutil.copy(os.path.join(REPO_ROOT, "scripts", name),
-                        os.path.join(main, "scripts", name))
+        for name in ("deploy.sh", "prune-install.py", "update-installs.py"):
+            if os.path.isfile(os.path.join(REPO_ROOT, "scripts", name)):
+                shutil.copy(os.path.join(REPO_ROOT, "scripts", name),
+                            os.path.join(main, "scripts", name))
         g = lambda *a: subprocess.run(["git", *a], cwd=main, capture_output=True,
                                       check=True)
         g("init", "-q")
@@ -2499,19 +2507,31 @@ def run_deploy(claude_exit=0, in_place=False, stub_prune=False):
         copy = "" if in_place else (
             f'mkdir -p "{os.path.dirname(install)}"\n'
             f'cp -R "$(pwd -P)" "{install}"\nrm -rf "{install}/.git"\n'
-            f'mkdir "{install}/.in_use"\n'
+            f'mkdir -p "{install}/.in_use"\n'
             + "".join(f'mkdir -p "{install}/{c}"\n' if c.endswith("/")
                       else f'touch "{install}/{c}"\n' for c in _CLAUDE_OWN))
+        more = []
+        if others:
+            names = ["other", "gone", "failing"] + ["hanging"] * hang + ["later"]
+            for name in names:
+                if name != "gone":
+                    os.makedirs(os.path.join(d, name))
+            more = [{"scope": "local", "projectPath": os.path.join(d, name),
+                     "installPath": install} for name in names]
         entry = json.dumps({"plugins": {"devflow@eddiechok-devflow": [
             {"scope": "user", "installPath": user},
-            {"scope": "local", "projectPath": main, "installPath": install}]}})
+            {"scope": "local", "projectPath": main, "installPath": install},
+            *more]}})
         with open(fake, "w") as fh:
-            fh.write(f'#!/bin/sh\necho "$(pwd -P)|$*" > "{log}"\n'
-                     f'[ {claude_exit} = 0 ] || exit {claude_exit}\n{copy}'
+            fh.write(f'#!/bin/sh\necho "$(pwd -P)|$*" >> "{log}"\n'
+                     f'[ {claude_exit} = 0 ] || exit {claude_exit}\n'
+                     f'case "$(pwd -P)" in */failing) echo "update refused"; '
+                     f'exit 1;; */hanging) exec sleep 5;; esac\n{copy}'
                      f"echo '{entry}' > \"{plugins}/installed_plugins.json\"\n")
         os.chmod(fake, 0o755)
         env = dict(os.environ, HOME=home,
-                   PATH=bindir + os.pathsep + os.environ["PATH"])
+                   PATH=bindir + os.pathsep + os.environ["PATH"],
+                   **(env_extra or {}))
         proc = subprocess.run(["sh", script], cwd=wt, env=env,
                               capture_output=True, text=True)
         ran = open(log).read().strip() if os.path.exists(log) else ""
@@ -2571,6 +2591,61 @@ if os.path.isfile(DEPLOY_SCRIPT):
     check("scripts/deploy.sh: a failed update fails the deploy, no restart line",
           _dp_fail.returncode != 0 and "Restart the session" not in _dp_fail.stdout,
           f"exit {_dp_fail.returncode}: {_dp_fail.stdout}")
+    # A local-scope install is one entry per folder, so the human's other
+    # projects stayed on an old copy until the update was run by hand in each
+    # one. Seen 2026-11-12: finance was five weeks behind. The deploy now runs
+    # the update in every other folder the install list names.
+    _do, _doran, _domain, _doinstall, _, _ = run_deploy(others=True)
+    _docalls = [l.partition("|") for l in _doran.splitlines()]
+    _dowhere = [os.path.basename(w) for w, _, _ in _docalls]
+    _UPDATE_ARGS = "plugin update devflow@eddiechok-devflow --scope local"
+    check("scripts/deploy.sh: updates the main checkout first, and only once",
+          _docalls[:1] == [(_domain, "|", _UPDATE_ARGS)]
+          and [w for w, _, _ in _docalls].count(_domain) == 1,
+          f"claude ran in {[w for w, _, _ in _docalls]}")
+    check("scripts/deploy.sh: updates every other folder in the install list",
+          _dowhere[1:] == ["other", "failing", "later"]
+          and all(a == _UPDATE_ARGS for _, _, a in _docalls),
+          f"claude ran in {_dowhere}: {_do.stdout}{_do.stderr}")
+    check("scripts/deploy.sh: a folder that is gone is skipped, with a line",
+          "gone" not in _dowhere and re.search(r"– update: \S*/gone is gone", _do.stdout),
+          f"claude ran in {_dowhere}: {_do.stdout}")
+    check("scripts/deploy.sh: a failed update elsewhere is a line, and the deploy passes",
+          _do.returncode == 0
+          and re.search(r"✗ update: \S*/failing — update refused", _do.stdout)
+          and re.search(r"✓ update: \S*/later", _do.stdout)
+          and "Restart the session" in _do.stdout,
+          f"exit {_do.returncode}: {_do.stdout}{_do.stderr}")
+    # Found by review: the updates elsewhere ran before the prune, each with
+    # two minutes to answer. One folder that never answered held the prune
+    # back, and ship's Verify ran on an install nobody had pruned. So the main
+    # checkout's install is pruned first, and the folders elsewhere get a
+    # short limit each and one budget between them.
+    _doout = _do.stdout.splitlines()
+    _dofirst = lambda mark: next((i for i, l in enumerate(_doout) if mark in l), -1)
+    check("scripts/deploy.sh: prunes the main install before any other folder  <-- review",
+          0 <= _dofirst("✓ prune:") < _dofirst(" update: "),
+          f"the first prune line is not before the first update line: {_do.stdout}")
+    _dh, _dhran, _, _, _, _ = run_deploy(
+        others=True, hang=True, env_extra={"DEVFLOW_UPDATE_TIMEOUT": "1"})
+    _dhwhere = [os.path.basename(l.partition("|")[0]) for l in _dhran.splitlines()]
+    check("scripts/deploy.sh: a folder that never answers is a line, and the rest run  <-- review",
+          _dh.returncode == 0
+          and re.search(r"✗ update: \S*/hanging — no answer in 1s", _dh.stdout)
+          and _dhwhere[-1:] == ["later"] and "Restart the session" in _dh.stdout,
+          f"exit {_dh.returncode}, claude ran in {_dhwhere}: {_dh.stdout}{_dh.stderr}")
+    _db, _dbran, _dbmain, _, _, _ = run_deploy(
+        others=True, env_extra={"DEVFLOW_UPDATE_BUDGET": "0"})
+    check("scripts/deploy.sh: out of time, the folders left are named and not run  <-- review",
+          _db.returncode == 0
+          and [l.partition("|")[0] for l in _dbran.splitlines()] == [_dbmain]
+          and re.search(r"– update: \S*/later not reached — out of time", _db.stdout)
+          and "Restart the session" in _db.stdout,
+          f"exit {_db.returncode}, claude ran: {_dbran!r}: {_db.stdout}{_db.stderr}")
+    check("scripts/deploy.sh: the prune still runs after every update",
+          _do.returncode == 0 and not any(u in _doinstall for u in _UNTRACKED)
+          and not any(f.startswith(("other/", "later/")) for f in _doinstall),
+          f"exit {_do.returncode}: install holds {_doinstall}")
 else:
     check("scripts/deploy.sh: exists", False, f"no {DEPLOY_SCRIPT}")
 
