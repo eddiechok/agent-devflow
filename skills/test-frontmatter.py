@@ -6092,6 +6092,51 @@ check("plan/direct: a linked worktree follows land-on-main.md",
       and "linked worktree" in plan_direct_flat,
       f"{PLAN_DIRECT_PATH} never names land-on-main.md for a linked worktree")
 
+# A cloud session (Claude Code on the web) is no linked worktree: git-dir and
+# git-common-dir agree, so it looked like the main folder on main. But its harness
+# pins a claude/... branch it may not leave, so direct mode's pull and push went to
+# that branch, never main, and sessions made up "Merge main" commits to get there
+# (12 Nov 2026). A pinned branch lands exactly like a worktree's: land-on-main.md.
+
+check("land-on-main: a pinned branch lands here too, told by CLAUDE_CODE_REMOTE",
+      "pinned branch" in flat(land_text) and "CLAUDE_CODE_REMOTE" in land_text,
+      f"{LAND_PATH} never says a branch the harness pins (a cloud session) lands "
+      f"through it, or how to tell one")
+
+# The web harness may also refuse that push outright (docs/web.md): a 403 is not
+# main moving, so rebasing again cannot help. The work is pushed to the pinned
+# branch instead, so it outlives the cloud container, and the line says so.
+check("land-on-main: a refused push from a pinned branch keeps the work on it",
+      "– **landed**" not in land_text
+      and "✗ **landed** <default> refused the push — work kept on <branch>" in land_text
+      and "git push origin HEAD" in land_text,
+      f"{LAND_PATH} never says what a pinned branch does when the push to the "
+      f"default branch is refused")
+
+# Its rebase rewrote commits an earlier refused run pushed there, so a plain push of
+# the pinned branch is not a fast-forward: the lease is its only way to keep the work,
+# and the Never list names that one exception, never on the default branch. The human
+# lands it through submit on their own machine, which rebases on the newest main.
+check("land-on-main: a rewritten pinned branch is kept with a lease, never main forced",
+      "git push --force-with-lease --force-if-includes origin HEAD" in land_text
+      and "git push origin HEAD:<default>" in land_text.split("work kept on <branch>")[-1]
+      and "git rebase --rebase-merges origin/<default>" in land_text.split("work kept on <branch>")[-1]
+      and "Never on the default branch." in land_text
+      and "push origin origin/<branch>:<default>" not in land_text,
+      f"{LAND_PATH} never says how to keep a pinned branch its rebase rewrote, or "
+      f"still gives a landing command that fails once main moves")
+
+for label, text, path in (("submit/direct", flat(submit_direct_text), SUBMIT_DIRECT_PATH),
+                          ("flow/direct", flat(flow_direct_text), FLOW_DIRECT_PATH),
+                          ("plan/direct", plan_direct_flat, PLAN_DIRECT_PATH)):
+    check(f"{label}: a pinned branch follows land-on-main.md",
+          "pinned branch" in text and "land-on-main.md" in text,
+          f"{path} never sends a pinned branch (a cloud session) to land-on-main.md")
+
+check("build: direct mode stays on a pinned branch",
+      "pinned branch" in flat(build_text),
+      f"{BUILD_PATH} never says direct mode stays on a pinned branch")
+
 check("plan/direct: mode: pr keeps today's path",
       "`mode: pr`" in plan_direct_flat,
       f"{PLAN_DIRECT_PATH} never says a mode: pr line keeps the PR path")

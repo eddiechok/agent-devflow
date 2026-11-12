@@ -51,7 +51,8 @@ No `CONTEXT.md` is normal.
 
 **Direct mode cuts no branch.** When `CLAUDE.md` has a `## Workflow` block with `Mode: direct`
 and no `mode: pr` line was handed to you, skip the rest of this section: stay on the default
-branch, or on a linked worktree's own branch, and print
+branch, on a linked worktree's own branch, or on a pinned branch (a cloud session's
+`claude/...` branch, which it may not leave), and print
 `✓ **branch** main — direct mode, no branch cut` once before the first edit.
 
 Before the first edit, check where you are:
