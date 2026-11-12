@@ -27,3 +27,13 @@ git commit -aqm "docs: readme"
   echo "scaffold.sh: working tree dirty after committing the typo" >&2
   exit 1
 }
+
+# Pushed, so the typo is on origin too and main is 0 commits ahead. A commit
+# ahead sends `flow` to ask GitHub for a pull request, and where `gh` has no
+# login -- `claude plugin eval` runs in a fake home -- it found origin without
+# the typo and stopped before it announced a size.
+git push -q
+[ "$(git rev-list --count origin/main..HEAD)" = 0 ] || {
+  echo "scaffold.sh: main is still ahead of origin after the push" >&2
+  exit 1
+}

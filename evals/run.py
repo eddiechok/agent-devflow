@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Run devflow's eval cases without `claude plugin eval`.
 
-`claude plugin eval` is gated — it exits 1 with "currently in early access"
-before running anything — so the cases in this directory were unrunnable. This
-runs the graders that need no model, which is most of them: of the 45 graders
-across the nine cases, 37 are `regex`, `tool_used`, `tool_order` or
-`file_exists`, and every one of those is decidable from a `stream-json` trace.
+`claude plugin eval` needs Claude Code 2.1.269 or later; older versions exit 1
+with "currently in early access" before running anything. It also runs each case
+in a fake home with a sandboxed, offline Bash, so a case that needs `gh` cannot
+pass there. This runs the graders that need no model, which is most of them,
+in your own shell: every `regex`, `tool_used`, `tool_order` and `file_exists`
+grader is decidable from a `stream-json` trace.
 
 **It does not run the `llm` graders, and it never reports one as passed.** They
 come back `skip`, they stay out of the score's denominator, and the summary
@@ -24,9 +25,8 @@ Each session stops at a cost limit: --max-budget-usd, else the case's
 `execution.max_budget_usd`, else $10. Sessions are not saved to
 ~/.claude/projects/, and hook events go into the trace.
 
-When `claude plugin eval` is available to you, prefer it — it also scores the
-`llm` graders and the no-plugin baseline arm. This is the subset that works
-today.
+`claude plugin eval` also scores the `llm` graders and the no-plugin baseline
+arm. Use this for the manual cases, and when you need your own login and network.
 """
 
 import argparse
@@ -50,8 +50,8 @@ class CaseError(Exception):
 # =============================================================== the YAML subset
 #
 # There is no PyYAML on a stock macOS python3, and this repo has no package
-# manager, so `import yaml` would make the runner unrunnable for the same
-# reason the gated CLI is. What the case files actually use is a small subset:
+# manager, so `import yaml` would make the runner unrunnable on a stock
+# machine. What the case files actually use is a small subset:
 # scalars, flow sequences, nested maps, lists of maps, and folded blocks.
 #
 # The rule this parser follows is the repo's own: refuse rather than guess. Any
@@ -718,7 +718,7 @@ def main():
     else:
         print("all cases passed the graders this runner scores")
     print("%d llm grader(s) were NOT run and are NOT counted as passed." % total_skipped)
-    print("`claude plugin eval` scores those; it is gated behind early access.")
+    print("`claude plugin eval` scores those (Claude Code 2.1.269 or later).")
     return 1 if failed else 0
 
 

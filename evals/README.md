@@ -4,23 +4,36 @@ Twenty-five cases. Run them before you push a change to a skill. Four are manual
 
 ## Which runner
 
-**`claude plugin eval` is gated.** It exits 1 with `plugin eval is currently in
-early access` before running anything, and there is no documented way to ask for
-access — the command is absent from the [plugins
-reference](https://code.claude.com/docs/en/plugins-reference) entirely. If you
-have it, use it: it also scores the `llm` graders and runs a no-plugin baseline
-arm.
+**`claude plugin eval` needs Claude Code 2.1.269 or later.** An older `claude`
+exits 1 with `plugin eval is currently in early access` before running anything;
+`claude update` fixes that. It was first run here on 2.1.322, 12 Nov 2026. The
+docs are [Test plugins with evals](https://code.claude.com/docs/en/plugin-evals.md).
+It scores the `llm` graders too and runs a no-plugin baseline arm.
 
 ```bash
-claude plugin eval . --scaffold --allow-tools Bash Write Edit
+claude plugin eval . --scaffold --allow-tools Bash Write Edit --max-cost-usd 5
 ```
 
 `--scaffold` is required: every case builds its own throwaway project first,
 and scaffold scripts do not run unless you ask for them. `--allow-tools` is
 required because the cases need to write files and run commands. Both are
-deliberate — the runner will not do either on your behalf.
+deliberate — the runner will not do either on your behalf. `--max-cost-usd`
+stops starting runs once the estimate passes it, and exits 2. It writes
+`evals/results/<time>/`, which git ignores.
 
-**Otherwise use `run.py`**, which drives the same `case.yaml` files through
+**Its runs are not your shell.** Each one gets a fake home, so `gh` is not logged
+in and your git config is gone. Bash runs in a sandbox with no network. So:
+
+- The four **manual** cases need a logged-in `gh` and a real repo. Run them with
+  `run.py`.
+- A case whose branch is ahead of origin sends `flow` to ask GitHub for a pull
+  request, and there that ask fails. `sizing-quick` did that, scored 0.33 here
+  and passed in `run.py`, until its scaffold pushed the typo commit. After that
+  fix both runners showed the same `flow` slip, going to `build` with no size
+  line: 3 runs each, `plugin eval` 1 printed the line, `run.py` 2.
+  Keep a scaffold's branch level with origin unless the case is about that.
+
+**Use `run.py` for the rest**, which drives the same `case.yaml` files through
 `claude -p --output-format stream-json` and scores everything that needs no
 judge:
 
@@ -272,7 +285,8 @@ claude plugin eval . --scaffold --allow-tools Bash Write Edit --runs 1
 ```
 
 The classifier tags are the cheap everyday loop. Run everything before a
-release.
+release. Each of these also runs the no-plugin arm; add `--ablation none` to
+halve the cost, see [Ablation](#ablation).
 
 ## Reading a failure
 
@@ -287,11 +301,12 @@ once is a real finding about the skill, not noise to re-roll.
 
 ## Ablation
 
-Pointing the runner at a path (`.`) runs one arm. Pointing it at the installed
-plugin adds a no-plugin baseline and reports the delta:
+`claude plugin eval` runs every case twice by default, once with the plugin and
+once with none, and reports the delta (`Δ`). That is true for a path (`.`) too,
+on 2.1.322. `--ablation none` runs only the plugin arm, at half the cost:
 
 ```bash
-claude plugin eval devflow@eddiechok-devflow --scaffold --allow-tools Bash Write Edit
+claude plugin eval . --scaffold --allow-tools Bash Write Edit --ablation none
 ```
 
 Worth it for the sizing cases, where the question "does the plugin change
