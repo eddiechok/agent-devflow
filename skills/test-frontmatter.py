@@ -8544,10 +8544,35 @@ check("dispatch: sizes with flow's table, Quick skipped toward sweep, maybe is S
       and "Not sure between Quick and Standard means Standard" in dispatch_body,
       f"{DISPATCH_PATH} never sizes with flow's table and skips Quick toward sweep")
 
-check("dispatch: ranks unblockers first, then bugs, then the oldest, top 3",
-      "unblocks" in dispatch_body and "then bugs" in dispatch_body
-      and "then the oldest" in dispatch_body and "not in the top 3" in dispatch_body,
-      f"{DISPATCH_PATH} never ranks unblockers, bugs and the oldest, or skips the rest")
+# The first rule was "unblockers, then bugs, then the oldest". Run on a real
+# repo on 2026-11-12 it picked three old small bugs over a week-old security
+# audit and two money bugs, because age decided among bugs. The human had asked
+# for "the most important", and picked: judge by harm, age only breaks a tie.
+check("dispatch: ranks by harm, in five levels, top 3",
+      "by the harm" in dispatch_body
+      and all(w in dispatch_body for w in (
+          "`security`, `money` or `data`", "`bug`", "`unblocks #<n>`",
+          "`client`", "`other`"))
+      and 0 <= dispatch_body.find("`security`, `money` or `data`")
+      < dispatch_body.find("a bug that users or clients see")
+      < dispatch_body.find("another open issue waits on it")
+      < dispatch_body.find("a feature a client asked for")
+      and "not in the top 3" in dispatch_body,
+      f"{DISPATCH_PATH} never ranks by harm in the five levels, or skips the rest")
+
+check("dispatch: age only breaks a tie, and never decides across levels",
+      "age only breaks a tie" in dispatch_body
+      and "An old small bug never beats a new security hole" in dispatch_body
+      and "then the oldest" not in dispatch_body,
+      f"{DISPATCH_PATH} still lets age decide which issue is picked")
+
+check("dispatch: judges what an issue describes, not what it calls itself",
+      "not by what it calls itself" in dispatch_body,
+      f"{DISPATCH_PATH} lets a title that says urgent set the level")
+
+check("dispatch: each pick prints its level word and the harm in a few words",
+      "security: a deleted user's token still works" in dispatch_body,
+      f"{DISPATCH_PATH} never shows a pick's reason as a level word and the harm")
 
 check("dispatch: issues that share a file may run together, no files guessed",
       "share a file" in dispatch_body and "guess no files" in dispatch_body.lower(),
@@ -8695,6 +8720,12 @@ check("docs/dispatch: says why nothing is tracked",
       and "the issue and its PR are the record" in dispatch_doc,
       "docs/dispatch.md never says why no session is tracked")
 
+check("docs/dispatch: says why it ranks by harm, and what the first rule picked",
+      "## Why it ranks by harm" in dispatch_doc
+      and "age only breaks a tie" in dispatch_doc
+      and "not by what it calls itself" in dispatch_doc,
+      "docs/dispatch.md never says why dispatch ranks by harm")
+
 check("docs/dispatch: says why it records what it started, and checks a typed number",
       "## Why it records what it started" in dispatch_doc
       and "dispatched.tsv" in dispatch_doc
@@ -8718,6 +8749,11 @@ check("README: the skills table lists dispatch, top 3 and a session each",
       and "Only you can start it" in _readme_dispatch_row,
       "README.md's skills table has no `dispatch` row naming the top 3 and sessions")
 
+check("README: the dispatch row says it ranks by harm, not by age",
+      "ranks the rest by the harm" in readme_text
+      and "then bugs, then the oldest" not in readme_text,
+      "README.md's dispatch row still gives the rank that let age decide")
+
 check("README: the docs index points at docs/dispatch.md",
       "| [docs/dispatch.md](docs/dispatch.md) |" in readme_text,
       "README.md's docs index has no row for docs/dispatch.md")
@@ -8731,6 +8767,10 @@ check("provenance: dispatch credits sweep's filters and the human's picks",
       "`sweep`" in _prov_dispatch and "Human's call" in _prov_dispatch
       and "unblocks" in _prov_dispatch,
       "docs/provenance.md's dispatch section never credits sweep or the human's picks")
+
+check("provenance: dispatch's rank is by harm, the human's call after a real run",
+      "by the harm" in _prov_dispatch and "then the oldest" not in _prov_dispatch,
+      "docs/provenance.md still credits the rank that let age decide")
 
 check("provenance: dispatch credits start_session, GSD and agent teams",
       "105099" in _prov_dispatch and "gsd-core" in _prov_dispatch

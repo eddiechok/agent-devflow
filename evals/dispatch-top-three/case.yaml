@@ -1,6 +1,6 @@
 schema_version: "1.1"
 name: dispatch-top-three
-description: A dispatch over five open issues picks the top 3 Standard and Deep ones with a reason each, skips the Quick one toward sweep and the fourth as not in the top 3, prints one flow line per pick where no session tool exists, and asks nobody anything.
+description: A dispatch over five open issues ranks by harm, so the newest issue, a leaked token, comes first and the bug second; it picks 3 with a reason each, skips the Quick one toward sweep and the fourth as not in the top 3, prints one flow line per pick where no session tool exists, and asks nobody anything.
 tags: [dispatch, issues]
 
 # MANUAL. This case needs a real GitHub repo with issues enabled and a gh that
@@ -13,8 +13,9 @@ manual: true
 context:
   # The scaffold clones that repo, writes a tiny project and a Checks block,
   # pushes one commit, and opens five issues, oldest first: a Standard feature,
-  # a Deep feature, a bug nobody can point at (labelled bug), a newer Standard
-  # change, and a README typo that is Quick. It writes their numbers to
+  # a Deep feature, a bug nobody can point at, a token that leaks into the log,
+  # and a README typo that is Quick. No issue carries a bug or priority label:
+  # the rank has to come from reading them. It writes their numbers to
   # .dispatch-issues, untracked, for the prompt below to read.
   scaffold_script: ./scaffold.sh
 
@@ -54,20 +55,32 @@ graders:
     match: contains
     weight: 4
 
-  # Bugs rank before age. The bug is the third oldest, so a dispatch that ranks
-  # by age alone puts it third, and one that ignores bugs never calls it one.
+  # Harm ranks before age. The leaked token is the newest of the four issues
+  # that stay, so a dispatch that lets age decide puts it last or leaves it
+  # out. That is what the first rule did on a real repo, 2026-11-12: three old
+  # bugs picked over a week-old security audit.
   - type: regex
-    name: picks-the-bug-first
+    name: picks-the-security-issue-first
     target: said
-    pattern: "1\\.\\s+#\\d+\\s+(Standard|Deep)\\s+—\\s+bug"
+    pattern: "1\\.\\s+#\\d+\\s+(Standard|Deep)\\s+—\\s+security"
+    match: contains
+    weight: 5
+
+  # A bug users see ranks under a security hole and over a plain feature, with
+  # no bug label to lean on.
+  - type: regex
+    name: picks-the-bug-second
+    target: said
+    pattern: "2\\.\\s+#\\d+\\s+(Standard|Deep)\\s+—\\s+bug"
     match: contains
     weight: 4
 
-  # Each pick prints its size and one reason, in the order of the list.
+  # Each pick prints its size and its level word, in the order of the list.
+  # `oldest` is no level: age only breaks a tie.
   - type: regex
     name: gives-each-pick-a-reason
     target: said
-    pattern: "(?s)1\\.\\s+#\\d+\\s+(Standard|Deep)\\s+—\\s+(unblocks #\\d+|bug|oldest).*?2\\.\\s+#\\d+\\s+(Standard|Deep)\\s+—\\s+(unblocks #\\d+|bug|oldest).*?3\\.\\s+#\\d+\\s+(Standard|Deep)\\s+—\\s+(unblocks #\\d+|bug|oldest)"
+    pattern: "(?s)1\\.\\s+#\\d+\\s+(Standard|Deep)\\s+—\\s+(security|money|data|bug|unblocks #\\d+|client|other)\\b.*?2\\.\\s+#\\d+\\s+(Standard|Deep)\\s+—\\s+(security|money|data|bug|unblocks #\\d+|client|other)\\b.*?3\\.\\s+#\\d+\\s+(Standard|Deep)\\s+—\\s+(security|money|data|bug|unblocks #\\d+|client|other)\\b"
     match: contains
     weight: 3
 
@@ -79,7 +92,8 @@ graders:
     match: contains
     weight: 4
 
-  # The fourth Standard issue is the newest, so it is the one left out.
+  # The two features are both `other`, so age breaks the tie: the newer one,
+  # the Deep feature, is the one left out.
   - type: regex
     name: skips-the-fourth-as-not-in-the-top-3
     target: said
@@ -140,23 +154,25 @@ graders:
     name: picks-the-right-three
     focus: trace
     criteria: >
-      Five issues were opened, oldest first: a Standard feature (greeting
-      word), a Deep feature (configurable per user, language and channel), a
-      bug labelled bug (hello undefined), a newer Standard change (tidy the
-      name) and a README typo. PASS if dispatch picked the bug, the greeting
-      word feature and the configurable-greeting feature, in that order, each
-      with a reason, and printed a /devflow:flow #N line for exactly those
-      three. The tidy-the-name issue must be skipped as not in the top 3, and
-      the README typo as Quick with a pointer to /devflow:sweep. FAIL if it
-      picked the README typo, if it picked the tidy-the-name issue over an
-      older one, if it printed a fourth /devflow:flow line, or if the prompt
-      of any line carries an issue title or body.
+      Five issues were opened, oldest first: a Standard feature (greet by
+      the time of day), a Deep feature (configurable per user, language and channel), a
+      bug (hello undefined), a leaked token (the caller's API token is written
+      to the log) and a README typo. PASS if dispatch picked the leaked token,
+      then the bug, then the time-of-day feature, in that order, each with
+      a reason that names its harm, and printed a /devflow:flow #N line for
+      exactly those three. The configurable-greeting feature must be skipped
+      as not in the top 3, and the README typo as Quick with a pointer to
+      /devflow:sweep. FAIL if it picked the README typo, if an older issue
+      came before the leaked token, if a feature came before the bug, if it
+      printed a fourth /devflow:flow line, or if the prompt of any line
+      carries an issue title or body.
 
 expected_outcome: >
-  A "→ **dispatch** 3 of 5 issues, 2 skipped" line appears. It lists the bug
-  first (reason: bug), then the greeting word feature and the configurable
-  greeting feature (reason: oldest). The tidy-the-name issue is skipped as not
-  in the top 3 and the README typo as "Quick — use /devflow:sweep". There is no
+  A "→ **dispatch** 3 of 5 issues, 2 skipped" line appears. It lists the
+  leaked token first (reason: security), then the bug (reason: bug), then the
+  time-of-day feature (reason: other). The configurable greeting feature is
+  skipped as not in the top 3 and the README typo as "Quick — use
+  /devflow:sweep". There is no
   session tool in `claude -p`, so a "no session tool here" line follows, then
   one /devflow:flow #N line for each of the three picks. Nothing is asked of
   anybody, no agent starts and nothing is commented on any issue.
