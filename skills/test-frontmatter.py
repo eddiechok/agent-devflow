@@ -9069,6 +9069,40 @@ for _agent_heading in ("## `reviewer` agent", "## `hardcase` agent",
           f"docs/provenance.md's {_agent_heading} section never says its pin "
           f"follows /models")
 
+
+# ------------------- the docs name the pair the review agents really pin
+#
+# `/models` moves the pins, so no test holds a value. What it must not do is
+# leave the docs naming the old pair: provenance and docs/review.md are where
+# a human reads why the review runs on what it runs on.
+
+def _pin(slug):
+    vals = parsed.get(f"agents/{slug}", (None, {}))[1]
+    return literal(vals.get("model", "")), literal(vals.get("effort", ""))
+
+
+_axes = {slug: _pin(slug) for slug in ("reviewer", "spec-reviewer",
+                                       "security-reviewer")}
+check("agents: the three review axes pin one model and effort pair",
+      len(set(_axes.values())) == 1,
+      f"pins differ: {_axes}")
+
+for _slug in ("reviewer", "hardcase", "spec-reviewer", "security-reviewer"):
+    _model, _effort = _pin(_slug)
+    _named = set(re.findall(r"`effort: (\w+)`",
+                            section(_provenance, f"## `{_slug}` agent")))
+    check(f"provenance: `{_slug}` names the effort the agent pins",
+          _named <= {_effort},
+          f"docs/provenance.md names effort {sorted(_named)}, "
+          f"agents/{_slug}.md pins {_effort!r}")
+
+_review_today = re.search(r"today `(\w+)` and `(\w+)`", _review_doc_models)
+check("docs/review: names the pair the review agents pin today",
+      _review_today is not None
+      and _review_today.group(1, 2) == _pin("reviewer"),
+      f"docs/review.md says {_review_today and _review_today.group(1, 2)}, "
+      f"agents/reviewer.md pins {_pin('reviewer')}")
+
 _prov_models = flat(section(_provenance, "## `models`"))
 check("provenance: a models section",
       _prov_models != "",
