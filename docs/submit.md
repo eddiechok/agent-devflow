@@ -101,6 +101,13 @@ The list is one local file, one tab-separated line per kept server: repo, branch
 
 ## Step 5 — the review
 
+In direct mode a Quick run prints its review line first, before any tool call. Printed
+after the checks, it was lost: 0 of 3 `run.py` runs and 1 of 3 `claude plugin eval` runs of
+`direct-mode` (12 Nov 2026) ran the checks, wrote "review was skipped" in their thinking,
+and went straight to `git commit`. The skip needs no tool, since `size: Quick` comes with
+the call, so nothing has to run before it. Printed first, it was there in 3 of 3 runs in
+each runner.
+
 It pins the range, finds the plan or issue if there is one, and runs both axes in fresh agents, plus `security-reviewer` when the danger list names a security item.
 
 On work with no plan and no issue, that text is the spec the second axis reads, and without it that axis does not run.

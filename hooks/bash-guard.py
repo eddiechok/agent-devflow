@@ -237,8 +237,10 @@ def truncate(command, tool_input):
     # On success a short tail is enough — summary lines live at the end.
     # On failure: matching lines AND a longer tail, because truncation must
     # never fight the signal it exists to surface.
+    # With no temp file (a sandbox that denies mktemp's folder) the check runs
+    # bare and untrimmed: losing the trim is fine, losing the check is not.
     wrapped = (
-        'devflow_out=$(mktemp); '
+        'devflow_out=$(mktemp 2>/dev/null) || { ' + command + ' ; exit $? ; }; '
         '{ ' + command + ' ; } >"$devflow_out" 2>&1; devflow_ec=$?; '
         'if [ "$devflow_ec" -eq 0 ]; then '
         'tail -n 15 "$devflow_out"; '

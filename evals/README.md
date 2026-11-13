@@ -36,6 +36,15 @@ in and your git config is gone. Bash runs in a sandbox with no network. So:
   project's `CLAUDE.md` was not loaded. A skill that needs a `CLAUDE.md` block
   before its first line of text should get it from a Context line.
   Keep a scaffold's branch level with origin unless the case is about that.
+- Bash's sandbox may deny the folder `mktemp` writes to. `hooks/bash-guard.py` then
+  runs a check bare, untrimmed, rather than losing it.
+- **Its `trace` is not `run.py`'s.** It is one JSON message per line, and it keeps the
+  Skill bodies and the Reads of skill files that `run.py` drops. A bare `regex`/`trace`
+  grader for a line a skill prints passes on the skill's own text there. `direct-mode`
+  shows the shape that works in both: an assistant-only branch for plugin eval, and a
+  plain-line branch for `run.py`.
+- **`tool_used` with only `max: 0` is "1 to 0" there**, so it fails every run. Write
+  `min: 0` beside it.
 
 **Use `run.py` for the rest**, which drives the same `case.yaml` files through
 `claude -p --output-format stream-json` and scores everything that needs no

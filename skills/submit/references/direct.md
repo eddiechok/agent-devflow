@@ -27,7 +27,8 @@ the stale docs.
 
 Review follows the size `flow` gave, not the branch:
 
-- **Quick** — no review. Print:
+- **Quick** — no review. The line was already printed as this skill's first output, before
+  any tool call, as step 1 of SKILL.md says; do not print it again:
 
   ```
   – **review** skipped — Quick, direct mode

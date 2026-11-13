@@ -9397,6 +9397,137 @@ check("provenance: models records the human's call of 12 Nov 2026",
       and "review agents" in _prov_models,
       "docs/provenance.md's models section never records the human's call")
 
+# ------------- flow's lines before build come before any tool call
+#
+# worktree-guard printed `✓ **worktree** this folder is on <branch>` in 3 of 14
+# runs. All 3 printed text before their first tool call that mattered; the 11
+# fails opened with a tool call (step 0's `gh api`, or reading code) and wrote
+# the line only in their thinking. The size line printed 0 of 14. With the PR
+# lookup and the linked-worktree check in Context, and a rule that the first
+# output is text, 3 of 3 printed both. So every fact steps 0 and 0c need comes
+# from Context, and these pins run the two commands.
+
+pr_cmd = context_command("Pull requests for this branch")
+check("flow: Context has a Pull requests for this branch line",
+      pr_cmd is not None,
+      f"{FLOW_PATH} Context has no '- Pull requests for this branch: !`...`' "
+      f"line, so step 0 calls gh before any line is printed")
+# No `$` covers `$(...)` capture too. The jq filter has an `if`, which is jq's,
+# not the shell's, so the shell-`if` test the Commits ahead pin makes is not
+# made here.
+check("flow: the Pull requests line uses no $, so no capture either",
+      pr_cmd is not None and "$" not in pr_cmd,
+      f"{FLOW_PATH} Pull requests line has a $ in it")
+check("flow: the Pull requests line asks through gh api with {branch}",
+      pr_cmd is not None and "gh api" in pr_cmd and "{branch}" in pr_cmd
+      and "gh pr" not in pr_cmd,
+      f"{FLOW_PATH} Pull requests line does not ask gh api for this branch")
+
+wt_cmd = context_command("Linked worktree")
+check("flow: Context has a Linked worktree line",
+      wt_cmd is not None,
+      f"{FLOW_PATH} Context has no '- Linked worktree: !`...`' line, so step "
+      f"0c runs git rev-parse before its line")
+check("flow: the Linked worktree line uses no $",
+      wt_cmd is not None and "$" not in wt_cmd,
+      f"{FLOW_PATH} Linked worktree line has a $ in it")
+
+if pr_cmd or wt_cmd:
+    with tempfile.TemporaryDirectory() as _scratch:
+        _scratch = os.path.realpath(_scratch)
+        _origin = os.path.join(_scratch, "origin.git")
+        _repo = os.path.join(_scratch, "repo")
+        _bin = os.path.join(_scratch, "bin")
+        os.mkdir(_bin)
+        _g = lambda *a: subprocess.run(["git", *a], cwd=_repo,
+                                       capture_output=True, text=True)
+        subprocess.run(["git", "init", "-q", "--bare", "-b", "main", _origin],
+                       capture_output=True)
+        subprocess.run(["git", "init", "-q", "-b", "main", _repo],
+                       capture_output=True)
+        _g("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q",
+           "--allow-empty", "-m", "one")
+        _g("remote", "add", "origin", _origin)
+        _g("push", "-q", "-u", "origin", "main")
+        # A stand-in gh: says what it was asked, and answers with one PR.
+        _gh = os.path.join(_bin, "gh")
+        with open(_gh, "w") as fh:
+            fh.write('#!/bin/sh\necho "asked: $2" >> "%s/gh.log"\n'
+                     'cat "%s/gh.answer" 2>/dev/null\n' % (_scratch, _scratch))
+        os.chmod(_gh, 0o755)
+        _log = os.path.join(_scratch, "gh.log")
+
+        if pr_cmd:
+            code, out = run_context(pr_cmd, _scratch, _repo, _bin)
+            check("flow: 0 commits ahead prints `not asked` and never calls gh",
+                  code == 0 and out.startswith("not asked")
+                  and not os.path.exists(_log),
+                  f"Pull requests printed {out!r} (exit {code}); gh called: "
+                  f"{os.path.exists(_log)}")
+
+            _g("checkout", "-q", "-b", "feat/x")
+            _g("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q",
+               "--allow-empty", "-m", "two")
+            with open(os.path.join(_scratch, "gh.answer"), "w") as fh:
+                fh.write("#7 [OPEN] feat/x\n")
+            code, out = run_context(pr_cmd, _scratch, _repo, _bin)
+            _asked = open(_log).read() if os.path.exists(_log) else ""
+            check("flow: a commit ahead asks gh for {branch} and prints its answer",
+                  code == 0 and out == "#7 [OPEN] feat/x"
+                  and "head={owner}%3A{branch}" in _asked,
+                  f"Pull requests printed {out!r} (exit {code}); gh asked "
+                  f"{_asked!r}")
+
+            os.remove(os.path.join(_scratch, "gh.answer"))
+            code, out = run_context(pr_cmd, _scratch, _repo, _bin)
+            check("flow: an empty gh answer prints `none`",
+                  code == 0 and out == "none",
+                  f"Pull requests printed {out!r} (exit {code})")
+
+        if wt_cmd:
+            code, out = run_context(wt_cmd, _scratch, _repo)
+            check("flow: the main checkout is not a linked worktree",
+                  code == 0 and out.startswith("no"),
+                  f"Linked worktree printed {out!r} (exit {code})")
+            _wt = os.path.join(_scratch, "wt")
+            _g("worktree", "add", "-q", "-b", "other", _wt)
+            code, out = run_context(wt_cmd, _scratch, _wt)
+            check("flow: a linked worktree says yes",
+                  code == 0 and out.startswith("yes"),
+                  f"Linked worktree printed {out!r} (exit {code})")
+
+check("flow: the first output is text, never a tool call",
+      "Your first output is text, never a tool call" in flow_skill_flat,
+      f"{FLOW_PATH} has no rule that its lines come before any tool call")
+check("flow: step 0 reads the Pull requests line instead of calling gh",
+      "The `Pull requests for this branch` Context line" in
+      flat(section(flow_text, "## Step 0 — is this a follow-up?")),
+      f"{FLOW_PATH} step 0 still has the model call gh itself")
+check("flow: step 0c reads the Linked worktree line",
+      "The `Linked worktree` Context line" in
+      flat(section(flow_text, "## Step 0c — is this folder yours to branch in?")),
+      f"{FLOW_PATH} step 0c still has the model run git rev-parse itself")
+
+# ------------- submit: the Quick review-skip line comes before any tool call
+#
+# The same silence as flow's, one skill later. direct-mode on the fixed flow:
+# 0 of 3 run.py runs and 1 of 3 plugin-eval runs printed `– **review** skipped
+# — Quick, direct mode`. Each failing run ran the checks and the debug sweep,
+# wrote "review was skipped" in its thinking, and went straight to `git
+# commit`. The skip needs no tool: `size: Quick` arrives with the call. So it is
+# submit's first output in direct mode.
+
+_submit_step1 = flat(section(submit_text, "## 1. Check the branch"))
+check("submit: in direct mode on Quick the review line is the first output",
+      "size: Quick" in _submit_step1
+      and "– **review** skipped — Quick, direct mode" in _submit_step1
+      and "before any tool call" in _submit_step1,
+      f"{SUBMIT_PATH} step 1 does not have direct Quick print the review "
+      f"line before any tool call")
+check("submit/direct: step 5 says the Quick line was already printed",
+      "already printed" in flat(section(submit_direct_text, "## Step 5 — review by size")),
+      f"{SUBMIT_DIRECT_PATH} step 5 still prints the Quick line after the checks")
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")
