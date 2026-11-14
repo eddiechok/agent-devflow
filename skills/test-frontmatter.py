@@ -9736,9 +9736,10 @@ check("scout: only the findings hardcase lets stand go on",
       f"{SCOUT_PATH} does not say that only a Stands finding goes on")
 
 check("scout: the report step comes after vetting",
-      "## Step 5 — Report" in scout_text
-      and scout_text.find("## Step 4 — Vet") < scout_text.find("## Step 5 — Report"),
-      f"{SCOUT_PATH} does not report after the vet step")
+      "## Step 6 — Report" in scout_text
+      and scout_text.find("## Step 4 — Vet") < scout_text.find("## Step 5 — File")
+      < scout_text.find("## Step 6 — Report"),
+      f"{SCOUT_PATH} does not vet, then file, then report")
 
 check("hardcase: accepts a scout's findings under ## Scout",
       "## Scout" in hardcase_text and "`scout`" in hardcase_flat,
@@ -9756,6 +9757,91 @@ check("hardcase: argues a scout finding is false before it stands",
       "argue" in hardcase_flat and "is false" in hardcase_flat
       and "before it stands" in hardcase_flat,
       f"{HARDCASE_PATH} never says to argue the finding is false before it stands")
+
+# ------------------------------------------------ scout files what stands, once
+#
+# Filing is the only thing scout writes, and it is on GitHub, never in the repo.
+# Five rules keep a schedule from burying a project. At most 5 issues a run,
+# ranked by harm. Every issue carries `devflow:found`, which sweep and dispatch
+# skip until a human removes it, and a hidden marker with a fingerprint, so a
+# later run finds its own issues even after the label is gone and files nothing
+# twice, open or closed (a closed one was rejected). In a public repo an issue
+# is a public post about a hole, so a security finding goes to a draft
+# repository security advisory instead. And nothing here asks: the same run, by
+# hand or on a schedule.
+
+scout_file = flat(section(scout_text, "## Step 5 — File"))
+scout_report = flat(section(scout_text, "## Step 6 — Report"))
+
+check("scout: ranks what stands by harm and files at most 5",
+      "by harm" in scout_file and "at most 5" in scout_file,
+      f"{SCOUT_PATH} step 5 does not rank by harm and cap a run at 5 issues")
+
+check("scout: the cap holds at every level",
+      "every level" in scout_file,
+      f"{SCOUT_PATH} step 5 does not say the cap holds at every level")
+
+check("scout: makes the devflow:found label if it is missing",
+      "gh label create devflow:found" in scout_file
+      and "already exists" in scout_file,
+      f"{SCOUT_PATH} step 5 does not create the devflow:found label when missing")
+
+check("scout: every issue carries the label and a hidden marker with a fingerprint",
+      "-f 'labels[]=devflow:found'" in scout_file
+      and "<!-- devflow:scout <fingerprint> -->" in scout_file,
+      f"{SCOUT_PATH} step 5 does not file with devflow:found and the hidden marker")
+
+check("scout: the fingerprint does not move with a line number",
+      "line number" in scout_file and "fingerprint" in scout_file,
+      f"{SCOUT_PATH} step 5 does not keep line numbers out of the fingerprint")
+
+check("scout: skips a fingerprint already in an open or closed issue or a draft advisory",
+      "state=all" in scout_file and "security-advisories?state=draft" in scout_file
+      and "open and closed" in scout_file and "closed means rejected" in scout_file
+      and scout_file.find("state=all") < scout_file.find("-f 'labels[]=devflow:found'"),
+      f"{SCOUT_PATH} step 5 does not list open and closed issues and draft advisories "
+      f"for the marker before it files")
+
+check("scout: finds its own issues without the label",
+      "without the label" in scout_file or "label may be gone" in scout_file,
+      f"{SCOUT_PATH} step 5 does not look for the marker on issues whose label was removed")
+
+check("scout: reads the repo's visibility",
+      "gh api repos/{owner}/{repo} --jq .visibility" in scout_file,
+      f"{SCOUT_PATH} step 5 does not read visibility with gh api repos/{{owner}}/{{repo}}")
+
+check("scout: in a public repo a security finding goes to a draft advisory, never an issue",
+      "POST" in scout_file and "repos/{owner}/{repo}/security-advisories" in scout_file
+      and "draft" in scout_file and "never an issue" in scout_file,
+      f"{SCOUT_PATH} step 5 does not send a public repo's security finding to a "
+      f"draft security advisory")
+
+check("scout: a failed advisory call keeps the finding in the report only",
+      "report only" in scout_file,
+      f"{SCOUT_PATH} step 5 does not keep a failed advisory's finding in the report only")
+
+check("scout: a private repo files a security finding as a normal issue",
+      "private" in scout_file and "normal issue" in scout_file,
+      f"{SCOUT_PATH} step 5 does not file a private repo's security finding as an issue")
+
+check("scout: filing never asks, by hand or on a schedule",
+      "never asks" in scout_file or "Never ask" in scout_file,
+      f"{SCOUT_PATH} step 5 does not say it files without asking")
+
+check("scout: never runs gh issue or gh pr, never sends GraphQL",
+      re.search(r"gh (issue|pr) (list|view|create)\b", scout_body) is None
+      and "GraphQL" in scout_body,
+      f"{SCOUT_PATH} names a gh issue or gh pr command, or never says no GraphQL")
+
+check("scout: ends with one report of filed, skipped and not checked",
+      "one report" in scout_report and "filed" in scout_report
+      and "skipped" in scout_report and "not checked" in scout_report,
+      f"{SCOUT_PATH} step 6 does not end with one report of what was filed, "
+      f"skipped and not checked")
+
+check("scout: falls back to flow's curl fallback when gh is missing",
+      "flow/references/curl-fallback.md" in scout_text,
+      f"{SCOUT_PATH} never links flow's curl fallback")
 
 # --------------------------------------------------------------------- report
 
