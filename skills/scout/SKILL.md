@@ -135,14 +135,35 @@ report. When the host is blocked (a cloud routine needs endoflife.date and api.o
 its environment's Allowed domains), the runtime is not in the product list, or the repo
 names none, print `– **runtime** not checked` with the reason, and carry on.
 
-## Step 4 — Report
+## Step 4 — Vet
+
+**Subagents over-report.** For every finding that could be filed, open the cited code
+yourself and confirm it. Three things go wrong:
+
+- **by-design behaviour** reported as a bug or a vulnerability (honoring `https_proxy` flagged
+  as SSRF, or a tradeoff an ADR from recon already records);
+- **mis-attributed evidence**: a real finding with the wrong file or line. Correct it, or
+  drop it if it will not hold;
+- a **duplicate** of another agent's finding. Keep the better evidence.
+
+Then start `devflow:hardcase`, handing it the findings that are left under a `## Scout`
+heading, each with its evidence. It has no diff to read: it takes the whole repo at HEAD, traces
+where each input really comes from, and argues each finding is false before one stands. It
+answers `Stands`, `Falls` or `Could not check`.
+
+**Only the findings `hardcase` lets stand go on.** A `Falls` finding and a `Could not check`
+finding are not filed: each is a line in the report with the reason. Never drop a `Stands`
+finding because it looks small; the next step ranks them.
+
+## Step 5 — Report
 
 Print what the audit found, ordered by leverage (impact over effort, discounted by
 confidence and the risk of the fix), one finding in the playbook's format each, then:
 
 - what was not looked at, because of the level or the size of the repo, and every
   `– **packages** not checked` and `– **runtime** not checked` line;
-- what was left out and why (by design, a duplicate, below the level's confidence).
+- what was left out and why (by design, a duplicate, below the level's confidence, or
+  `Falls` or `Could not check` from `hardcase`).
 
 ## Output
 

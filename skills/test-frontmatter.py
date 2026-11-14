@@ -9703,6 +9703,60 @@ check("scout: a blocked host is not checked, never a stop",
       "Allowed domains" in scout_packages and "carry on" in scout_packages,
       f"{SCOUT_PATH} does not say a blocked host is reported as not checked and the run goes on")
 
+# ------------------------------- scout vets what it found, and hardcase argues it
+#
+# Agents over-report: by-design behaviour called a bug, a real finding with the
+# wrong line, the same finding from two agents. So scout opens the cited code
+# itself for every finding (shadcn/improve's vet step), and then starts
+# `hardcase` on what is left. Scout has no diff, so hardcase takes a `## Scout`
+# section and reads the whole repo at HEAD. Only what hardcase cannot refute is
+# filed, because a filed issue costs someone's time and the trust in the next run.
+
+scout_vet = flat(section(scout_text, "## Step 4 — Vet"))
+hardcase_flat = flat(hardcase_text)
+
+check("scout: vets every finding by opening the cited code, before hardcase",
+      scout_vet != "" and "subagents over-report" in scout_vet.lower()
+      and "open the cited code" in scout_vet
+      and scout_vet.find("open the cited code") < scout_vet.find("`hardcase`"),
+      f"{SCOUT_PATH} has no '## Step 4 — Vet' that opens the cited code before hardcase")
+
+check("scout: vet drops by-design, mis-attributed and duplicate findings",
+      all(c in scout_vet for c in ("by-design", "mis-attributed", "duplicate")),
+      f"{SCOUT_PATH} vet step does not name the three ways an agent over-reports")
+
+check("scout: starts hardcase with the findings under ## Scout",
+      "`devflow:hardcase`" in scout_vet and "## Scout" in scout_vet,
+      f"{SCOUT_PATH} does not start devflow:hardcase with a '## Scout' section")
+
+check("scout: only the findings hardcase lets stand go on",
+      "Stands" in scout_vet and "Falls" in scout_vet
+      and "Could not check" in scout_vet
+      and "Only" in scout_vet and "go on" in scout_vet,
+      f"{SCOUT_PATH} does not say that only a Stands finding goes on")
+
+check("scout: the report step comes after vetting",
+      "## Step 5 — Report" in scout_text
+      and scout_text.find("## Step 4 — Vet") < scout_text.find("## Step 5 — Report"),
+      f"{SCOUT_PATH} does not report after the vet step")
+
+check("hardcase: accepts a scout's findings under ## Scout",
+      "## Scout" in hardcase_text and "`scout`" in hardcase_flat,
+      f"{HARDCASE_PATH} never says it is handed findings under '## Scout'")
+
+check("hardcase: with no fixed point a scout's scope is the whole repo at HEAD",
+      "no fixed point" in hardcase_flat and "whole repo at HEAD" in hardcase_flat,
+      f"{HARDCASE_PATH} does not take the whole repo at HEAD when there is no fixed point")
+
+check("hardcase: traces where the input really comes from",
+      "where the input really comes from" in hardcase_flat,
+      f"{HARDCASE_PATH} never says to trace where the input really comes from")
+
+check("hardcase: argues a scout finding is false before it stands",
+      "argue" in hardcase_flat and "is false" in hardcase_flat
+      and "before it stands" in hardcase_flat,
+      f"{HARDCASE_PATH} never says to argue the finding is false before it stands")
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")
