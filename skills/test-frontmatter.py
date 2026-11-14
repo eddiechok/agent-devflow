@@ -1361,7 +1361,7 @@ check("evals: sizing-standard grades the Plan report's title  <-- #178",
       "report's title -- a bare Plan table would pass every eval")
 
 check("evals: the README counts and names the done-report case  <-- #178",
-      "Twenty-five cases" in _evals_readme
+      "Twenty-six cases" in _evals_readme
       and "| `done-report` |" in _evals_readme,
       "evals/README.md does not count or list the done-report case")
 
