@@ -9636,6 +9636,73 @@ check("scout: playbook reports only HIGH-confidence security findings",
       f"{SCOUT_PLAYBOOK_PATH} does not limit security findings to HIGH confidence "
       f"with attacker-controlled input")
 
+# ---------------------------------- scout checks packages and the runtime live
+#
+# A model's training ends before the CVEs and the releases that matter most, so
+# reading the code cannot find an out-of-date runtime or a vulnerable package.
+# Both are checked against a live source, at every level. The order is pinned:
+# GitHub's own alerts first (nothing to install), OSV-Scanner when it is on the
+# machine, and then an honest "not checked" with the reason. scout never turns
+# Dependabot alerts on itself: that is a setting of the human's repo.
+
+scout_packages = flat(section(scout_text, "## Step 3 — Packages and runtime"))
+
+check("scout: has a packages and runtime step, run at every level",
+      scout_packages != "" and "every level" in scout_packages,
+      f"{SCOUT_PATH} has no '## Step 3 — Packages and runtime' that runs at every level")
+
+check("scout: packages go Dependabot alerts, then OSV-Scanner, then not checked",
+      scout_packages.find("Dependabot alerts") != -1
+      and scout_packages.find("Dependabot alerts") < scout_packages.find("OSV-Scanner")
+      and scout_packages.find("OSV-Scanner") < scout_packages.find("– **packages** not checked"),
+      f"{SCOUT_PATH} does not try Dependabot alerts, then OSV-Scanner, then print "
+      f"'– **packages** not checked'")
+
+check("scout: reads open Dependabot alerts through REST",
+      "gh api --paginate 'repos/{owner}/{repo}/dependabot/alerts?state=open&per_page=100'"
+      in scout_packages,
+      f"{SCOUT_PATH} does not list open alerts at repos/{{owner}}/{{repo}}/dependabot/alerts")
+
+check("scout: never turns Dependabot alerts on",
+      "Never turn Dependabot alerts on" in scout_packages,
+      f"{SCOUT_PATH} does not say it never turns alerts on")
+
+check("scout: runs OSV-Scanner only when installed, as a read-only JSON scan",
+      "osv-scanner scan -r" in scout_packages and "--format json" in scout_packages
+      and "--allow-no-lockfiles" in scout_packages
+      and "command -v osv-scanner" in scout_packages,
+      f"{SCOUT_PATH} does not run `osv-scanner scan -r <dir> --format json "
+      f"--allow-no-lockfiles` behind an installed check")
+
+check("scout: a packages line names the reason it was not checked",
+      all(r in scout_packages for r in ("alerts are off", "not installed", "host is blocked")),
+      f"{SCOUT_PATH} does not give the reasons: alerts are off, not installed, "
+      f"host is blocked")
+
+check("scout: the runtime comes from the repo, resolved through endoflife.date",
+      "https://endoflife.date/api/v1/products" in scout_packages
+      and "/api/v1/identifiers/purl" in scout_packages
+      and "aliases" in scout_packages and "curl -L" in scout_packages,
+      f"{SCOUT_PATH} does not resolve the runtime through endoflife.date's "
+      f"products, aliases and purl endpoints")
+
+check("scout: compares the runtime's cycle with latest and isEol",
+      "`latest`" in scout_packages and "`isEol`" in scout_packages,
+      f"{SCOUT_PATH} does not compare the cycle's latest and isEol")
+
+check("scout: a runtime it cannot check prints a not checked line",
+      "– **runtime** not checked" in scout_packages,
+      f"{SCOUT_PATH} has no '– **runtime** not checked' line")
+
+check("scout: a reachability read drops alerts whose code the repo never uses",
+      "reachab" in scout_packages and "never uses" in scout_packages
+      and scout_packages.find("reachab") > scout_packages.find("OSV-Scanner"),
+      f"{SCOUT_PATH} has no reachability step after the alerts are read")
+
+check("scout: a blocked host is not checked, never a stop",
+      "Allowed domains" in scout_packages and "carry on" in scout_packages,
+      f"{SCOUT_PATH} does not say a blocked host is reported as not checked and the run goes on")
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")
