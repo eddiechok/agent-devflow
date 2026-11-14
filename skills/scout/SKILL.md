@@ -39,7 +39,7 @@ The level is a keyword anywhere in the invocation. A plain `/devflow:scout` is `
 | | `quick` | `standard` | `deep` |
 |---|---|---|---|
 | Coverage | Recon hotspots only: highest-churn, highest-criticality code | Hotspot-weighted, key packages | Whole repo, every package |
-| Agents | 0 or 1 (search directly when it is feasible) | At most 4 at a time | At most 8 at a time, one per category |
+| Agents | 1, for all three categories (or search directly when it is feasible) | At most 4 at a time | At most 8 at a time, one per category |
 | Breadth | "medium" | "very thorough" for bugs and security, "medium" for the rest | "very thorough" everywhere |
 | Categories | bugs, security, tests | security, bugs, performance, enhancements | security, bugs, performance, enhancements |
 | Findings | HIGH confidence only | HIGH and MED confidence | HIGH and MED, and LOW as "investigate" lines in the report only |
@@ -68,7 +68,8 @@ Map the repo before judging it.
 
 Read [references/audit-playbook.md](references/audit-playbook.md) now: what to look for in
 each category, and the finding format. Start one read-only Explore agent per category the
-level covers, all of them in one message. With no way to start an agent, search directly,
+level covers, all of them in one message; `quick` starts one agent for all three, or none when
+searching directly is feasible. With no way to start an agent, search directly,
 category by category, in the order of the level's Categories row.
 
 **Agents do not inherit this skill's context.** Each prompt carries:

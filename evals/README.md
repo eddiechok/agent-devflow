@@ -73,7 +73,7 @@ shows in the event stream (and in the `--keep-temp` trace file). It never passes
 `--plugin-dir` one included.
 
 It scores **129 of the 148 graders** — every `regex`, `tool_used`, `tool_order`
-and `file_exists`. The eighteen `llm` graders come back `skip`, stay out of the
+and `file_exists`. The nineteen `llm` graders come back `skip`, stay out of the
 denominator, and are counted in the summary. **A skip is never a pass**, the
 same way `NOT RUN` is never `none`.
 

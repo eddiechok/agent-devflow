@@ -9587,6 +9587,12 @@ check("scout: one read-only Explore agent per category",
       and "read-only" in scout_body,
       f"{SCOUT_PATH} does not start one read-only Explore agent per category")
 
+check("scout: quick's agent count agrees with Step 2's one agent per category",
+      "0 or 1" not in scout_body
+      and "`quick` starts one agent for all three" in scout_body,
+      f"{SCOUT_PATH} gives quick '0 or 1' agents in the table while Step 2 starts "
+      f"one per category; say quick starts one agent for all three")
+
 check("scout: never edits code, writes no plans folder and has no execute",
       "Never edit" in scout_body and "plans/" in scout_body
       and "no `execute`" in scout_body,

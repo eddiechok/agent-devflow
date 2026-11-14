@@ -2054,6 +2054,21 @@ check("project-review-agent: the break under the agent's own ## heading passes",
 _pr_rows = [l for l in _readme.split("\n") if l.startswith("| `project-review-agent`")]
 check("readme: the project-review-agent row is there", len(_pr_rows), 1)
 
+# The same sentence names the llm graders in words, and that word rotted once
+# (eighteen, with nineteen in the case files) because only the digits were checked.
+_llm_total = 0
+for _name in sorted(os.listdir(HERE)):
+    _case_path = os.path.join(HERE, _name, "case.yaml")
+    if os.path.isfile(_case_path):
+        with io.open(_case_path, encoding="utf-8") as f:
+            _llm_total += sum(1 for _g in run.parse_yaml(f.read())["graders"]
+                              if _g.get("type") == "llm")
+_LLM_WORDS = {17: "seventeen", 18: "eighteen", 19: "nineteen", 20: "twenty",
+              21: "twenty-one", 22: "twenty-two"}
+check_true("readme: the llm grader count in words matches the case files",
+           ("The %s `llm` graders" % _LLM_WORDS.get(_llm_total, "?"))
+           in " ".join(_readme.split()))
+
 # The README opens with a case count in words. It rotted once (seventeen, with
 # twenty directories) because nothing compared it with the directories.
 _WORDS = {17: "Seventeen", 18: "Eighteen", 19: "Nineteen", 20: "Twenty",
