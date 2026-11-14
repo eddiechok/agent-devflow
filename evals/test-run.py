@@ -1132,6 +1132,131 @@ check("sweep-quick-issues: a comment on an issue fails comments-on-no-issue",
                     [("Bash", {"command": "gh api repos/o/r/issues/4/comments -f body=x"})]),
       "fail")
 
+# ------------------------- scout-files-issues: found work filed, capped, gated
+#
+# `scout` files what it finds as `devflow:found` issues, at most 5, each with a
+# hidden marker, and files nothing that is by design. The case plants one real
+# bug (`lastN` returns the whole list for n = 0) and one by-design pattern
+# (`readCache` swallows its error on purpose, and says so). It needs a real
+# GitHub repo with issues on, so it is manual like `sweep-quick-issues`. Pinned
+# both ways, so no grader reads as coverage while unable to fail.
+_sc_path = os.path.join(HERE, "scout-files-issues", "case.yaml")
+scout_case = {}
+if os.path.isfile(_sc_path):
+    with open(_sc_path) as fh:
+        scout_case = run.parse_yaml(fh.read())
+_sc = {g["name"]: g for g in scout_case.get("graders", [])}
+_sc_ex = scout_case.get("execution", {})
+
+check_true("scout-files-issues: the case exists", scout_case != {})
+check("scout-files-issues: is manual, because it needs a real repo with real issues",
+      scout_case.get("manual"), True)
+check_true("scout-files-issues: starts scout, not another skill",
+           "/devflow:scout" in _sc_ex.get("prompt", ""))
+check_true("scout-files-issues: the prompt tells the run not to wait",
+           "do not wait" in _sc_ex.get("prompt", ""))
+check_true("scout-files-issues: Agent is allowed, or no Explore agent can start",
+           {"Agent", "Skill", "Bash"} <= set(_sc_ex.get("allowed_tools", [])))
+for _n in ("files-some-issue", "files-at-most-five", "every-issue-carries-the-marker",
+           "finds-the-planted-bug", "does-not-report-the-by-design-pattern",
+           "files-no-by-design-body", "prints-the-report", "never-uses-gh-issue",
+           "edits-no-file", "asks-no-question", "files-the-bug-not-the-pattern"):
+    check_true("scout-files-issues: the %s grader is there" % _n, _n in _sc)
+
+_sc_scaffold = os.path.join(HERE, "scout-files-issues", "scaffold.sh")
+_sc_scaffold_text = ""
+if os.path.isfile(_sc_scaffold):
+    with open(_sc_scaffold) as fh:
+        _sc_scaffold_text = fh.read()
+check_true("scout-files-issues: the scaffold plants the bug and the by-design pattern",
+           "lastN" in _sc_scaffold_text and "readCache" in _sc_scaffold_text
+           and "by design" in _sc_scaffold_text)
+check_true("scout-files-issues: the scaffold refuses a repo that already has a marker",
+           "devflow:scout" in _sc_scaffold_text and "exit 1" in _sc_scaffold_text)
+check_true("scout-files-issues: the scaffold never runs a GraphQL issue command",
+           _sc_scaffold_text != "" and re.search(r"gh issue ", _sc_scaffold_text) is None)
+check_true("scout-files-issues: the scaffold names the repo from DEVFLOW_EVAL_REPO",
+           "DEVFLOW_EVAL_REPO" in _sc_scaffold_text)
+_sc_rows = [l for l in _readme.split("\n") if l.startswith("| `scout-files-issues`")]
+check("readme: the scout-files-issues row is there", len(_sc_rows), 1)
+check_true("readme: its scout row says it is manual",
+           len(_sc_rows) == 1 and "**manual**" in _sc_rows[0])
+
+
+def scout_verdict(name, calls=(), said=""):
+    """The verdict of one scout-files-issues grader on a run that said `said`
+    and made `calls`, each a (tool, input) pair."""
+    if name not in _sc:
+        return None
+    blocks = [{"type": "tool_use", "id": "t%d" % i, "name": tool, "input": inp}
+              for i, (tool, inp) in enumerate(calls)]
+    if said:
+        blocks.append({"type": "text", "text": said})
+    return verdict(_sc[name], ctx([{"type": "assistant", "message": {"content": blocks}}]))
+
+
+def _file_issue(title="t"):
+    return ("Bash", {"command": "gh api repos/o/r/issues -f title=\"%s\" "
+                                "-F body=@/tmp/b -f 'labels[]=devflow:found' --jq .number"
+                                % title})
+
+
+check("scout-files-issues: one labelled issue passes files-some-issue",
+      scout_verdict("files-some-issue", [_file_issue()]), "pass")
+check("scout-files-issues: no issue fails files-some-issue",
+      scout_verdict("files-some-issue", [("Bash", {"command": "ls"})]), "fail")
+check("scout-files-issues: five issues pass files-at-most-five",
+      scout_verdict("files-at-most-five", [_file_issue(str(i)) for i in range(5)]), "pass")
+check("scout-files-issues: six issues fail files-at-most-five",
+      scout_verdict("files-at-most-five", [_file_issue(str(i)) for i in range(6)]), "fail")
+check("scout-files-issues: a marker passes every-issue-carries-the-marker",
+      scout_verdict("every-issue-carries-the-marker",
+                    [("Write", {"file_path": "/tmp/b",
+                                "content": "x\n<!-- devflow:scout 3fa9c1 -->\n"})]),
+      "pass")
+check("scout-files-issues: no marker fails every-issue-carries-the-marker",
+      scout_verdict("every-issue-carries-the-marker",
+                    [("Write", {"file_path": "/tmp/b", "content": "x"})]), "fail")
+check("scout-files-issues: a filed line naming lastN passes finds-the-planted-bug",
+      scout_verdict("finds-the-planted-bug",
+                    said="✓ **filed** #1 devflow:found, lastN(list, 0) returns all"),
+      "pass")
+check("scout-files-issues: a report without lastN fails finds-the-planted-bug",
+      scout_verdict("finds-the-planted-bug", said="✓ **filed** #1 a typo"), "fail")
+check("scout-files-issues: a filed readCache fails does-not-report-the-by-design-pattern",
+      scout_verdict("does-not-report-the-by-design-pattern",
+                    said="✓ **filed** #2 devflow:found, readCache swallows its error"),
+      "fail")
+check("scout-files-issues: readCache among the skipped passes the by-design grader",
+      scout_verdict("does-not-report-the-by-design-pattern",
+                    said="✓ **filed** #1 lastN\n– **skipped** readCache, by design"),
+      "pass")
+check("scout-files-issues: a body naming readCache fails files-no-by-design-body",
+      scout_verdict("files-no-by-design-body",
+                    [("Write", {"file_path": "/tmp/b", "content": "readCache swallows"})]),
+      "fail")
+check("scout-files-issues: a body without readCache passes files-no-by-design-body",
+      scout_verdict("files-no-by-design-body",
+                    [("Write", {"file_path": "/tmp/b", "content": "lastN"})]), "pass")
+check("scout-files-issues: a filed line passes prints-the-report",
+      scout_verdict("prints-the-report", said="### Done\n✓ **filed** #1 lastN"), "pass")
+check("scout-files-issues: no report fails prints-the-report",
+      scout_verdict("prints-the-report", said="done"), "fail")
+check("scout-files-issues: gh issue create fails never-uses-gh-issue",
+      scout_verdict("never-uses-gh-issue",
+                    [("Bash", {"command": "gh issue create --title x"})]), "fail")
+check("scout-files-issues: gh api passes never-uses-gh-issue",
+      scout_verdict("never-uses-gh-issue", [_file_issue()]), "pass")
+check("scout-files-issues: an Edit fails edits-no-file",
+      scout_verdict("edits-no-file",
+                    [("Edit", {"file_path": "src/stats.js", "old_string": "a",
+                               "new_string": "b"})]), "fail")
+check("scout-files-issues: a question fails asks-no-question",
+      scout_verdict("asks-no-question", [("AskUserQuestion", {"questions": []})]),
+      "fail")
+check("scout-files-issues: no question passes asks-no-question",
+      scout_verdict("asks-no-question", [_file_issue()]), "pass")
+
 # ------------------------- dispatch-top-three: the top 3 picked, each with a reason
 #
 # `dispatch` starts a session per pick through the app's session tool. A
@@ -1929,11 +2054,26 @@ check("project-review-agent: the break under the agent's own ## heading passes",
 _pr_rows = [l for l in _readme.split("\n") if l.startswith("| `project-review-agent`")]
 check("readme: the project-review-agent row is there", len(_pr_rows), 1)
 
+# The same sentence names the llm graders in words, and that word rotted once
+# (eighteen, with nineteen in the case files) because only the digits were checked.
+_llm_total = 0
+for _name in sorted(os.listdir(HERE)):
+    _case_path = os.path.join(HERE, _name, "case.yaml")
+    if os.path.isfile(_case_path):
+        with io.open(_case_path, encoding="utf-8") as f:
+            _llm_total += sum(1 for _g in run.parse_yaml(f.read())["graders"]
+                              if _g.get("type") == "llm")
+_LLM_WORDS = {17: "seventeen", 18: "eighteen", 19: "nineteen", 20: "twenty",
+              21: "twenty-one", 22: "twenty-two"}
+check_true("readme: the llm grader count in words matches the case files",
+           ("The %s `llm` graders" % _LLM_WORDS.get(_llm_total, "?"))
+           in " ".join(_readme.split()))
+
 # The README opens with a case count in words. It rotted once (seventeen, with
 # twenty directories) because nothing compared it with the directories.
 _WORDS = {17: "Seventeen", 18: "Eighteen", 19: "Nineteen", 20: "Twenty",
           21: "Twenty-one", 22: "Twenty-two", 23: "Twenty-three", 24: "Twenty-four",
-          25: "Twenty-five"}
+          25: "Twenty-five", 26: "Twenty-six"}
 _case_dirs = [d for d in sorted(os.listdir(HERE))
               if os.path.isfile(os.path.join(HERE, d, "case.yaml"))]
 _manual_dirs = []

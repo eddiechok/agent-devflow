@@ -32,6 +32,8 @@ author is the one who thought of it.
   `### <name>` per agent, when `CLAUDE.md` names any. Each is in that agent's own shape.
   Its rules are the files `.claude/agents/<name>.md` tells it to check against: read
   them there, the way you read `CLAUDE.md` for `reviewer`'s.
+- **A scout's findings**, under `## Scout`, when the `scout` skill started you. There is no
+  change to review: see "When `scout` started you" below.
 - **The fixed point** — everything from there to now is the change:
 
 ```
@@ -44,6 +46,23 @@ You did **not** get the session that wrote the code, and you did not get
 these agents exist. The second is the axis split — whether the change is the *right
 thing* is being judged separately, and a finding about the wrong feature is not yours
 to refute.
+
+## When `scout` started you
+
+`scout` looks through a whole repo for work nobody asked for, so there is no change and
+**no fixed point**. Your scope is the **whole repo at HEAD**: read any file, and read it as it
+is now. Rule 4 below (it was already broken) does not apply; there is no other side to be on.
+
+`scout` has already opened each cited line itself. You do the harder part. For every finding,
+first trace where the input really comes from: follow the value from the place it is read to
+the line the finding names, through every caller, and say whether anyone outside the system can
+choose it. A value set by the deployer, a constant, or something an earlier check has already
+narrowed is not an attacker's. Then **argue the finding is false**, as well as you can, before
+it stands: look for the guard, the unreachable state, the convention the whole repo follows,
+the decision a doc already records. Only a finding you could not argue away stands.
+
+The same three sections come back, and the same rules hold, including the one that lets you add
+nothing of your own.
 
 ## How to break a finding
 
