@@ -9843,6 +9843,17 @@ check("scout: falls back to flow's curl fallback when gh is missing",
       "flow/references/curl-fallback.md" in scout_text,
       f"{SCOUT_PATH} never links flow's curl fallback")
 
+# ------------------------- sweep and dispatch skip scout's devflow:found issues
+# scout files issues under the human's account, so they pass the trust filter.
+# The human approves one by removing the `devflow:found` label; until then both
+# skills drop it in filter step 1, beside `devflow:plan`.
+
+for _name, _body in (("sweep", sweep_body), ("dispatch", dispatch_body)):
+    check(f"{_name}: step 1 drops issues labelled devflow:found, waiting for approval",
+          "labelled `devflow:found`" in _body and "waiting for approval" in _body,
+          f"skills/{_name}/SKILL.md filter step 1 does not drop `devflow:found` "
+          f"issues with the reason 'waiting for approval'")
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")
