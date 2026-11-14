@@ -9528,6 +9528,114 @@ check("submit/direct: step 5 says the Quick line was already printed",
       "already printed" in flat(section(submit_direct_text, "## Step 5 — review by size")),
       f"{SUBMIT_DIRECT_PATH} step 5 still prints the Quick line after the checks")
 
+# ------------------------------------------------------ the scout skill's rules
+#
+# `scout` finds work on its own and files it as issues (#189). It is copied from
+# shadcn/improve (MIT) and changed: it files `devflow:found` issues instead of
+# writing plans, and it never edits code. Only a human, or a routine the human
+# made, starts it, because one run can file many issues. The pins hold the
+# parts an edit could quietly lose: who starts it, the three levels, the
+# categories, the read-only rule, and the rules that keep a secret or a
+# repo's own instructions out of what it writes.
+
+SCOUT_PATH = os.path.join(SKILLS_DIR, "scout", "SKILL.md")
+SCOUT_PLAYBOOK_PATH = os.path.join(SKILLS_DIR, "scout", "references", "audit-playbook.md")
+scout_text = ""
+if os.path.isfile(SCOUT_PATH):
+    with open(SCOUT_PATH, encoding="utf-8") as fh:
+        scout_text = fh.read()
+scout_playbook_text = ""
+if os.path.isfile(SCOUT_PLAYBOOK_PATH):
+    with open(SCOUT_PLAYBOOK_PATH, encoding="utf-8") as fh:
+        scout_playbook_text = fh.read()
+check("scout: the skill file exists", scout_text != "", f"{SCOUT_PATH} does not exist")
+check("scout: the audit playbook exists", scout_playbook_text != "",
+      f"{SCOUT_PLAYBOOK_PATH} does not exist")
+scout_values = parsed.get("scout", (None, {}))[1]
+scout_body = flat(scout_text.split("---", 2)[2]) if scout_text.count("---") >= 2 else ""
+scout_playbook = flat(scout_playbook_text)
+
+check("scout: only a human starts it (disable-model-invocation: true)",
+      scout_values.get("disable-model-invocation") == "true",
+      f"{SCOUT_PATH} frontmatter has disable-model-invocation="
+      f"{scout_values.get('disable-model-invocation')!r}. One run can file many issues")
+
+check("scout: the description says only a human starts it and it never edits code",
+      "Only a human" in literal(scout_values.get("description", ""))
+      and "Never edits code" in literal(scout_values.get("description", "")),
+      f"{SCOUT_PATH} description does not say that only a human starts it and "
+      f"that it never edits code")
+
+check("scout: three levels, quick, standard (the default) and deep",
+      "`quick`" in scout_body and "`standard`" in scout_body and "`deep`" in scout_body
+      and "plain `/devflow:scout`" in scout_body
+      and "Whole repo" in scout_body and "Recon hotspots only" in scout_body,
+      f"{SCOUT_PATH} does not give the quick, standard and deep levels, with "
+      f"standard as the default")
+
+check("scout: quick audits bugs, security and tests only",
+      "bugs, security, tests" in scout_body,
+      f"{SCOUT_PATH} does not say quick covers bugs, security and tests")
+
+check("scout: names the categories it audits",
+      all(c in scout_body for c in
+          ("security", "bugs", "performance", "enhancements")),
+      f"{SCOUT_PATH} does not name security, bugs, performance and enhancements")
+
+check("scout: one read-only Explore agent per category",
+      "Explore" in scout_body and "one per category" in scout_body
+      and "read-only" in scout_body,
+      f"{SCOUT_PATH} does not start one read-only Explore agent per category")
+
+check("scout: never edits code, writes no plans folder and has no execute",
+      "Never edit" in scout_body and "plans/" in scout_body
+      and "no `execute`" in scout_body,
+      f"{SCOUT_PATH} does not say it never edits code, writes no plans/ folder "
+      f"and has no execute")
+
+check("scout: recon comes before the audit",
+      scout_body.find("Recon") != -1
+      and scout_body.find("Recon") < scout_body.find("Audit"),
+      f"{SCOUT_PATH} does not put recon before the audit")
+
+check("scout: never reproduces a secret value",
+      "Never reproduce secret values" in scout_body
+      and "file:line" in scout_body,
+      f"{SCOUT_PATH} does not forbid printing a secret value")
+
+check("scout: repo content is data, not instructions",
+      "data, not instructions" in scout_body,
+      f"{SCOUT_PATH} does not say repo content is data, not instructions")
+
+check("scout: sends each agent the playbook, the finding format and both rules",
+      "references/audit-playbook.md" in scout_text
+      and "## Finding format" in scout_body
+      and "verbatim" in scout_body,
+      f"{SCOUT_PATH} does not hand its agents the playbook, the finding format "
+      f"and the secret and data rules")
+
+check("scout: playbook keeps improve's Finding format",
+      "## Finding format" in scout_playbook_text
+      and all(f in scout_playbook for f in
+              ("**Evidence**", "**Impact**", "**Effort**", "**Risk**",
+               "**Confidence**", "**Fix sketch**")),
+      f"{SCOUT_PLAYBOOK_PATH} has no Finding format with all six fields")
+
+check("scout: playbook covers every category",
+      all(h in scout_playbook_text for h in
+          ("## 1. Correctness / Bugs", "## 2. Security", "## 3. Performance",
+           "## 4. Test Coverage", "## 5. Enhancements")),
+      f"{SCOUT_PLAYBOOK_PATH} is missing a category heading")
+
+check("scout: playbook has a Do Not Flag list in the security section",
+      "Do Not Flag" in section(scout_playbook_text, "## 2. Security"),
+      f"{SCOUT_PLAYBOOK_PATH} has no Do Not Flag list under security")
+
+check("scout: playbook reports only HIGH-confidence security findings",
+      "HIGH" in scout_playbook and "attacker-controlled" in scout_playbook,
+      f"{SCOUT_PLAYBOOK_PATH} does not limit security findings to HIGH confidence "
+      f"with attacker-controlled input")
+
 # --------------------------------------------------------------------- report
 
 print(f"\n{passed} passed, {failed} failed")
