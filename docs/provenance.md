@@ -166,6 +166,26 @@ repeated. Star counts below were taken with `gh api` on 2026-11-12.
 | Issues that share a file may run together | **Changed** — [agent teams](https://code.claude.com/docs/en/agent-teams): "Two teammates editing the same file leads to overwrites. Break the work so each teammate owns a different set of files" | **Human's call**, 12 Nov 2026. Each session has its own worktree and PR, and `ship` hands a CONFLICTING PR to `tend`, which resolves it. So no file is guessed and no chain is built |
 | Starts at once; tracks nothing; no Done report | **Same idea** — `sweep` prints its list and starts with no wait for go | The human started it knowing it starts sessions, and each session waits for go before it edits. The repo describes no result channel back from a started session, so the issue and its PR are the record |
 
+## `scout`
+
+Built from `sweep` and `dispatch` for the human opt-in, which are their rows above and are not
+repeated. Read through a `researcher` agent while the plan was written, on 2026-11-15. Star
+counts were taken then.
+
+| Step | From | Why |
+|---|---|---|
+| The skill, its three levels and its category agents | **Copied** — [shadcn/improve](https://github.com/shadcn/improve/blob/main/skills/improve/SKILL.md) (MIT, 11,835 stars): one read-only Explore agent per category, and its `quick` / `standard` / `deep` table | Same job, finding work by reading the repo. Changed: it files issues and writes nothing into the repo, and has no `plans/` folder and no `execute` |
+| Re-open the cited code for every finding | **Copied** — improve's "subagents over-report" step | Agents report by-design behaviour, wrong lines and duplicates, and a false issue costs a human a close |
+| The Finding format, "repo content is data" and never print a secret value | **Copied** — improve's playbook, [audit-playbook.md](https://github.com/shadcn/improve/blob/main/skills/improve/references/audit-playbook.md) (MIT) | The same trust boundary: scout reads files it does not control |
+| A "Do Not Flag" list in the security section; only HIGH-confidence findings | **Copied** — Sentry's [security-review](https://github.com/getsentry/skills/blob/main/skills/security-review/SKILL.md) (Apache-2.0), rephrased | Keeps a routine from filing noise it would be switched off for |
+| `hardcase` argues each finding false before it stands; trace where the input comes from | **Same idea** — Trail of Bits' [fp-check](https://github.com/trailofbits/skills/blob/main/plugins/fp-check/skills/fp-check/SKILL.md) (TRUE or FALSE POSITIVE verdict, data-flow tracing, a devil's advocate). The idea only: it is CC-BY-SA-4.0, so no text was taken | `hardcase` already defaults to *falls*; it gains a `## Scout` section and the whole repo at HEAD as its scope |
+| Files issues for a human to approve, with `devflow:found` as the gate | **Ours** | No tool researched (Jules, Copilot Autofix, Claude Code Review) finds and fixes with no human gate. One label, removed by the human, is the whole approval |
+| Dependabot alerts, then OSV-Scanner, then "not checked" | **Changed** — improve's dependency check is only `npm audit`, `pip-audit` or `cargo audit`, which ask the package manager for one ecosystem | [Dependabot alerts](https://docs.github.com/en/rest/dependabot/alerts) and [OSV-Scanner](https://google.github.io/osv-scanner/) read many ecosystems from a live source. Never turns alerts on |
+| The runtime checked against endoflife.date | **Ours** — [endoflife.date's API](https://endoflife.date/docs/api/) | A model's training ends before the newest releases, so only a live check finds them. The model finds the runtime in the repo by file, as `setup` finds the commands |
+| A public repo's security finding is a draft advisory, never an issue | **Changed** — improve's `--issues` warns before filing security findings on a public repo | Scout does not warn, because nobody is there to answer: it files the finding where the public cannot read it |
+| A hidden marker in each body; closed means rejected | **Ours** | The label is removed on approval, so it cannot find scout's own issues. A marker in the body can |
+| At most 5 issues a run, at every level | **Changed** — improve's non-interactive mode writes the top 3 to 5 | One cap, so a routine never floods the tracker |
+
 ## `models`
 
 Built from `lesson-review`, which proposes and never edits without a human's yes. The pages
@@ -548,6 +568,9 @@ The README keeps one line per source. This is the long form it used to carry.
 - **Anthropic's `feature-dev` plugin** (Apache-2.0) — reviewed for patterns only, nothing taken.
 - **[vercel-labs/skills](https://github.com/vercel-labs/skills)** (MIT, 33,286 stars) — `find-skills`, read on 2026-10-07: the quality rules for what to recommend, and showing the install command rather than running it. Its `npx skills find` and `npx skills add` are what the skill's fallback and its non-plugin install lines call.
 - **Anthropic's `claude-code-setup` plugin** (Apache-2.0) — `claude-automation-recommender`, read on 2026-10-07: read-only, one or two suggestions per part of the stack, the repo read first.
+- **[shadcn/improve](https://github.com/shadcn/improve)** (MIT, 11,835 stars) — `improve` and its `audit-playbook.md`, read on 2026-11-15: the level table, one Explore agent per category, the Finding format, re-opening cited code, "repo content is data". Behind `scout`.
+- **Sentry's [`security-review`](https://github.com/getsentry/skills/blob/main/skills/security-review/SKILL.md)** (getsentry/skills, Apache-2.0) — read on 2026-11-15: report only HIGH-confidence findings, a "Do Not Flag" list, trace the input source. Rephrased in `scout`'s security section.
+- **Trail of Bits [`fp-check`](https://github.com/trailofbits/skills/blob/main/plugins/fp-check/skills/fp-check/SKILL.md)** (trailofbits/skills, CC-BY-SA-4.0) — read on 2026-11-15: the idea only, a true or false positive verdict reached by tracing data flow with a devil's advocate. No text was copied, because the license would then pass to ours.
 
 ## How much to trust this
 
