@@ -1361,7 +1361,7 @@ check("evals: sizing-standard grades the Plan report's title  <-- #178",
       "report's title -- a bare Plan table would pass every eval")
 
 check("evals: the README counts and names the done-report case  <-- #178",
-      "Twenty-five cases" in _evals_readme
+      "Twenty-six cases" in _evals_readme
       and "| `done-report` |" in _evals_readme,
       "evals/README.md does not count or list the done-report case")
 
@@ -9842,6 +9842,94 @@ check("scout: ends with one report of filed, skipped and not checked",
 check("scout: falls back to flow's curl fallback when gh is missing",
       "flow/references/curl-fallback.md" in scout_text,
       f"{SCOUT_PATH} never links flow's curl fallback")
+
+# ------------------------- sweep and dispatch skip scout's devflow:found issues
+# scout files issues under the human's account, so they pass the trust filter.
+# The human approves one by removing the `devflow:found` label; until then both
+# skills drop it in filter step 1, beside `devflow:plan`.
+
+for _name, _body in (("sweep", sweep_body), ("dispatch", dispatch_body)):
+    check(f"{_name}: step 1 drops issues labelled devflow:found, waiting for approval",
+          "labelled `devflow:found`" in _body and "waiting for approval" in _body,
+          f"skills/{_name}/SKILL.md filter step 1 does not drop `devflow:found` "
+          f"issues with the reason 'waiting for approval'")
+
+# ------------------------------------------- scout's docs, README and provenance
+#
+# docs/scout.md holds why `scout` is what it is, so SKILL.md stays a prompt. The
+# README names the skill in its table and the page in its docs index, and
+# sweep's and dispatch's rows say they skip what scout filed. Provenance credits
+# what scout copied and what it only took the idea of.
+
+SCOUT_DOC_PATH = os.path.join(REPO_ROOT, "docs", "scout.md")
+scout_doc = ""
+if os.path.isfile(SCOUT_DOC_PATH):
+    with open(SCOUT_DOC_PATH, encoding="utf-8") as fh:
+        scout_doc = flat(fh.read())
+check("docs/scout: the page exists", scout_doc != "", f"{SCOUT_DOC_PATH} does not exist")
+
+check("docs/scout: the human gate is removing devflow:found",
+      "devflow:found" in scout_doc and "removes" in scout_doc
+      and "sweep" in scout_doc and "dispatch" in scout_doc,
+      "docs/scout.md never says the human approves by removing devflow:found")
+
+check("docs/scout: says why the levels are improve's quick, standard and deep",
+      "quick" in scout_doc and "standard" in scout_doc and "deep" in scout_doc
+      and "improve" in scout_doc,
+      "docs/scout.md never explains the three levels")
+
+check("docs/scout: says why versions are checked live, against endoflife.date and OSV",
+      "endoflife.date" in scout_doc and "api.osv.dev" in scout_doc
+      and "training" in scout_doc,
+      "docs/scout.md never says why package and runtime checks are live")
+
+check("docs/scout: public-repo security findings go to a draft advisory",
+      "draft" in scout_doc and "advisory" in scout_doc and "public" in scout_doc,
+      "docs/scout.md never says why a public repo's security finding is a draft advisory")
+
+check("docs/scout: cloud setup names Allowed domains, and not checked when blocked",
+      "Allowed domains" in scout_doc and "not checked" in scout_doc
+      and "#184" in scout_doc,
+      "docs/scout.md never explains the cloud routine's Allowed domains")
+
+check("docs/scout: the marker, the cap of 5 and the alerts-off rule are explained",
+      "marker" in scout_doc and "5" in scout_doc and "Dependabot" in scout_doc
+      and "never turns" in scout_doc,
+      "docs/scout.md never explains the marker, the cap or the alerts-off rule")
+
+check("docs/scout: links the skill and provenance",
+      "skills/scout/SKILL.md" in scout_doc and "provenance.md" in scout_doc,
+      "docs/scout.md never links the skill and provenance")
+
+_readme_scout_row = next((line for line in readme_text.split("\n")
+                          if line.startswith("| `scout` |")), "")
+check("README: the skills table lists scout and the label it files with",
+      _readme_scout_row != "" and "devflow:found" in _readme_scout_row
+      and "Only you can start it" in _readme_scout_row,
+      "README.md's skills table has no `scout` row naming devflow:found")
+
+check("README: the docs index points at docs/scout.md",
+      "| [docs/scout.md](docs/scout.md) |" in readme_text,
+      "README.md's docs index has no row for docs/scout.md")
+
+for _skill in ("sweep", "dispatch"):
+    _row = next((line for line in readme_text.split("\n")
+                 if line.startswith("| `%s` |" % _skill)), "")
+    check(f"README: the {_skill} row says it skips devflow:found issues",
+          "devflow:found" in _row,
+          f"README.md's `{_skill}` row never mentions the devflow:found skip")
+
+with open(os.path.join(REPO_ROOT, "docs", "provenance.md"), encoding="utf-8") as _fh:
+    _prov_scout_text = _fh.read()
+_prov_scout = flat(section(_prov_scout_text, "## `scout`"))
+check("provenance: a scout section credits improve (MIT) and Sentry (Apache-2.0)",
+      "shadcn/improve" in _prov_scout and "MIT" in _prov_scout
+      and "security-review" in _prov_scout and "Apache-2.0" in _prov_scout,
+      "docs/provenance.md has no `scout` section crediting improve and Sentry")
+check("provenance: Trail of Bits fp-check is the idea only, CC-BY-SA",
+      "fp-check" in _prov_scout and "CC-BY-SA" in _prov_scout
+      and "idea only" in _prov_scout,
+      "docs/provenance.md never says fp-check was taken as an idea only")
 
 # --------------------------------------------------------------------- report
 

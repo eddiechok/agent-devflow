@@ -1,0 +1,149 @@
+schema_version: "1.1"
+name: scout-files-issues
+description: A quick scout over a tiny repo with one planted bug and one planted by-design pattern files the bug as a devflow:found issue with a hidden marker, files at most 5, leaves the by-design pattern out, edits nothing, and asks nobody anything.
+tags: [scout, issues]
+
+# MANUAL. This case needs a real GitHub repo with issues enabled and a gh that
+# is logged in. The run opens real issues, so run.py leaves it out unless you
+# name it:
+#   DEVFLOW_EVAL_REPO=owner/name python3 evals/run.py --case scout-files-issues
+# Point it at a throwaway repo you own, never one with work in it: the scaffold
+# pushes a fixture commit to the default branch. Use a repo with no issues from
+# a past run: scout never files a fingerprint twice, open or closed, so the
+# scaffold stops when it finds a scout marker. Make a fresh repo for each run.
+manual: true
+
+context:
+  # The scaffold clones that repo, writes a tiny project and a Checks block,
+  # and pushes one commit. It plants two things in src/: `lastN` in stats.js
+  # returns the whole list when n is 0 (a real bug), and `readCache` in
+  # cache.js swallows its error on purpose, with a comment and a README line
+  # that say so (a by-design pattern a careless audit flags).
+  scaffold_script: ./scaffold.sh
+
+execution:
+  # `quick` keeps the run small: bugs, security and tests, at most one agent.
+  # The planted bug is a bug, so it is in range at every level.
+  prompt: "/devflow:scout quick. Nobody is here to answer: take every recommendation, yes to all, go, and do not wait."
+  max_turns: 60
+  timeout_seconds: 1800
+  # Write stays allowed because scout writes each issue body to a file outside
+  # the repo. Edit is allowed so an edit to the repo can fail edits-no-file.
+  allowed_tools: [Bash, Read, Write, Edit, Glob, Grep, Skill, Agent]
+
+# One run: it opens real issues, and one run is weak evidence about a model.
+# This file does not pretend otherwise: it catches a rule that is gone, not one
+# obeyed two times in three.
+runs: 1
+
+graders:
+  # `gh api ... -f 'labels[]=devflow:found'` is how scout files an issue, so a
+  # call carrying it is a filed issue. At least one: the planted bug is real.
+  - type: tool_used
+    name: files-some-issue
+    tool: Bash
+    input_match: "labels[]=devflow:found"
+    min: 1
+    weight: 5
+
+  # The cap is 5 at every level. A run that files more than 5 has lost it.
+  - type: tool_used
+    name: files-at-most-five
+    tool: Bash
+    input_match: "labels[]=devflow:found"
+    max: 5
+    weight: 5
+
+  # The marker is how scout finds its own issues after the label is gone. It
+  # lands in the file scout writes for the body, so the Write or the heredoc
+  # that makes it carries the line. This is a presence check, not a count per
+  # issue: the llm grader below reads that each issue has one.
+  - type: regex
+    name: every-issue-carries-the-marker
+    target: trace
+    pattern: "<!-- devflow:scout [0-9A-Za-z]+ -->"
+    match: contains
+    weight: 4
+
+  # The planted bug is named in a filed line of the Done report.
+  - type: regex
+    name: finds-the-planted-bug
+    target: said
+    pattern: "filed\\*{0,2} #\\d+[^\\n]*lastN"
+    match: contains
+    weight: 5
+
+  # The by-design pattern is never on a filed or advisory line. It may be named
+  # as skipped: that is the report doing its job.
+  - type: regex
+    name: does-not-report-the-by-design-pattern
+    target: said
+    pattern: "(filed|advisory)\\*{0,2} [^\\n]*readCache"
+    match: not_contains
+    weight: 5
+
+  # And no body file written for an issue names it either.
+  - type: tool_used
+    name: files-no-by-design-body
+    tool: Write
+    input_match: "readCache"
+    max: 0
+    weight: 3
+
+  - type: regex
+    name: prints-the-report
+    target: said
+    pattern: "filed\\*{0,2} #\\d+"
+    match: contains
+    weight: 3
+
+  # `gh issue` sends GraphQL, which a cloud session's proxy refuses. Scout
+  # files through `gh api` only.
+  - type: tool_used
+    name: never-uses-gh-issue
+    tool: Bash
+    input_match: "gh issue "
+    max: 0
+    weight: 3
+
+  # Scout never edits code and writes no plan into the repo.
+  - type: tool_used
+    name: edits-no-file
+    tool: Edit
+    max: 0
+    weight: 4
+
+  # The main session was told nobody is here, and scout never asks anyway.
+  - type: tool_used
+    name: asks-no-question
+    tool: AskUserQuestion
+    max: 0
+    weight: 3
+
+  - type: llm
+    name: files-the-bug-not-the-pattern
+    focus: trace
+    criteria: >
+      The planted bug is lastN in src/stats.js, which returns the whole list
+      when n is 0. The planted by-design pattern is readCache in src/cache.js,
+      which swallows its error on purpose and says so in a comment and the
+      README. PASS if lastN was filed as an issue carrying the devflow:found
+      label, every issue filed has a hidden devflow:scout marker line in its
+      body, no more than 5 issues were filed, readCache was not filed (it may
+      be named as skipped or by design), and nothing in the repo was edited
+      and no question was asked. FAIL if lastN was missed, readCache was filed,
+      an issue has no marker, or more than 5 were filed. Treat a run that ran
+      out of turns before it filed as a budget finding, not a behaviour
+      failure, and say which it was.
+
+expected_outcome: >
+  A short recon, then one read-only look at the code. A "filed" line in the
+  Done report names the lastN bug, and the issue carries devflow:found and a
+  hidden devflow:scout marker. readCache is not filed: it is a skipped line
+  with "by design" or it is not mentioned. At most 5 issues exist. Nothing in
+  the repo is edited and nobody is asked anything. The report ends with what
+  was filed, what was skipped and what was not checked (packages and runtime
+  lines).
+
+  Afterwards, by hand: delete the throwaway repo. A repo that keeps the issues
+  blocks the next run, because scout never files the same finding twice.

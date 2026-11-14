@@ -1,6 +1,6 @@
 # evals
 
-Twenty-five cases. Run them before you push a change to a skill. Four are manual, see below.
+Twenty-six cases. Run them before you push a change to a skill. Five are manual, see below.
 
 ## Which runner
 
@@ -24,7 +24,7 @@ stops starting runs once the estimate passes it, and exits 2. It writes
 **Its runs are not your shell.** Each one gets a fake home, so `gh` is not logged
 in and your git config is gone. Bash runs in a sandbox with no network. So:
 
-- The four **manual** cases need a logged-in `gh` and a real repo. Run them with
+- The five **manual** cases need a logged-in `gh` and a real repo. Run them with
   `run.py`.
 - A case whose branch is ahead of origin sends `flow` to ask GitHub for a pull
   request, and there that ask fails. `sizing-quick` did that, scored 0.33 here
@@ -72,7 +72,7 @@ It also passes `--include-hook-events`, so `bash-guard` and `secret-guard` firin
 shows in the event stream (and in the `--keep-temp` trace file). It never passes `--bare`: that skips plugins and hooks, the
 `--plugin-dir` one included.
 
-It scores **119 of the 137 graders** — every `regex`, `tool_used`, `tool_order`
+It scores **129 of the 148 graders** — every `regex`, `tool_used`, `tool_order`
 and `file_exists`. The eighteen `llm` graders come back `skip`, stay out of the
 denominator, and are counted in the summary. **A skip is never a pass**, the
 same way `NOT RUN` is never `none`.
@@ -145,6 +145,7 @@ run may read the very line it looks for.
 | `worktree-guard` | medium | A second session cuts its branch in the shared checkout and moves the folder out from under a session already working in it |
 | `ship-tends-conflict` | high, **manual** | A conflicting pull request gets merged, or `ship` goes back to stopping on a conflict and making the human type `tend` themselves |
 | `sweep-quick-issues` | high, **manual** | A sweep puts two issues that share a file in separate PRs, opens a PR for an issue that is not Quick, starts a sweeper per issue instead of per chain, or asks a question no sweeper can have answered |
+| `scout-files-issues` | high, **manual** | A scout misses a planted bug, files a pattern the repo documents as by design, files more than 5 issues, leaves the `devflow:found` label or the hidden marker off an issue, edits a file, or asks a question |
 | `dispatch-top-three` | high, **manual** | A dispatch picks the Quick issue, lets age decide and puts an old feature before a new leaked token or before the bug, picks a fourth issue, prints a pick with no reason, skips the Quick issue without pointing at `/devflow:sweep`, starts a helper agent, or asks a question |
 | `skills-suggests-railway` | low | A repo with a `railway.json` is not told about the Railway plugin, gets an install command without `--scope project`, or has an install run for it instead of printed |
 | `look-question` | low | A Standard request with an open look decision never offers "Show me the variants", or edits the repo or drops a variant file in it before the human has picked |
@@ -198,6 +199,18 @@ has. The scaffold closes the issues a previous run left open, but **not** the pu
 requests: close those and delete their branches by hand afterwards. It has one run and
 no `/clear` half. The `llm` grader reads which issues landed in which PR; the rest are
 counts of calls and lines.
+
+`scout-files-issues` is **manual** for the same reason as `sweep-quick-issues`: it needs a
+real GitHub repo with issues on and a logged-in `gh`, and the run opens real issues. Set
+`DEVFLOW_EVAL_REPO=owner/name` to a throwaway repo you own, never one with work in it,
+because the scaffold pushes a fixture commit to its default branch. Then
+`python3 evals/run.py --case scout-files-issues`. The scaffold opens no issue, `scout` does.
+It plants `lastN`, a real bug, and `readCache`, an empty catch that the code and the README
+both call by design. **Use a fresh repo for each run**: `scout` never files the same
+fingerprint twice, open or closed, so the scaffold stops when it finds a marker from a
+past run. Delete the repo afterwards. One run, no `/clear` half. The `llm` grader reads
+that the bug was filed, the pattern was not and every issue has its marker; the rest are
+patterns on what the run said and counts of calls.
 
 `dispatch-top-three` is **manual** for the same reason as `sweep-quick-issues`: it needs a
 real GitHub repo with issues on and a logged-in `gh`, and it opens five real issues. It
