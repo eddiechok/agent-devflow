@@ -49,7 +49,9 @@ still pass every filter below: a number given by hand is not a trust decision.
 One reason per dropped issue, the first that applies. Print none of it yet.
 
 1. **Plan issues.** Drop any labelled `devflow:plan`: it is a plan for `devflow:plan`, not
-   a task. Keep `devflow:backlog` issues: those are the bugs `submit` parked.
+   a task. Keep `devflow:backlog` issues: those are the bugs `submit` parked. Drop any
+   labelled `devflow:found` too: `scout` filed it, and it is waiting for approval until the
+   human removes the label.
 2. **Trust.** Drop an issue whose author lacks write access:
    `gh api repos/{owner}/{repo}/collaborators/<author>/permission --jq .permission`, kept
    only when it says `admin` or `write`. Never use `author_association`: it is not

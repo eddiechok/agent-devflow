@@ -1361,7 +1361,7 @@ check("evals: sizing-standard grades the Plan report's title  <-- #178",
       "report's title -- a bare Plan table would pass every eval")
 
 check("evals: the README counts and names the done-report case  <-- #178",
-      "Twenty-five cases" in _evals_readme
+      "Twenty-six cases" in _evals_readme
       and "| `done-report` |" in _evals_readme,
       "evals/README.md does not count or list the done-report case")
 
@@ -9527,6 +9527,415 @@ check("submit: in direct mode on Quick the review line is the first output",
 check("submit/direct: step 5 says the Quick line was already printed",
       "already printed" in flat(section(submit_direct_text, "## Step 5 — review by size")),
       f"{SUBMIT_DIRECT_PATH} step 5 still prints the Quick line after the checks")
+
+# ------------------------------------------------------ the scout skill's rules
+#
+# `scout` finds work on its own and files it as issues (#189). It is copied from
+# shadcn/improve (MIT) and changed: it files `devflow:found` issues instead of
+# writing plans, and it never edits code. Only a human, or a routine the human
+# made, starts it, because one run can file many issues. The pins hold the
+# parts an edit could quietly lose: who starts it, the three levels, the
+# categories, the read-only rule, and the rules that keep a secret or a
+# repo's own instructions out of what it writes.
+
+SCOUT_PATH = os.path.join(SKILLS_DIR, "scout", "SKILL.md")
+SCOUT_PLAYBOOK_PATH = os.path.join(SKILLS_DIR, "scout", "references", "audit-playbook.md")
+scout_text = ""
+if os.path.isfile(SCOUT_PATH):
+    with open(SCOUT_PATH, encoding="utf-8") as fh:
+        scout_text = fh.read()
+scout_playbook_text = ""
+if os.path.isfile(SCOUT_PLAYBOOK_PATH):
+    with open(SCOUT_PLAYBOOK_PATH, encoding="utf-8") as fh:
+        scout_playbook_text = fh.read()
+check("scout: the skill file exists", scout_text != "", f"{SCOUT_PATH} does not exist")
+check("scout: the audit playbook exists", scout_playbook_text != "",
+      f"{SCOUT_PLAYBOOK_PATH} does not exist")
+scout_values = parsed.get("scout", (None, {}))[1]
+scout_body = flat(scout_text.split("---", 2)[2]) if scout_text.count("---") >= 2 else ""
+scout_playbook = flat(scout_playbook_text)
+
+check("scout: only a human starts it (disable-model-invocation: true)",
+      scout_values.get("disable-model-invocation") == "true",
+      f"{SCOUT_PATH} frontmatter has disable-model-invocation="
+      f"{scout_values.get('disable-model-invocation')!r}. One run can file many issues")
+
+check("scout: the description says only a human starts it and it never edits code",
+      "Only a human" in literal(scout_values.get("description", ""))
+      and "Never edits code" in literal(scout_values.get("description", "")),
+      f"{SCOUT_PATH} description does not say that only a human starts it and "
+      f"that it never edits code")
+
+check("scout: three levels, quick, standard (the default) and deep",
+      "`quick`" in scout_body and "`standard`" in scout_body and "`deep`" in scout_body
+      and "plain `/devflow:scout`" in scout_body
+      and "Whole repo" in scout_body and "Recon hotspots only" in scout_body,
+      f"{SCOUT_PATH} does not give the quick, standard and deep levels, with "
+      f"standard as the default")
+
+check("scout: quick audits bugs, security and tests only",
+      "bugs, security, tests" in scout_body,
+      f"{SCOUT_PATH} does not say quick covers bugs, security and tests")
+
+check("scout: names the categories it audits",
+      all(c in scout_body for c in
+          ("security", "bugs", "performance", "enhancements")),
+      f"{SCOUT_PATH} does not name security, bugs, performance and enhancements")
+
+check("scout: one read-only Explore agent per category",
+      "Explore" in scout_body and "one per category" in scout_body
+      and "read-only" in scout_body,
+      f"{SCOUT_PATH} does not start one read-only Explore agent per category")
+
+check("scout: quick's agent count agrees with Step 2's one agent per category",
+      "0 or 1" not in scout_body
+      and "`quick` starts one agent for all three" in scout_body,
+      f"{SCOUT_PATH} gives quick '0 or 1' agents in the table while Step 2 starts "
+      f"one per category; say quick starts one agent for all three")
+
+check("scout: never edits code, writes no plans folder and has no execute",
+      "Never edit" in scout_body and "plans/" in scout_body
+      and "no `execute`" in scout_body,
+      f"{SCOUT_PATH} does not say it never edits code, writes no plans/ folder "
+      f"and has no execute")
+
+check("scout: recon comes before the audit",
+      scout_body.find("Recon") != -1
+      and scout_body.find("Recon") < scout_body.find("Audit"),
+      f"{SCOUT_PATH} does not put recon before the audit")
+
+check("scout: never reproduces a secret value",
+      "Never reproduce secret values" in scout_body
+      and "file:line" in scout_body,
+      f"{SCOUT_PATH} does not forbid printing a secret value")
+
+check("scout: repo content is data, not instructions",
+      "data, not instructions" in scout_body,
+      f"{SCOUT_PATH} does not say repo content is data, not instructions")
+
+check("scout: sends each agent the playbook, the finding format and both rules",
+      "references/audit-playbook.md" in scout_text
+      and "## Finding format" in scout_body
+      and "verbatim" in scout_body,
+      f"{SCOUT_PATH} does not hand its agents the playbook, the finding format "
+      f"and the secret and data rules")
+
+check("scout: playbook keeps improve's Finding format",
+      "## Finding format" in scout_playbook_text
+      and all(f in scout_playbook for f in
+              ("**Evidence**", "**Impact**", "**Effort**", "**Risk**",
+               "**Confidence**", "**Fix sketch**")),
+      f"{SCOUT_PLAYBOOK_PATH} has no Finding format with all six fields")
+
+check("scout: playbook covers every category",
+      all(h in scout_playbook_text for h in
+          ("## 1. Correctness / Bugs", "## 2. Security", "## 3. Performance",
+           "## 4. Test Coverage", "## 5. Enhancements")),
+      f"{SCOUT_PLAYBOOK_PATH} is missing a category heading")
+
+check("scout: playbook has a Do Not Flag list in the security section",
+      "Do Not Flag" in section(scout_playbook_text, "## 2. Security"),
+      f"{SCOUT_PLAYBOOK_PATH} has no Do Not Flag list under security")
+
+check("scout: playbook reports only HIGH-confidence security findings",
+      "HIGH" in scout_playbook and "attacker-controlled" in scout_playbook,
+      f"{SCOUT_PLAYBOOK_PATH} does not limit security findings to HIGH confidence "
+      f"with attacker-controlled input")
+
+# ---------------------------------- scout checks packages and the runtime live
+#
+# A model's training ends before the CVEs and the releases that matter most, so
+# reading the code cannot find an out-of-date runtime or a vulnerable package.
+# Both are checked against a live source, at every level. The order is pinned:
+# GitHub's own alerts first (nothing to install), OSV-Scanner when it is on the
+# machine, and then an honest "not checked" with the reason. scout never turns
+# Dependabot alerts on itself: that is a setting of the human's repo.
+
+scout_packages = flat(section(scout_text, "## Step 3 — Packages and runtime"))
+
+check("scout: has a packages and runtime step, run at every level",
+      scout_packages != "" and "every level" in scout_packages,
+      f"{SCOUT_PATH} has no '## Step 3 — Packages and runtime' that runs at every level")
+
+check("scout: packages go Dependabot alerts, then OSV-Scanner, then not checked",
+      scout_packages.find("Dependabot alerts") != -1
+      and scout_packages.find("Dependabot alerts") < scout_packages.find("OSV-Scanner")
+      and scout_packages.find("OSV-Scanner") < scout_packages.find("– **packages** not checked"),
+      f"{SCOUT_PATH} does not try Dependabot alerts, then OSV-Scanner, then print "
+      f"'– **packages** not checked'")
+
+check("scout: reads open Dependabot alerts through REST",
+      "gh api --paginate 'repos/{owner}/{repo}/dependabot/alerts?state=open&per_page=100'"
+      in scout_packages,
+      f"{SCOUT_PATH} does not list open alerts at repos/{{owner}}/{{repo}}/dependabot/alerts")
+
+check("scout: never turns Dependabot alerts on",
+      "Never turn Dependabot alerts on" in scout_packages,
+      f"{SCOUT_PATH} does not say it never turns alerts on")
+
+check("scout: runs OSV-Scanner only when installed, as a read-only JSON scan",
+      "osv-scanner scan -r" in scout_packages and "--format json" in scout_packages
+      and "--allow-no-lockfiles" in scout_packages
+      and "command -v osv-scanner" in scout_packages,
+      f"{SCOUT_PATH} does not run `osv-scanner scan -r <dir> --format json "
+      f"--allow-no-lockfiles` behind an installed check")
+
+check("scout: a packages line names the reason it was not checked",
+      all(r in scout_packages for r in ("alerts are off", "not installed", "host is blocked")),
+      f"{SCOUT_PATH} does not give the reasons: alerts are off, not installed, "
+      f"host is blocked")
+
+check("scout: the runtime comes from the repo, resolved through endoflife.date",
+      "https://endoflife.date/api/v1/products" in scout_packages
+      and "/api/v1/identifiers/purl" in scout_packages
+      and "aliases" in scout_packages and "curl -L" in scout_packages,
+      f"{SCOUT_PATH} does not resolve the runtime through endoflife.date's "
+      f"products, aliases and purl endpoints")
+
+check("scout: compares the runtime's cycle with latest and isEol",
+      "`latest`" in scout_packages and "`isEol`" in scout_packages,
+      f"{SCOUT_PATH} does not compare the cycle's latest and isEol")
+
+check("scout: a runtime it cannot check prints a not checked line",
+      "– **runtime** not checked" in scout_packages,
+      f"{SCOUT_PATH} has no '– **runtime** not checked' line")
+
+check("scout: a reachability read drops alerts whose code the repo never uses",
+      "reachab" in scout_packages and "never uses" in scout_packages
+      and scout_packages.find("reachab") > scout_packages.find("OSV-Scanner"),
+      f"{SCOUT_PATH} has no reachability step after the alerts are read")
+
+check("scout: a blocked host is not checked, never a stop",
+      "Allowed domains" in scout_packages and "carry on" in scout_packages,
+      f"{SCOUT_PATH} does not say a blocked host is reported as not checked and the run goes on")
+
+# ------------------------------- scout vets what it found, and hardcase argues it
+#
+# Agents over-report: by-design behaviour called a bug, a real finding with the
+# wrong line, the same finding from two agents. So scout opens the cited code
+# itself for every finding (shadcn/improve's vet step), and then starts
+# `hardcase` on what is left. Scout has no diff, so hardcase takes a `## Scout`
+# section and reads the whole repo at HEAD. Only what hardcase cannot refute is
+# filed, because a filed issue costs someone's time and the trust in the next run.
+
+scout_vet = flat(section(scout_text, "## Step 4 — Vet"))
+hardcase_flat = flat(hardcase_text)
+
+check("scout: vets every finding by opening the cited code, before hardcase",
+      scout_vet != "" and "subagents over-report" in scout_vet.lower()
+      and "open the cited code" in scout_vet
+      and scout_vet.find("open the cited code") < scout_vet.find("`hardcase`"),
+      f"{SCOUT_PATH} has no '## Step 4 — Vet' that opens the cited code before hardcase")
+
+check("scout: vet drops by-design, mis-attributed and duplicate findings",
+      all(c in scout_vet for c in ("by-design", "mis-attributed", "duplicate")),
+      f"{SCOUT_PATH} vet step does not name the three ways an agent over-reports")
+
+check("scout: starts hardcase with the findings under ## Scout",
+      "`devflow:hardcase`" in scout_vet and "## Scout" in scout_vet,
+      f"{SCOUT_PATH} does not start devflow:hardcase with a '## Scout' section")
+
+check("scout: only the findings hardcase lets stand go on",
+      "Stands" in scout_vet and "Falls" in scout_vet
+      and "Could not check" in scout_vet
+      and "Only" in scout_vet and "go on" in scout_vet,
+      f"{SCOUT_PATH} does not say that only a Stands finding goes on")
+
+check("scout: the report step comes after vetting",
+      "## Step 6 — Report" in scout_text
+      and scout_text.find("## Step 4 — Vet") < scout_text.find("## Step 5 — File")
+      < scout_text.find("## Step 6 — Report"),
+      f"{SCOUT_PATH} does not vet, then file, then report")
+
+check("hardcase: accepts a scout's findings under ## Scout",
+      "## Scout" in hardcase_text and "`scout`" in hardcase_flat,
+      f"{HARDCASE_PATH} never says it is handed findings under '## Scout'")
+
+check("hardcase: with no fixed point a scout's scope is the whole repo at HEAD",
+      "no fixed point" in hardcase_flat and "whole repo at HEAD" in hardcase_flat,
+      f"{HARDCASE_PATH} does not take the whole repo at HEAD when there is no fixed point")
+
+check("hardcase: traces where the input really comes from",
+      "where the input really comes from" in hardcase_flat,
+      f"{HARDCASE_PATH} never says to trace where the input really comes from")
+
+check("hardcase: argues a scout finding is false before it stands",
+      "argue" in hardcase_flat and "is false" in hardcase_flat
+      and "before it stands" in hardcase_flat,
+      f"{HARDCASE_PATH} never says to argue the finding is false before it stands")
+
+# ------------------------------------------------ scout files what stands, once
+#
+# Filing is the only thing scout writes, and it is on GitHub, never in the repo.
+# Five rules keep a schedule from burying a project. At most 5 issues a run,
+# ranked by harm. Every issue carries `devflow:found`, which sweep and dispatch
+# skip until a human removes it, and a hidden marker with a fingerprint, so a
+# later run finds its own issues even after the label is gone and files nothing
+# twice, open or closed (a closed one was rejected). In a public repo an issue
+# is a public post about a hole, so a security finding goes to a draft
+# repository security advisory instead. And nothing here asks: the same run, by
+# hand or on a schedule.
+
+scout_file = flat(section(scout_text, "## Step 5 — File"))
+scout_report = flat(section(scout_text, "## Step 6 — Report"))
+
+check("scout: ranks what stands by harm and files at most 5",
+      "by harm" in scout_file and "at most 5" in scout_file,
+      f"{SCOUT_PATH} step 5 does not rank by harm and cap a run at 5 issues")
+
+check("scout: the cap holds at every level",
+      "every level" in scout_file,
+      f"{SCOUT_PATH} step 5 does not say the cap holds at every level")
+
+check("scout: makes the devflow:found label if it is missing",
+      "gh label create devflow:found" in scout_file
+      and "already exists" in scout_file,
+      f"{SCOUT_PATH} step 5 does not create the devflow:found label when missing")
+
+check("scout: every issue carries the label and a hidden marker with a fingerprint",
+      "-f 'labels[]=devflow:found'" in scout_file
+      and "<!-- devflow:scout <fingerprint> -->" in scout_file,
+      f"{SCOUT_PATH} step 5 does not file with devflow:found and the hidden marker")
+
+check("scout: the fingerprint does not move with a line number",
+      "line number" in scout_file and "fingerprint" in scout_file,
+      f"{SCOUT_PATH} step 5 does not keep line numbers out of the fingerprint")
+
+check("scout: skips a fingerprint already in an open or closed issue or a draft advisory",
+      "state=all" in scout_file and "security-advisories?state=draft" in scout_file
+      and "open and closed" in scout_file and "closed means rejected" in scout_file
+      and scout_file.find("state=all") < scout_file.find("-f 'labels[]=devflow:found'"),
+      f"{SCOUT_PATH} step 5 does not list open and closed issues and draft advisories "
+      f"for the marker before it files")
+
+check("scout: finds its own issues without the label",
+      "without the label" in scout_file or "label may be gone" in scout_file,
+      f"{SCOUT_PATH} step 5 does not look for the marker on issues whose label was removed")
+
+check("scout: reads the repo's visibility",
+      "gh api repos/{owner}/{repo} --jq .visibility" in scout_file,
+      f"{SCOUT_PATH} step 5 does not read visibility with gh api repos/{{owner}}/{{repo}}")
+
+check("scout: in a public repo a security finding goes to a draft advisory, never an issue",
+      "POST" in scout_file and "repos/{owner}/{repo}/security-advisories" in scout_file
+      and "draft" in scout_file and "never an issue" in scout_file,
+      f"{SCOUT_PATH} step 5 does not send a public repo's security finding to a "
+      f"draft security advisory")
+
+check("scout: a failed advisory call keeps the finding in the report only",
+      "report only" in scout_file,
+      f"{SCOUT_PATH} step 5 does not keep a failed advisory's finding in the report only")
+
+check("scout: a private repo files a security finding as a normal issue",
+      "private" in scout_file and "normal issue" in scout_file,
+      f"{SCOUT_PATH} step 5 does not file a private repo's security finding as an issue")
+
+check("scout: filing never asks, by hand or on a schedule",
+      "never asks" in scout_file or "Never ask" in scout_file,
+      f"{SCOUT_PATH} step 5 does not say it files without asking")
+
+check("scout: never runs gh issue or gh pr, never sends GraphQL",
+      re.search(r"gh (issue|pr) (list|view|create)\b", scout_body) is None
+      and "GraphQL" in scout_body,
+      f"{SCOUT_PATH} names a gh issue or gh pr command, or never says no GraphQL")
+
+check("scout: ends with one report of filed, skipped and not checked",
+      "one report" in scout_report and "filed" in scout_report
+      and "skipped" in scout_report and "not checked" in scout_report,
+      f"{SCOUT_PATH} step 6 does not end with one report of what was filed, "
+      f"skipped and not checked")
+
+check("scout: falls back to flow's curl fallback when gh is missing",
+      "flow/references/curl-fallback.md" in scout_text,
+      f"{SCOUT_PATH} never links flow's curl fallback")
+
+# ------------------------- sweep and dispatch skip scout's devflow:found issues
+# scout files issues under the human's account, so they pass the trust filter.
+# The human approves one by removing the `devflow:found` label; until then both
+# skills drop it in filter step 1, beside `devflow:plan`.
+
+for _name, _body in (("sweep", sweep_body), ("dispatch", dispatch_body)):
+    check(f"{_name}: step 1 drops issues labelled devflow:found, waiting for approval",
+          "labelled `devflow:found`" in _body and "waiting for approval" in _body,
+          f"skills/{_name}/SKILL.md filter step 1 does not drop `devflow:found` "
+          f"issues with the reason 'waiting for approval'")
+
+# ------------------------------------------- scout's docs, README and provenance
+#
+# docs/scout.md holds why `scout` is what it is, so SKILL.md stays a prompt. The
+# README names the skill in its table and the page in its docs index, and
+# sweep's and dispatch's rows say they skip what scout filed. Provenance credits
+# what scout copied and what it only took the idea of.
+
+SCOUT_DOC_PATH = os.path.join(REPO_ROOT, "docs", "scout.md")
+scout_doc = ""
+if os.path.isfile(SCOUT_DOC_PATH):
+    with open(SCOUT_DOC_PATH, encoding="utf-8") as fh:
+        scout_doc = flat(fh.read())
+check("docs/scout: the page exists", scout_doc != "", f"{SCOUT_DOC_PATH} does not exist")
+
+check("docs/scout: the human gate is removing devflow:found",
+      "devflow:found" in scout_doc and "removes" in scout_doc
+      and "sweep" in scout_doc and "dispatch" in scout_doc,
+      "docs/scout.md never says the human approves by removing devflow:found")
+
+check("docs/scout: says why the levels are improve's quick, standard and deep",
+      "quick" in scout_doc and "standard" in scout_doc and "deep" in scout_doc
+      and "improve" in scout_doc,
+      "docs/scout.md never explains the three levels")
+
+check("docs/scout: says why versions are checked live, against endoflife.date and OSV",
+      "endoflife.date" in scout_doc and "api.osv.dev" in scout_doc
+      and "training" in scout_doc,
+      "docs/scout.md never says why package and runtime checks are live")
+
+check("docs/scout: public-repo security findings go to a draft advisory",
+      "draft" in scout_doc and "advisory" in scout_doc and "public" in scout_doc,
+      "docs/scout.md never says why a public repo's security finding is a draft advisory")
+
+check("docs/scout: cloud setup names Allowed domains, and not checked when blocked",
+      "Allowed domains" in scout_doc and "not checked" in scout_doc
+      and "#184" in scout_doc,
+      "docs/scout.md never explains the cloud routine's Allowed domains")
+
+check("docs/scout: the marker, the cap of 5 and the alerts-off rule are explained",
+      "marker" in scout_doc and "5" in scout_doc and "Dependabot" in scout_doc
+      and "never turns" in scout_doc,
+      "docs/scout.md never explains the marker, the cap or the alerts-off rule")
+
+check("docs/scout: links the skill and provenance",
+      "skills/scout/SKILL.md" in scout_doc and "provenance.md" in scout_doc,
+      "docs/scout.md never links the skill and provenance")
+
+_readme_scout_row = next((line for line in readme_text.split("\n")
+                          if line.startswith("| `scout` |")), "")
+check("README: the skills table lists scout and the label it files with",
+      _readme_scout_row != "" and "devflow:found" in _readme_scout_row
+      and "Only you can start it" in _readme_scout_row,
+      "README.md's skills table has no `scout` row naming devflow:found")
+
+check("README: the docs index points at docs/scout.md",
+      "| [docs/scout.md](docs/scout.md) |" in readme_text,
+      "README.md's docs index has no row for docs/scout.md")
+
+for _skill in ("sweep", "dispatch"):
+    _row = next((line for line in readme_text.split("\n")
+                 if line.startswith("| `%s` |" % _skill)), "")
+    check(f"README: the {_skill} row says it skips devflow:found issues",
+          "devflow:found" in _row,
+          f"README.md's `{_skill}` row never mentions the devflow:found skip")
+
+with open(os.path.join(REPO_ROOT, "docs", "provenance.md"), encoding="utf-8") as _fh:
+    _prov_scout_text = _fh.read()
+_prov_scout = flat(section(_prov_scout_text, "## `scout`"))
+check("provenance: a scout section credits improve (MIT) and Sentry (Apache-2.0)",
+      "shadcn/improve" in _prov_scout and "MIT" in _prov_scout
+      and "security-review" in _prov_scout and "Apache-2.0" in _prov_scout,
+      "docs/provenance.md has no `scout` section crediting improve and Sentry")
+check("provenance: Trail of Bits fp-check is the idea only, CC-BY-SA",
+      "fp-check" in _prov_scout and "CC-BY-SA" in _prov_scout
+      and "idea only" in _prov_scout,
+      "docs/provenance.md never says fp-check was taken as an idea only")
 
 # --------------------------------------------------------------------- report
 
